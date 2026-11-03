@@ -57,14 +57,19 @@ const scaleOf = (r) => (has(r.edition) && r.edition > 0 ? r.edition : Math.max(1
 // the paid assumptions the card can read the close under (closeForecast.scenarios)
 const MODES = [["recommended", "Recommended"], ["current", "Today's"], ["none", "None"]];
 
-export default function SellThroughClose({ snap }) {
+export default function SellThroughClose({ snap, vs = "target" }) {
   const base = snap.closeForecast;
   const [mode, setMode] = useState("recommended");
   const title = "Sell-through at close";
   if (!base || !has(base.units)) return <Card title={title}><div className="empty-state">No projection at close yet</div></Card>;
   // the reading under the chosen paid assumption; the block's own figures are the recommended one's
   const scenarios = base.scenarios && base.scenarios.recommended && base.scenarios.current && base.scenarios.none ? base.scenarios : null;
-  const cf = scenarios && scenarios[mode] ? { ...base, ...scenarios[mode] } : base;
+  const cf0 = scenarios && scenarios[mode] ? { ...base, ...scenarios[mode] } : base;
+  // the tick is the units target, or the benchmark at close when the page reads against it
+  const byBm = vs === "benchmark";
+  const bmClose = snap.hero && has(snap.hero.benchmark) ? snap.hero.benchmark : null;
+  const refName = byBm ? "Benchmark" : "Target";
+  const cf = { ...cf0, target: byBm ? bmClose : cf0.target };
   // closed means the campaign has closed, never that the figures agree: a
   // launch sold out before its close reads today = at close = the edition
   // and still carries its toggle and its paid assumption
@@ -81,7 +86,7 @@ export default function SellThroughClose({ snap }) {
   const working = [
     `${title}, how it is read`,
     `Projected ${fmt(cf.units)}${has(cf.edition) ? ` of ${fmt(cf.edition)} (${fmtPct(cf.pct, 0)})` : ""} · today ${fmt(cf.today)}${has(cf.pctToday) ? ` (${fmtPct(cf.pctToday, 0)})` : ""}${daysWord ? ` · ${daysWord}` : ""}`,
-    ...(has(cf.target) ? [`Units target ${fmt(cf.target)}`] : []),
+    ...(has(cf.target) ? [byBm ? `Benchmark at close ${fmt(cf.target)}` : `Units target ${fmt(cf.target)}`] : []),
     ...(Object.keys(b).length ? [`Built from: sold ${fmt(b.sold)} + in hand ${fmt(b.inHand)} + organic to come ${fmt(b.organic)} + paid to come ${fmt(b.paid)}`] : []),
     ...(paid ? [`Paid: runs at ${money(paid.daily)} a day${has(paid.today) ? ` (today ${money(paid.today)})` : ""}, ${kmoney(paid.spendAtClose)} at close${has(paid.budget) ? ` against a budget of ${money(paid.budget)}` : ""}`, ...(paid.rule ? [paid.rule] : [])] : []),
     ...(ranged ? [`Range ${fmt(cf.lo)}-${fmt(cf.hi)}${has(cf.pctLo) && has(cf.pctHi) ? ` (${Math.round(cf.pctLo * 100)}-${Math.round(cf.pctHi * 100)}%)` : ""}${range && range.note ? `: ${range.note}` : ""}${range && has(range.n) ? ` (${fmt(range.n)} launches)` : ""}`] : []),
@@ -93,7 +98,7 @@ export default function SellThroughClose({ snap }) {
     { n: "Today", k: sw(COL.DEEP), tip: `Today ${fmt(cf.today)}` },
     { n: complete ? "At the close" : "At close", k: sw(COL.LIGHT), tip: `At close ${fmt(cf.units)}${has(cf.edition) ? ` of ${fmt(cf.edition)}` : ""}` },
     ...(ranged ? [{ n: "Likely range", k: { ...sw(COL.PALE), width: 10, height: 10, flex: "0 0 10px", border: `1px solid ${RANGE_BORDER}` }, tip: `${fmt(cf.lo)}-${fmt(cf.hi)}${range && range.note ? `: ${range.note}` : ""}` }] : []),
-    ...(has(cf.target) ? [{ n: "Target", k: { width: 12, height: 0, flex: "0 0 12px", borderTop: `1px dashed ${COL.MUTED}` }, tip: `Units target ${fmt(cf.target)}` }] : []),
+    ...(has(cf.target) ? [{ n: refName, k: { width: 12, height: 0, flex: "0 0 12px", borderTop: `1px dashed ${COL.MUTED}` }, tip: byBm ? `Benchmark at close ${fmt(cf.target)}` : `Units target ${fmt(cf.target)}` }] : []),
   ];
   // the works: under a header per line, each by its variant where they are variants of one work
   const workRow = (w, shown) => {
@@ -151,7 +156,7 @@ export default function SellThroughClose({ snap }) {
       </Head>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <RangeBar xmax={xmax} today={cf.today} units={cf.units} lo={ranged ? cf.lo : null} hi={ranged ? cf.hi : null} target={cf.target}
-          title={`Today ${fmt(cf.today)} · at close ${fmt(cf.units)}${ranged ? ` · range ${fmt(cf.lo)}-${fmt(cf.hi)}` : ""}${has(cf.target) ? ` · target ${fmt(cf.target)}` : ""}`} />
+          title={`Today ${fmt(cf.today)} · at close ${fmt(cf.units)}${ranged ? ` · range ${fmt(cf.lo)}-${fmt(cf.hi)}` : ""}${has(cf.target) ? ` · ${refName.toLowerCase()} ${fmt(cf.target)}` : ""}`} />
         <Keys legend={legend} />
       </div>
       {works.length > 0 && <div style={{ "--nmw": `${Math.min(Math.max(nameLen, 8), 30)}ch`, marginTop: 8 }}>{worksBody}</div>}

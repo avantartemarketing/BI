@@ -1,6 +1,6 @@
 /* Unit trajectory (a timed launch's signup trajectory before its window):
- * cumulative secured units by day against the target's pace and the
- * benchmark's, the projection running on from today to the close. The
+ * cumulative secured units by day against the target's pace or the
+ * benchmark's (the page's Compare to switch picks one, never both), the projection running on from today to the close. The
  * series is the element-wise sum of every channel group's daily[] rows
  * (actual, plan, proj, bm), sliced to the campaign window so day N is index
  * N, and capped at the edition on a draw launch, whose secured units cannot
@@ -57,7 +57,7 @@ function seriesFor(snap) {
   };
 }
 
-export default function Trajectory({ snap }) {
+export default function Trajectory({ snap, vs = "target" }) {
   const s = useMemo(() => seriesFor(snap), [snap]);
   const W = wordsOf(snap);
   const of = snap.of || 1;
@@ -65,13 +65,13 @@ export default function Trajectory({ snap }) {
   const complete = !!snap.complete;
   // where today sits on the clock: the day so far at the share of it seen
   const elapsed = complete ? day : Math.max(0, Math.min(dayElapsed(snap), of));
-  const targeted = snap.targeted !== false;
+  const targeted = snap.targeted !== false && vs === "target";
   if (!s.pts.length) {
     return <Card wide title={W.trajTitle}><div className="empty-state">No {W.stepWord}-by-{W.stepWord} series yet</div></Card>;
   }
   const pts = s.pts, N = Math.max(1, pts.length - 1);
-  const hasBm = !!snap.benchmark && s.bm !== null && s.bm > 0;
-  const showProj = targeted && !complete && day < of;
+  const hasBm = vs === "benchmark" && !!snap.benchmark && s.bm !== null && s.bm > 0;
+  const showProj = (targeted || hasBm) && !complete && day < of;
   let lastA = -1;
   pts.forEach((p, i) => { if (has(p.actual)) lastA = i; });
   const todayIdx = Math.min(day, N);
@@ -93,11 +93,14 @@ export default function Trajectory({ snap }) {
   const hero = snap.hero || {};
   const heroPct = Number.isFinite(hero.projected) && hero.target > 0 ? Math.round((hero.projected / hero.target) * 100) : null;
   const projPct = targeted && s.target > 0 ? heroPct ?? Math.round((s.proj / s.target) * 100) : null;
+  const projBmPct = hasBm ? Math.round(((complete ? s.now : s.proj) / s.bm) * 100) : null;
+  const refWord = hasBm ? "benchmark" : "target";
+  const refPct = hasBm ? projBmPct : projPct;
   const nowTip = `${fmt(s.now)} ${W.unit} ${W.securedLower} to date` + (targeted ? ` · ${fmt(planToday)} target by ${W.stepWord} ${day}` : "")
     + (has(bmToday) ? ` · ${fmt(bmToday)} benchmark` : "");
   const projTip = complete
-    ? `${fmt(s.now)} ${W.unit} at the ${W.closeWord}` + (projPct !== null ? ` · ${projPct}% of target` : "")
-    : `Projected ${fmt(s.proj)} at the ${W.closeWord}` + (projPct !== null ? ` · ${projPct}% of target` : "")
+    ? `${fmt(s.now)} ${W.unit} at the ${W.closeWord}` + (refPct !== null ? ` · ${refPct}% of ${refWord}` : "")
+    : `Projected ${fmt(s.proj)} at the ${W.closeWord}` + (refPct !== null ? ` · ${refPct}% of ${refWord}` : "")
       + (!W.tl && projPct !== null && projPct > 100 ? " · demand beyond the sellout cannot convert" : "");
 
   const series = [
@@ -134,7 +137,7 @@ export default function Trajectory({ snap }) {
             ...(bm && has(p.bm) ? [{ n: "Benchmark", v: fmt(p.bm), k: lk(COL.INK, "dotted") }] : []),
           ];
         }}
-        aria={`${W.trajTitle}: ${fmt(nowVal)} ${W.unit} by ${W.stepWord} ${day}${targeted ? ` against ${fmt(planToday)} target` : ""}`} />
+        aria={`${W.trajTitle}: ${fmt(nowVal)} ${W.unit} by ${W.stepWord} ${day}${targeted ? ` against ${fmt(planToday)} target` : hasBm ? ` against ${fmt(bmToday)} benchmark` : ""}`} />
     </Card>
   );
 }

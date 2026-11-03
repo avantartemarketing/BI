@@ -30,7 +30,7 @@ import "./cards.css";
 /* a section's heading, across both columns */
 const Sect = ({ children }) => <div className="wide sect">{children}</div>;
 
-export default function Overview({ snap, base, horizon, onSetup, onOpen, lineViews }) {
+export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lineViews }) {
   const isTL = snap.type === "TL";
   const targeted = snap.targeted !== false;
   // before the announce (a timed launch before its signups open too) the page shows what it knows
@@ -45,19 +45,19 @@ export default function Overview({ snap, base, horizon, onSetup, onOpen, lineVie
   return (
     <div className="body">
       <div className="grid2">
-        <Trajectory snap={snap} horizon={horizon} />
+        <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
         {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
         {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
-        {!isTL && snap.closeForecast && <SellThroughClose snap={snap} />}
+        {!isTL && snap.closeForecast && <SellThroughClose snap={snap} vs={vs} />}
         {!preWindow && framingOn && <Framing snap={snap} horizon={horizon} />}
         {geoOn && <Geo snap={snap} />}
-        {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} />}
+        {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}
         <Sect>Channels and funnel</Sect>
-        <ChannelsVsTargets snap={snap} horizon={horizon} />
-        {targeted && <Waterfall snap={snap} horizon={horizon} />}
-        <FunnelTable snap={snap} />
-        {snap.email && <EmailFunnel snap={snap} />}
+        <ChannelsVsTargets snap={snap} vs={vs} horizon={horizon} />
+        {targeted && vs && <Waterfall snap={snap} vs={vs} horizon={horizon} />}
+        <FunnelTable snap={snap} vs={vs} />
+        {snap.email && <EmailFunnel snap={snap} vs={vs} />}
         {paidLines.length > 0 ? paidLines.map((l) => (
           <React.Fragment key={`paid:${l.key}`}>
             <Sect>Paid · {l.name}</Sect>

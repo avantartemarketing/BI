@@ -10,6 +10,7 @@ import { fmt, fmtDay } from "./format.mjs";
 import { Cal, Caret, Chev, Clock, Display, Hamburger, ProgressRing, Ring, Warn, X } from "./icons.jsx";
 import { wordsOf } from "./vocab.mjs";
 import { releaseClock } from "./sections.mjs";
+import { canBenchmark, canTarget, compareOf } from "./compare.mjs";
 import { GROUP_WORD, groupOf, nameOf, onDay, rowState, STATE_COLOR, whenWords } from "./rows.mjs";
 import Overview from "./Overview.jsx";
 import TargetSetting from "./TargetSetting.jsx";
@@ -99,6 +100,19 @@ function LineChip({ lines, value, onChange }) {
   );
 }
 
+/* Compare to: what every card reads progress against, the target or the
+ * benchmark, never both. An option the release has no figure for is off. */
+function CompareSwitch({ snap, vs, onChange }) {
+  const t = canTarget(snap), b = canBenchmark(snap);
+  return (
+    <span className="cmp">Compare to
+      <Seg label="Compare to" value={vs} onChange={onChange}
+        options={[["target", "Target", t ? "Read every card against the targets set for this release" : "No targets set for this release", !t],
+          ["benchmark", "Benchmark", b ? "Read every card against the benchmark: the median of the matched basket of comparable launches" : "No comparable basket for this release", !b]]} />
+    </span>
+  );
+}
+
 /* The warning strip under the header: stale data, a failed refresh, a
  * coverage gap, no targets, one line's basis. Only when something needs
  * saying; one line each. */
@@ -150,7 +164,7 @@ function Strips({ snap, st, onRefreshed, line, lines, onSetup }) {
   ));
 }
 
-export default function ReleasePage({ snap, snapError, row, asOf, st, route, setRoute, directSpread, setDirectSpread, onSaved, onRefreshed, onOpen, onMenu }) {
+export default function ReleasePage({ snap, snapError, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, onSaved, onRefreshed, onOpen, onMenu }) {
   const tab = route.tab || "overview";
   const setTab = (t) => setRoute({ ...route, tab: t, basket: false });
   const [horizon, setHorizon] = useState("today");
@@ -186,6 +200,8 @@ export default function ReleasePage({ snap, snapError, row, asOf, st, route, set
   const f = freshness({ asOf: snap.asOf, partial: typeof snap.asOfFraction === "number" && snap.asOfFraction < 1, builtAt: snap.builtAt, st, emailThrough: snap.email && snap.email.feedThrough, funnelNote: snap.funnelNote });
   const showHorizon = targeted && !snap.catalogue && !snap.upcoming && !snap.complete && tab === "overview";
   const targetsWord = targeted ? "Targets" : "Set targets";
+  const vs = compareOf(snap, compareTo);
+  const showCompare = !!vs && !snap.catalogue && !snap.upcoming;
   return (
     <main className="page">
       <header className="phead">
@@ -215,8 +231,9 @@ export default function ReleasePage({ snap, snapError, row, asOf, st, route, set
             {snap.catalogue && <button className="chip"><Cal />Last 90 days</button>}
             {showHorizon && <HorizonChip horizon={horizon} onChange={setHorizon} closeLabel={W.closeLabel} />}
             {lines && <LineChip lines={lines} value={lineKey} onChange={setLineKey} />}
+            {showCompare && <CompareSwitch snap={snap} vs={vs} onChange={setCompareTo} />}
           </div>
-          <Overview snap={view} base={snap} lineViews={lineViews} horizon={snap.complete ? "close" : horizon} onSetup={() => setTab("targets")} onOpen={onOpen} />
+          <Overview snap={view} base={snap} vs={vs} lineViews={lineViews} horizon={snap.complete ? "close" : horizon} onSetup={() => setTab("targets")} onOpen={onOpen} />
         </>
       )}
       {tab === "targets" && (isTL

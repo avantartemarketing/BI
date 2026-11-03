@@ -148,9 +148,11 @@ export function LineChart({ H = 250, L = 36, R = 8, T = 10, B = 26, n, ymax, ymi
 /* ---------------------------------------------------------------- columns against targets
  * rows: [[name, actual, target, benchmark|null]]. The target is the pale bar,
  * the actual fills it; past the target the lighter indigo rises above a 2px
- * gap; the benchmark is a dotted mark across the column. */
+ * gap; the benchmark is a dotted mark across the column. refName names the
+ * pale bar in the legend: the target, or the benchmark when the page reads
+ * against it (and then the dotted mark is left out). */
 export function ColChart({ H = 250, L = 30, R = 4, T = 10, B = 26, gw = 0.32, ymax, yticks = [], yfmt = String, cats, rows,
-  title, tipRows, aria = "", legend: legendIn, fallbackW }) {
+  title, tipRows, aria = "", legend: legendIn, refName = "Target", fallbackW }) {
   const [ref, W] = useW(fallbackW);
   const [hover, setHover] = useState(null);
   const o = { W, H, L, R, T, B };
@@ -181,8 +183,8 @@ export function ColChart({ H = 250, L = 30, R = 4, T = 10, B = 26, gw = 0.32, ym
   const anyT = rows.some((r) => r[2] > 0), anyB = rows.some((r) => r[3] != null && r[3] > 0), anyO = rows.some((r) => r[2] > 0 && r[1] > r[2]);
   const legend = legendIn || [
     { n: "Actual", k: sw(COL.IND) },
-    ...(anyO ? [{ n: "Over target", k: sw(COL.OVER) }] : []),
-    ...(anyT ? [{ n: "Target", k: sw(COL.TARGET) }] : []),
+    ...(anyO ? [{ n: `Over ${refName.toLowerCase()}`, k: sw(COL.OVER) }] : []),
+    ...(anyT ? [{ n: refName, k: sw(COL.TARGET) }] : []),
     ...(anyB ? [{ n: "Benchmark", k: lk(COL.INK, "dotted") }] : []),
   ];
   return <Frame o={o} paths={paths} labs={labs} hits={hits} tip={tip} legend={legend} aria={aria} setHover={setHover} plotRef={ref} />;
@@ -300,7 +302,7 @@ export function HBarChart({ H, L = 110, R = 8, T = 4, B = 26, bh = 10, xmin = 0,
  * targetFrom (the step that rises to it) when one is. steps: [[name, value]];
  * short: the column labels (a "\n" breaks a line). */
 export function WaterfallChart({ H = 262, L = 36, R = 4, T = 10, B = 40, ymin = 0, ymax, yticks = [], yfmt = String, start, startName = "Benchmark",
-  steps = [], endName = "Actual", short, target, targetFrom = 0, unit = "units", aria = "", fmtV = f0, fallbackW }) {
+  steps = [], endName = "Actual", short, target, targetFrom = 0, targetName = "Target", unit = "units", aria = "", fmtV = f0, fallbackW }) {
   const [ref, W] = useW(fallbackW);
   const [hover, setHover] = useState(null);
   const o = { W, H, L, R, T, B };
@@ -331,7 +333,7 @@ export function WaterfallChart({ H = 262, L = 36, R = 4, T = 10, B = 40, ymin = 
   if (target != null) {
     // the line starts at the column that reaches it (the stretch), not over the columns before it
     paths.push({ d: `M${(targetFrom > 0 ? x0(targetFrom) : L).toFixed(1)} ${y(target).toFixed(1)}H${W - R}`, st: COL.INK, sw: 1.5, da: "4 4" });
-    labs.push({ t: `Target ${fmtV(target)}`, s: { right: P2(R, W), top: P2(y(target) - 15, H), color: COL.INK, fontWeight: 500, background: "rgba(255,255,255,.85)", padding: "0 2px" } });
+    labs.push({ t: `${targetName} ${fmtV(target)}`, s: { right: P2(R, W), top: P2(y(target) - 15, H), color: COL.INK, fontWeight: 500, background: "rgba(255,255,255,.85)", padding: "0 2px" } });
   }
   const names = short || cols.map((c) => c.name);
   cols.forEach((c, i) => {
@@ -342,10 +344,10 @@ export function WaterfallChart({ H = 262, L = 36, R = 4, T = 10, B = 40, ymin = 
   if (hover != null) {
     const c = cols[hover];
     tip = tipAt(o, L + slot * hover + slot / 2, c.name, c.kind === "total"
-      ? [{ n: c.name, v: fmtV(c.v), k: sw(hover === 0 ? COL.GREY : COL.IND) }, ...(target != null ? [{ n: "Target", v: fmtV(target), k: lk(COL.INK, "dashed") }] : [])]
+      ? [{ n: c.name, v: fmtV(c.v), k: sw(hover === 0 ? COL.GREY : COL.IND) }, ...(target != null && c.name !== targetName ? [{ n: targetName, v: fmtV(target), k: lk(COL.INK, "dashed") }] : [])]
       : [{ n: c.v >= 0 ? "Adds" : "Costs", v: fmtV(Math.abs(c.v)) + " " + unit, k: sw(c.v >= 0 ? COL.IND : COL.ORANGE) }]);
   }
-  const legend = [{ n: startName, k: sw(COL.GREY) }, { n: "Adds", k: sw(COL.IND) }, { n: "Costs", k: sw(COL.ORANGE) }, ...(target != null ? [{ n: "Target", v: fmtV(target), k: lk(COL.INK, "dashed") }] : [])];
+  const legend = [{ n: startName, k: sw(COL.GREY) }, { n: "Adds", k: sw(COL.IND) }, { n: "Costs", k: sw(COL.ORANGE) }, ...(target != null && targetName !== startName ? [{ n: targetName, v: fmtV(target), k: lk(COL.INK, "dashed") }] : [])];
   return <Frame o={o} paths={paths} labs={labs} hits={hits} tip={tip} legend={legend} aria={aria} setHover={setHover} plotRef={ref} />;
 }
 

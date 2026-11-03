@@ -47,6 +47,8 @@ function writeRoute(r) {
 
 const DIRECT_PREF = "directSpread";
 const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) !== "0"; } catch { return true; } };
+const COMPARE_PREF = "compareTo";
+const readComparePref = () => { try { return localStorage.getItem(COMPARE_PREF) === "benchmark" ? "benchmark" : "target"; } catch { return "target"; } };
 
 /* The server's refresh status, polled every 5 minutes (every 15 s while a
  * refresh is in flight). undefined = still asking, null = could not read it. */
@@ -78,6 +80,8 @@ export default function App() {
   const [palette, setPalette] = useState(false);
   const [directSpread, setDirectSpreadState] = useState(readDirectPref);
   const setDirectSpread = (v) => { setDirectSpreadState(v); try { localStorage.setItem(DIRECT_PREF, v ? "1" : "0"); } catch { /* per-browser convenience only */ } };
+  const [compareTo, setCompareToState] = useState(readComparePref);
+  const setCompareTo = (v) => { setCompareToState(v); try { localStorage.setItem(COMPARE_PREF, v); } catch { /* per-browser convenience only */ } };
   const st = useRefreshStatus();
 
   useEffect(() => { fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {}); }, []);
@@ -135,7 +139,7 @@ export default function App() {
           <Permissions me={me} onMenu={() => setNav(true)} />
         ) : route.view === "release" ? (
           <ReleasePage snap={snap} snapError={snapError} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
-            directSpread={directSpread} setDirectSpread={setDirectSpread} onSaved={onSaved} onRefreshed={onRefreshed} onOpen={pick} onMenu={() => setNav(true)} />
+            directSpread={directSpread} setDirectSpread={setDirectSpread} compareTo={compareTo} setCompareTo={setCompareTo} onSaved={onSaved} onRefreshed={onRefreshed} onOpen={pick} onMenu={() => setNav(true)} />
         ) : (
           <Releases groups={groups} asOf={index && index.asOf} onPick={pick} />
         )}
@@ -143,7 +147,7 @@ export default function App() {
       {palette && <CommandBar groups={groups} asOf={index && index.asOf} onPick={pick} onClose={() => setPalette(false)} />}
       {route.view !== "permissions" && (
         <AgentDock snap={route.view === "release" ? snap : null}
-          context={{ view: route.view, release: releaseId, tab: route.tab, display: directSpread ? "spread" : "channel" }} />
+          context={{ view: route.view, release: releaseId, tab: route.tab, display: directSpread ? "spread" : "channel", compareTo }} />
       )}
     </>
   );

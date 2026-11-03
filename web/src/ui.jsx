@@ -76,12 +76,12 @@ export function vsDelta(actual, ref, word, tip) {
   return { t: `${Math.abs(p)}% vs ${word}`, dir: p >= 0 ? "up" : "dn", tip };
 }
 
-/* A two- or three-way switch in a card head: options [[key, label, tip]]. */
+/* A two- or three-way switch in a card head: options [[key, label, tip, disabled]]. */
 export function Seg({ options, value, onChange, label, big }) {
   return (
     <span className={`seg${big ? " big" : ""}`} role="group" aria-label={label}>
-      {options.map(([k, l, tip]) => (
-        <button key={k} type="button" className={value === k ? "on" : ""} aria-pressed={value === k} title={tip} onClick={() => onChange(k)}>{l}</button>
+      {options.map(([k, l, tip, disabled]) => (
+        <button key={k} type="button" className={value === k ? "on" : ""} aria-pressed={value === k} title={tip} disabled={!!disabled} onClick={() => onChange(k)}>{l}</button>
       ))}
     </span>
   );

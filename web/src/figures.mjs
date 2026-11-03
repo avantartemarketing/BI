@@ -73,14 +73,16 @@ function wholeParts(vs, total) {
  * the outcome, with the Beyond sellout step, `beyond` (negative), only on a
  * release really over its edition. `today` is the card's horizon as it
  * reads it (false where the snapshot has no Today walk and the card shows
- * the close). */
-export function channelWalk(snap, { today = false } = {}) {
+ * the close). `ref` is what the page reads against: "target" walks from the
+ * target even where there is a basket; anything else keeps the benchmark
+ * first. */
+export function channelWalk(snap, { today = false, ref } = {}) {
   const s = snap || {};
   const wf = s.waterfall;
   if (!wf) return null;
   const view = today && wf.today ? wf.today : wf;
   const isToday = today && !!wf.today;
-  const hasBm = !!s.benchmark && finite(view.benchmark) && Array.isArray(view.stepsBm);
+  const hasBm = ref !== "target" && !!s.benchmark && finite(view.benchmark) && Array.isArray(view.stepsBm);
   const start = hasBm ? view.benchmark : view.target ?? 0;
   const outcome = (isToday ? view.actual : view.projection) ?? 0;
   const over = walkCap(s, !isToday);

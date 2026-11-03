@@ -1,6 +1,7 @@
 /* Funnel by channel: the table beside the email funnel, one row a channel
- * group - sessions and conversion, each against the plan (or the basket when
- * the release has no targets). The card's menu swaps the table for the
+ * group - sessions and conversion, each against the plan or the basket, as the
+ * page's Compare to switch reads (the basket alone when the release has no
+ * targets). The card's menu swaps the table for the
  * waterfall reading: the units each channel's traffic and conversion added
  * or cost against the plan. */
 import React, { useState } from "react";
@@ -15,10 +16,10 @@ const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const signed = (p) => (p === null ? "–" : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p * 100))}%`);
 const rel = (a, b) => (finite(a) && finite(b) && b > 0 ? a / b - 1 : null);
 
-export default function FunnelTable({ snap }) {
+export default function FunnelTable({ snap, vs = "target" }) {
   const [mode, setMode] = useState("table");
   const fbg = snap.funnelByGroup || {};
-  const targeted = snap.targeted !== false && Object.values(fbg).some((g) => finite(g.sessions_expected) && g.sessions_expected > 0);
+  const targeted = vs !== "benchmark" && snap.targeted !== false && Object.values(fbg).some((g) => finite(g.sessions_expected) && g.sessions_expected > 0);
   const W = wordsOf(snap);
   const refWord = targeted ? "plan" : "basket";
   const rows = GROUPS.map(([k, name]) => {

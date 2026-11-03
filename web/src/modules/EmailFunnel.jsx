@@ -32,7 +32,7 @@ export function emailStages(snap) {
   return out;
 }
 
-export default function EmailFunnel({ snap }) {
+export default function EmailFunnel({ snap, vs = "target" }) {
   const steps = emailStages(snap);
   const e = snap.email || {};
   const g = (snap.funnelByGroup || {}).aa_email || {};
@@ -41,10 +41,11 @@ export default function EmailFunnel({ snap }) {
   const units = finite(g.units_actual) ? g.units_actual : null;
   const emailCh = (snap.channels || []).find((c) => c.key === "aa_email");
   const unitsNow = emailCh ? emailCh.now : units;
-  const unitsExp = emailCh ? emailCh.exp : null;
+  const byBm = vs === "benchmark";
+  const unitsExp = emailCh ? (byBm ? emailCh.bmExp : emailCh.exp) : null;
   const W = wordsOf(snap);
   const head = finite(unitsNow)
-    ? <Head v={fmt(unitsNow)} u={`${W.unit} from email`} deltas={[vsDelta(unitsNow, unitsExp, "plan", "Against the plan's AA Email units by today")]} aside={e.sends ? `${fmt(e.sends)} send${e.sends === 1 ? "" : "s"}` : ""} />
+    ? <Head v={fmt(unitsNow)} u={`${W.unit} from email`} deltas={[byBm ? vsDelta(unitsNow, unitsExp, "benchmark", "Against the basket's AA Email units by today") : vsDelta(unitsNow, unitsExp, "plan", "Against the plan's AA Email units by today")]} aside={e.sends ? `${fmt(e.sends)} send${e.sends === 1 ? "" : "s"}` : ""} />
     : null;
   if (!steps.length) {
     return <Card title="Email funnel" aria="Email funnel">{head}<div className="empty-state">No sends on file for this release yet</div></Card>;
