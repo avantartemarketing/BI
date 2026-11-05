@@ -1,11 +1,11 @@
 /* The page's charts, one grammar for every card (the Linear redesign, October
  * 2026): a line chart with the actual as an area under its line, target and
- * benchmark as thinner lines; columns where the target is a pale grey bar the
- * actual fills in indigo, anything past the target a lighter indigo above a
- * 2px gap, the benchmark a dotted mark; horizontal bars, stacked or diverging;
- * a waterfall from the benchmark through each driver to the actual, the target
- * a dashed line across. Values live in the hover readout and the legend, never
- * printed on the plot.
+ * benchmark as thinner lines; columns where the target is a dotted outline on
+ * a faint tint, a little wider than the indigo actual inside it, which simply
+ * rises past the outline when over (5 November 2026), the benchmark a dotted
+ * mark; horizontal bars, stacked or diverging, the diverging kind able to
+ * print each bar's figure at its end (valFmt) for the gap cards. Otherwise
+ * values live in the hover readout and the legend, never on the plot.
  *
  * Each chart measures the width it is shown at (useBoxSize) and draws its
  * SVG in those pixels, so labels placed by percentage land where the figures
@@ -17,17 +17,18 @@ import { useBoxSize } from "./ui.jsx";
 
 export const COL = {
   IND: "#5e6ad2", DEEP: "#3f4bb0", MID: "#7c86dd", LIGHT: "#c3c8f2", OVER: "#a7aeec", PALE: "#eceefc",
-  GREY: "#a1a1aa", SOFT: "#d9d9de", TRACK: "#ededf0", TARGET: "#e8e8eb", ORANGE: "#e8915a", GRID: "#f0f0f2",
+  GREY: "#a1a1aa", SOFT: "#d9d9de", TRACK: "#ededf0", TARGET: "#e8e8eb", TINT: "#f7f7f9", ORANGE: "#e8915a", GRID: "#f0f0f2",
   INK: "#1b1b1c", MUTED: "#8a8a8e", DARK: "#71717a", HOVER: "#f4f4f6",
   GREEN: "#0f7052", RED: "#b8461d", AMBER: "#8a5f00",
 };
 
-/* legend and readout swatches: a square of a colour, or a line (solid, dashed, dotted) */
+/* legend and readout swatches: a square of a colour, a dotted outline on a tint
+ * (the target in the column charts), or a line (solid, dashed, dotted) */
 export const sw = (c) => ({ width: 8, height: 8, borderRadius: 2, flex: "0 0 8px", background: c });
+export const ol = (c = COL.GREY, bg = COL.TINT) => ({ width: 9, height: 9, borderRadius: 2, flex: "0 0 9px", border: `1.5px dotted ${c}`, background: bg, boxSizing: "border-box" });
 export const lk = (c, style = "solid") => ({ width: 12, height: 0, flex: "0 0 12px", borderTop: `2px ${style} ${c}` });
 const dashStyle = (da) => (da === "1 4" ? "dotted" : da && da !== "none" ? "dashed" : "solid");
 
-const f0 = (n) => Math.round(n).toLocaleString("en-GB");
 const P2 = (v, t) => ((v / t) * 100).toFixed(3) + "%";
 const pathStyle = (p) => ({
   d: p.d || "M0 0", stroke: p.st || "none", fill: p.fl || "none", fillOpacity: p.fo == null ? 1 : p.fo,
@@ -60,6 +61,12 @@ const topBar = (x, y, w, h, r) => {
   if (h <= 0) return "";
   r = Math.min(r, w / 2, h);
   return `M${x} ${y + h}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${y + h}Z`;
+};
+/* the same shape as a stroke, open along the baseline */
+const openBar = (x, y, w, h, r) => {
+  if (h <= 0) return "";
+  r = Math.min(r, w / 2, h);
+  return `M${x} ${y + h}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${y + h}`;
 };
 
 /* The plot, the labels, the hit boxes and the readout, then the legend. */
@@ -164,27 +171,29 @@ export function ColChart({ H = 250, L = 30, R = 4, T = 10, B = 26, gw = 0.32, ym
   yticks.forEach((t) => { if (t) g += `M${L} ${(y(t) + 0.5).toFixed(1)}H${W - R}`; labs.push(labY(o, yfmt(t), L - 8, y(t))); });
   paths.push({ d: g, st: COL.GRID, sw: 1 });
   paths.push({ d: `M${L} ${y(0) + 0.5}H${W - R}`, st: "#e2e2e6", sw: 1 });
-  let trk = "", fil = "", ovr = "", bm = "";
+  // the target: a dotted outline on a faint tint, `pad` wider than the actual
+  // on each side, open at the baseline; the actual one indigo bar inside it,
+  // past it when over
+  const pad = Math.max(2, Math.min(6, (slot - bw) / 2 - 2));
+  let tnt = "", out = "", fil = "", bm = "";
   rows.forEach((r, i) => {
     const a = r[1] ?? 0, t = r[2] ?? 0, b = r[3], x0 = L + slot * i + (slot - bw) / 2;
-    if (t > 0) trk += topBar(x0, y(t), bw, y(0) - y(t), 3);
-    if (a <= t || t <= 0) { if (a > 0) fil += topBar(x0, y(a), bw, Math.max(y(0) - y(a), 1), 2); }
-    else {
-      fil += `M${x0} ${y(0)}V${y(t).toFixed(1)}H${x0 + bw}V${y(0)}Z`;
-      ovr += topBar(x0, y(a), bw, Math.max(y(t) - 2 - y(a), 1.5), 3);
+    if (t > 0) {
+      tnt += topBar(x0 - pad, y(t), bw + pad * 2, y(0) - y(t), 4);
+      out += openBar(x0 - pad, y(t) + 0.5, bw + pad * 2, y(0) - y(t) - 0.5, 4);
     }
-    if (b != null && b > 0) bm += `M${(x0 - 4).toFixed(1)} ${y(b).toFixed(1)}H${(x0 + bw + 4).toFixed(1)}`;
+    if (a > 0) fil += topBar(x0, y(a), bw, Math.max(y(0) - y(a), 1), 3);
+    if (b != null && b > 0) bm += `M${(x0 - pad - 4).toFixed(1)} ${y(b).toFixed(1)}H${(x0 + bw + pad + 4).toFixed(1)}`;
   });
-  paths.push({ d: trk, fl: COL.TARGET }); paths.push({ d: fil, fl: COL.IND }); paths.push({ d: ovr, fl: COL.OVER });
+  paths.push({ d: tnt, fl: COL.TINT }); paths.push({ d: out, st: COL.GREY, sw: 1.5, da: "0 3.5" }); paths.push({ d: fil, fl: COL.IND });
   paths.push({ d: bm, st: COL.INK, sw: 2, da: "1 4" });
   cats.forEach((c, i) => labs.push(labX(o, c, L + slot * i + slot / 2, H - B + 9)));
   for (let i = 0; i < n; i++) hits.push({ s: box(o, L + slot * i, 0, slot, H - B), e: () => setHover(i) });
   const tip = hover == null ? noTip : tipAt(o, L + slot * hover + slot / 2, title ? title(hover) : cats[hover], tipRows ? tipRows(hover) : []);
-  const anyT = rows.some((r) => r[2] > 0), anyB = rows.some((r) => r[3] != null && r[3] > 0), anyO = rows.some((r) => r[2] > 0 && r[1] > r[2]);
+  const anyT = rows.some((r) => r[2] > 0), anyB = rows.some((r) => r[3] != null && r[3] > 0);
   const legend = legendIn || [
     { n: "Actual", k: sw(COL.IND) },
-    ...(anyO ? [{ n: `Over ${refName.toLowerCase()}`, k: sw(COL.OVER) }] : []),
-    ...(anyT ? [{ n: refName, k: sw(COL.TARGET) }] : []),
+    ...(anyT ? [{ n: refName, k: ol() }] : []),
     ...(anyB ? [{ n: "Benchmark", k: lk(COL.INK, "dotted") }] : []),
   ];
   return <Frame o={o} paths={paths} labs={labs} hits={hits} tip={tip} legend={legend} aria={aria} setHover={setHover} plotRef={ref} />;
@@ -237,7 +246,7 @@ export function BarChart({ H = 250, L = 40, R = 4, T = 10, B = 26, gw = 0.64, ov
  * the chart (an edition). rows2(i): the readout rows. */
 export function HBarChart({ H, L = 110, R = 8, T = 4, B = 26, bh = 10, xmin = 0, xmax, xticks = [], xfmt = String, rows, series = [],
   diverging = false, vals = [], posColor = COL.IND, negColor = COL.ORANGE, greyRows = [], ranges, ticks, tickColor = COL.INK, tickDa = "none", vline,
-  title, rows2, aria = "", legend = [], labelW, fallbackW }) {
+  title, rows2, aria = "", legend = [], labelW, valFmt, fallbackW }) {
   const [ref, W] = useW(fallbackW);
   const [hover, setHover] = useState(null);
   const nr = rows.length;
@@ -262,6 +271,8 @@ export function HBarChart({ H, L = 110, R = 8, T = 4, B = 26, bh = 10, xmin = 0,
       const yc = T + band * i + band / 2;
       const d = v >= 0 ? rr(x(0) + 1, yc - bh / 2, x(v) - x(0) - 1, bh, 2) : rr(x(v), yc - bh / 2, x(0) - x(v) - 1, bh, 2);
       if (greyRows.includes(i)) gry += d; else if (v >= 0) pos += d; else neg += d;
+      // the figure just past the bar's end, on the side the bar points to
+      if (valFmt) labs.push({ t: valFmt(v, i), s: { left: P2(x(v) + (v >= 0 ? 8 : -8), W), top: P2(yc, height), transform: `translate(${v >= 0 ? "0" : "-100%"},-50%)`, color: "#6b6b6f", fontSize: 12 } });
     });
     paths.push({ d: pos, fl: posColor }); paths.push({ d: neg, fl: negColor }); paths.push({ d: gry, fl: COL.SOFT });
   } else {
@@ -292,62 +303,6 @@ export function HBarChart({ H, L = 110, R = 8, T = 4, B = 26, bh = 10, xmin = 0,
   if (hover != null) {
     tip = { on: true, title: title ? title(hover) : rows[hover], rows: rows2 ? rows2(hover) : [], s: { top: P2(T + band * (hover + 1), height), left: P2(L, W) } };
   }
-  return <Frame o={o} paths={paths} labs={labs} hits={hits} tip={tip} legend={legend} aria={aria} setHover={setHover} plotRef={ref} />;
-}
-
-/* ---------------------------------------------------------------- waterfall
- * A grey bar for the start (the benchmark), each step up in indigo or down in
- * orange from where the last left off, the result as an indigo bar; the target
- * a dashed line across with its figure at the end, from the column named by
- * targetFrom (the step that rises to it) when one is. steps: [[name, value]];
- * short: the column labels (a "\n" breaks a line). */
-export function WaterfallChart({ H = 262, L = 36, R = 4, T = 10, B = 40, ymin = 0, ymax, yticks = [], yfmt = String, start, startName = "Benchmark",
-  steps = [], endName = "Actual", short, target, targetFrom = 0, targetName = "Target", unit = "units", aria = "", fmtV = f0, fallbackW }) {
-  const [ref, W] = useW(fallbackW);
-  const [hover, setHover] = useState(null);
-  const o = { W, H, L, R, T, B };
-  const n = steps.length + 2, slot = (W - L - R) / n, bw = slot * 0.56;
-  const y = (v) => T + (1 - (v - ymin) / (ymax - ymin)) * (H - T - B);
-  const paths = [], labs = [], hits = [];
-  paths.push(hover == null ? {} : { d: rr(L + slot * hover + 1, T - 4, slot - 2, H - T - B + 4, 4), fl: COL.HOVER });
-  let g = "";
-  yticks.forEach((t) => { g += `M${L} ${(y(t) + 0.5).toFixed(1)}H${W - R}`; labs.push(labY(o, yfmt(t), L - 8, y(t))); });
-  paths.push({ d: g, st: COL.GRID, sw: 1 });
-  const x0 = (i) => L + slot * i + (slot - bw) / 2;
-  const cols = [{ name: startName, v: start, kind: "total" }];
-  let up = "", dn = "", con = "", run = start;
-  const base = topBar(x0(0), y(start), bw, y(ymin) - y(start), 2);
-  steps.forEach((st, i) => {
-    const a = run, b = run + (st[1] || 0), top = Math.max(a, b), bot = Math.min(a, b);
-    con += `M${(x0(i) + bw).toFixed(1)} ${y(a).toFixed(1)}H${x0(i + 1).toFixed(1)}`;
-    const d = rr(x0(i + 1), y(top), bw, Math.max(1.5, y(bot) - y(top)), 2);
-    if ((st[1] || 0) >= 0) up += d; else dn += d;
-    cols.push({ name: st[0], v: st[1] || 0, kind: "step" });
-    run = b;
-  });
-  con += `M${(x0(n - 2) + bw).toFixed(1)} ${y(run).toFixed(1)}H${x0(n - 1).toFixed(1)}`;
-  const res = topBar(x0(n - 1), y(run), bw, y(ymin) - y(run), 2);
-  cols.push({ name: endName, v: run, kind: "total" });
-  paths.push({ d: base, fl: COL.GREY }); paths.push({ d: up, fl: COL.IND }); paths.push({ d: dn, fl: COL.ORANGE }); paths.push({ d: res, fl: COL.IND });
-  paths.push({ d: con, st: "#c4c4c8", sw: 1 });
-  if (target != null) {
-    // the line starts at the column that reaches it (the stretch), not over the columns before it
-    paths.push({ d: `M${(targetFrom > 0 ? x0(targetFrom) : L).toFixed(1)} ${y(target).toFixed(1)}H${W - R}`, st: COL.INK, sw: 1.5, da: "4 4" });
-    labs.push({ t: `${targetName} ${fmtV(target)}`, s: { right: P2(R, W), top: P2(y(target) - 15, H), color: COL.INK, fontWeight: 500, background: "rgba(255,255,255,.85)", padding: "0 2px" } });
-  }
-  const names = short || cols.map((c) => c.name);
-  cols.forEach((c, i) => {
-    labs.push(labX(o, names[i], L + slot * i + slot / 2, H - B + 9, { whiteSpace: "pre-line", textAlign: "center", lineHeight: 1.3 }));
-    hits.push({ s: box(o, L + slot * i, 0, slot, H - B), e: () => setHover(i) });
-  });
-  let tip = noTip;
-  if (hover != null) {
-    const c = cols[hover];
-    tip = tipAt(o, L + slot * hover + slot / 2, c.name, c.kind === "total"
-      ? [{ n: c.name, v: fmtV(c.v), k: sw(hover === 0 ? COL.GREY : COL.IND) }, ...(target != null && c.name !== targetName ? [{ n: targetName, v: fmtV(target), k: lk(COL.INK, "dashed") }] : [])]
-      : [{ n: c.v >= 0 ? "Adds" : "Costs", v: fmtV(Math.abs(c.v)) + " " + unit, k: sw(c.v >= 0 ? COL.IND : COL.ORANGE) }]);
-  }
-  const legend = [{ n: startName, k: sw(COL.GREY) }, { n: "Adds", k: sw(COL.IND) }, { n: "Costs", k: sw(COL.ORANGE) }, ...(target != null && targetName !== startName ? [{ n: targetName, v: fmtV(target), k: lk(COL.INK, "dashed") }] : [])];
   return <Frame o={o} paths={paths} labs={labs} hits={hits} tip={tip} legend={legend} aria={aria} setHover={setHover} plotRef={ref} />;
 }
 

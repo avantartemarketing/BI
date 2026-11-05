@@ -1,6 +1,7 @@
 /* Email funnel: each stage of the release's email funnel as its deviation
  * from the basket's rate, a bar right of the basket line where this launch
- * runs above it and left where below; the rates themselves in the readout. Open rate and click rate come from the
+ * runs above it and left where below, no key (5 November 2026); the rates
+ * themselves in the readout. Open rate and click rate come from the
  * sends on file (snap.email); the page stages (release page to product page
  * when the release has more than one work, product page to signup, entry or
  * order) from the organic side of the pages feed (snap.pageFunnel). A stage
@@ -64,7 +65,6 @@ export default function EmailFunnel({ snap, vs = "target" }) {
       {head}
       <HBarChart H={34 + steps.length * 34} L={164} bh={12} xmin={-top} xmax={top} xticks={xt} xfmt={(t) => (t === 0 ? "Basket" : signedPc(t))}
         rows={steps.map((s) => s.name)} diverging vals={dev} greyRows={grey} posColor={COL.IND} negColor={COL.ORANGE}
-        legend={[{ n: "Above the basket", k: sw(COL.IND) }, { n: "Below the basket", k: sw(COL.ORANGE) }]}
         title={(i) => steps[i].name}
         rows2={(i) => {
           const s = steps[i];

@@ -1,7 +1,7 @@
 /* Funnel by channel: the table beside the email funnel, one row a channel
  * group - sessions and conversion, each against the plan or the basket, as the
  * page's Compare to switch reads (the basket alone when the release has no
- * targets). The card's menu swaps the table for the
+ * targets), the vs columns in RAG. The card's menu swaps the table for the
  * waterfall reading: the units each channel's traffic and conversion added
  * or cost against the plan. */
 import React, { useState } from "react";
@@ -15,6 +15,8 @@ const GROUPS = [["aa_email", "AA Email"], ["aa_social", "AA Meta"], ["referral_a
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const signed = (p) => (p === null ? "–" : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p * 100))}%`);
 const rel = (a, b) => (finite(a) && finite(b) && b > 0 ? a / b - 1 : null);
+/* the vs columns in RAG: green at or above the reference, amber up to 20% short, red further short (5 November 2026) */
+const rag = (p) => (p === null ? "dim" : p >= 0 ? "rag-up" : p >= -0.2 ? "rag-near" : "rag-dn");
 
 export default function FunnelTable({ snap, vs = "target" }) {
   const [mode, setMode] = useState("table");
@@ -67,9 +69,9 @@ export default function FunnelTable({ snap, vs = "target" }) {
               <tr key={r.k}>
                 <td>{r.name}</td>
                 <td>{fmt(r.sessions)}</td>
-                <td className="dim">{signed(r.vsSess)}</td>
+                <td className={rag(r.vsSess)}>{signed(r.vsSess)}</td>
                 <td>{finite(r.conv) ? fmtPct(r.conv, 2) : "–"}</td>
-                <td className="dim">{signed(r.vsConv)}</td>
+                <td className={rag(r.vsConv)}>{signed(r.vsConv)}</td>
               </tr>
             ))}
           </tbody>

@@ -1,6 +1,7 @@
-/* Units by channel: the five channel groups as columns, each the pale
- * reference bar the actual fills in indigo, anything past it a lighter indigo
- * above a gap. The reference is the target or the benchmark, whichever the
+/* Units by channel: the five channel groups as columns, each the reference as
+ * a dotted outline on a faint tint, a little wider than the indigo actual
+ * inside it, which rises past the outline when over (5 November 2026). The
+ * reference is the target or the benchmark, whichever the
  * page's Compare to switch reads against, never both (3 November 2026). Today compares each group's
  * units to date (c.now) with its target by today (c.exp) and the basket's
  * by today (c.bmExp); at close the projection (c.proj) with the full target
@@ -9,7 +10,7 @@
  * targets shows the units alone. */
 import React, { useState } from "react";
 import { Card, Head, vsDelta } from "../ui.jsx";
-import { ColChart, niceAxis, kfmt, COL, sw } from "../charts.jsx";
+import { ColChart, niceAxis, kfmt, COL, sw, ol } from "../charts.jsx";
 import { fmt } from "../format.mjs";
 import { wordsOf } from "../vocab.mjs";
 
@@ -58,8 +59,8 @@ export default function ChannelsVsTargets({ snap, vs = "target", horizon = "toda
           const r = base[i];
           const over = r.target > 0 && r.bar > r.target;
           return [
-            { n: over ? (today ? `To date, over ${refWord}` : `Projected, over ${refWord}`) : today ? "To date" : "Projected", v: unit(r.bar), k: sw(over ? COL.OVER : COL.IND) },
-            ...(targeted ? [{ n: off.has(r.key) ? "Not in plan" : RefName, v: off.has(r.key) ? "no target, no benchmark" : unit(r.target) + diff(r.bar, r.target), k: sw(COL.TARGET) }] : []),
+            { n: over ? (today ? `To date, over ${refWord}` : `Projected, over ${refWord}`) : today ? "To date" : "Projected", v: unit(r.bar), k: sw(COL.IND) },
+            ...(targeted ? [{ n: off.has(r.key) ? "Not in plan" : RefName, v: off.has(r.key) ? "no target, no benchmark" : unit(r.target) + diff(r.bar, r.target), k: ol() }] : []),
             ...(r.parts.length > 1 ? r.parts.map((p) => ({ n: p.name, v: unit(p.value), k: { width: 8, flex: "0 0 8px" } })) : []),
           ];
         }}

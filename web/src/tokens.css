@@ -39,6 +39,8 @@ button, input, select { font-family: inherit; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .num { font-variant-numeric: tabular-nums; }
 .dim { color: var(--faint); }
+/* a vs figure in RAG: at or above the reference, a little short, well short */
+.rag-up { color: var(--green); } .rag-near { color: var(--amber); } .rag-dn { color: var(--red); }
 
 /* ---------- the shell: the sidebar and the page ---------- */
 .app { display: flex; gap: 8px; align-items: flex-start; min-height: 100vh; padding: 8px; }
