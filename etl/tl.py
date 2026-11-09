@@ -94,14 +94,15 @@ LIVE_STATUS = ("paid", "awaiting")      # the lines a window's units count: paid
 OUT_STATUS = ("cancelled", "refunded")
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
 
-GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"]
+GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "organic_other", "paid"]
 # the display groups as etl/build.py DISPLAY_GROUPS has them (tests/test_tl_model.py holds the two together)
 DISPLAY_GROUPS = {
     "aa_email": {"name": "AA Email", "channels": ["AA Email Auto", "AA Email Man"]},
     "aa_social": {"name": "AA Meta", "channels": ["AA Meta", "AA X"]},
     "referral_artist": {"name": "Artist", "channels": ["Referral Artist"]},
-    "search_direct_other": {"name": "Search etc.",
-                            "channels": ["Direct", "Organic Search", "Other", "AA Other", "Referral Meta", "Referral Other", "Referral X"]},
+    "organic_search": {"name": "Organic Search", "channels": ["Organic Search"]},
+    "organic_other": {"name": "Organic Other",
+                      "channels": ["Direct", "Other", "AA Other", "Referral Meta", "Referral Other", "Referral X"]},
     "paid": {"name": "Paid", "channels": ["Paid Social", "Paid Search"]},
 }
 GROUP_OF = {c: g for g, spec in DISPLAY_GROUPS.items() for c in spec["channels"]}
@@ -883,7 +884,7 @@ def direct_spread_data(series: dict | None, orders: dict | None, signup_products
 
 
 def direct_norm(series: dict | None, panel: pd.DataFrame) -> dict | None:
-    """What Direct normally is of the Search/direct/other group on a timed
+    """What Direct normally is of the Organic Other group on a timed
     launch: the panel launches' median share of the group's pre-window signups
     and sessions, and of its window units at the settle (the LE build's
     direct_share_norm, read off the TL series). Words for the switch; the
@@ -901,7 +902,7 @@ def direct_norm(series: dict | None, panel: pd.DataFrame) -> dict | None:
         for frame, cols in ((pre, ("signups", "sessions")), (settled, ("units",))):
             if not len(frame):
                 continue
-            grp = frame[frame["group"].eq("search_direct_other")]
+            grp = frame[frame["group"].eq(GROUP_OF[DIRECT_CHANNEL])]
             for c in cols:
                 tot = float(grp[c].sum()) if c in grp.columns else 0.0
                 if tot > 0:

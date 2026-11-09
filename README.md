@@ -410,6 +410,14 @@ means a re-run is due. It needs:
 A re-run lets a closed release's basket take in launches that closed after it (on the September
 2026 panel, James Jean, Mondrian and Zeng Fanzhi would move), so decide first whether it should.
 
+A change to the display groups alone (`DISPLAY_GROUPS` in `etl/build.py`) does not need a re-run:
+`python3 etl/analysis/release_clusters.py --regroup`, on the same full pull, reads the per-group
+columns again (each group's shares, conversion, sessions, entries and units, Direct's share of its
+group, the raw channel shares) over every row's own window and leaves the windows, features,
+clusters and pricing exactly as they are; the baskets file's per-cluster quartiles follow. Done on
+9 November 2026, when Search / direct / other became Organic Search and Organic Other; it needs
+pandas only.
+
 ### Google Sheet (fallback; `server/sheets.js`)
 
 Pulls two tabs of the *LE Paid Calculator* sheet. Used when BigQuery is unconfigured, and

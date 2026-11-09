@@ -149,9 +149,10 @@ Normalisation rules:
   is read: `redistribute_channel(win, "Direct")` spreads Direct's sessions, entries and units
   over the other channels in proportion to what they did that day (the rule above with Direct
   in Untracked's place), and the benchmark's channel split is read the same way, with the
-  panel's median Direct share of the Search/direct/other group (`direct_share_norm`, the
-  cohort of the untracked norm) leaving the group and landing on every group pro rata
-  (`spread_profile`; the headline medians and K do not move). The share is the panel's own
+  panel's median Direct share of the Organic Other group (`direct_share_norm`, the
+  cohort of the untracked norm) leaving the group and landing on every group pro rata,
+  Organic Search included (`spread_profile`; the headline medians and K do not move). As a
+  channel, Direct sits in Organic Other. The share is the panel's own
   (`direct_in_group_<metric>`, written by `release_clusters.py` from the same pull as the split
   it is applied to); a panel written before those columns falls back to the share on today's
   feed over the same windows, which mixes two attributions once the feed re-attributes (on 24
@@ -170,18 +171,26 @@ Normalisation rules:
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
 
-**Display grouping** (dashboard modules use 4–5 groups):
+**Display grouping** (six groups, `DISPLAY_GROUPS` in `etl/build.py`, `GROUPS` in
+`etl/baskets.py` and `shared/benchmarkModel.mjs`, in this order):
 
-| Display group | Raw channels |
-|---|---|
-| AA Email | AA Email Auto + AA Email Man |
-| AA Meta (organic social) | AA Meta (+ AA X where the sheet groups "AA Socials") |
-| Referral artist | Referral Artist |
-| Search / direct / other | Direct + Organic Search + Other + AA Other + Referral Meta + Referral Other + Referral X |
-| Paid | Paid Social (+ Paid Search actuals) |
+| Display group | Key | Raw channels |
+|---|---|---|
+| AA Email | `aa_email` | AA Email Auto + AA Email Man |
+| AA Meta (organic social) | `aa_social` | AA Meta (+ AA X where the sheet groups "AA Socials") |
+| Artist | `referral_artist` | Referral Artist |
+| Organic Search | `organic_search` | Organic Search |
+| Organic Other | `organic_other` | Direct + Other + AA Other + Referral Meta + Referral Other + Referral X |
+| Paid | `paid` | Paid Social (+ Paid Search actuals) |
+
+Organic Search and Organic Other were one group, `search_direct_other` ("Direct etc." on the
+page), until 9 November 2026, when the repository owner asked for the split across the whole
+dashboard. Direct is a channel of Organic Other; with the Direct switch on Spread it leaves the
+group for every group pro rata (above). The committed panel was regrouped the same day
+(`release_clusters.py --regroup`, README "Re-running the benchmark panel").
 
 ⚠ The sheet's own chart grouping drops **AA Other** entirely (targets short by its share);
-include it in Search/direct/other in the rebuild and note the delta vs the sheet.
+include it in Organic Other in the rebuild and note the delta vs the sheet.
 
 ### 1.4 Product (per-release, for multi-work releases)
 From draw entry exports and the sell-through module: `{ product_name, edition, sold, … }`.
@@ -1707,7 +1716,7 @@ table (§2.4), cut to one window of days.
   the release yet, and no order had a purchase event) or Direct with the Direct switch on,
   the fold has no channel to spread over; the window's rows come back as they were, Untracked
   as Other (`keep_units`), so no unit is lost. With drafts out and nothing yet on any channel,
-  the count is added on the channels' sessions (Search / direct / other when there are none)
+  the count is added on the channels' sessions (Organic Other when there are none)
   as a part named Not yet paid.
 - **One sum at close.** The card's Paid is what its rows add up to (the page's units sold,
   or the products' own paid units where those are more, which only a page on the funnel's

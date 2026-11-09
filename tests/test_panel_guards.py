@@ -145,7 +145,8 @@ def daily(name: str = "T · Test · 2026 Q2") -> tuple[pd.DataFrame, pd.Series]:
     day = pd.Timestamp("2026-04-15")
     per = {  # channel: sessions, eligible entry units, units
         "AA Email Man": (1000, 50, 20), "AA Meta": (57, 44, 24), "Referral Artist": (400, 150, 20),
-        "Direct": (600, 30, 12), "Organic Search": (200, 10, 8), "Paid Social": (2000, 60, 30), "Untracked": (0, 5, 5)}
+        "Direct": (600, 30, 12), "Referral Other": (200, 10, 8), "Organic Search": (200, 10, 8),
+        "Paid Social": (2000, 60, 30), "Untracked": (0, 5, 5)}
     rows = []
     for ch, (s, e, u) in per.items():
         r = {m: 0.0 for m in RC.METRICS}
@@ -167,9 +168,11 @@ def test_panel_script() -> None:
     assert abs(f["conv_sess_entry_aa_email"] - 0.05) < 1e-12 and abs(f["conv_sess_entry_paid"] - 0.03) < 1e-12
     assert np.isnan(f["conv_sess_entry_aa_social"]) and np.isnan(f["conv_sess_unit_aa_social"]), "57 sessions, 44 entries"
     assert np.isnan(f["conv_sess_entry_referral_artist"]), "150 entries on 400 sessions"
-    assert abs(f["conv_sess_entry_search_direct_other"] - 40 / 800) < 1e-12
+    # Organic Other is Direct and Referral Other; Organic Search stands alone
+    assert abs(f["conv_sess_entry_organic_other"] - 40 / 800) < 1e-12 and abs(f["conv_sess_entry_organic_search"] - 10 / 200) < 1e-12
+    assert abs(f["sess_share_organic_search"] - 200 / 4457) < 1e-12 and abs(f["sess_share_organic_other"] - 800 / 4457) < 1e-12
     assert "aa_social 44 entries, 24 units on 57 sessions" in f["rates_dropped"] and "referral_artist" in f["rates_dropped"]
-    # Direct's share of its own group, per metric, from the same pull as the split
+    # Direct's share of its own group (Organic Other), per metric, from the same pull as the split
     assert abs(f["direct_in_group_sessions"] - 0.75) < 1e-12 and abs(f["direct_in_group_entries"] - 0.75) < 1e-12
     assert abs(f["direct_in_group_units"] - 0.6) < 1e-12
     # the units check leaves a doubled launch out of both panels, with the reason

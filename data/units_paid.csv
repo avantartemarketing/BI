@@ -7,7 +7,6 @@ Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-07-31,Organic Search
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-07-31,Paid Social,true,1,0,1,1.0
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-08-03,AA Meta,true,1,0,1,1.0
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-08-06,Other,true,1,0,1,1.0
-Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-08-07,AA Email Man,true,1,0,1,0.0
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-08-10,Paid Social,true,1,0,1,0.0
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-08-13,Referral Artist,true,1,0,1,0.0
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hemisphere,2026-08-14,Paid Social,true,2,0,2,2.0
@@ -75,6 +74,7 @@ Ai Weiwei · Arm · Multiple · 2026 Q2,Blue Arm,2026-04-22,Direct,true,1,0,0,0.
 Ai Weiwei · Arm · Multiple · 2026 Q2,Blue Arm,2026-04-22,Organic Search,true,1,0,0,0.0
 Ai Weiwei · Arm · Multiple · 2026 Q2,Blue Arm,2026-04-22,Paid Social,true,3,0,0,0.0
 Ai Weiwei · Arm · Multiple · 2026 Q2,Blue Arm,2026-04-22,untracked,true,1,0,0,0.0
+Ai Weiwei · Arm · Multiple · 2026 Q2,Blue Arm,2026-11-04,Direct,true,1,0,0,0.0
 Ai Weiwei · Arm · Multiple · 2026 Q2,Red Arm,2026-03-30,AA Email Auto,true,5,5,0,0.0
 Ai Weiwei · Arm · Multiple · 2026 Q2,Red Arm,2026-03-30,untracked,true,1,1,0,0.0
 Ai Weiwei · Arm · Multiple · 2026 Q2,Red Arm,2026-03-31,AA Email Auto,true,1,1,0,0.0
@@ -522,7 +522,7 @@ Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Blue),2025-09-04,Untracked,false
 Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-21,Untracked,false,1,0,0,0.0
 Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-23,Direct,true,1,0,0,0.0
 Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-27,Untracked,false,14,14,0,0.0
-Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-28,Untracked,false,34,6,0,0.0
+Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-28,Untracked,false,33,6,0,0.0
 Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-29,Untracked,false,5,0,0,0.0
 Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-30,Untracked,false,7,0,0,0.0
 Ai Weiwei · Multiple · 2025 Q3,Coloured Vase (Gold),2025-08-31,Untracked,false,1,0,0,0.0
@@ -731,6 +731,125 @@ Ai Weiwei · Multiple · 2026 Q3,F.U.C.K. (Yellow),2026-09-04,Direct,true,1,0,0,
 Ai Weiwei · Multiple · 2026 Q3,F.U.C.K. (Yellow),2026-09-14,AA Email Man,true,1,0,0,0.0
 Ai Weiwei · Multiple · 2026 Q3,F.U.C.K. (Yellow),2026-09-18,Paid Social,true,1,0,0,0.0
 Ai Weiwei · Multiple · 2026 Q3,F.U.C.K. (Yellow),2026-09-24,AA Email Man,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-10-29,AA Email Man,true,2,2,2,2.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-10-30,AA Email Man,true,2,2,2,0.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-10-31,AA Email Man,true,1,1,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-02,AA Email Man,true,4,0,4,2.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-02,Paid Social,true,2,0,2,2.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-03,Organic Search,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-03,Paid Social,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-04,AA Email Man,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-05,AA Email Man,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-06,Direct,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Art is Life,2026-11-06,Paid Social,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-10-29,AA Email Man,true,4,4,4,0.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-10-29,Direct,true,2,2,2,2.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-10-30,AA Email Man,true,7,7,7,6.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-10-31,AA Email Man,true,2,2,2,0.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-01,AA Email Man,true,1,1,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-01,untracked,true,1,1,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-02,AA Email Man,true,5,0,5,3.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-02,Direct,true,2,0,2,0.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-02,Organic Search,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-03,AA Email Man,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-04,AA Email Man,true,2,0,2,1.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-04,AA Meta,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-04,Direct,true,2,0,2,1.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-04,Paid Social,true,2,0,2,2.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-05,AA Email Man,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-06,AA Email Man,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-06,Direct,true,2,0,2,2.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-06,Organic Search,true,2,0,2,2.0
+Ai Weiwei · Multiple · 2026 Q4,Liberty is about the Fight,2026-11-06,Paid Social,true,9,0,9,9.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-10-29,AA Email Man,true,1,1,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-10-30,AA Email Man,true,3,3,3,0.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-10-31,AA Email Man,true,1,1,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-02,AA Email Man,true,3,0,3,2.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-02,Paid Social,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-02,untracked,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-03,Organic Search,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-03,Paid Social,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-04,AA Email Man,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-06,AA Email Man,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-06,Direct,true,1,0,1,0.0
+Ai Weiwei · Multiple · 2026 Q4,Life is Art,2026-11-06,Paid Social,true,1,0,1,1.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-10-29,AA Email Man,true,3,3,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-10-30,AA Email Man,true,7,7,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-10-30,untracked,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-10-31,AA Email Auto,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-10-31,AA Email Man,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-02,AA Email Man,true,7,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-02,AA Meta,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-02,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-02,Paid Social,true,5,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-03,AA Email Man,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-03,Direct,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-03,Paid Social,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-04,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-04,Paid Social,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-04,Referral Other,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-06,Direct,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-06,Paid Social,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Blue),2026-11-08,AA Email Man,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-10-29,AA Email Man,true,2,2,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-10-30,AA Email Man,true,2,2,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-10-31,AA Email Man,true,3,3,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-02,AA Email Man,true,5,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-02,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-02,Paid Social,true,4,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-03,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-03,Paid Social,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-04,AA Email Man,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-04,Direct,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-04,Organic Search,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-04,Paid Social,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-06,AA Email Auto,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-06,Paid Social,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-06,Referral Other,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Clear),2026-11-08,AA Email Man,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-10-29,AA Email Man,true,2,2,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-10-30,AA Email Man,true,2,2,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-10-31,AA Email Man,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-01,AA Email Man,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-02,AA Email Man,true,7,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-02,AA Meta,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-02,Direct,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-02,Paid Social,true,4,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-03,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-03,Paid Social,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-04,AA Email Man,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-04,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-04,Organic Search,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-04,Paid Social,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-06,Direct,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-06,Organic Search,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-06,Paid Social,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Green),2026-11-08,AA Email Man,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-10-29,AA Email Man,true,6,6,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-10-29,untracked,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-10-30,AA Email Man,true,8,8,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-10-31,AA Email Man,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-01,AA Email Man,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-01,Direct,true,1,1,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-02,AA Email Man,true,9,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-02,AA Meta,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-02,Direct,true,7,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-02,Organic Search,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-02,Paid Social,true,9,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-02,untracked,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-03,Direct,true,4,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-03,Paid Social,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-03,Referral Other,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-04,AA Email Man,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-04,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-04,Organic Search,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-04,Paid Social,true,4,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-04,Referral Other,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-06,AA Email Man,true,2,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-06,Direct,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-06,Paid Social,true,3,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-06,Referral Other,true,1,0,0,0.0
+Ai Weiwei · Multiple · 2026 Q4,Toy Brick Left Hand (Red),2026-11-08,AA Email Man,true,1,0,0,0.0
 Ai Weiwei · To Be Looked At... · 2024 Q4,To Be Looked At...,2024-08-02,AA Email Man,true,9,9,0,0.0
 Ai Weiwei · To Be Looked At... · 2024 Q4,To Be Looked At...,2024-08-05,AA Email Man,true,1,1,0,0.0
 Ai Weiwei · To Be Looked At... · 2024 Q4,To Be Looked At...,2024-08-06,AA Email Man,true,1,1,0,0.0
@@ -933,7 +1052,6 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscap
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscape),2026-10-02,Organic Search,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscape),2026-10-02,untracked,true,3,0,3,3.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscape),2026-10-05,Direct,true,1,0,1,1.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscape),2026-10-05,Organic Search,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscape),2026-10-05,Paid Social,true,2,0,2,2.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscape),2026-10-06,Paid Social,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Green Landscape),2026-10-08,Paid Social,true,1,0,1,0.0
@@ -1087,7 +1205,7 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscap
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-05,AA Email Man,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-05,Direct,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-05,Organic Search,true,2,0,2,1.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-05,Paid Social,true,18,0,18,16.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-05,Paid Social,true,17,0,17,16.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-06,Paid Social,true,2,0,2,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-07,Direct,true,2,0,2,2.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-07,Paid Social,true,2,0,2,1.0
@@ -1110,7 +1228,7 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscap
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-23,Organic Search,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Landscape),2026-10-27,Organic Search,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-01,AA Email Auto,true,1,1,1,0.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-01,AA Email Man,true,19,19,19,11.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-01,AA Email Man,true,18,18,18,10.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-01,untracked,true,2,2,2,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-02,AA Email Man,true,8,8,8,7.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-02,Direct,true,2,1,2,1.0
@@ -1163,10 +1281,10 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-28,untracked,true,2,0,2,2.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,AA Email Man,true,6,0,6,4.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,AA Meta,true,1,0,1,0.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Direct,true,7,0,7,2.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Direct,true,6,0,6,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Organic Search,true,5,0,5,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Other,true,2,0,2,2.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Paid Social,true,19,0,19,9.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Paid Social,true,20,0,20,10.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Referral Meta,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,Referral Other,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-09-30,untracked,true,1,0,1,0.0
@@ -1177,7 +1295,7 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-05,Direct,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-05,Organic Search,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-05,Paid Social,true,8,0,8,5.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-06,Paid Social,true,5,0,5,5.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-06,Paid Social,true,4,0,4,4.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-07,Paid Social,true,4,0,4,3.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-08,AA Email Man,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-08,Direct,true,2,0,2,1.0
@@ -1195,6 +1313,7 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-14,Paid Social,true,13,0,13,8.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-15,Direct,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-10-27,Organic Search,true,1,0,1,1.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (White Portrait),2026-11-04,Direct,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Landscape),2026-09-01,AA Email Man,true,7,7,7,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Landscape),2026-09-04,Direct,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Landscape),2026-09-04,untracked,true,1,0,1,0.0
@@ -1277,7 +1396,7 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrai
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-21,AA Meta,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-21,Direct,true,1,0,1,0.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-21,Organic Search,true,1,0,1,1.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-21,Paid Social,true,19,0,19,15.5
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-21,Paid Social,true,18,0,18,14.5
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-21,untracked,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-22,Direct,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-22,Paid Social,true,3,0,3,3.0
@@ -1289,7 +1408,7 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrai
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-28,Referral Meta,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-28,untracked,true,3,0,3,3.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-30,AA Email Man,true,3,0,3,2.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-30,Direct,true,9,0,9,6.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-30,Direct,true,8,0,8,5.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-30,Organic Search,true,2,0,2,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-30,Other,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-09-30,Paid Social,true,22,0,22,16.0
@@ -1298,7 +1417,7 @@ Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrai
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-05,Other,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-05,Paid Social,true,5,0,5,4.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-06,Direct,true,1,0,1,0.0
-Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-06,Paid Social,true,3,0,3,3.0
+Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-06,Paid Social,true,2,0,2,2.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-07,Paid Social,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-09,AA Email Man,true,1,0,1,1.0
 Andy Warhol Estate · Multiple · 2026 Q4,Brillo Box Collectable (Yellow Portrait),2026-10-09,Paid Social,true,2,0,2,2.0
@@ -1791,7 +1910,7 @@ Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,Self Po
 Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-09-27,Direct,true,1,0,0,0.0
 Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-09-27,untracked,true,1,0,0,0.0
 Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-09-30,Direct,true,1,0,0,0.0
-Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-10-05,Direct,true,1,0,0,0.0
+Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-10-05,AA Email Man,true,1,0,0,0.0
 Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-10-09,Direct,true,1,0,0,0.0
 Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-10-10,Direct,true,1,0,0,0.0
 Arghavan Khosravi · The Earring · 2023 Q4,The Earring,2023-10-17,Direct,true,1,0,0,0.0
@@ -2072,6 +2191,8 @@ Bisa Butler · Multiple · 2026 Q4,Be Mine,2026-10-19,Untracked,false,1,0,1,1.0
 Bisa Butler · Multiple · 2026 Q4,Be Mine,2026-10-23,Untracked,false,2,0,2,0.0
 Bisa Butler · Multiple · 2026 Q4,Be Mine,2026-10-24,Untracked,false,2,0,2,1.0
 Bisa Butler · Multiple · 2026 Q4,Be Mine,2026-10-28,Untracked,false,1,0,1,0.0
+Bisa Butler · Multiple · 2026 Q4,Be Mine,2026-10-29,Untracked,false,1,0,1,0.0
+Bisa Butler · Multiple · 2026 Q4,Be Mine,2026-11-04,AA Email Man,true,1,0,1,1.0
 Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-09-15,Untracked,false,1,0,1,0.0
 Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-09-17,Untracked,false,2,1,2,0.0
 Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-09-18,Untracked,false,1,0,1,0.0
@@ -2091,7 +2212,9 @@ Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-10-23,Un
 Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-10-24,Untracked,false,2,0,2,0.0
 Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-10-26,Untracked,false,1,0,1,0.0
 Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-10-27,Untracked,false,2,0,2,0.0
-Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-10-28,Untracked,false,1,0,1,0.0
+Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-10-28,Untracked,false,2,0,2,1.0
+Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-10-31,Untracked,false,1,0,1,0.0
+Bisa Butler · Multiple · 2026 Q4,I Go To Prepare a Place For You,2026-11-02,Untracked,false,1,0,1,0.0
 Bony Ramirez · TORO! · 2023 Q4,TORO!,2023-11-03,Direct,true,3,0,3,0.0
 Bony Ramirez · TORO! · 2023 Q4,TORO!,2023-11-07,Direct,true,2,0,2,0.0
 Bony Ramirez · TORO! · 2023 Q4,TORO!,2023-11-08,AA Meta,true,1,0,1,0.0
@@ -2188,7 +2311,7 @@ Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-16,Referral Artist,tru
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-16,untracked,true,1,0,1,1.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-19,Direct,true,1,0,1,1.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-19,Organic Search,true,2,0,2,1.0
-Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-19,Paid Social,true,2,0,2,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-19,Paid Social,true,1,0,1,0.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-20,Organic Search,true,2,0,2,0.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-20,Paid Social,true,3,0,3,2.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-20,Referral Other,true,1,0,1,1.0
@@ -2206,6 +2329,15 @@ Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-26,Paid Social,true,3,
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-27,Direct,true,3,0,3,3.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-27,Organic Search,true,2,0,2,2.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-27,Paid Social,true,2,0,2,2.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-28,Direct,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-29,Organic Search,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-30,AA Email Man,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-30,Direct,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-30,Organic Search,true,2,0,2,2.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-10-30,Paid Social,true,2,0,2,2.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-11-02,untracked,true,3,0,3,3.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-11-03,untracked,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Blue Pegasus,2026-11-04,Organic Search,true,1,0,1,1.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-05,AA Email Auto,true,8,8,8,3.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-06,AA Email Auto,true,4,4,4,2.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-06,Direct,true,1,0,1,0.0
@@ -2241,7 +2373,16 @@ Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-26,Organic Search,tru
 Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-26,Paid Social,true,2,0,2,1.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-27,AA Email Man,true,1,0,1,1.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-27,Organic Search,true,1,0,1,0.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-28,Direct,true,1,0,1,1.0
 Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-28,Organic Search,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-30,AA Email Man,true,2,0,2,2.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-30,Direct,true,7,0,7,4.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-30,Organic Search,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-30,Paid Social,true,3,0,3,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-10-30,untracked,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-11-02,untracked,true,2,0,2,2.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-11-03,untracked,true,1,0,1,1.0
+Cai Guo-Qiang · Multiple · 2026 Q4,Brown Pegasus,2026-11-04,Paid Social,true,1,0,1,1.0
 Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Snow Lotus No. 1,2024-01-27,Direct,true,1,1,1,0.0
 Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Snow Lotus No. 1,2024-01-29,Direct,true,1,0,1,0.0
 Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Snow Lotus No. 1,2024-01-30,Direct,true,1,0,1,0.0
@@ -2386,19 +2527,17 @@ Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-05-22,Dire
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-05-22,untracked,true,1,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-05-25,untracked,true,1,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-05-26,AA Email Man,true,1,1,0,0.0
+Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-05-31,AA Meta,true,1,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-05-31,Direct,true,1,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-05-31,untracked,true,1,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-01,Direct,true,1,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-02,Organic Search,true,1,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-02,untracked,true,1,0,0,0.0
+Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-01,AA Meta,true,1,0,0,0.0
+Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-02,untracked,true,2,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-04,untracked,true,1,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-05,Direct,true,1,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-06,AA Email Man,true,2,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-06,AA Meta,true,1,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-06,Direct,true,7,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-06,Organic Search,true,2,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-06,Referral Artist,true,1,0,0,0.0
-Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-07,Direct,true,1,0,0,0.0
+Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-06,Organic Search,true,3,0,0,0.0
+Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-06,Referral Artist,true,2,0,0,0.0
+Christian Rex van Minnen · Multiple · 2023 Q2,Strawberry Tears,2023-06-07,AA Meta,true,1,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q4,Rainbow Bridge,2023-11-28,Untracked,false,40,40,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q4,Rainbow Bridge,2023-11-28,untracked,true,1,0,0,0.0
 Christian Rex van Minnen · Multiple · 2023 Q4,Rainbow Bridge,2023-11-29,Untracked,false,44,11,0,0.0
@@ -2445,7 +2584,7 @@ Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-13,untracked,true,3,3,3,1.
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-14,AA Email Auto,true,1,1,1,0.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-14,AA Email Man,true,44,44,44,19.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-14,AA Meta,true,1,1,1,0.0
-Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-14,Direct,true,3,3,3,1.0
+Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-14,Direct,true,2,2,2,1.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-14,Organic Search,true,1,1,1,0.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-14,untracked,true,5,5,5,2.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-15,AA Email Auto,true,1,1,1,1.0
@@ -2459,8 +2598,8 @@ Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-18,Direct,true,6,1,6,3.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-18,Organic Search,true,4,0,4,2.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-18,Referral Other,true,1,0,1,0.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-18,untracked,true,2,0,2,1.0
-Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-19,AA Email Auto,true,2,0,2,0.0
-Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-19,Direct,true,1,0,1,0.0
+Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-19,AA Email Auto,true,1,0,1,0.0
+Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-19,Direct,true,2,0,2,0.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-20,AA Email Auto,true,18,0,18,6.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-20,AA Email Man,true,22,0,22,8.0
 Cindy Sherman · Untitled · 2026 Q2,Untitled,2026-05-20,AA Meta,true,1,0,1,1.0
@@ -2593,6 +2732,7 @@ Cleon Peterson · Multiple · 2023 Q3,Artist Bag (Cleon Peterson),2025-11-05,Unt
 Cleon Peterson · Multiple · 2023 Q3,Artist Bag (Cleon Peterson),2025-11-10,Untracked,false,1,0,0,0.0
 Cleon Peterson · Multiple · 2023 Q3,Artist Bag (Cleon Peterson),2026-08-23,Untracked,false,1,0,0,0.0
 Cleon Peterson · Multiple · 2023 Q3,Artist Bag (Cleon Peterson),2026-09-23,Untracked,false,1,0,0,0.0
+Cleon Peterson · Multiple · 2023 Q3,Artist Bag (Cleon Peterson),2026-11-07,Untracked,false,1,0,0,0.0
 Cleon Peterson · Shame · 2025 Q3,Shame,2025-08-19,Untracked,false,3,0,0,0.0
 Cleon Peterson · Shame · 2025 Q3,Shame,2025-08-23,Direct,true,1,0,0,0.0
 Cleon Peterson · Shame · 2025 Q3,Shame,2025-08-29,Untracked,false,1,0,0,0.0
@@ -2829,8 +2969,7 @@ David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10
 David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-13,Paid Social,true,1,0,1,0.0
 David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-16,AA Meta,true,1,0,1,1.0
 David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-16,Direct,true,1,0,1,0.0
-David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-16,Paid Social,true,6,0,6,4.0
-David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-16,untracked,true,1,0,1,0.0
+David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-16,Paid Social,true,5,0,5,4.0
 David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-19,Direct,true,1,0,1,1.0
 David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-21,Paid Social,true,1,0,1,0.0
 David Wojnarowicz · Multiple · 2026 Q4,History Keeps Me Awake at Night,2026-10-23,AA Email Man,true,7,0,7,2.0
@@ -2872,11 +3011,13 @@ David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-23,AA Meta,tr
 David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-23,Direct,true,7,0,7,0.0
 David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-23,Organic Search,true,4,0,4,0.0
 David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-23,Other,true,1,0,1,0.0
-David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-23,Paid Social,true,34,0,34,13.0
+David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-23,Paid Social,true,33,0,33,13.0
 David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-23,Referral Other,true,6,0,6,3.0
 David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-24,AA Email Man,true,1,0,1,0.0
 David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-24,Direct,true,1,0,1,0.0
 David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-28,Direct,true,1,0,1,0.0
+David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-10-29,Other,true,1,0,1,0.0
+David Wojnarowicz · Multiple · 2026 Q4,Inside This House,2026-11-04,Referral Other,true,1,0,1,0.0
 DeeKay · Love Ripples · 2024 Q1,Love Ripples,2024-02-08,Direct,true,1,0,0,0.0
 DeeKay · Love Ripples · 2024 Q1,Love Ripples,2024-02-08,Organic Search,true,1,0,0,0.0
 DeeKay · Love Ripples · 2024 Q1,Love Ripples,2024-02-12,AA X,true,1,0,0,0.0
@@ -3220,6 +3361,21 @@ Ferrari Sheppard · Iris · 2025 Q2,Iris,2025-05-01,Organic Search,true,3,0,3,2.
 Ferrari Sheppard · Iris · 2025 Q2,Iris,2025-05-01,Referral Artist,true,3,0,3,1.0
 Ferrari Sheppard · Iris · 2025 Q2,Iris,2025-05-01,Referral Meta,true,2,0,2,0.0
 Ferrari Sheppard · Iris · 2025 Q2,Iris,2025-05-14,Direct,true,1,0,1,1.0
+Ferrari Sheppard · Multiple · 2026 Q4,All Blues,2026-11-06,AA Email Man,true,8,8,8,5.0
+Ferrari Sheppard · Multiple · 2026 Q4,All Blues,2026-11-06,Direct,true,1,1,1,0.0
+Ferrari Sheppard · Multiple · 2026 Q4,All Blues,2026-11-06,Referral Artist,true,1,1,1,0.0
+Ferrari Sheppard · Multiple · 2026 Q4,All Blues,2026-11-06,untracked,true,1,1,1,0.0
+Ferrari Sheppard · Multiple · 2026 Q4,All Blues,2026-11-07,AA Email Man,true,1,1,1,0.0
+Ferrari Sheppard · Multiple · 2026 Q4,All Blues,2026-11-08,AA Email Man,true,4,4,4,3.0
+Ferrari Sheppard · Multiple · 2026 Q4,All Blues,2026-11-09,AA Email Man,true,1,1,1,0.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-06,AA Email Man,true,8,8,8,5.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-06,AA X,true,1,1,1,1.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-06,Referral Artist,true,1,1,1,0.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-06,untracked,true,1,1,1,0.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-07,AA Email Man,true,3,3,3,1.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-08,AA Email Man,true,1,1,1,1.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-08,untracked,true,1,1,1,1.0
+Ferrari Sheppard · Multiple · 2026 Q4,Round Midnight,2026-11-09,AA Email Man,true,2,2,2,1.0
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,Put Some Red On It,2025-12-19,Direct,true,1,0,1,0.0
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,Put Some Red On It,2026-01-05,AA Email Man,true,5,5,5,2.0
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,Put Some Red On It,2026-01-05,untracked,true,1,1,1,0.0
@@ -3504,7 +3660,8 @@ George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-08,Referral Other,
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-08,untracked,true,1,0,1,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-09,Direct,true,2,0,2,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-12,AA Meta,true,2,0,2,0.0
-George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-12,Direct,true,11,0,11,3.0
+George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-12,Direct,true,10,0,10,3.0
+George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-12,Referral Other,true,1,0,1,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-13,Direct,true,8,0,8,2.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-13,untracked,true,3,0,3,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-02-14,Direct,true,3,0,3,1.0
@@ -3538,8 +3695,7 @@ George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-15,Direct,true,2,0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-16,Direct,true,1,0,1,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-18,Direct,true,1,0,1,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-19,AA Email Man,true,1,0,1,0.0
-George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-19,Direct,true,3,0,3,3.0
-George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-19,untracked,true,1,0,1,0.0
+George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-19,Direct,true,4,0,4,3.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-20,AA Email Man,true,5,0,5,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-20,Direct,true,6,0,6,2.0
 George Condo · Multiple · 2024 Q1,Portrait and Head,2024-03-20,Organic Search,true,2,0,2,0.0
@@ -3561,7 +3717,7 @@ George Condo · Multiple · 2024 Q1,Portrait and Head AP,2025-02-21,Organic Sear
 George Condo · Multiple · 2024 Q1,Portrait and Head AP,2025-03-02,Direct,true,1,0,0,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head AP,2025-04-08,untracked,true,1,0,0,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head AP,2025-06-24,Direct,true,1,0,0,0.0
-George Condo · Multiple · 2024 Q1,Portrait and Head AP,2025-11-10,AA Email Man,true,1,0,0,0.0
+George Condo · Multiple · 2024 Q1,Portrait and Head AP,2025-11-10,Direct,true,1,0,0,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head AP,2026-01-02,Direct,true,1,0,0,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head AP,2026-02-09,Organic Search,true,1,0,0,0.0
 George Condo · Multiple · 2024 Q1,Portrait and Head AP,2026-05-12,Direct,true,1,0,0,0.0
@@ -3763,8 +3919,8 @@ Glenn Ligon · Multiple · 2026 Q3,Untitled (White on White),2026-09-17,untracke
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-03-22,AA Meta,true,1,0,0,0.0
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-03-24,AA Email Man,true,1,1,0,0.0
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-03-31,Direct,true,1,0,0,0.0
-"Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-04-04,AA Email Man,true,1,0,0,0.0
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-04-04,Direct,true,1,0,0,0.0
+"Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-04-04,Organic Search,true,1,0,0,0.0
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-04-05,Direct,true,1,0,0,0.0
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2023-04-05,untracked,true,1,0,0,0.0
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2","de la Rosa, Dulcería La Moderna",2024-10-04,Direct,true,1,0,0,0.0
@@ -4391,10 +4547,10 @@ Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did 
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-21,AA Email Man,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-21,untracked,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-22,Direct,true,2,0,0,0.0
+Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-27,AA Meta,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-27,Direct,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-27,Organic Search,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-27,Referral Meta,true,1,0,0,0.0
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-02-27,untracked,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-03-02,Direct,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-03-03,Direct,true,1,0,0,0.0
 Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,I Know What You Did Last Summer,2023-03-06,Direct,true,1,0,0,0.0
@@ -4437,7 +4593,7 @@ Iskra Velitchkova · EYENESSLESS · 2024 Q3,EYENESSLESS,2024-09-12,untracked,tru
 "JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-16,AA Email Man,true,1,0,0,0.0
 "JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-16,Direct,true,1,0,0,0.0
 "JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-19,Organic Search,true,1,0,0,0.0
-"JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-20,AA Email Man,true,1,0,0,0.0
+"JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-20,Direct,true,1,0,0,0.0
 "JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-21,AA Email Man,true,1,0,0,0.0
 "JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-21,Organic Search,true,1,0,0,0.0
 "JR · GIANTS, High jump in Rio · 2023 Q3","GIANTS, High jump in Rio",2023-09-21,Referral Other,true,1,0,0,0.0
@@ -4672,7 +4828,7 @@ James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-01,Direct,true,1,0,0,0.
 James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-03,AA Email Auto,true,1,0,0,0.0
 James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-03,AA Email Man,true,9,0,0,0.0
 James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-03,AA Meta,true,6,0,0,0.0
-James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-03,Direct,true,5,0,0,0.0
+James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-03,Direct,true,4,0,0,0.0
 James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-03,Paid Social,true,4,0,0,0.0
 James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-03,Referral Artist,true,14,0,0,0.0
 James Jean · Multiple · 2026 Q3,Blossom Vessel,2026-08-04,Referral Artist,true,1,0,0,0.0
@@ -4777,10 +4933,10 @@ Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-03,Paid Social,true,19,0,19,13.
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,AA Email Auto,true,5,0,5,2.0
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,AA Email Man,true,9,0,9,6.0
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,AA Meta,true,3,0,3,2.0
-Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,Direct,true,9,0,9,7.0
+Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,Direct,true,10,0,10,8.0
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,Organic Search,true,9,0,9,5.0
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,Other,true,2,0,2,2.0
-Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,Paid Social,true,78,0,78,48.0
+Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,Paid Social,true,77,0,77,47.0
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-05,untracked,true,3,0,3,1.0
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-06,Organic Search,true,1,0,1,0.0
 Jaume Plensa · UTOPIA · 2026 Q3,UTOPIA,2026-08-06,Paid Social,true,2,0,2,1.0
@@ -4988,9 +5144,9 @@ Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-20,AA E
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-20,Direct,true,3,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-20,untracked,true,1,1,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,AA Email Auto,true,1,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,AA Email Man,true,14,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,AA Email Man,true,13,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,AA Meta,true,8,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,Direct,true,11,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,Direct,true,12,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,Organic Search,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,Paid Social,true,4,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-23,Referral Other,true,1,0,0,0.0
@@ -5006,9 +5162,8 @@ Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-27,AA E
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-27,Direct,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-27,Other,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-02-28,AA Email Man,true,1,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-02,Direct,true,2,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-02,Direct,true,3,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-02,Paid Social,true,3,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-02,untracked,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-04,AA Email Man,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-04,Direct,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-04,Organic Search,true,1,0,0,0.0
@@ -5033,10 +5188,10 @@ Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-10,Refe
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-12,Paid Social,true,4,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-15,untracked,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,AA Email Man,true,3,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,Direct,true,3,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,Direct,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,Organic Search,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,Other,true,1,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,Paid Social,true,3,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,Paid Social,true,4,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,Referral Other,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-17,untracked,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) - Set of 2,2026-03-18,AA Email Man,true,1,0,0,0.0
@@ -5083,11 +5238,11 @@ Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-13,Direc
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-13,Paid Social,true,5,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-13,Referral Other,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,AA Email Auto,true,1,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,AA Email Man,true,29,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,AA Email Man,true,28,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,AA Meta,true,2,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,Direct,true,9,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,Organic Search,true,6,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,Paid Social,true,19,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,Direct,true,10,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,Organic Search,true,7,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,Paid Social,true,18,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-17,Referral Other,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-18,AA Email Man,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Blue,2026-03-18,Direct,true,1,0,0,0.0
@@ -5120,8 +5275,8 @@ Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-09,Ref
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,AA Email Man,true,8,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,AA Meta,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,Direct,true,1,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,Organic Search,true,3,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,Paid Social,true,18,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,Organic Search,true,4,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,Paid Social,true,17,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,Referral Meta,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-10,untracked,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-11,AA Email Man,true,1,0,0,0.0
@@ -5136,9 +5291,9 @@ Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-13,Ref
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,AA Email Auto,true,1,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,AA Email Man,true,12,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,AA Meta,true,2,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,Direct,true,8,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,Direct,true,9,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,Organic Search,true,4,0,0,0.0
-Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,Paid Social,true,19,0,0,0.0
+Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,Paid Social,true,18,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,Referral Other,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-17,untracked,true,2,0,0,0.0
 Jeff Koons · Multiple · 2026 Q1,Split-Rocker (Wood) Pink/Orange,2026-03-18,AA Email Man,true,3,0,0,0.0
@@ -5188,6 +5343,20 @@ Jenna Gribbon · Glaring Shade · 2023 Q2,Glaring Shade,2023-05-11,AA Email Man,
 Jenna Gribbon · Glaring Shade · 2023 Q2,Glaring Shade,2023-05-19,Direct,true,2,0,0,0.0
 Jenna Gribbon · Glaring Shade · 2023 Q2,Glaring Shade,2023-05-24,untracked,true,1,0,0,0.0
 Jenna Gribbon · Glaring Shade · 2023 Q2,Glaring Shade,2023-08-18,Direct,true,1,0,0,0.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-10-30,AA Email Auto,true,6,6,6,4.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-10-31,AA Email Auto,true,3,3,3,2.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-10-31,untracked,true,1,1,1,1.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-02,AA Email Auto,true,1,1,1,0.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-02,Direct,true,1,1,1,1.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-03,Direct,true,1,1,1,0.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-04,AA Email Man,true,3,0,3,3.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-04,Direct,true,1,0,1,1.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-05,Direct,true,1,0,1,1.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-06,AA Email Man,true,3,0,3,1.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-06,Direct,true,1,0,1,0.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-06,Organic Search,true,1,0,1,1.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-06,Referral Artist,true,2,0,2,2.0
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Roar Beneath Mist,2026-11-06,untracked,true,1,0,1,0.0
 Jenny Brosinski · Untitled 6 · 2020 Q3,Untitled 6,2024-11-14,Untracked,false,1,0,1,0.0
 Jenny Brosinski · Untitled 9 · 2020 Q3,Untitled 9,2026-01-19,Untracked,false,1,0,1,0.0
 Jenny Holzer · Multiple · 2025 Q1,Full,2024-12-05,Direct,true,1,0,0,0.0
@@ -5267,7 +5436,7 @@ Joel Mesler · Multiple · 2026 Q2,I Love You (Blue),2026-06-10,Untracked,false,
 Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-04-30,Untracked,false,1,0,1,1.0
 Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-05-19,Untracked,false,2,2,2,2.0
 Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-05-20,Untracked,false,10,2,10,8.0
-Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-05-21,Untracked,false,8,0,8,4.0
+Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-05-21,Untracked,false,7,0,7,4.0
 Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-05-22,Untracked,false,6,0,6,3.0
 Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-05-26,Direct,true,1,0,1,1.0
 Joel Mesler · Multiple · 2026 Q2,I Love You (Pink),2026-06-01,Untracked,false,1,0,1,0.0
@@ -5325,9 +5494,9 @@ Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-19,Referral Artist,true,2,
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-24,Direct,true,3,0,0,0.0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-24,Paid Social,true,1,0,0,0.0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,AA Email Auto,true,2,0,0,0.0
-Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,AA Email Man,true,14,0,0,0.0
+Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,AA Email Man,true,15,0,0,0.0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,AA Meta,true,2,0,0,0.0
-Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,Direct,true,6,0,0,0.0
+Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,Direct,true,5,0,0,0.0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,Organic Search,true,2,0,0,0.0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,Paid Social,true,12,0,0,0.0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-06-26,Referral Artist,true,8,0,0,0.0
@@ -5336,6 +5505,14 @@ Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-07-01,AA Email Man,true,2,0,0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-07-09,Direct,true,1,0,0,0.0
 Johnson Tsang · Alliance · 2026 Q2,Alliance,2026-07-14,Organic Search,true,1,0,0,0.0
 Johnson Tsang · Fight for a Dream · 2021 Q2,Fight for a Dream,2024-09-30,Untracked,false,1,0,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-05,AA Email Man,true,14,14,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-05,Direct,true,3,3,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-05,Referral Artist,true,3,3,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-05,untracked,true,1,1,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-06,AA Email Man,true,5,5,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-07,AA Email Man,true,2,2,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-07,Referral Artist,true,1,1,0,0.0
+Johnson Tsang · In Position · 2026 Q4,In Position,2026-11-07,untracked,true,1,1,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Large),2024-09-20,Organic Search,true,1,0,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Large),2024-10-25,Direct,true,1,0,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Large),2025-11-11,Direct,true,1,0,0,0.0
@@ -5364,7 +5541,7 @@ Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-08-07,AA Email Man,t
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-09-04,Referral Artist,true,1,0,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-09-10,Direct,true,1,0,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-09-13,AA Email Man,true,1,0,0,0.0
-Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-09-18,Referral Meta,true,1,0,0,0.0
+Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-09-18,AA Email Man,true,1,0,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-09-20,Organic Search,true,1,0,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-10-24,Direct,true,1,0,0,0.0
 Johnson Tsang · Multiple · 2022 Q1,Open Mind (Small),2024-10-25,Direct,true,1,0,0,0.0
@@ -5391,7 +5568,7 @@ Johnson Tsang · Open the Right Mind · 2023 Q4,Open the Right Mind,2023-10-27,R
 Johnson Tsang · Open the Right Mind · 2023 Q4,Open the Right Mind,2023-10-29,AA Meta,true,1,0,0,0.0
 Johnson Tsang · Open the Right Mind · 2023 Q4,Open the Right Mind,2023-10-31,Direct,true,1,0,0,0.0
 Johnson Tsang · Open the Right Mind · 2023 Q4,Open the Right Mind,2024-06-14,Direct,true,1,0,0,0.0
-Johnson Tsang · Open the Right Mind · 2023 Q4,Open the Right Mind,2024-09-18,Referral Meta,true,1,0,0,0.0
+Johnson Tsang · Open the Right Mind · 2023 Q4,Open the Right Mind,2024-09-18,AA Email Man,true,1,0,0,0.0
 Johnson Tsang · Open the Right Mind · 2023 Q4,Open the Right Mind,2026-04-09,AA Meta,true,2,0,0,0.0
 Johnson Tsang · Remembrance · 2025 Q3,Remembrance,2025-07-07,Direct,true,1,0,0,0.0
 Johnson Tsang · Remembrance · 2025 Q3,Remembrance,2025-07-08,AA Email Man,true,13,13,0,0.0
@@ -5421,6 +5598,7 @@ Johnson Tsang · Remembrance · 2025 Q3,Remembrance,2025-08-14,Referral Meta,tru
 Johnson Tsang · Remembrance · 2025 Q3,Remembrance,2025-08-14,untracked,true,2,0,0,0.0
 Johnson Tsang · Remembrance · 2025 Q3,Remembrance,2025-08-18,Direct,true,1,0,0,0.0
 Johnson Tsang · Remembrance · 2025 Q3,Remembrance,2026-04-09,AA Meta,true,3,0,0,0.0
+Johnson Tsang · Remembrance · 2025 Q3,Remembrance,2026-10-29,Direct,true,1,0,0,0.0
 Johnson Tsang · Searching for Spring · 2022 Q2,Searching for Spring,2024-09-09,Organic Search,true,1,0,0,0.0
 Johnson Tsang · Searching for Spring · 2022 Q2,Searching for Spring,2025-01-16,Direct,true,1,0,0,0.0
 Johnson Tsang · Searching for Spring · 2022 Q2,Searching for Spring,2025-04-09,untracked,true,1,0,0,0.0
@@ -5765,7 +5943,7 @@ Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s On
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) II",2026-09-25,AA Email Man,true,7,0,7,3.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) II",2026-09-25,AA Meta,true,2,0,2,1.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) II",2026-09-25,Organic Search,true,3,0,3,1.0
-Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) II",2026-09-25,Paid Social,true,3,0,3,0.0
+Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) II",2026-09-25,Paid Social,true,2,0,2,0.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) II",2026-09-28,AA Email Man,true,1,0,1,1.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-08-28,AA Email Auto,true,3,3,3,2.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-08-29,AA Email Auto,true,2,2,2,0.0
@@ -5775,7 +5953,6 @@ Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s On
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-09-04,AA Email Man,true,2,0,2,1.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-09-07,AA Email Man,true,1,0,1,1.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-09-11,Direct,true,1,0,1,0.0
-Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-09-11,Paid Social,true,1,0,1,0.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-09-14,Direct,true,1,0,1,1.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-09-14,Paid Social,true,1,0,1,1.0
 Julian Schnabel · Multiple · 2026 Q3,"Don’t Let It Bring You Down, It’s Only Castles Burning (For Neil Young) III",2026-09-16,Organic Search,true,1,0,1,1.0
@@ -5802,6 +5979,7 @@ Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI1),2026-03-26,Untrac
 Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI1),2026-03-27,Untracked,false,1,0,1,0.0
 Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI1),2026-04-16,Untracked,false,1,0,1,0.0
 Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI1),2026-04-24,Untracked,false,1,0,1,0.0
+Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI1),2026-10-27,Untracked,false,1,0,1,0.0
 Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI2),2026-02-12,Untracked,false,23,22,23,8.0
 Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI2),2026-02-13,Untracked,false,20,7,20,7.0
 Katharina Grosse · Multiple · 2026 Q1,Untitled (KGRO2-UNTI2),2026-02-14,Untracked,false,2,1,2,2.0
@@ -5951,11 +6129,11 @@ Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-21,AA
 Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-21,Direct,true,1,0,0,0.0
 Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-21,Referral Artist,true,1,0,0,0.0
 Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-21,untracked,true,1,0,0,0.0
-Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,AA Email Man,true,4,1,0,0.0
+Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,AA Email Man,true,3,0,0,0.0
 Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,AA Meta,true,2,0,0,0.0
-Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,Direct,true,1,0,0,0.0
-Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,Referral Artist,true,2,0,0,0.0
-Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,untracked,true,1,0,0,0.0
+Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,Direct,true,2,1,0,0.0
+Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,Referral Artist,true,1,0,0,0.0
+Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2024-05-24,untracked,true,2,0,0,0.0
 Kaï · Content (Hand-finished) · 2024 Q2,Content (Hand-finished),2026-02-23,Direct,true,1,0,0,0.0
 Kaï · Content · 2024 Q2,Content,2024-04-25,Direct,true,1,0,0,0.0
 Kaï · Content · 2024 Q2,Content,2024-05-10,Direct,true,1,0,0,0.0
@@ -6267,7 +6445,7 @@ LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2023-06-20,Untracked,false,1,0,0,
 LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2023-06-22,Referral Meta,true,1,0,0,0.0
 LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2023-07-09,untracked,true,1,0,0,0.0
 LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2023-08-02,Direct,true,1,0,0,0.0
-LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2023-09-16,AA Email Man,true,1,0,0,0.0
+LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2023-09-16,Direct,true,1,0,0,0.0
 LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2023-10-20,untracked,true,1,0,0,0.0
 LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2024-08-12,untracked,true,1,0,0,0.0
 LY · Multiple · 2023 Q2,"LUV'S DOG ""PARK""",2024-12-17,AA Email Man,true,1,0,0,0.0
@@ -6478,7 +6656,8 @@ Lee Ufan · Multiple · 2025 Q2,From Line AP,2026-09-15,Direct,true,1,0,1,0.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-19,AA Email Man,true,2,2,2,0.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-20,AA Email Man,true,3,3,3,1.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-20,Direct,true,1,1,1,0.0
-Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-21,AA Email Man,true,2,2,2,1.0
+Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-21,AA Email Auto,true,1,1,1,1.0
+Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-21,AA Email Man,true,1,1,1,0.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-22,AA Email Man,true,2,1,2,1.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-05-22,untracked,true,1,0,1,0.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-02,Organic Search,true,2,0,2,1.0
@@ -6492,9 +6671,9 @@ Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,AA Email Auto,true,1,0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,AA Email Man,true,8,0,8,6.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,AA Meta,true,3,1,3,0.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,Direct,true,14,0,14,9.0
-Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,Organic Search,true,9,0,9,6.0
+Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,Organic Search,true,10,0,10,7.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,Other,true,1,0,1,1.0
-Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,Paid Social,true,19,0,19,11.0
+Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,Paid Social,true,18,0,18,10.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-26,Referral Other,true,2,0,2,1.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-30,AA Email Man,true,1,1,1,1.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅰ,2025-06-30,Direct,true,1,1,1,1.0
@@ -6522,9 +6701,9 @@ Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-16,untracked,true,1,0,1,1
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-25,Paid Social,true,1,0,1,1.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,AA Email Man,true,12,0,12,5.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,AA Meta,true,1,0,1,0.0
-Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,Direct,true,10,0,10,4.0
-Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,Organic Search,true,7,0,7,6.0
-Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,Paid Social,true,12,1,12,5.0
+Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,Direct,true,8,0,8,4.0
+Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,Organic Search,true,8,0,8,6.0
+Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,Paid Social,true,13,1,13,5.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-26,untracked,true,5,0,5,4.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-27,Direct,true,2,0,2,1.0
 Lee Ufan · Multiple · 2025 Q2,From Point Ⅱ,2025-06-30,AA Email Auto,true,1,1,1,0.0
@@ -6948,21 +7127,21 @@ Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-02,untracked,tru
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-03,Direct,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-07,Direct,true,3,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-07,untracked,true,1,0,0,0.0
-Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,AA Email Man,true,38,0,0,0.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,AA Email Man,true,39,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,AA Meta,true,6,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,Direct,true,30,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,Organic Search,true,15,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,Other,true,3,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,Paid Social,true,26,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,Referral Other,true,5,0,0,0.0
-Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,untracked,true,3,0,0,0.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-09,untracked,true,2,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-10,AA Email Man,true,2,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-10,AA Meta,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-10,Direct,true,7,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-10,Organic Search,true,6,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-10,Paid Social,true,3,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-13,Direct,true,1,0,0,0.0
-Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-14,Direct,true,1,0,0,0.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-14,AA Email Auto,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-15,AA Email Auto,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-15,AA Email Man,true,9,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-04-15,AA Meta,true,1,0,0,0.0
@@ -7037,7 +7216,7 @@ Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-08-21,Direct,true,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-09-23,Other,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-09-25,Direct,true,2,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-09-25,Organic Search,true,1,0,0,0.0
-Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-09-28,Referral Other,true,1,0,0,0.0
+Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-09-28,Organic Search,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-09-29,Direct,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-10-06,Organic Search,true,1,0,0,0.0
 Maurizio Cattelan · La Nona Ora · 2026 Q2,La Nona Ora,2026-10-18,Direct,true,1,0,0,0.0
@@ -7077,11 +7256,10 @@ Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-27,Direct,tr
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,AA Email Man,true,5,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,AA Meta,true,3,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,Direct,true,28,0,0,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,Organic Search,true,23,0,0,0.0
+Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,Organic Search,true,24,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,Other,true,3,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,Paid Social,true,93,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,Referral Meta,true,1,0,0,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-28,Referral Other,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-29,AA Email Man,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-29,Direct,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-09-29,Paid Social,true,1,0,0,0.0
@@ -7133,7 +7311,7 @@ Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-12,AA Meta,t
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-12,Direct,true,19,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-12,Organic Search,true,7,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-12,Other,true,3,0,0,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-12,Paid Social,true,34,0,0,0.0
+Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-12,Paid Social,true,33,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-12,Referral Other,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-13,AA Email Man,true,2,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-13,AA Meta,true,1,0,0,0.0
@@ -7143,7 +7321,7 @@ Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-13,Paid Soci
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-14,AA Email Man,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-14,Direct,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-15,AA Email Man,true,15,0,0,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-15,AA Meta,true,5,0,0,0.0
+Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-15,AA Meta,true,4,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-15,Direct,true,40,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-15,Organic Search,true,56,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-15,Other,true,5,0,0,0.0
@@ -7164,6 +7342,7 @@ Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-21,Paid Soci
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-21,Referral Meta,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-24,Direct,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-10-27,Organic Search,true,2,0,0,0.0
+Maurizio Cattelan · Multiple · 2026 Q4,Not Afraid of Love,2026-11-05,Paid Social,true,1,0,0,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-18,AA Email Man,true,35,35,35,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-18,Direct,true,1,1,1,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-18,Organic Search,true,1,1,1,0.0
@@ -7191,11 +7370,10 @@ Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-26,AA Meta,true,1,0,1
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,AA Email Man,true,4,0,4,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,AA Meta,true,1,0,1,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,Direct,true,13,0,13,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,Organic Search,true,4,0,4,0.0
+Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,Organic Search,true,5,0,5,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,Other,true,2,0,2,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,Paid Social,true,22,0,22,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,Referral Meta,true,1,0,1,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,Referral Other,true,1,0,1,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-28,untracked,true,1,0,1,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-29,AA Email Man,true,1,0,1,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-09-29,Direct,true,1,0,1,0.0
@@ -7227,8 +7405,8 @@ Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-08,Direct,true,1,0,1,
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-08,Organic Search,true,1,0,1,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-08,Paid Social,true,7,0,7,1.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,AA Email Man,true,2,0,2,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,AA Meta,true,7,0,7,0.0
-Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,Direct,true,7,0,7,0.0
+Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,AA Meta,true,6,0,6,0.0
+Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,Direct,true,6,0,6,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,Organic Search,true,3,0,3,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,Other,true,2,0,2,0.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-09,Paid Social,true,19,0,19,1.0
@@ -7249,7 +7427,7 @@ Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-14,AA Email Man,true,
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,AA Email Man,true,38,0,38,34.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,AA Meta,true,8,0,8,7.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,Direct,true,38,0,38,20.0
-Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,Organic Search,true,42,0,42,26.0
+Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,Organic Search,true,41,0,41,25.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,Other,true,5,0,5,2.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,Paid Social,true,145,0,145,92.0
 Maurizio Cattelan · Multiple · 2026 Q4,Novecento,2026-10-15,Referral Meta,true,6,0,6,3.0
@@ -7277,8 +7455,9 @@ Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-11,Direct,true,1,1,1,0.0
 Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-12,AA Email Man,true,13,13,13,1.0
 Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-13,Direct,true,3,0,3,0.0
 Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-13,Organic Search,true,1,0,1,0.0
+Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-14,AA Email Auto,true,1,0,1,0.0
 Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-14,AA Email Man,true,1,0,1,0.0
-Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-14,Direct,true,2,0,2,1.0
+Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-14,Direct,true,1,0,1,1.0
 Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-15,AA Email Man,true,26,0,26,1.0
 Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-15,Direct,true,1,0,1,0.0
 Maurizio Cattelan · THERAPY · 2026 Q2,THERAPY,2026-04-15,Referral Artist,true,1,0,1,0.0
@@ -7361,7 +7540,7 @@ Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-27,AA Meta,true,1,1,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-27,Organic Search,true,1,1,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-27,Referral Other,true,1,1,0,0.0
-Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-29,AA Email Man,true,180,0,0,0.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-29,AA Email Man,true,179,0,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-29,AA Meta,true,30,0,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-29,AA X,true,1,0,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2025-09-29,Direct,true,42,0,0,0.0
@@ -7442,9 +7621,10 @@ Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-06-12,Organic Search,true,1,0,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-09-22,untracked,true,1,0,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-09-25,Direct,true,1,0,0,0.0
-Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-09-28,Referral Other,true,1,0,0,0.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-09-28,Organic Search,true,1,0,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-10-02,Direct,true,1,0,0,0.0
 Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-10-05,untracked,true,2,0,0,0.0
+Maurizio Cattelan · We are the Revolution · 2025 Q4,We are the Revolution,2026-10-29,untracked,true,1,0,0,0.0
 Maurizio Cattelan · Window · 2026 Q1,Window,2026-01-22,AA Email Man,true,48,48,48,32.0
 Maurizio Cattelan · Window · 2026 Q1,Window,2026-01-22,Direct,true,1,1,1,1.0
 Maurizio Cattelan · Window · 2026 Q1,Window,2026-01-22,Organic Search,true,1,1,1,1.0
@@ -7497,8 +7677,9 @@ Maurizio Cattelan · Window · 2026 Q1,Window,2026-07-30,Paid Social,true,1,0,1,
 Maurizio Cattelan · Window · 2026 Q1,Window,2026-09-18,AA Email Man,true,1,0,1,1.0
 Maurizio Cattelan · Window · 2026 Q1,Window,2026-10-08,AA Email Man,true,1,0,1,0.0
 Michael Kagan · Critical Mass · 2021 Q3,Critical Mass,2025-01-03,Untracked,false,1,0,0,0.0
+Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-08,AA Email Man,true,1,1,1,1.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-08,AA X,true,1,1,1,1.0
-Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-08,Direct,true,4,2,4,3.0
+Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-08,Direct,true,3,1,3,2.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-08,untracked,true,3,3,3,2.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-09,AA Email Man,true,1,1,1,0.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-09,Direct,true,2,1,2,2.0
@@ -7506,13 +7687,13 @@ Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-09,Referral X,true,1,1,1,1.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-09,untracked,true,2,2,2,1.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,AA Email Man,true,11,0,11,7.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,AA X,true,3,0,3,1.0
-Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,Direct,true,4,0,4,2.0
-Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,Organic Search,true,2,0,2,1.0
+Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,Direct,true,5,0,5,2.0
+Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,Organic Search,true,1,0,1,1.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,Referral X,true,1,0,1,0.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-10,untracked,true,7,0,7,4.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-11,untracked,true,1,0,1,0.0
 Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-12,Direct,true,1,0,1,1.0
-Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-25,untracked,true,1,0,1,0.0
+Michael Kozlowski · Mecha · 2024 Q2,Mecha,2024-04-25,AA Email Man,true,1,0,1,0.0
 Michael Kozlowski · Metropolis print Manual · 2023 Q1,Metropolis print Manual,2023-11-14,Untracked,false,1,0,0,0.0
 Michael Kozlowski · Metropolis print · 2023 Q1,Metropolis print,2023-03-30,Untracked,false,2,0,2,0.0
 Michael Kozlowski · Metropolis print · 2023 Q1,Metropolis print,2023-03-31,Untracked,false,10,0,10,0.0
@@ -7792,9 +7973,10 @@ Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,Innocent Days and Wishes,202
 Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-09-29,AA Email Man,true,4,4,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-09-29,Direct,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-09-30,AA Email Man,true,1,1,0,0.0
-Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-05,Direct,true,2,0,0,0.0
+Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-05,AA Email Man,true,1,0,0,0.0
+Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-05,Direct,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-06,Direct,true,1,0,0,0.0
-Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-06,Referral Meta,true,1,0,0,0.0
+Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-06,Referral Artist,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-07,Direct,true,1,1,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-10,Direct,true,2,2,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Entity Stirs,2023-10-10,untracked,true,1,1,0,0.0
@@ -7812,8 +7994,8 @@ Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-12,Direct,tr
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-14,Direct,true,1,1,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-16,Direct,true,3,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-16,Organic Search,true,2,0,0,0.0
-Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-16,Referral Artist,true,3,0,0,0.0
-Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-16,Referral Other,true,2,0,0,0.0
+Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-16,Referral Artist,true,4,0,0,0.0
+Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-16,Referral Other,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-16,untracked,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-17,AA Meta,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2023-10-17,Direct,true,1,0,0,0.0
@@ -7831,9 +8013,9 @@ Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-07,Paid Soci
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-07,Referral Artist,true,2,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-11,AA Email Auto,true,2,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-11,AA Email Man,true,2,0,0,0.0
-Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-11,AA Meta,true,1,0,0,0.0
+Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-11,AA Meta,true,4,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-11,Direct,true,3,0,0,0.0
-Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-11,Referral Artist,true,7,0,0,0.0
+Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-11,Referral Artist,true,4,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-12,AA Email Auto,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-12,Direct,true,1,0,0,0.0
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2024-06-12,Referral Meta,true,2,0,0,0.0
@@ -7844,9 +8026,9 @@ Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2025-06-04,Referral 
 Miwa Komatsu · Multiple · 2023 Q4,The Great Harmonisation,2025-06-19,Referral Artist,true,1,0,0,0.0
 Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,AA Email Auto,true,2,0,2,1.0
 Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,AA Email Man,true,2,0,2,1.0
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,AA Meta,true,1,0,1,1.0
+Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,AA Meta,true,2,0,2,1.0
 Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,Direct,true,8,0,8,1.0
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,Referral Artist,true,5,0,5,3.0
+Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,Referral Artist,true,4,0,4,3.0
 Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-11,Untracked,false,145,0,145,43.0
 Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-12,AA Email Auto,true,2,0,2,2.0
 Miwa Komatsu · Sacred Connectedness · 2024 Q2,Sacred Connectedness,2024-06-12,Direct,true,1,0,1,1.0
@@ -8530,6 +8712,17 @@ Pejac · Multiple · 2026 Q1,SELF-DEFENCE Set: Northern Lights,2026-02-04,AA Ema
 Pejac · Multiple · 2026 Q1,SELF-DEFENCE Set: Northern Lights,2026-02-04,Organic Search,true,1,0,1,0.0
 Pejac · Multiple · 2026 Q1,SELF-DEFENCE Set: Northern Lights,2026-02-05,AA Email Man,true,1,0,1,0.0
 Pejac · Multiple · 2026 Q1,SELF-DEFENCE Set: Northern Lights,2026-02-06,Direct,true,1,0,1,0.0
+Pejac · Multiple · 2026 Q4,Autumn,2026-11-06,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Dove of Peace I,2026-11-06,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Eternal Light,2026-11-09,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Intruders I,2026-11-05,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Intruders IV,2026-11-06,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Maman Nature,2026-11-06,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Olive Branch I,2026-11-06,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Olive Branch II,2026-11-05,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,SD 1 AM,2026-11-05,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,SD 9 AM,2026-11-09,Untracked,false,1,0,0,0.0
+Pejac · Multiple · 2026 Q4,Sixtina,2026-11-09,Untracked,false,1,0,0,0.0
 Peter Halley · Rising High II · 2024 Q2,Rising High II,2024-04-25,Direct,true,1,0,0,0.0
 Peter Halley · Rising High II · 2024 Q2,Rising High II,2024-05-01,AA Meta,true,1,1,0,0.0
 Peter Halley · Rising High II · 2024 Q2,Rising High II,2024-05-04,Direct,true,1,0,0,0.0
@@ -8696,7 +8889,7 @@ Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black
 Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-08-18,untracked,true,3,0,3,0.0
 Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-08-19,Paid Social,true,1,0,1,0.0
 Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-08-20,untracked,true,1,0,1,1.0
-Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-08-28,Direct,true,1,0,1,0.0
+Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-08-28,Referral Meta,true,1,0,1,0.0
 Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-09-12,AA Meta,true,1,0,1,1.0
 Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-09-16,Organic Search,true,1,0,1,1.0
 Piet Mondrian Estate · Multiple · 2026 Q3,"Composition with Red, Yellow, Black, Blue, and Gray",2026-09-23,AA Meta,true,1,0,1,1.0
@@ -8774,8 +8967,7 @@ Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-06,untracked,true,1,0
 Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-09,Direct,true,1,0,0,0.0
 Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-23,Direct,true,1,0,0,0.0
 Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-23,untracked,true,1,0,0,0.0
-Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-28,AA Email Auto,true,1,0,0,0.0
-Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-28,AA Email Man,true,1,0,0,0.0
+Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-28,AA Email Auto,true,2,0,0,0.0
 Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-28,Direct,true,1,0,0,0.0
 Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-28,Organic Search,true,1,0,0,0.0
 Prune Nourry · Mater Earth · 2023 Q1,Mater Earth,2023-03-28,Referral Artist,true,1,0,0,0.0
@@ -8957,7 +9149,7 @@ Roby Dwi Antono · KIRA (Burnished Gold) · 2021 Q4,KIRA (Burnished Gold),2025-1
 Roby Dwi Antono · Multiple · 2022 Q2,BULAN,2023-08-10,untracked,true,1,1,0,0.0
 Roby Dwi Antono · Multiple · 2022 Q2,BULAN,2023-08-24,Direct,true,1,0,0,0.0
 Roby Dwi Antono · Multiple · 2022 Q2,BULAN,2024-05-29,Direct,true,1,0,0,0.0
-Roby Dwi Antono · Multiple · 2022 Q2,CLARA,2023-02-27,untracked,true,1,0,0,0.0
+Roby Dwi Antono · Multiple · 2022 Q2,CLARA,2023-02-27,AA Meta,true,1,0,0,0.0
 Roby Dwi Antono · Multiple · 2022 Q2,CLARA,2023-03-28,untracked,true,1,0,0,0.0
 Roby Dwi Antono · Multiple · 2022 Q2,KINASIH,2023-08-10,AA Email Man,true,1,1,0,0.0
 Roby Dwi Antono · Multiple · 2022 Q2,OKTA,2023-03-11,Direct,true,1,0,0,0.0
@@ -8967,16 +9159,17 @@ Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-10,Direct,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-14,AA Email Man,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-14,Direct,true,3,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-15,AA Email Man,true,1,0,0,0.0
-Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-15,Organic Search,true,1,0,0,0.0
-Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-20,AA Email Man,true,1,0,0,0.0
-Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-22,Direct,true,1,0,0,0.0
+Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-15,untracked,true,1,0,0,0.0
+Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-20,Direct,true,1,0,0,0.0
+Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-22,Organic Search,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-03-29,Direct,true,1,0,0,0.0
+Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-05,AA Email Auto,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-05,AA Email Man,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-05,AA Meta,true,1,0,0,0.0
-Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-05,Direct,true,2,0,0,0.0
+Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-05,Direct,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-05,Organic Search,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-05,untracked,true,1,0,0,0.0
-Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-06,Direct,true,1,0,0,0.0
+Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-06,AA Email Man,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-07,Direct,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-08,untracked,true,1,0,0,0.0
 Rooo Lou · Earnest · 2023 Q2,Earnest,2023-04-23,Direct,true,1,0,0,0.0
@@ -8992,9 +9185,9 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-29,AA 
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-29,AA Meta,true,2,2,2,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-29,Direct,true,6,4,6,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-29,untracked,true,4,4,4,3.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-30,AA Email Man,true,29,29,29,17.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-30,AA Email Man,true,28,28,28,17.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-30,Direct,true,5,4,5,2.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-30,Organic Search,true,2,2,2,2.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-30,Organic Search,true,3,3,3,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-09-30,untracked,true,2,2,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-01,AA Email Man,true,20,20,20,8.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-01,AA Meta,true,1,1,1,1.0
@@ -9063,14 +9256,26 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-23,AA 
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-23,Direct,true,2,0,2,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-23,Paid Social,true,3,0,3,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-26,Direct,true,5,0,5,3.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-26,Organic Search,true,3,0,3,2.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-26,Organic Search,true,3,0,3,3.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-26,Paid Social,true,2,0,2,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-26,untracked,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-27,AA Email Man,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-27,AA Meta,true,1,0,1,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-27,Direct,true,3,0,3,2.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-27,Direct,true,3,0,3,3.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-27,Organic Search,true,7,0,7,5.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-27,Paid Social,true,16,0,16,12.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-27,Paid Social,true,15,0,15,11.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-28,AA Email Man,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-28,Direct,true,1,0,1,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-29,AA Email Man,true,34,0,34,24.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-29,AA Meta,true,1,0,1,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-29,Direct,true,8,0,8,6.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-29,Organic Search,true,10,0,10,7.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-29,Other,true,1,0,1,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-29,Paid Social,true,18,0,18,15.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-10-30,AA Email Man,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-11-03,Organic Search,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-11-04,AA Email Man,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"In the Car, 1963",2026-11-06,Organic Search,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-09-29,AA Email Man,true,43,43,43,24.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-09-29,Direct,true,4,2,4,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-09-29,untracked,true,4,4,4,2.0
@@ -9103,7 +9308,7 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-09,
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-10,Organic Search,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-12,AA Email Man,true,3,0,3,3.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-12,Direct,true,6,0,6,5.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-12,Organic Search,true,3,0,3,3.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-12,Organic Search,true,2,0,2,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-12,Paid Social,true,14,0,14,14.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-12,Referral Meta,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-13,AA Email Man,true,1,0,1,1.0
@@ -9120,16 +9325,16 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-16,
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-19,AA Email Man,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-19,AA Meta,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-19,Direct,true,1,0,1,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-19,Organic Search,true,3,0,3,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-19,Organic Search,true,3,0,3,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-20,AA Email Man,true,2,0,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-20,Direct,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-20,Paid Social,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-20,untracked,true,2,0,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,AA Email Man,true,18,0,18,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,AA Meta,true,1,0,1,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,Direct,true,10,0,10,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,Direct,true,11,0,11,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,Organic Search,true,5,0,5,1.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,Paid Social,true,17,0,17,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,Paid Social,true,16,0,16,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-21,untracked,true,2,0,2,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-23,AA Email Man,true,2,0,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-23,AA Meta,true,2,0,2,0.0
@@ -9137,18 +9342,27 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-23,
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-23,Organic Search,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-23,Other,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-23,Paid Social,true,6,0,6,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-26,AA Email Man,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-26,AA Email Man,true,2,0,2,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-26,Direct,true,3,0,3,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-26,Organic Search,true,5,0,5,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-26,Organic Search,true,4,0,4,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-26,Paid Social,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-27,AA Email Man,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-27,AA Meta,true,2,0,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-27,Direct,true,2,0,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-27,Organic Search,true,4,0,4,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-27,Paid Social,true,8,0,8,5.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-28,AA Email Man,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-29,AA Email Man,true,62,0,62,28.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-29,AA Meta,true,4,0,4,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-29,Direct,true,31,0,31,15.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-29,Organic Search,true,11,0,11,7.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-29,Other,true,3,0,3,2.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-29,Paid Social,true,46,0,46,30.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-10-29,Referral Artist,true,1,0,1,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"No Thank You!, 1964",2026-11-04,AA Email Man,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-09-29,AA Email Man,true,49,49,49,25.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-09-29,AA Meta,true,2,2,2,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-09-29,Direct,true,7,5,7,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-09-29,Direct,true,6,4,6,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-09-29,Organic Search,true,1,1,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-09-29,untracked,true,3,3,3,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-09-30,AA Email Man,true,32,32,32,22.0
@@ -9189,7 +9403,7 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-12,AA Meta,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-12,Direct,true,7,0,7,6.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-12,Organic Search,true,2,0,2,2.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-12,Paid Social,true,15,0,15,15.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-12,Paid Social,true,14,0,14,14.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-12,Referral Meta,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-13,Direct,true,4,0,4,4.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-13,Organic Search,true,1,0,1,0.0
@@ -9201,10 +9415,10 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-16,Direct,true,3,0,3,3.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-16,Organic Search,true,4,0,4,4.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-16,Paid Social,true,1,0,1,1.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,AA Email Man,true,2,0,2,2.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,AA Email Man,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,AA Meta,true,2,0,2,1.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,Direct,true,1,0,1,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,Organic Search,true,5,0,5,3.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,Direct,true,2,0,2,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,Organic Search,true,5,0,5,4.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-19,Paid Social,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-20,AA Email Man,true,2,0,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-20,AA Meta,true,2,0,2,2.0
@@ -9229,6 +9443,15 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-27,Direct,true,3,0,3,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-27,Organic Search,true,3,0,3,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-27,Paid Social,true,9,0,9,6.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-28,AA Email Man,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-28,Direct,true,1,0,1,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-29,AA Email Auto,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-29,AA Email Man,true,45,0,45,31.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-29,Direct,true,25,0,25,13.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-29,Organic Search,true,11,0,11,7.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-29,Other,true,2,0,2,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-10-29,Paid Social,true,35,0,35,22.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Ohhh...Alright..., 1964",2026-11-04,AA Email Man,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-09-29,AA Email Man,true,35,35,35,20.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-09-29,AA Meta,true,2,2,2,2.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-09-29,Direct,true,3,1,3,0.0
@@ -9263,7 +9486,8 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-09,Paid S
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-10,Organic Search,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-12,AA Email Man,true,7,0,7,7.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-12,Direct,true,6,0,6,5.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-12,Paid Social,true,14,0,14,14.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-12,Organic Search,true,1,0,1,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-12,Paid Social,true,13,0,13,13.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-12,Referral Meta,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-12,Referral Other,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-13,AA Email Man,true,1,0,1,1.0
@@ -9298,14 +9522,23 @@ Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-23,AA Met
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-23,Direct,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-23,Organic Search,true,3,0,3,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-23,Paid Social,true,3,0,3,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-26,AA Email Man,true,4,0,4,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-26,AA Email Man,true,5,0,5,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-26,Direct,true,2,0,2,0.0
-Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-26,Organic Search,true,1,0,1,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-26,Paid Social,true,2,0,2,0.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-27,AA Email Man,true,1,0,1,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-27,Direct,true,2,0,2,1.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-27,Organic Search,true,4,0,4,3.0
 Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-27,Paid Social,true,9,0,9,7.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-28,AA Email Man,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,AA Email Auto,true,1,0,1,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,AA Email Man,true,62,0,62,25.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,AA Meta,true,1,0,1,0.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,Direct,true,29,0,29,10.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,Organic Search,true,24,0,24,10.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,Other,true,2,0,2,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,Paid Social,true,42,0,42,16.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-10-29,untracked,true,2,0,2,1.0
+Roy Lichtenstein Estate · Multiple · 2026 Q4,"Varoom!, 1963",2026-11-04,AA Email Man,true,1,0,1,0.0
 SETH · Little Sower · 2023 Q4,Little Sower,2023-10-17,Direct,true,1,0,0,0.0
 SETH · Little Sower · 2023 Q4,Little Sower,2023-10-18,Direct,true,1,0,0,0.0
 SETH · Little Sower · 2023 Q4,Little Sower,2023-10-20,Direct,true,2,0,0,0.0
@@ -9350,7 +9583,7 @@ Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-02,AA Email Man,true,2,0,2,2.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-02,Direct,true,6,0,6,5.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-02,Organic Search,true,5,0,5,3.0
-Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-02,Paid Social,true,44,0,44,37.0
+Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-02,Paid Social,true,43,0,43,36.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-04,AA Email Man,true,2,0,2,2.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-04,AA Meta,true,1,0,1,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-04,Direct,true,3,0,3,3.0
@@ -9373,11 +9606,11 @@ Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,AA Email Man,true,20,0,20,10.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,AA Meta,true,3,0,3,2.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,AA X,true,1,0,1,1.0
-Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,Direct,true,16,0,16,5.0
+Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,Direct,true,15,0,15,4.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,Organic Search,true,7,0,7,2.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,Other,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,Paid Social,true,67,0,67,25.0
-Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,untracked,true,5,0,5,3.0
+Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-11,untracked,true,4,0,4,2.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-18,Paid Social,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-19,AA Email Man,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,Millet's Architectonic Angelus,2026-09-21,untracked,true,2,0,2,2.0
@@ -9407,7 +9640,7 @@ Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-08-30,AA Email
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-02,AA Email Man,true,3,0,3,3.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-02,Direct,true,3,0,3,3.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-02,Organic Search,true,4,0,4,3.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-02,Paid Social,true,41,0,41,38.0
+Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-02,Paid Social,true,40,0,40,37.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-04,AA Email Man,true,1,0,1,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-04,Direct,true,1,0,1,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-04,Organic Search,true,3,0,3,3.0
@@ -9424,16 +9657,16 @@ Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-08,Referral
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-09,AA Email Man,true,1,0,1,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-09,Direct,true,3,0,3,3.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-09,Organic Search,true,1,0,1,1.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-09,Paid Social,true,15,0,15,14.0
+Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-09,Paid Social,true,14,0,14,14.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-10,Organic Search,true,3,0,3,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-10,Paid Social,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,AA Email Auto,true,1,0,1,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,AA Email Man,true,21,0,21,13.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,AA Meta,true,4,0,4,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,Direct,true,17,0,17,7.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,Organic Search,true,15,0,15,5.0
+Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,Organic Search,true,14,0,14,4.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,Other,true,2,0,2,1.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,Paid Social,true,80,0,80,39.0
+Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,Paid Social,true,77,0,77,37.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-11,untracked,true,2,0,2,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-15,Paid Social,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Phantom Cart,2026-09-19,AA Email Man,true,1,0,1,0.0
@@ -9463,7 +9696,6 @@ Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-02
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-02,Organic Search,true,8,0,8,4.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-02,Paid Social,true,34,0,34,21.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-02,Referral Meta,true,1,0,1,0.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-04,AA Email Man,true,1,0,1,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-04,AA Meta,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-04,Direct,true,3,0,3,3.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-04,Organic Search,true,2,0,2,2.0
@@ -9473,7 +9705,6 @@ Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-07
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-07,Other,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-07,Paid Social,true,13,0,13,8.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-07,untracked,true,1,0,1,0.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-08,AA Email Man,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-08,Direct,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-08,Organic Search,true,1,0,1,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-08,Paid Social,true,3,0,3,0.0
@@ -9486,10 +9717,10 @@ Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-10
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-10,Organic Search,true,3,0,3,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-10,Paid Social,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,AA Email Man,true,18,0,18,10.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,Direct,true,9,0,9,2.0
+Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,Direct,true,8,0,8,1.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,Organic Search,true,11,0,11,3.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,Other,true,2,0,2,0.0
-Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,Paid Social,true,58,0,58,18.0
+Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,Paid Social,true,56,0,56,17.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-11,untracked,true,3,0,3,2.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-12,Paid Social,true,1,0,1,0.0
 Salvador Dali Estate · Multiple · 2026 Q3,The Spectre of Sex Appeal,2026-09-14,Organic Search,true,1,1,1,0.0
@@ -9517,6 +9748,15 @@ Sayre Gomez · America's Tire · 2025 Q2,America's Tire,2026-03-04,Direct,true,1
 Sayre Gomez · America's Tire · 2025 Q2,America's Tire,2026-07-04,Direct,true,1,0,1,0.0
 Scott Kahn · INGERSOLL'S BRANCH · 2022 Q4,INGERSOLL'S BRANCH,2023-06-26,untracked,true,1,0,1,0.0
 Scott Kahn · INGERSOLL'S BRANCH · 2022 Q4,INGERSOLL'S BRANCH,2024-12-03,untracked,true,1,0,1,1.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-10-30,Referral Other,true,1,0,1,0.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-10-31,Direct,true,3,0,3,0.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-11-04,AA Email Man,true,3,3,3,2.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-11-04,Referral Artist,true,8,8,8,1.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-11-05,AA Email Man,true,2,2,2,2.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-11-05,Referral Artist,true,2,2,2,1.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-11-06,AA Email Man,true,1,1,1,0.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-11-06,Direct,true,1,1,1,0.0
+Seth Armstrong · Micheltorena · 2026 Q4,Micheltorena,2026-11-08,Organic Search,true,1,1,1,0.0
 Shigeki Matsuyama · Multiple · 2023 Q2,Portrait of dazzle #150,2023-05-16,Untracked,false,1,0,0,0.0
 Shirin Neshat · Multiple · 2025 Q1,Quartet,2025-01-22,Untracked,false,1,0,1,0.0
 Shirin Neshat · Multiple · 2025 Q1,Quartet,2025-02-25,Untracked,false,3,3,3,2.0
@@ -9586,7 +9826,7 @@ Shirin Neshat · Multiple · 2026 Q2,"Fervor, 2000",2026-06-05,Untracked,false,1
 Shirin Neshat · Multiple · 2026 Q2,"Fervor, 2000",2026-06-19,Untracked,false,1,0,1,0.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-04-21,Untracked,false,1,0,1,0.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-04-27,Untracked,false,24,24,24,14.0
-Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-04-28,Untracked,false,38,16,38,19.0
+Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-04-28,Untracked,false,37,16,37,19.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-04-29,Untracked,false,18,0,18,5.5
 Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-04-30,Untracked,false,8,0,8,5.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-05-01,Untracked,false,1,0,1,0.0
@@ -9594,7 +9834,7 @@ Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1
 Shirin Neshat · Multiple · 2026 Q2,"Untitled (Chest), from Unveiling series, 1993",2026-07-16,Untracked,false,1,0,1,1.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled from Women of Allah series, 1994",2026-04-10,Untracked,false,1,0,1,1.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled from Women of Allah series, 1994",2026-04-27,Untracked,false,31,31,31,16.0
-Shirin Neshat · Multiple · 2026 Q2,"Untitled from Women of Allah series, 1994",2026-04-28,Untracked,false,41,15,41,12.0
+Shirin Neshat · Multiple · 2026 Q2,"Untitled from Women of Allah series, 1994",2026-04-28,Untracked,false,40,15,40,12.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled from Women of Allah series, 1994",2026-04-29,Untracked,false,33,0,33,8.5
 Shirin Neshat · Multiple · 2026 Q2,"Untitled from Women of Allah series, 1994",2026-04-30,Untracked,false,24,0,24,10.0
 Shirin Neshat · Multiple · 2026 Q2,"Untitled from Women of Allah series, 1994",2026-05-01,Untracked,false,2,0,2,1.0
@@ -9733,7 +9973,8 @@ Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-10,AA 
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-10,Direct,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-10,Organic Search,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-13,Direct,true,1,0,1,0.0
-Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-14,Direct,true,3,0,3,1.0
+Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-14,AA Email Auto,true,1,0,1,0.0
+Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-14,Direct,true,2,0,2,1.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-14,untracked,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-15,Direct,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-04-21,Direct,true,2,0,2,0.0
@@ -9778,7 +10019,7 @@ Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-05-27,unt
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-05-28,Referral Other,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-06-01,untracked,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-06-02,Direct,true,1,0,1,0.0
-Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-06-03,AA Email Man,true,1,0,1,1.0
+Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-06-03,Direct,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-06-11,AA Email Man,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-07-28,AA Email Man,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,"Flowers of Heaven, 2018",2026-08-04,AA Email Man,true,1,0,1,1.0
@@ -9789,8 +10030,8 @@ Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-10,AA E
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-10,Organic Search,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-13,Direct,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-13,untracked,true,1,0,1,0.0
+Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-14,AA Email Auto,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-14,AA Email Man,true,1,0,1,0.0
-Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-14,Direct,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-14,untracked,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-15,Direct,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-04-16,Direct,true,1,0,1,1.0
@@ -9830,7 +10071,7 @@ Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-05-27,untr
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-05-28,Referral Other,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-06-01,untracked,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-06-02,Direct,true,1,0,1,0.0
-Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-06-03,AA Email Man,true,1,0,1,1.0
+Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-06-03,Direct,true,1,0,1,1.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-06-03,untracked,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-06-05,Direct,true,2,0,2,0.0
 Takashi Murakami · Multiple · 2026 Q2,Lollipop Flowers Rainbow,2026-06-08,AA Email Man,true,1,0,1,0.0
@@ -9959,7 +10200,7 @@ Takashi Murakami · Multiple · 2026 Q2,"Tan Tan Bo Communicating with Someone, 
 Takashi Murakami · Multiple · 2026 Q2,"Tan Tan Bo Communicating with Someone, Somewhere in the Universe, 2014",2026-06-03,AA Email Man,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Tan Tan Bo Communicating with Someone, Somewhere in the Universe, 2014",2026-06-10,Direct,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Tan Tan Bo Communicating with Someone, Somewhere in the Universe, 2014",2026-07-10,Organic Search,true,1,0,1,0.0
-Takashi Murakami · Multiple · 2026 Q2,"Tan Tan Bo Communicating with Someone, Somewhere in the Universe, 2014",2026-08-28,Direct,true,1,0,1,0.0
+Takashi Murakami · Multiple · 2026 Q2,"Tan Tan Bo Communicating with Someone, Somewhere in the Universe, 2014",2026-08-28,Referral Meta,true,1,0,1,0.0
 Takashi Murakami · Multiple · 2026 Q2,"Tan Tan Bo Communicating with Someone, Somewhere in the Universe, 2014",2026-09-04,Direct,true,1,0,1,0.0
 Taku Obata · B BOY JUSHI · 2025 Q1,B BOY JUSHI,2025-01-08,Direct,true,1,0,0,0.0
 Taku Obata · B BOY JUSHI · 2025 Q1,B BOY JUSHI,2025-01-13,AA Email Man,true,5,5,0,0.0
@@ -10526,14 +10767,18 @@ Woo Kuk Won · Multiple · 2025 Q3,Waterfall (Rōben),2025-09-30,Direct,true,2,0
 Woo Kuk Won · Multiple · 2025 Q3,Waterfall (Rōben),2025-09-30,Referral Other,true,1,0,1,1.0
 Woo Kuk Won · Multiple · 2025 Q3,Waterfall (Rōben),2025-12-02,Referral Other,true,1,0,1,0.0
 Woo Kuk Won · Multiple · 2025 Q3,Waterfall (Rōben),2026-07-08,Direct,true,1,0,1,1.0
-Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-15,AA Email Auto,true,11,11,11,7.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-15,AA Email Auto,true,10,10,10,7.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-15,AA Meta,true,1,1,1,0.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-16,Direct,true,1,0,1,0.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-17,AA Email Auto,true,1,1,1,0.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-20,AA Email Man,true,2,0,2,2.0
-Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-23,AA Email Man,true,3,0,3,1.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-23,AA Email Man,true,2,0,2,1.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-10-23,Direct,true,1,0,1,1.0
-Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-15,AA Email Auto,true,16,16,16,7.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-11-02,Referral Artist,true,1,0,1,0.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-11-03,Direct,true,1,0,1,1.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-11-06,Direct,true,1,0,1,0.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Belle),2026-11-06,Organic Search,true,1,0,1,0.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-15,AA Email Auto,true,15,15,15,7.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-15,AA Meta,true,1,1,1,0.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-15,Referral Artist,true,3,3,3,3.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-16,AA Email Auto,true,2,2,2,0.0
@@ -10544,10 +10789,17 @@ Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-20,AA Email
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-20,Direct,true,1,0,1,1.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-21,AA Email Man,true,1,0,1,1.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-23,AA Email Auto,true,1,0,1,1.0
-Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-23,AA Email Man,true,3,0,3,1.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-23,AA Email Man,true,2,0,2,1.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-23,Organic Search,true,1,0,1,0.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-27,Direct,true,1,0,1,1.0
 Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-10-28,Direct,true,1,0,1,1.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-11-02,Organic Search,true,1,0,1,0.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-11-02,Referral Artist,true,2,0,2,1.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-11-03,Direct,true,1,0,1,1.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-11-03,Referral Artist,true,1,0,1,1.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-11-04,Direct,true,1,0,1,0.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-11-06,AA Email Man,true,1,0,1,0.0
+Woo Kuk Won · Multiple · 2026 Q4,The Princess (Cinderella),2026-11-06,Organic Search,true,1,0,1,0.0
 Yoon Hyup · Ambre Roulette · 2026 Q3,Ambre Roulette,2026-06-23,AA Email Man,true,14,14,14,7.0
 Yoon Hyup · Ambre Roulette · 2026 Q3,Ambre Roulette,2026-06-23,AA Meta,true,1,1,1,0.0
 Yoon Hyup · Ambre Roulette · 2026 Q3,Ambre Roulette,2026-06-23,Referral Artist,true,1,1,1,0.0
@@ -10605,9 +10857,9 @@ Yoon Hyup · Ambre Roulette · 2026 Q3,Ambre Roulette,2026-07-23,Referral Artist
 Yoon Hyup · Ambre Roulette · 2026 Q3,Ambre Roulette,2026-07-23,untracked,true,1,0,1,0.0
 Yoon Hyup · Ambre Roulette · 2026 Q3,Ambre Roulette,2026-08-04,AA Email Man,true,1,0,1,1.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-23,AA Email Man,true,35,35,35,10.0
-Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-23,Direct,true,2,2,2,0.0
+Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-23,Direct,true,1,1,1,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-23,Organic Search,true,1,1,1,0.0
-Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-23,Referral Other,true,1,1,1,0.0
+Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-23,Referral Other,true,2,2,2,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-23,untracked,true,5,5,5,1.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-24,AA Email Man,true,28,28,28,3.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-24,Direct,true,1,1,1,0.0
@@ -10618,7 +10870,7 @@ Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-27,AA Email Man,true
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-27,Direct,true,1,0,1,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-29,Direct,true,1,0,1,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-29,Organic Search,true,1,0,1,0.0
-Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-30,AA Email Man,true,1,1,1,0.0
+Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-30,Direct,true,1,1,1,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-31,AA Email Man,true,2,2,2,1.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-08-31,Direct,true,2,0,2,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-02,Direct,true,1,0,1,0.0
@@ -10628,11 +10880,11 @@ Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-09,AA Email Man,true
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-09,Direct,true,2,1,2,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-10,Direct,true,1,1,1,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-10,Referral Meta,true,1,1,1,0.0
-Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,AA Email Man,true,23,0,23,6.0
-Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,AA Meta,true,10,0,10,2.0
+Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,AA Email Man,true,25,0,25,6.0
+Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,AA Meta,true,11,0,11,2.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,AA X,true,1,0,1,0.0
-Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,Direct,true,39,0,39,6.0
-Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,Organic Search,true,8,0,8,2.0
+Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,Direct,true,38,0,38,6.0
+Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,Organic Search,true,6,0,6,2.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,Paid Social,true,1,0,1,0.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,Referral Meta,true,12,0,12,4.0
 Yoon Hyup · City Fountain · 2024 Q3,City Fountain,2024-09-18,Referral Other,true,1,0,1,0.0
@@ -10664,14 +10916,14 @@ Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-17,AA Email Man,true,2,2
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-17,Organic Search,true,1,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-17,untracked,true,1,1,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,AA Email Auto,true,1,0,0,0.0
-Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,AA Email Man,true,18,0,0,0.0
+Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,AA Email Man,true,19,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,AA Meta,true,8,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,Direct,true,27,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,Organic Search,true,11,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,Referral Artist,true,27,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,Referral Meta,true,5,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,Referral Other,true,3,0,0,0.0
-Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,untracked,true,15,0,0,0.0
+Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-20,untracked,true,14,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-21,Direct,true,1,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-21,Organic Search,true,1,0,0,0.0
 Yoon Hyup · In The City · 2023 Q4,In The City,2023-11-22,Direct,true,1,0,0,0.0

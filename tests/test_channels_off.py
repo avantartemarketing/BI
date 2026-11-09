@@ -35,10 +35,10 @@ def close(a, b, tol=1e-6):
 def test_profile_without_a_channel() -> None:
     profile = {
         "units": 400.0, "sessions": 50000.0, "entries": 380.0, "units_p25": 300.0, "units_p75": 600.0,
-        "units_by_group": {"aa_email": 150.0, "aa_social": 20.0, "referral_artist": 30.0, "search_direct_other": 100.0, "paid": 100.0},
-        "sessions_by_group": {"aa_email": 5000.0, "aa_social": 2000.0, "referral_artist": 3000.0, "search_direct_other": 10000.0, "paid": 30000.0},
-        "share_units": {"aa_email": 0.375, "aa_social": 0.05, "referral_artist": 0.075, "search_direct_other": 0.25, "paid": 0.25},
-        "share_sessions": {"aa_email": 0.1, "aa_social": 0.04, "referral_artist": 0.06, "search_direct_other": 0.2, "paid": 0.6},
+        "units_by_group": {"aa_email": 150.0, "aa_social": 20.0, "referral_artist": 30.0, "organic_search": 30.0, "organic_other": 70.0, "paid": 100.0},
+        "sessions_by_group": {"aa_email": 5000.0, "aa_social": 2000.0, "referral_artist": 3000.0, "organic_search": 3000.0, "organic_other": 7000.0, "paid": 30000.0},
+        "share_units": {"aa_email": 0.375, "aa_social": 0.05, "referral_artist": 0.075, "organic_search": 0.075, "organic_other": 0.175, "paid": 0.25},
+        "share_sessions": {"aa_email": 0.1, "aa_social": 0.04, "referral_artist": 0.06, "organic_search": 0.06, "organic_other": 0.14, "paid": 0.6},
         "conv": {g: 0.01 for g in GROUPS}, "private_room_share": 0.2,
     }
     same = B.apply_channels_off(profile, [])

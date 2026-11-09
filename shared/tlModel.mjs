@@ -20,7 +20,7 @@
  * fields hold the full medians). */
 import { RATES_TO_EUR, frameBandRate } from "./economics.mjs";
 
-export const GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
+export const GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "organic_other", "paid"];
 export const TL_CANNIBALISATION = 0.1;
 export const TL_PAID_SPLIT_PRE = 0.7;
 

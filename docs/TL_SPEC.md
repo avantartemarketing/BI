@@ -135,9 +135,12 @@ The build makes every page both ways and the blocks that differ ride under
 `variants.direct_spread`, with Direct's share of the page's own signups, sessions and units
 before the spread under `directShare` for the switch's words; the dashboard lays the variant over
 the page as it does for an LE (`web/src/App.jsx`), and the Target setting tab reads Direct as a
-channel and says so when the Overview spreads it. Over the panel's launches Direct is 44% of the
-Search/direct/other group's pre-window signups, 65% of its sessions and 56% of its window units
-at the median (`direct_norm`, 71 launches; about 5% of a launch's signups and 18% of its units).
+channel and says so when the Overview spreads it. The group Direct leaves is Organic Other
+(Direct, Other, AA Other and the non-artist referrals; Organic Search stands apart since 9
+November 2026, DATA_MODEL §1.3). Measured on the Search/direct/other group it sat in before,
+Direct was 44% of the group's pre-window signups, 65% of its sessions and 56% of its window
+units at the median (`direct_norm`, 71 launches; about 5% of a launch's signups and 18% of its
+units); of Organic Other it is a larger share, read on every refresh.
 Held to the page's identities both ways by `tests/test_tl_page.py`, and to its rule by
 `tests/test_tl_direct_spread.py`.
 
@@ -457,7 +460,7 @@ What the data showed on the way, and how the build reads it:
   cost per signup prices the untracked ones in at the tracked paid share, as the LE panel
   folds its untracked units.
 - **A paid signup converts at a fraction of an email one** (the panel's medians: paid 8%,
-  AA Email 29%, Search etc. 30%). The signup target's rate is the basket's rates by channel
+  AA Email 29%, Search etc. 30% when search and direct were one group). The signup target's rate is the basket's rates by channel
   weighted at its mix of signups, so a paid-led plan needs more signups per order; a typed
   rate still wins.
 - **The feed names the release on fewer sessions than signups for some launches**, so a

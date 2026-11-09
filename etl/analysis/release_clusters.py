@@ -56,6 +56,11 @@ default BQ_SINCE of 2025-01-01 would leave out every earlier launch):
 After an Airtable pull alone, re-attach the pricing to the panel on file
 without touching the windows, features or clusters (no funnel export needed):
   python3 etl/pull_airtable.py && python3 etl/analysis/release_clusters.py --pricing-only
+
+After a change to the display groups (etl/build.py DISPLAY_GROUPS), read the
+per-group columns again on the panel on file, the clusters untouched (needs
+the same full funnel pull as a run):
+  python3 etl/analysis/release_clusters.py --regroup
 """
 from __future__ import annotations
 
@@ -104,7 +109,7 @@ METRICS = ["Page_Views_Total", "Sessions_Total", "Draw_Entries", "Preorder_App",
            "Draw_Entries_Total_Units_No_Conv", "Draw_Entries_Eligible_Units"]
 CLOCK = ["days_since_announcement", "days_until_launch", "pct_days_since_announcement", "pct_days_until_launch"]
 LABELS = ["AA_session_custom_channel_group_split_touch", "simple_release_name", "campaign_stage"]
-GROUPS = list(DISPLAY_GROUPS)   # aa_email, aa_social, referral_artist, search_direct_other, paid
+GROUPS = list(DISPLAY_GROUPS)   # aa_email, aa_social, referral_artist, organic_search, organic_other, paid
 
 
 # ---------------------------------------------------------------- load
@@ -194,20 +199,17 @@ def stage_of(pdsa: pd.Series) -> pd.Series:
     return out
 
 
-def campaign_features(df: pd.DataFrame, w: pd.Series) -> dict:
-    """Totals, mix, conversion and timing of one release over its window."""
-    A, C = pd.Timestamp(w["announce"]), pd.Timestamp(w["close"])
-    L = (C - A).days
-    start = A - pd.Timedelta(days=EA_LEAD_DAYS)
-    end = max(C, pd.Timestamp(w["alloc_day"]) if w["alloc_day"] else C) + pd.Timedelta(days=ALLOC_TAIL_DAYS)
-    x = df[(df["simple_release_name"] == w["release_name"]) & (df["event_date"] >= start) & (df["event_date"] <= end)].copy()
-    x["pdsa"] = (x["event_date"] - A).dt.days / L
-    tot = x[METRICS].sum()
-    f = {"window_start": start.date(), "window_end": end.date(), "campaign_days": L}
-    f.update({f"tot_{k.lower()}": float(v) for k, v in tot.items()})
-    f["entries_all"] = float(x["entries_all"].sum())
-    sessions, units, eu = tot["Sessions_Total"], tot["Total_Product_Units"], tot["Draw_Entries_Eligible_Units"]
-    # channel mix of sessions / entries / units, untracked left out of the denominator
+def channel_mix_features(x: pd.DataFrame) -> dict:
+    """The channel part of one release's features, over its window frame x
+    (the rows campaign_features cuts): each display group's share of
+    sessions, entries and units with Untracked out of the denominator, its
+    conversion where it can be a rate, its sessions, entries and units,
+    Direct's share of its own group per metric (what the dashboard's Direct
+    switch spreads, from the same pull as the split it spreads it over:
+    build.direct_share_norm takes the median of these) and the raw channel
+    session shares for the baskets. These are the columns a change to the
+    groups moves, and the ones --regroup rewrites on the panel on file."""
+    f: dict = {}
     tracked = x[x["group"].notna()]
     for metric, key in [("Sessions_Total", "sess"), ("Draw_Entries_Eligible_Units", "ent"), ("Total_Product_Units", "unit")]:
         g = tracked.groupby("group")[metric].sum()
@@ -228,9 +230,7 @@ def campaign_features(df: pd.DataFrame, w: pd.Series) -> dict:
         if not ok and s > 0 and (e > 0 or u > 0):
             dropped.append(f"{grp} {e:.0f} entries, {u:.0f} units on {s:.0f} sessions")
     f["rates_dropped"] = "; ".join(dropped) or None
-    # Direct's share of its own group, per metric: what the dashboard's Direct
-    # switch spreads, from the same pull as the split it spreads it over
-    # (build.direct_share_norm takes the median of these)
+    # Direct's share of its own group (Organic Other), per metric
     sdo = tracked[tracked["group"] == GROUP_OF.get("Direct")]
     for metric, key in [("Sessions_Total", "sessions"), ("Draw_Entries_Eligible_Units", "entries"), ("Total_Product_Units", "units")]:
         whole = float(sdo[metric].sum())
@@ -239,6 +239,23 @@ def campaign_features(df: pd.DataFrame, w: pd.Series) -> dict:
     ch = tracked.groupby("channel")["Sessions_Total"].sum(); chd = ch.sum()
     for c in sorted(GROUP_OF):
         f[f"chan_share_{c}"] = float(ch.get(c, 0) / chd) if chd else np.nan
+    return f
+
+
+def campaign_features(df: pd.DataFrame, w: pd.Series) -> dict:
+    """Totals, mix, conversion and timing of one release over its window."""
+    A, C = pd.Timestamp(w["announce"]), pd.Timestamp(w["close"])
+    L = (C - A).days
+    start = A - pd.Timedelta(days=EA_LEAD_DAYS)
+    end = max(C, pd.Timestamp(w["alloc_day"]) if w["alloc_day"] else C) + pd.Timedelta(days=ALLOC_TAIL_DAYS)
+    x = df[(df["simple_release_name"] == w["release_name"]) & (df["event_date"] >= start) & (df["event_date"] <= end)].copy()
+    x["pdsa"] = (x["event_date"] - A).dt.days / L
+    tot = x[METRICS].sum()
+    f = {"window_start": start.date(), "window_end": end.date(), "campaign_days": L}
+    f.update({f"tot_{k.lower()}": float(v) for k, v in tot.items()})
+    f["entries_all"] = float(x["entries_all"].sum())
+    sessions, units, eu = tot["Sessions_Total"], tot["Total_Product_Units"], tot["Draw_Entries_Eligible_Units"]
+    f.update(channel_mix_features(x))
     f["untracked_share"] = float(x.loc[x["group"].isna(), "Sessions_Total"].sum() / sessions) if sessions else np.nan
     # demand and conversion
     f["oversubscription"] = float(eu / units) if units else np.nan            # eligible entry units per unit sold (the dashboard's definition)
@@ -342,10 +359,13 @@ def flag_units(panel: pd.DataFrame) -> pd.DataFrame:
 
 # ---------------------------------------------------------------- clustering
 
+# The mix block is one session share per display group. The 10 September 2026
+# panel was clustered on five (Organic Search and Organic Other were one group,
+# search_direct_other, until 9 November 2026); the next full run clusters on
+# six, --regroup keeps the clusters as they are.
 FEATURE_BLOCKS = {
     "scale": ["log_sessions", "log_units", "log_entries"],
-    "mix": ["sess_share_aa_email", "sess_share_aa_social", "sess_share_referral_artist",
-            "sess_share_search_direct_other", "sess_share_paid"],
+    "mix": [f"sess_share_{g}" for g in GROUPS],
     "demand": ["log_oversub", "private_room_share", "log_entries_per_session", "log_units_per_session"],
     "timing": ["campaign_days", "ea_share_sessions", "burst_share", "cliff_share", "half_point"],
 }
@@ -500,8 +520,7 @@ def gap_choice(d: pd.DataFrame) -> int | None:
 # ---------------------------------------------------------------- profiles
 
 PROFILE_COLS = ["tot_sessions_total", "tot_total_product_units", "tot_draw_entries_eligible_units", "oversubscription",
-                "private_room_share", "preorder_share", "sess_share_aa_email", "sess_share_aa_social",
-                "sess_share_referral_artist", "sess_share_search_direct_other", "sess_share_paid",
+                "private_room_share", "preorder_share"] + [f"sess_share_{g}" for g in GROUPS] + [
                 "entries_per_session", "units_per_session", "entry_to_unit", "campaign_days", "ea_share_sessions",
                 "burst_share", "cliff_share", "half_point", "peak_day_share"]
 BASKET_COLS = PROFILE_COLS + ["tot_page_views_total", "tot_unique_customers", "ea_share_units", "entries_burst_share",
@@ -646,9 +665,104 @@ def pricing_only() -> None:
     print(f"wrote {OUT_CSV} ({len(out)} rows), pricing columns refreshed")
 
 
+# Display groups the panel has carried that no longer exist: --regroup drops
+# their columns once the new groups' are written.
+RETIRED_GROUPS = ["search_direct_other"]
+GROUP_PREFIXES = ["sess_share_", "ent_share_", "unit_share_", "conv_sess_entry_", "conv_sess_unit_",
+                  "sessions_", "entries_", "units_"]
+
+
+def _place_group_columns(columns: list[str]) -> list[str]:
+    """The panel's column order with every group column in GROUPS order, each
+    prefix's run where that prefix's columns already stand (new groups slot
+    in beside the old, rather than at the end of the file)."""
+    out: list[str] = []
+    placed: set[str] = set()
+    for c in columns:
+        pref = next((p for p in GROUP_PREFIXES if c.startswith(p) and c[len(p):] in GROUPS + RETIRED_GROUPS), None)
+        if pref is None:
+            out.append(c)
+            continue
+        if pref in placed:
+            continue
+        placed.add(pref)
+        out += [pref + g for g in GROUPS if pref + g in columns]
+    return out
+
+
+def regroup() -> None:
+    """--regroup: read the channel groups again on the panel on file, with the
+    groups as DISPLAY_GROUPS now has them, and nothing else.
+
+    A change to how the channels are grouped (Organic Search and Organic Other
+    out of one search_direct_other group, 9 November 2026) moves only the
+    per-group columns - each group's share of sessions, entries and units, its
+    conversion, its sessions, entries and units, Direct's share of its own
+    group and the raw channel shares (channel_mix_features). They are
+    recomputed from the funnel export over each row's own window, for every
+    row that has one. The windows, the totals, the timing features, the
+    clusters and the pricing stay exactly as they are: a regrouping is no
+    reason to move a launch between baskets, and the clustering is re-run by
+    hand (the full run) when the owner decides it should be. The columns of
+    the retired groups are dropped, the baskets file's per-cluster quartiles
+    are rewritten from the regrouped rows (its diagnostics describe the
+    clustering and stand), and attribution_through records the export's last
+    day the groups were read on. A row whose release the export no longer
+    carries under that name keeps NaN in the group columns and is named."""
+    df = load_daily()
+    as_of = df["event_date"].max().date()
+    panel = pd.read_csv(OUT_CSV, low_memory=False)
+    with_window = panel["window_start"].notna() & panel["window_end"].notna()
+    new_cols: dict[str, dict] = {}
+    missing: list[str] = []
+    for i, r in panel[with_window].iterrows():
+        ws, we = pd.Timestamp(r["window_start"]), pd.Timestamp(r["window_end"])
+        x = df[(df["simple_release_name"] == r["release_name"]) & (df["event_date"] >= ws) & (df["event_date"] <= we)]
+        if x.empty:
+            missing.append(str(r["release_name"]))
+            continue
+        new_cols[i] = channel_mix_features(x)
+    feats = pd.DataFrame.from_dict(new_cols, orient="index").reindex(panel.index)
+    out = panel.drop(columns=[c for c in panel.columns if c in feats.columns]
+                     + [p + g for p in GROUP_PREFIXES for g in RETIRED_GROUPS if p + g in panel.columns])
+    out = pd.concat([out, feats], axis=1)
+    out = out[_place_group_columns(list(out.columns))]
+    built = date.today().isoformat()
+    out = out.assign(attribution_basis=ATTRIBUTION, attribution_through=as_of.isoformat(), panel_built=built)
+    draw = out[out["panel"] == "draw"]
+    print(f"regrouped {len(new_cols)} rows with a window ({len(draw)} in the draw panel) on the export through {as_of}; "
+          f"groups {', '.join(GROUPS)}; dropped {', '.join(RETIRED_GROUPS)}")
+    if missing:
+        print(f"no rows in the export for {len(missing)} release(s), group columns left empty: " + "; ".join(missing))
+    med = draw[[f"sess_share_{g}" for g in GROUPS]].median()
+    print("draw panel median session share by group: " + ", ".join(f"{g} {med[f'sess_share_{g}']:.1%}" for g in GROUPS))
+    for key in ("sessions", "entries", "units"):
+        ser = pd.to_numeric(draw[f"direct_in_group_{key}"], errors="coerce").dropna()
+        print(f"Direct's median share of Organic Other's {key}: {ser.median():.1%} over {len(ser)} launches")
+    out.to_csv(OUT_CSV, index=False)
+    # the baskets file: the per-cluster quartiles on the regrouped rows
+    doc = json.loads(OUT_JSON.read_text())
+    for cl in doc.get("clusters") or []:
+        sub = draw[draw["release_name"].isin(cl.get("members") or [])]
+        if len(sub):
+            cl.update({k: v for k, v in basket(sub).items() if k in ("quartiles", "channel_session_share")})
+    legacy_members = (doc.get("legacy") or {}).get("members") or []
+    leg = out[out["release_name"].isin(legacy_members)]
+    if len(leg):
+        doc["legacy"].update({k: v for k, v in basket(leg, draw=False).items() if k in ("quartiles", "channel_session_share")})
+    doc["regrouped"] = {"built": built, "export_through": as_of.isoformat(), "groups": GROUPS,
+                        "note": "per-group columns re-read on this export with the groups as listed; "
+                                "windows, features, clusters and the diagnostics are the full run's"}
+    OUT_JSON.write_text(json.dumps(doc, indent=1, default=str))
+    print(f"wrote {OUT_CSV} ({len(out)} rows) and {OUT_JSON}")
+
+
 def main() -> None:
     if "--pricing-only" in sys.argv[1:]:
         pricing_only()
+        return
+    if "--regroup" in sys.argv[1:]:
+        regroup()
         return
     pd.set_option("display.width", 250); pd.set_option("display.max_columns", 80); pd.set_option("display.max_rows", 500)
     warnings.filterwarnings("ignore")

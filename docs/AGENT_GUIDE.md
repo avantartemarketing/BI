@@ -45,7 +45,7 @@ over five **channel groups** and spread over the campaign days by pace curves, w
 | Benchmark | The basket's median units (`benchmark.units`), with P25/P75. `hero.benchmark` at the close, `hero.benchmarkToday` by today |
 | Stretch | The uplift from benchmark towards target; `benchmark.k` is target / benchmark, `hero.stretch` the units it adds |
 | Basket | The comparable launches behind the benchmark (`benchmark.basket`: id, name, n) |
-| Channel groups | aa_email (AA Email Auto + Man), aa_social (AA Meta, AA X), referral_artist, search_direct_other (Direct, Organic Search, Other, AA Other, Referral Meta/Other/X), paid (Paid Social, Paid Search). DATA_MODEL 1.3 |
+| Channel groups | aa_email (AA Email Auto + Man), aa_social (AA Meta, AA X), referral_artist, organic_search (Organic Search), organic_other (Direct, Other, AA Other, Referral Meta/Other/X; "Organic Other" on the page), paid (Paid Social, Paid Search). Until 9 November 2026 organic_search and organic_other were one group, search_direct_other ("Direct etc."). DATA_MODEL 1.3 |
 | Untracked | Units or entries the funnel could not attribute; shared out over the tracked channels pro rata on adjusted figures. `untracked` on the snapshot |
 | Direct display | A page-wide switch: Direct as its own channel, or **Spread** (the default) over the other channels. The page lays `variants.direct_spread` over the snapshot when Spread is on; `get_release` does the same with the reader's setting |
 | Horizon | Today or At close on a live release: whether cards compare to expected today or to the target at close |

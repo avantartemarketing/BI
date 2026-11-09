@@ -11,7 +11,12 @@ import { fmt, fmtPct } from "../format.mjs";
 import { wordsOf } from "../vocab.mjs";
 import { Bars, Frame } from "../icons.jsx";
 
-const GROUPS = [["aa_email", "AA Email"], ["aa_social", "AA Meta"], ["referral_artist", "Artist"], ["search_direct_other", "Direct etc."], ["paid", "Paid"]];
+const GROUPS = [["aa_email", "AA Email"], ["aa_social", "AA Meta"], ["referral_artist", "Artist"], ["organic_search", "Organic Search"], ["organic_other", "Organic Other"], ["paid", "Paid"]];
+/* a group a page carries that is not listed above - search_direct_other on a
+ * page built before the 9 November 2026 split, until the refresh rebuilds it -
+ * still gets its row, after the listed ones */
+const LEGACY_NAMES = { search_direct_other: "Direct etc." };
+const groupsOf = (fbg) => [...GROUPS, ...Object.keys(fbg).filter((k) => !GROUPS.some(([g]) => g === k)).map((k) => [k, LEGACY_NAMES[k] || k])];
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const signed = (p) => (p === null ? "–" : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p * 100))}%`);
 const rel = (a, b) => (finite(a) && finite(b) && b > 0 ? a / b - 1 : null);
@@ -24,7 +29,7 @@ export default function FunnelTable({ snap, vs = "target" }) {
   const targeted = vs !== "benchmark" && snap.targeted !== false && Object.values(fbg).some((g) => finite(g.sessions_expected) && g.sessions_expected > 0);
   const W = wordsOf(snap);
   const refWord = targeted ? "plan" : "basket";
-  const rows = GROUPS.map(([k, name]) => {
+  const rows = groupsOf(fbg).map(([k, name]) => {
     const g = fbg[k] || {};
     const sessRef = targeted ? g.sessions_expected : g.sessions_benchmark;
     const convRef = targeted ? g.conv_expected : g.conv_benchmark_today ?? g.conv_benchmark;

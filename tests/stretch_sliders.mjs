@@ -8,10 +8,10 @@ let failed = 0;
 const check = (cond, msg) => { if (!cond) { failed += 1; console.log("FAIL " + msg); } };
 const close = (a, b) => Math.abs(a - b) <= 1e-9;
 const sum = (o) => Object.values(o).reduce((s, v) => s + v, 0);
-const ACTIVE = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
+const ACTIVE = ["aa_email", "aa_social", "referral_artist", "organic_search", "organic_other", "paid"];
 
-// paid slid up to 60%: the other four keep their proportions of the remaining 40%
-const basket = { aa_email: 0.2, aa_social: 0.1, referral_artist: 0.3, search_direct_other: 0.1, paid: 0.3 };
+// paid slid up to 60%: the other five keep their proportions of the remaining 40%
+const basket = { aa_email: 0.2, aa_social: 0.1, referral_artist: 0.3, organic_search: 0.04, organic_other: 0.06, paid: 0.3 };
 const up = rebalanceShares(basket, "paid", 0.6, ACTIVE);
 check(close(up.paid, 0.6), `paid takes the value: ${up.paid}`);
 check(Math.abs(up.aa_email - 0.4 * 0.2 / 0.7) < 0.0002, `the others rescale in proportion: aa_email ${up.aa_email}`);
@@ -26,7 +26,7 @@ const down = rebalanceShares(basket, "paid", 0, ACTIVE);
 check(close(down.paid, 0) && close(sum(down), 1) && Math.abs(down.referral_artist - 0.3 / 0.7) < 0.0002, `paid at nothing, the rest carry it: ${JSON.stringify(down)}`);
 // the moved group had it all: the rest is spread evenly over the others
 const spread = rebalanceShares({ paid: 1 }, "paid", 0.5, ACTIVE);
-check(close(spread.paid, 0.5) && close(spread.aa_email, 0.125) && close(spread.search_direct_other, 0.125) && close(sum(spread), 1), `from all-paid, the others split the rest evenly: ${JSON.stringify(spread)}`);
+check(close(spread.paid, 0.5) && close(spread.aa_email, 0.1) && close(spread.organic_other, 0.1) && close(sum(spread), 1), `from all-paid, the other five split the rest evenly: ${JSON.stringify(spread)}`);
 // only the active groups take a share: a group set aside is left out
 const few = rebalanceShares(basket, "paid", 0.5, ["paid", "aa_email"]);
 check(close(few.paid, 0.5) && close(few.aa_email, 0.5) && !("aa_social" in few) && !("referral_artist" in few), `inactive groups are left out: ${JSON.stringify(few)}`);

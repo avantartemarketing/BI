@@ -52,7 +52,7 @@ def check_page(s: dict, label: str) -> None:
     in_window = st in ("window", "settling", "closed")
     unit = "units" if in_window else "signups"
     hero, chans, fbg, wf, clock = s["hero"], s["channels"], s["funnelByGroup"], s.get("waterfall"), s["clock"]
-    check(len(chans) == 5 and set(fbg) == set(tl.GROUPS), f"{label}: five channel groups and a funnel entry for each")
+    check(len(chans) == len(tl.GROUPS) and set(fbg) == set(tl.GROUPS), f"{label}: {len(tl.GROUPS)} channel groups and a funnel entry for each")
     # the clock: days from the announce to the open, hours from the sales open to the close
     check(clock["unit"] == ("hour" if in_window else "day") and s["of"] == clock["of"] and s["day"] == clock["day"], f"{label}: the clock is the state's ({clock})")
     check(0 <= s["day"] <= s["of"] >= 1, f"{label}: the day is inside the clock ({s['day']} of {s['of']})")

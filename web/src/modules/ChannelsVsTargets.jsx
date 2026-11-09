@@ -14,7 +14,10 @@ import { ColChart, niceAxis, kfmt, COL, sw, ol } from "../charts.jsx";
 import { fmt } from "../format.mjs";
 import { wordsOf } from "../vocab.mjs";
 
-const SHORT = { aa_email: "Email", aa_social: "Meta", referral_artist: "Artist", search_direct_other: "Direct", paid: "Paid" };
+/* the column labels, the two organic groups on two lines so six columns fit a
+ * half-width card; a key not listed (a page built before the 9 November 2026
+ * split, until the refresh rebuilds it) reads the snapshot's own name */
+const SHORT = { aa_email: "Email", aa_social: "Meta", referral_artist: "Artist", organic_search: ["Organic", "Search"], organic_other: ["Organic", "Other"], paid: "Paid" };
 const has = (v) => v !== null && v !== undefined;
 const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
 const diff = (a, b) => { if (!(b > 0)) return ""; const p = Math.round((a / b - 1) * 100); return `  ${p >= 0 ? "+" : "−"}${Math.abs(p)}%`; };

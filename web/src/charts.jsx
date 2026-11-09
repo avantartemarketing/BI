@@ -158,10 +158,15 @@ export function LineChart({ H = 250, L = 36, R = 8, T = 10, B = 26, n, ymax, ymi
  * gap; the benchmark is a dotted mark across the column. refName names the
  * pale bar in the legend: the target, or the benchmark when the page reads
  * against it (and then the dotted mark is left out). */
-export function ColChart({ H = 250, L = 30, R = 4, T = 10, B = 26, gw = 0.32, ymax, yticks = [], yfmt = String, cats, rows,
+export function ColChart({ H = 250, L = 30, R = 4, T = 10, B: B0 = 26, gw = 0.32, ymax, yticks = [], yfmt = String, cats, rows,
   title, tipRows, aria = "", legend: legendIn, refName = "Target", fallbackW }) {
   const [ref, W] = useW(fallbackW);
   const [hover, setHover] = useState(null);
+  // a category given as lines (["Organic", "Search"]) is written on two lines,
+  // and the baseline makes room for the second (9 November 2026: six columns
+  // in a half-width card, and two of their names ran into each other)
+  const B = cats.some((c) => Array.isArray(c)) ? B0 + 13 : B0;
+  const lab = (c) => (Array.isArray(c) ? c.map((l, j) => <span key={j} style={{ display: "block", textAlign: "center", lineHeight: 1.25 }}>{l}</span>) : c);
   const o = { W, H, L, R, T, B };
   const n = cats.length, slot = (W - L - R) / n, bw = slot * gw;
   const y = (v) => T + (1 - v / ymax) * (H - T - B);
@@ -187,9 +192,9 @@ export function ColChart({ H = 250, L = 30, R = 4, T = 10, B = 26, gw = 0.32, ym
   });
   paths.push({ d: tnt, fl: COL.TINT }); paths.push({ d: out, st: COL.GREY, sw: 1.5, da: "0 3.5" }); paths.push({ d: fil, fl: COL.IND });
   paths.push({ d: bm, st: COL.INK, sw: 2, da: "1 4" });
-  cats.forEach((c, i) => labs.push(labX(o, c, L + slot * i + slot / 2, H - B + 9)));
+  cats.forEach((c, i) => labs.push(labX(o, lab(c), L + slot * i + slot / 2, H - B + 9)));
   for (let i = 0; i < n; i++) hits.push({ s: box(o, L + slot * i, 0, slot, H - B), e: () => setHover(i) });
-  const tip = hover == null ? noTip : tipAt(o, L + slot * hover + slot / 2, title ? title(hover) : cats[hover], tipRows ? tipRows(hover) : []);
+  const tip = hover == null ? noTip : tipAt(o, L + slot * hover + slot / 2, title ? title(hover) : [].concat(cats[hover]).join(" "), tipRows ? tipRows(hover) : []);
   const anyT = rows.some((r) => r[2] > 0), anyB = rows.some((r) => r[3] != null && r[3] > 0);
   const legend = legendIn || [
     { n: "Actual", k: sw(COL.IND) },

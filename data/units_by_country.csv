@@ -1,8 +1,8 @@
 release,country,units_paid,orders
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Saudi Arabia,8,4
 Abdulnasser Gharem · Hemisphere · 2026 Q3,United Arab Emirates,4,4
-Abdulnasser Gharem · Hemisphere · 2026 Q3,United States,3,3
 Abdulnasser Gharem · Hemisphere · 2026 Q3,United Kingdom,2,2
+Abdulnasser Gharem · Hemisphere · 2026 Q3,United States,2,2
 Abdulnasser Gharem · Hemisphere · 2026 Q3,France,1,1
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hong Kong,1,1
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Switzerland,1,1
@@ -23,13 +23,13 @@ Ahmed Mater · Multiple · 2026 Q3,United Arab Emirates,2,2
 Ahmed Mater · Multiple · 2026 Q3,Belgium,1,1
 Ahmed Mater · Multiple · 2026 Q3,Germany,1,1
 Ahmed Mater · Multiple · 2026 Q3,Spain,1,1
-Ai Weiwei · Arm · Multiple · 2026 Q2,United States,38,38
-Ai Weiwei · Arm · Multiple · 2026 Q2,United Kingdom,24,24
+Ai Weiwei · Arm · Multiple · 2026 Q2,United States,39,39
+Ai Weiwei · Arm · Multiple · 2026 Q2,United Kingdom,23,23
 Ai Weiwei · Arm · Multiple · 2026 Q2,Germany,12,12
 Ai Weiwei · Arm · Multiple · 2026 Q2,Italy,8,8
 Ai Weiwei · Arm · Multiple · 2026 Q2,Switzerland,8,8
+Ai Weiwei · Arm · Multiple · 2026 Q2,Netherlands,7,7
 Ai Weiwei · Arm · Multiple · 2026 Q2,Australia,6,6
-Ai Weiwei · Arm · Multiple · 2026 Q2,Netherlands,6,6
 Ai Weiwei · Arm · Multiple · 2026 Q2,Canada,4,4
 Ai Weiwei · Arm · Multiple · 2026 Q2,Hong Kong,4,4
 Ai Weiwei · Arm · Multiple · 2026 Q2,Sweden,4,4
@@ -326,7 +326,7 @@ Ai Weiwei · Multiple · 2024 Q4,Malaysia,1,1
 Ai Weiwei · Multiple · 2024 Q4,Malta,1,1
 Ai Weiwei · Multiple · 2024 Q4,Mexico,1,1
 Ai Weiwei · Multiple · 2024 Q4,United Arab Emirates,1,1
-Ai Weiwei · Multiple · 2025 Q3,United States,132,106
+Ai Weiwei · Multiple · 2025 Q3,United States,131,105
 Ai Weiwei · Multiple · 2025 Q3,United Kingdom,100,85
 Ai Weiwei · Multiple · 2025 Q3,Italy,28,25
 Ai Weiwei · Multiple · 2025 Q3,Netherlands,21,21
@@ -416,6 +416,32 @@ Ai Weiwei · Multiple · 2026 Q3,Saudi Arabia,1,1
 Ai Weiwei · Multiple · 2026 Q3,Singapore,1,1
 Ai Weiwei · Multiple · 2026 Q3,Switzerland,1,1
 Ai Weiwei · Multiple · 2026 Q3,United States,1,1
+Ai Weiwei · Multiple · 2026 Q4,United States,77,65
+Ai Weiwei · Multiple · 2026 Q4,United Kingdom,61,49
+Ai Weiwei · Multiple · 2026 Q4,Netherlands,20,14
+Ai Weiwei · Multiple · 2026 Q4,Germany,15,12
+Ai Weiwei · Multiple · 2026 Q4,Italy,13,12
+Ai Weiwei · Multiple · 2026 Q4,Switzerland,12,11
+Ai Weiwei · Multiple · 2026 Q4,France,11,11
+Ai Weiwei · Multiple · 2026 Q4,Singapore,7,5
+Ai Weiwei · Multiple · 2026 Q4,Canada,6,5
+Ai Weiwei · Multiple · 2026 Q4,Australia,5,5
+Ai Weiwei · Multiple · 2026 Q4,Austria,5,5
+Ai Weiwei · Multiple · 2026 Q4,Portugal,5,2
+Ai Weiwei · Multiple · 2026 Q4,Greece,4,3
+Ai Weiwei · Multiple · 2026 Q4,Hong Kong,3,2
+Ai Weiwei · Multiple · 2026 Q4,Ireland,3,2
+Ai Weiwei · Multiple · 2026 Q4,Mexico,3,2
+Ai Weiwei · Multiple · 2026 Q4,Belgium,2,2
+Ai Weiwei · Multiple · 2026 Q4,Denmark,2,2
+Ai Weiwei · Multiple · 2026 Q4,Japan,2,2
+Ai Weiwei · Multiple · 2026 Q4,Luxembourg,2,2
+Ai Weiwei · Multiple · 2026 Q4,Norway,2,2
+Ai Weiwei · Multiple · 2026 Q4,Romania,2,1
+Ai Weiwei · Multiple · 2026 Q4,Sweden,2,2
+Ai Weiwei · Multiple · 2026 Q4,Bulgaria,1,1
+Ai Weiwei · Multiple · 2026 Q4,Spain,1,1
+Ai Weiwei · Multiple · 2026 Q4,United Arab Emirates,1,1
 Ai Weiwei · To Be Looked At... · 2024 Q4,United Kingdom,61,59
 Ai Weiwei · To Be Looked At... · 2024 Q4,United States,58,58
 Ai Weiwei · To Be Looked At... · 2024 Q4,Netherlands,13,13
@@ -480,7 +506,7 @@ Alpha Centauri Kid · Warothy · 2023 Q4,South Korea,1,1
 Amani Lewis · TWO QUEENS: Ode to Romare Bearden · 2021 Q3,United States,3,3
 Amani Lewis · TWO QUEENS: Ode to Romare Bearden · 2021 Q3,France,1,1
 Amani Lewis · TWO QUEENS: Ode to Romare Bearden · 2021 Q3,United Kingdom,1,1
-Andy Warhol Estate · Multiple · 2026 Q4,United States,681,546
+Andy Warhol Estate · Multiple · 2026 Q4,United States,676,542
 Andy Warhol Estate · Multiple · 2026 Q4,United Kingdom,164,139
 Andy Warhol Estate · Multiple · 2026 Q4,Canada,41,34
 Andy Warhol Estate · Multiple · 2026 Q4,Germany,35,26
@@ -498,9 +524,9 @@ Andy Warhol Estate · Multiple · 2026 Q4,France,14,13
 Andy Warhol Estate · Multiple · 2026 Q4,Japan,13,10
 Andy Warhol Estate · Multiple · 2026 Q4,Singapore,12,12
 Andy Warhol Estate · Multiple · 2026 Q4,South Korea,11,7
-Andy Warhol Estate · Multiple · 2026 Q4,Portugal,7,5
 Andy Warhol Estate · Multiple · 2026 Q4,Austria,6,6
 Andy Warhol Estate · Multiple · 2026 Q4,Norway,6,6
+Andy Warhol Estate · Multiple · 2026 Q4,Portugal,6,4
 Andy Warhol Estate · Multiple · 2026 Q4,Greece,4,2
 Andy Warhol Estate · Multiple · 2026 Q4,New Zealand,4,2
 Andy Warhol Estate · Multiple · 2026 Q4,Spain,4,4
@@ -780,7 +806,7 @@ Benrei Huang · Minority Rules · 2024 Q1,Singapore,4,4
 Benrei Huang · Minority Rules · 2024 Q1,Hong Kong,2,2
 Benrei Huang · Minority Rules · 2024 Q1,Netherlands,1,1
 Benrei Huang · Minority Rules · 2024 Q1,Portugal,1,1
-Bisa Butler · Multiple · 2026 Q4,United States,1373,1195
+Bisa Butler · Multiple · 2026 Q4,United States,1377,1199
 Bisa Butler · Multiple · 2026 Q4,United Kingdom,35,24
 Bisa Butler · Multiple · 2026 Q4,Canada,11,10
 Bisa Butler · Multiple · 2026 Q4,Netherlands,5,5
@@ -788,12 +814,12 @@ Bisa Butler · Multiple · 2026 Q4,Germany,4,4
 Bisa Butler · Multiple · 2026 Q4,Italy,4,2
 Bisa Butler · Multiple · 2026 Q4,Australia,3,2
 Bisa Butler · Multiple · 2026 Q4,France,2,2
+Bisa Butler · Multiple · 2026 Q4,Japan,2,2
 Bisa Butler · Multiple · 2026 Q4,Portugal,2,2
 Bisa Butler · Multiple · 2026 Q4,Qatar,2,2
 Bisa Butler · Multiple · 2026 Q4,Spain,2,1
 Bisa Butler · Multiple · 2026 Q4,Belgium,1,1
 Bisa Butler · Multiple · 2026 Q4,Denmark,1,1
-Bisa Butler · Multiple · 2026 Q4,Japan,1,1
 Bisa Butler · Multiple · 2026 Q4,Luxembourg,1,1
 Bisa Butler · Multiple · 2026 Q4,Nigeria,1,1
 Bisa Butler · Multiple · 2026 Q4,Singapore,1,1
@@ -821,21 +847,21 @@ Bridget Mullen · Multiple · 2023 Q3,United Kingdom,1,1
 Bäst · Sunday Afternoon · 2022 Q4,Spain,1,1
 Bäst · Sunday Afternoon · 2022 Q4,United Kingdom,1,1
 Bäst · Sunday Afternoon · 2022 Q4,United States,1,1
-Cai Guo-Qiang · Multiple · 2026 Q4,United States,69,66
-Cai Guo-Qiang · Multiple · 2026 Q4,United Kingdom,21,20
-Cai Guo-Qiang · Multiple · 2026 Q4,Singapore,16,16
-Cai Guo-Qiang · Multiple · 2026 Q4,Australia,10,10
-Cai Guo-Qiang · Multiple · 2026 Q4,Italy,10,10
-Cai Guo-Qiang · Multiple · 2026 Q4,Hong Kong,8,8
+Cai Guo-Qiang · Multiple · 2026 Q4,United States,90,82
+Cai Guo-Qiang · Multiple · 2026 Q4,United Kingdom,22,21
+Cai Guo-Qiang · Multiple · 2026 Q4,Singapore,17,17
+Cai Guo-Qiang · Multiple · 2026 Q4,Hong Kong,12,12
+Cai Guo-Qiang · Multiple · 2026 Q4,Australia,11,11
+Cai Guo-Qiang · Multiple · 2026 Q4,Italy,11,11
 Cai Guo-Qiang · Multiple · 2026 Q4,Switzerland,6,6
 Cai Guo-Qiang · Multiple · 2026 Q4,Japan,4,4
+Cai Guo-Qiang · Multiple · 2026 Q4,United Arab Emirates,4,4
 Cai Guo-Qiang · Multiple · 2026 Q4,Germany,3,3
 Cai Guo-Qiang · Multiple · 2026 Q4,Netherlands,3,3
-Cai Guo-Qiang · Multiple · 2026 Q4,United Arab Emirates,3,3
+Cai Guo-Qiang · Multiple · 2026 Q4,Canada,2,2
 Cai Guo-Qiang · Multiple · 2026 Q4,Cyprus,2,2
 Cai Guo-Qiang · Multiple · 2026 Q4,France,2,2
 Cai Guo-Qiang · Multiple · 2026 Q4,Ireland,2,2
-Cai Guo-Qiang · Multiple · 2026 Q4,Canada,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Denmark,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Luxembourg,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Mexico,1,1
@@ -963,7 +989,7 @@ Cindy Sherman · Untitled · 2025 Q4,Israel,1,1
 Cindy Sherman · Untitled · 2025 Q4,Poland,1,1
 Cindy Sherman · Untitled · 2025 Q4,Romania,1,1
 Cindy Sherman · Untitled · 2025 Q4,Slovakia,1,1
-Cindy Sherman · Untitled · 2026 Q2,United States,302,302
+Cindy Sherman · Untitled · 2026 Q2,United States,301,301
 Cindy Sherman · Untitled · 2026 Q2,United Kingdom,54,54
 Cindy Sherman · Untitled · 2026 Q2,Italy,19,19
 Cindy Sherman · Untitled · 2026 Q2,Germany,16,16
@@ -1017,7 +1043,7 @@ Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Luxembourg,1,1
 Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Netherlands,1,1
 Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Portugal,1,1
 Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Taiwan,1,1
-Cleon Peterson · Multiple · 2023 Q3,United States,77,67
+Cleon Peterson · Multiple · 2023 Q3,United States,78,68
 Cleon Peterson · Multiple · 2023 Q3,Australia,8,7
 Cleon Peterson · Multiple · 2023 Q3,Canada,7,7
 Cleon Peterson · Multiple · 2023 Q3,Netherlands,7,6
@@ -1187,26 +1213,26 @@ Danielle Mckinney · Shelter · 2024 Q3,Greece,1,1
 Danielle Mckinney · Shelter · 2024 Q3,Hong Kong,1,1
 Danielle Mckinney · Shelter · 2024 Q3,Japan,1,1
 Danielle Mckinney · Shelter · 2024 Q3,Spain,1,1
-David Wojnarowicz · Multiple · 2026 Q4,United States,199,167
+David Wojnarowicz · Multiple · 2026 Q4,United States,198,166
 David Wojnarowicz · Multiple · 2026 Q4,United Kingdom,22,21
 David Wojnarowicz · Multiple · 2026 Q4,Canada,10,9
-David Wojnarowicz · Multiple · 2026 Q4,Australia,7,6
+David Wojnarowicz · Multiple · 2026 Q4,Australia,6,5
 David Wojnarowicz · Multiple · 2026 Q4,France,6,6
+David Wojnarowicz · Multiple · 2026 Q4,Germany,5,5
 David Wojnarowicz · Multiple · 2026 Q4,Netherlands,5,5
 David Wojnarowicz · Multiple · 2026 Q4,Switzerland,5,4
-David Wojnarowicz · Multiple · 2026 Q4,Germany,4,4
 David Wojnarowicz · Multiple · 2026 Q4,Italy,4,4
 David Wojnarowicz · Multiple · 2026 Q4,Poland,4,4
 David Wojnarowicz · Multiple · 2026 Q4,Belgium,3,2
 David Wojnarowicz · Multiple · 2026 Q4,Ireland,2,1
+David Wojnarowicz · Multiple · 2026 Q4,Portugal,2,2
 David Wojnarowicz · Multiple · 2026 Q4,Spain,2,2
-David Wojnarowicz · Multiple · 2026 Q4,Sweden,2,2
 David Wojnarowicz · Multiple · 2026 Q4,Brazil,1,1
 David Wojnarowicz · Multiple · 2026 Q4,Denmark,1,1
 David Wojnarowicz · Multiple · 2026 Q4,Greece,1,1
 David Wojnarowicz · Multiple · 2026 Q4,Monaco,1,1
 David Wojnarowicz · Multiple · 2026 Q4,New Zealand,1,1
-David Wojnarowicz · Multiple · 2026 Q4,Portugal,1,1
+David Wojnarowicz · Multiple · 2026 Q4,Sweden,1,1
 David Wojnarowicz · Multiple · 2026 Q4,United Arab Emirates,1,1
 DeeKay · Love Ripples · 2024 Q1,United States,18,17
 DeeKay · Love Ripples · 2024 Q1,Canada,4,4
@@ -1421,6 +1447,11 @@ Ferrari Sheppard · Iris · 2025 Q2,Belgium,1,1
 Ferrari Sheppard · Iris · 2025 Q2,Canada,1,1
 Ferrari Sheppard · Iris · 2025 Q2,Malta,1,1
 Ferrari Sheppard · Iris · 2025 Q2,South Africa,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,United States,27,27
+Ferrari Sheppard · Multiple · 2026 Q4,United Kingdom,5,5
+Ferrari Sheppard · Multiple · 2026 Q4,Australia,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,Canada,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,Portugal,1,1
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,United States,79,79
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,United Kingdom,9,9
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,Canada,2,2
@@ -2069,7 +2100,7 @@ James Jean · Multiple · 2026 Q3,Switzerland,12,12
 James Jean · Multiple · 2026 Q3,France,8,8
 James Jean · Multiple · 2026 Q3,Japan,8,7
 James Jean · Multiple · 2026 Q3,Hong Kong,6,6
-James Jean · Multiple · 2026 Q3,Taiwan,6,6
+James Jean · Multiple · 2026 Q3,Taiwan,5,5
 James Jean · Multiple · 2026 Q3,Belgium,4,4
 James Jean · Multiple · 2026 Q3,Norway,4,4
 James Jean · Multiple · 2026 Q3,United Arab Emirates,4,4
@@ -2252,6 +2283,16 @@ Jenna Gribbon · Glaring Shade · 2023 Q2,United Kingdom,8,8
 Jenna Gribbon · Glaring Shade · 2023 Q2,United States,2,2
 Jenna Gribbon · Glaring Shade · 2023 Q2,Belgium,1,1
 Jenna Gribbon · Glaring Shade · 2023 Q2,Germany,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,United States,13,13
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,France,2,2
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Hong Kong,2,2
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Japan,2,2
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,United Kingdom,2,2
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Belgium,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Germany,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Netherlands,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Singapore,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,South Korea,1,1
 Jenny Brosinski · Untitled 6 · 2020 Q3,United States,1,1
 Jenny Brosinski · Untitled 9 · 2020 Q3,Germany,1,1
 Jenny Holzer · Multiple · 2025 Q1,United States,14,14
@@ -2328,7 +2369,7 @@ Joan Cornellà · Work Hard and Then Die · 2025 Q4,Lithuania,1,1
 Joan Cornellà · Work Hard and Then Die · 2025 Q4,Macao,1,1
 Joan Cornellà · Work Hard and Then Die · 2025 Q4,Philippines,1,1
 Joel Mesler · Multiple · 2026 Q2,United States,51,40
-Joel Mesler · Multiple · 2026 Q2,United Kingdom,10,10
+Joel Mesler · Multiple · 2026 Q2,United Kingdom,9,9
 Joel Mesler · Multiple · 2026 Q2,Israel,6,1
 Joel Mesler · Multiple · 2026 Q2,Japan,5,2
 Joel Mesler · Multiple · 2026 Q2,Romania,4,1
@@ -2373,6 +2414,18 @@ Johnson Tsang · Alliance · 2026 Q2,Romania,1,1
 Johnson Tsang · Alliance · 2026 Q2,Slovenia,1,1
 Johnson Tsang · Alliance · 2026 Q2,Thailand,1,1
 Johnson Tsang · Fight for a Dream · 2021 Q2,Hong Kong,1,1
+Johnson Tsang · In Position · 2026 Q4,United States,14,14
+Johnson Tsang · In Position · 2026 Q4,United Kingdom,4,4
+Johnson Tsang · In Position · 2026 Q4,Germany,3,3
+Johnson Tsang · In Position · 2026 Q4,Australia,1,1
+Johnson Tsang · In Position · 2026 Q4,Belgium,1,1
+Johnson Tsang · In Position · 2026 Q4,Canada,1,1
+Johnson Tsang · In Position · 2026 Q4,China,1,1
+Johnson Tsang · In Position · 2026 Q4,Netherlands,1,1
+Johnson Tsang · In Position · 2026 Q4,Poland,1,1
+Johnson Tsang · In Position · 2026 Q4,Spain,1,1
+Johnson Tsang · In Position · 2026 Q4,Switzerland,1,1
+Johnson Tsang · In Position · 2026 Q4,United Arab Emirates,1,1
 Johnson Tsang · Multiple · 2022 Q1,United Kingdom,21,9
 Johnson Tsang · Multiple · 2022 Q1,United States,17,17
 Johnson Tsang · Multiple · 2022 Q1,Netherlands,4,3
@@ -2410,10 +2463,10 @@ Johnson Tsang · Remembrance · 2025 Q3,France,7,7
 Johnson Tsang · Remembrance · 2025 Q3,Germany,5,5
 Johnson Tsang · Remembrance · 2025 Q3,Switzerland,5,5
 Johnson Tsang · Remembrance · 2025 Q3,United Arab Emirates,5,5
+Johnson Tsang · Remembrance · 2025 Q3,Australia,4,4
 Johnson Tsang · Remembrance · 2025 Q3,Austria,4,4
 Johnson Tsang · Remembrance · 2025 Q3,Brazil,4,4
 Johnson Tsang · Remembrance · 2025 Q3,Hong Kong,4,4
-Johnson Tsang · Remembrance · 2025 Q3,Australia,3,3
 Johnson Tsang · Remembrance · 2025 Q3,Canada,3,3
 Johnson Tsang · Remembrance · 2025 Q3,Portugal,3,3
 Johnson Tsang · Remembrance · 2025 Q3,Singapore,3,3
@@ -2604,12 +2657,12 @@ Julian Schnabel · Multiple · 2026 Q3,United States,98,90
 Julian Schnabel · Multiple · 2026 Q3,Germany,16,5
 Julian Schnabel · Multiple · 2026 Q3,United Kingdom,9,7
 Julian Schnabel · Multiple · 2026 Q3,Italy,8,6
-Julian Schnabel · Multiple · 2026 Q3,France,5,5
 Julian Schnabel · Multiple · 2026 Q3,United Arab Emirates,5,5
 Julian Schnabel · Multiple · 2026 Q3,Canada,4,4
 Julian Schnabel · Multiple · 2026 Q3,Sweden,4,3
 Julian Schnabel · Multiple · 2026 Q3,Austria,3,3
 Julian Schnabel · Multiple · 2026 Q3,Belgium,3,1
+Julian Schnabel · Multiple · 2026 Q3,France,3,3
 Julian Schnabel · Multiple · 2026 Q3,Greece,3,3
 Julian Schnabel · Multiple · 2026 Q3,Netherlands,3,1
 Julian Schnabel · Multiple · 2026 Q3,Denmark,2,2
@@ -2632,7 +2685,7 @@ Katharina Grosse · Multiple · 2026 Q1,Austria,19,15
 Katharina Grosse · Multiple · 2026 Q1,France,11,10
 Katharina Grosse · Multiple · 2026 Q1,New Zealand,8,6
 Katharina Grosse · Multiple · 2026 Q1,Spain,7,5
-Katharina Grosse · Multiple · 2026 Q1,Netherlands,5,5
+Katharina Grosse · Multiple · 2026 Q1,Netherlands,6,5
 Katharina Grosse · Multiple · 2026 Q1,Italy,4,4
 Katharina Grosse · Multiple · 2026 Q1,Czech Republic,3,1
 Katharina Grosse · Multiple · 2026 Q1,Malta,3,1
@@ -3115,20 +3168,20 @@ Maurizio Cattelan · La Nona Ora · 2026 Q2,Slovakia,1,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,Taiwan,1,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,Turkey,1,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,United Arab Emirates,1,1
-Maurizio Cattelan · Multiple · 2026 Q4,Italy,609,570
-Maurizio Cattelan · Multiple · 2026 Q4,United States,265,231
-Maurizio Cattelan · Multiple · 2026 Q4,Germany,129,88
-Maurizio Cattelan · Multiple · 2026 Q4,United Kingdom,107,92
+Maurizio Cattelan · Multiple · 2026 Q4,Italy,608,569
+Maurizio Cattelan · Multiple · 2026 Q4,United States,266,232
+Maurizio Cattelan · Multiple · 2026 Q4,Germany,131,90
+Maurizio Cattelan · Multiple · 2026 Q4,United Kingdom,106,91
 Maurizio Cattelan · Multiple · 2026 Q4,France,87,63
 Maurizio Cattelan · Multiple · 2026 Q4,Switzerland,82,77
 Maurizio Cattelan · Multiple · 2026 Q4,Netherlands,58,54
 Maurizio Cattelan · Multiple · 2026 Q4,Belgium,48,41
-Maurizio Cattelan · Multiple · 2026 Q4,Mexico,38,36
+Maurizio Cattelan · Multiple · 2026 Q4,Mexico,37,35
 Maurizio Cattelan · Multiple · 2026 Q4,Spain,23,22
 Maurizio Cattelan · Multiple · 2026 Q4,United Arab Emirates,19,18
-Maurizio Cattelan · Multiple · 2026 Q4,Australia,17,16
-Maurizio Cattelan · Multiple · 2026 Q4,Austria,17,14
 Maurizio Cattelan · Multiple · 2026 Q4,Denmark,17,15
+Maurizio Cattelan · Multiple · 2026 Q4,Australia,16,15
+Maurizio Cattelan · Multiple · 2026 Q4,Austria,15,12
 Maurizio Cattelan · Multiple · 2026 Q4,Hong Kong,14,13
 Maurizio Cattelan · Multiple · 2026 Q4,Singapore,13,12
 Maurizio Cattelan · Multiple · 2026 Q4,Canada,11,11
@@ -3136,9 +3189,9 @@ Maurizio Cattelan · Multiple · 2026 Q4,Luxembourg,10,9
 Maurizio Cattelan · Multiple · 2026 Q4,Czech Republic,9,7
 Maurizio Cattelan · Multiple · 2026 Q4,Greece,7,6
 Maurizio Cattelan · Multiple · 2026 Q4,Poland,7,7
-Maurizio Cattelan · Multiple · 2026 Q4,Portugal,7,7
 Maurizio Cattelan · Multiple · 2026 Q4,Romania,7,5
 Maurizio Cattelan · Multiple · 2026 Q4,Israel,6,5
+Maurizio Cattelan · Multiple · 2026 Q4,Portugal,6,6
 Maurizio Cattelan · Multiple · 2026 Q4,South Korea,6,4
 Maurizio Cattelan · Multiple · 2026 Q4,Monaco,5,5
 Maurizio Cattelan · Multiple · 2026 Q4,New Zealand,5,4
@@ -3622,6 +3675,10 @@ Pejac · Multiple · 2026 Q1,Japan,2,2
 Pejac · Multiple · 2026 Q1,Finland,1,1
 Pejac · Multiple · 2026 Q1,Hungary,1,1
 Pejac · Multiple · 2026 Q1,South Korea,1,1
+Pejac · Multiple · 2026 Q4,United Kingdom,5,4
+Pejac · Multiple · 2026 Q4,France,2,1
+Pejac · Multiple · 2026 Q4,Germany,2,1
+Pejac · Multiple · 2026 Q4,United States,2,1
 Peter Halley · Rising High II · 2024 Q2,United States,23,21
 Peter Halley · Rising High II · 2024 Q2,Switzerland,3,3
 Peter Halley · Rising High II · 2024 Q2,Germany,2,2
@@ -3784,46 +3841,48 @@ Rooo Lou · Earnest · 2023 Q2,Japan,1,1
 Rooo Lou · Earnest · 2023 Q2,Malaysia,1,1
 Rooo Lou · Earnest · 2023 Q2,Norway,1,1
 Rooo Lou · Earnest · 2023 Q2,Singapore,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,United States,732,410
-Roy Lichtenstein Estate · Multiple · 2026 Q4,United Kingdom,253,146
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Germany,54,32
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Netherlands,39,25
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Australia,37,23
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Canada,37,21
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Switzerland,33,19
-Roy Lichtenstein Estate · Multiple · 2026 Q4,France,25,17
-Roy Lichtenstein Estate · Multiple · 2026 Q4,United Arab Emirates,23,13
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Singapore,22,13
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Italy,21,17
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Japan,21,12
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Denmark,17,9
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Hong Kong,16,10
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Mexico,14,8
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Austria,11,7
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Greece,11,5
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Portugal,11,7
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Sweden,11,7
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Belgium,9,6
-Roy Lichtenstein Estate · Multiple · 2026 Q4,South Korea,9,6
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Norway,8,5
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Israel,6,2
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Spain,6,6
+Roy Lichtenstein Estate · Multiple · 2026 Q4,United States,980,597
+Roy Lichtenstein Estate · Multiple · 2026 Q4,United Kingdom,331,205
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Germany,82,54
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Netherlands,51,36
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Canada,50,33
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Australia,47,33
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Switzerland,45,28
+Roy Lichtenstein Estate · Multiple · 2026 Q4,France,39,28
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Singapore,33,20
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Japan,32,18
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Italy,31,27
+Roy Lichtenstein Estate · Multiple · 2026 Q4,United Arab Emirates,25,15
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Denmark,24,14
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Mexico,23,12
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Greece,20,9
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Hong Kong,19,13
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Portugal,16,11
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Spain,16,12
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Sweden,14,10
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Austria,12,8
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Belgium,11,8
+Roy Lichtenstein Estate · Multiple · 2026 Q4,South Korea,11,8
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Norway,10,7
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Israel,9,3
+Roy Lichtenstein Estate · Multiple · 2026 Q4,New Zealand,9,5
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Luxembourg,5,3
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Malaysia,4,1
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Malaysia,5,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Czech Republic,4,3
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Malta,4,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,New Zealand,4,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,South Africa,4,1
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Jersey,3,2
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Poland,3,2
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Croatia,2,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Jersey,2,1
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Estonia,2,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Hungary,2,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Ireland,2,2
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Monaco,2,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Saudi Arabia,2,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Cyprus,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Czech Republic,1,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Finland,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Hungary,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Ireland,1,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Lithuania,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Philippines,1,1
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Taiwan,1,1
 SETH · Little Sower · 2023 Q4,France,24,24
 SETH · Little Sower · 2023 Q4,China,2,2
 SETH · Little Sower · 2023 Q4,Portugal,2,1
@@ -3832,25 +3891,25 @@ SETH · Little Sower · 2023 Q4,United States,2,2
 SETH · Little Sower · 2023 Q4,Belgium,1,1
 SETH · Little Sower · 2023 Q4,Hong Kong,1,1
 SETH · Little Sower · 2023 Q4,United Kingdom,1,1
-Salvador Dali Estate · Multiple · 2026 Q3,United States,518,502
-Salvador Dali Estate · Multiple · 2026 Q3,United Kingdom,162,155
+Salvador Dali Estate · Multiple · 2026 Q3,United States,511,495
+Salvador Dali Estate · Multiple · 2026 Q3,United Kingdom,159,152
 Salvador Dali Estate · Multiple · 2026 Q3,Australia,58,58
 Salvador Dali Estate · Multiple · 2026 Q3,Netherlands,34,29
-Salvador Dali Estate · Multiple · 2026 Q3,Canada,31,31
+Salvador Dali Estate · Multiple · 2026 Q3,Canada,29,29
 Salvador Dali Estate · Multiple · 2026 Q3,Norway,27,26
 Salvador Dali Estate · Multiple · 2026 Q3,Singapore,26,24
 Salvador Dali Estate · Multiple · 2026 Q3,Italy,19,19
 Salvador Dali Estate · Multiple · 2026 Q3,Spain,19,18
-Salvador Dali Estate · Multiple · 2026 Q3,Germany,18,18
 Salvador Dali Estate · Multiple · 2026 Q3,United Arab Emirates,18,15
+Salvador Dali Estate · Multiple · 2026 Q3,Germany,17,17
 Salvador Dali Estate · Multiple · 2026 Q3,Switzerland,16,15
 Salvador Dali Estate · Multiple · 2026 Q3,Belgium,15,15
 Salvador Dali Estate · Multiple · 2026 Q3,Mexico,12,12
 Salvador Dali Estate · Multiple · 2026 Q3,France,10,10
 Salvador Dali Estate · Multiple · 2026 Q3,Portugal,10,10
 Salvador Dali Estate · Multiple · 2026 Q3,Denmark,9,8
-Salvador Dali Estate · Multiple · 2026 Q3,New Zealand,9,9
 Salvador Dali Estate · Multiple · 2026 Q3,Sweden,9,9
+Salvador Dali Estate · Multiple · 2026 Q3,New Zealand,8,8
 Salvador Dali Estate · Multiple · 2026 Q3,Ireland,7,6
 Salvador Dali Estate · Multiple · 2026 Q3,Hong Kong,5,5
 Salvador Dali Estate · Multiple · 2026 Q3,Malta,5,5
@@ -3884,6 +3943,12 @@ Sayre Gomez · America's Tire · 2025 Q2,Japan,1,1
 Sayre Gomez · America's Tire · 2025 Q2,Portugal,1,1
 Scott Kahn · INGERSOLL'S BRANCH · 2022 Q4,Hong Kong,1,1
 Scott Kahn · INGERSOLL'S BRANCH · 2022 Q4,United Kingdom,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,United States,12,12
+Seth Armstrong · Micheltorena · 2026 Q4,United Kingdom,4,4
+Seth Armstrong · Micheltorena · 2026 Q4,Netherlands,3,1
+Seth Armstrong · Micheltorena · 2026 Q4,Italy,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Japan,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Sweden,1,1
 Shigeki Matsuyama · Multiple · 2023 Q2,United States,1,1
 Shirin Neshat · Multiple · 2025 Q1,United States,231,221
 Shirin Neshat · Multiple · 2025 Q1,United Kingdom,68,61
@@ -3919,7 +3984,7 @@ Shirin Neshat · Multiple · 2025 Q1,Norway,1,1
 Shirin Neshat · Multiple · 2025 Q1,Oman,1,1
 Shirin Neshat · Multiple · 2025 Q1,Slovakia,1,1
 Shirin Neshat · Multiple · 2025 Q1,South Africa,1,1
-Shirin Neshat · Multiple · 2026 Q2,United States,159,107
+Shirin Neshat · Multiple · 2026 Q2,United States,157,106
 Shirin Neshat · Multiple · 2026 Q2,Italy,40,32
 Shirin Neshat · Multiple · 2026 Q2,United Kingdom,28,21
 Shirin Neshat · Multiple · 2026 Q2,United Arab Emirates,17,9
@@ -4341,11 +4406,13 @@ Woo Kuk Won · Multiple · 2025 Q3,Poland,1,1
 Woo Kuk Won · Multiple · 2025 Q3,Portugal,1,1
 Woo Kuk Won · Multiple · 2025 Q3,Singapore,1,1
 Woo Kuk Won · Multiple · 2025 Q3,Taiwan,1,1
-Woo Kuk Won · Multiple · 2026 Q4,South Korea,41,29
+Woo Kuk Won · Multiple · 2026 Q4,South Korea,47,34
 Woo Kuk Won · Multiple · 2026 Q4,United States,6,6
 Woo Kuk Won · Multiple · 2026 Q4,Hong Kong,3,3
 Woo Kuk Won · Multiple · 2026 Q4,Japan,2,1
 Woo Kuk Won · Multiple · 2026 Q4,Netherlands,2,1
+Woo Kuk Won · Multiple · 2026 Q4,Canada,1,1
+Woo Kuk Won · Multiple · 2026 Q4,Italy,1,1
 Woo Kuk Won · Multiple · 2026 Q4,Switzerland,1,1
 Woo Kuk Won · Multiple · 2026 Q4,Taiwan,1,1
 Yoon Hyup · Ambre Roulette · 2026 Q3,United States,83,83

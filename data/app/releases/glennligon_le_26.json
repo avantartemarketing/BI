@@ -9,7 +9,7 @@
   "sessions": 9892
  },
  "derived": {
-  "last_seen": "2026-10-27"
+  "last_seen": "2026-11-09"
  },
  "campaignCode": "GlennLigon_LE_26",
  "campaignName": "GlennLigon_LE_26 \u00b7 Enter draw",
@@ -51,7 +51,7 @@
  "campaignLengthDays": 31,
  "day": 31,
  "of": 31,
- "asOf": "2026-10-27",
+ "asOf": "2026-11-09",
  "complete": true,
  "unitsSource": "orders",
  "salesWindow": {
@@ -60,7 +60,7 @@
   "closed": true,
   "firstPaid": "2026-08-14"
  },
- "completeThrough": "2026-10-27",
+ "completeThrough": "2026-11-08",
  "asOfFraction": 1.0,
  "targetingMode": "benchmark",
  "edition": {
@@ -100,9 +100,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4564,
+    "frame_conversion": 0.464,
     "frame_profit_per_unit": 289.554,
-    "frame_uplift_per_unit": 132.15,
+    "frame_uplift_per_unit": 134.35,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -146,9 +146,9 @@
     "framing_available": true,
     "frame_price": null,
     "frame_ratio": null,
-    "frame_conversion": 0.4564,
+    "frame_conversion": 0.464,
     "frame_profit_per_unit": 289.554,
-    "frame_uplift_per_unit": 132.15,
+    "frame_uplift_per_unit": 134.35,
     "aa_budget_share": 0.5,
     "deal": "profit share",
     "sources": {
@@ -178,7 +178,7 @@
    "note": "titles: Untitled (Black on Black) / Untitled (White on White)"
   },
   "framingAvailable": true,
-  "frameConversion": 0.4564,
+  "frameConversion": 0.464,
   "frameProfitPerUnit": null,
   "frameUpliftPerUnit": 0.0
  },
@@ -199,132 +199,133 @@
  },
  "targets": {
   "edition_size": 150,
-  "paid_pct": 0.19821861859709466,
-  "paid_units": 29.7327927895642,
-  "organic_units": 120.2672072104358,
+  "paid_pct": 0.21413114430079508,
+  "paid_units": 32.11967164511926,
+  "organic_units": 117.88032835488073,
   "per_channel": {
    "AA Email Auto": {
     "quality": "benchmark",
-    "order_split": 0.035785798403397365,
-    "purchases": 4.303858031772274,
-    "eligible_entries": 5.379822539715342,
-    "sessions": 400.9269160469718,
-    "session_to_entry": 0.01032091187096975
+    "order_split": 0.03773858507493812,
+    "purchases": 4.448636800282308,
+    "eligible_entries": 5.560796000352884,
+    "sessions": 409.2906315972362,
+    "session_to_entry": 0.0111793559999277
    },
    "AA Email Man": {
     "quality": "benchmark",
-    "order_split": 0.5025245719633132,
-    "purchases": 60.43722682464735,
-    "eligible_entries": 75.54653353080919,
-    "sessions": 5630.044203679088,
-    "session_to_entry": 0.01032091187096975
+    "order_split": 0.5299467151048373,
+    "purchases": 62.470292787148644,
+    "eligible_entries": 78.0878659839358,
+    "sessions": 5747.492263089173,
+    "session_to_entry": 0.0111793559999277
    },
    "AA Meta": {
     "quality": "benchmark",
-    "order_split": 0.01820608569255904,
-    "purchases": 2.189595080477949,
-    "eligible_entries": 2.736993850597436,
-    "sessions": 259.0026120278071,
-    "session_to_entry": 0.0063091482649842
+    "order_split": 0.018690671623029263,
+    "purchases": 2.203262508095941,
+    "eligible_entries": 2.754078135119926,
+    "sessions": 264.22677741479924,
+    "session_to_entry": 0.0046439628482972
    },
    "AA X": {
     "quality": "benchmark",
-    "order_split": 0.02070496019863835,
-    "purchases": 2.4901277384934644,
-    "eligible_entries": 3.11265967311683,
-    "sessions": 294.5519901387076,
-    "session_to_entry": 0.0063091482649842
+    "order_split": 0.021256057923467072,
+    "purchases": 2.5056710875486625,
+    "eligible_entries": 3.132088859435828,
+    "sessions": 300.49319783350523,
+    "session_to_entry": 0.0046439628482972
    },
    "Referral Artist": {
     "quality": "benchmark",
-    "order_split": 0.013369235618813277,
-    "purchases": 1.6078806304129551,
-    "eligible_entries": 2.0098507880161938,
-    "sessions": 474.8408157432678,
-    "session_to_entry": 0.0120192307692307
-   },
-   "Direct": {
-    "quality": "benchmark",
-    "order_split": 0.11558268291116397,
-    "purchases": 13.900806475615054,
-    "eligible_entries": 17.376008094518816,
-    "sessions": 512.508015584324,
-    "session_to_entry": 0.02896906941367985
+    "order_split": 0.013098101113358284,
+    "purchases": 1.5440084600681034,
+    "eligible_entries": 1.9300105750851293,
+    "sessions": 475.1984745772299,
+    "session_to_entry": 0.014251781472684
    },
    "Organic Search": {
     "quality": "benchmark",
-    "order_split": 0.052211494156858974,
-    "purchases": 6.279330586529416,
-    "eligible_entries": 7.84916323316177,
-    "sessions": 231.51226971942634,
-    "session_to_entry": 0.02896906941367985
+    "order_split": 0.10862353170664972,
+    "purchases": 12.804577584646667,
+    "eligible_entries": 16.00572198080833,
+    "sessions": 130.39570127327778,
+    "session_to_entry": 0.09330024813895779
+   },
+   "Direct": {
+    "quality": "benchmark",
+    "order_split": 0.0875761974928384,
+    "purchases": 10.323510916527674,
+    "eligible_entries": 12.904388645659592,
+    "sessions": 497.81396073174756,
+    "session_to_entry": 0.018104329955744798
    },
    "Other": {
     "quality": "benchmark",
-    "order_split": 0.012897786500924081,
-    "purchases": 1.551180761662598,
-    "eligible_entries": 1.9389759520782475,
-    "sessions": 57.1903921809762,
-    "session_to_entry": 0.02896906941367985
+    "order_split": 0.009772563409810692,
+    "purchases": 1.1519929836173772,
+    "eligible_entries": 1.4399912295217214,
+    "sessions": 55.55069341687099,
+    "session_to_entry": 0.018104329955744798
    },
    "AA Other": {
     "quality": "benchmark",
-    "order_split": 0.005642861456853022,
-    "purchases": 0.678651188091124,
-    "eligible_entries": 0.848313985113905,
-    "sessions": 25.02115070033276,
-    "session_to_entry": 0.02896906941367985
+    "order_split": 0.004275557003205313,
+    "purchases": 0.5040040634378521,
+    "eligible_entries": 0.6300050792973151,
+    "sessions": 24.30377233807224,
+    "session_to_entry": 0.018104329955744798
    },
    "Referral Meta": {
     "quality": "benchmark",
-    "order_split": 0.01930452603467199,
-    "purchases": 2.3217014327111487,
-    "eligible_entries": 2.9021267908889357,
-    "sessions": 85.59867343994695,
-    "session_to_entry": 0.02896906941367985
+    "order_split": 0.014626905535818644,
+    "purchases": 1.7242244273781244,
+    "eligible_entries": 2.1552805342226553,
+    "sessions": 83.14448430614323,
+    "session_to_entry": 0.018104329955744798
    },
    "Referral Other": {
     "quality": "benchmark",
-    "order_split": 0.020376999707747815,
-    "purchases": 2.4506848461786963,
-    "eligible_entries": 3.0633560577233703,
-    "sessions": 90.35415531759968,
-    "session_to_entry": 0.02896906941367985
+    "order_split": 0.01543951140231637,
+    "purchases": 1.8200146737439789,
+    "eligible_entries": 2.2750183421799735,
+    "sessions": 87.76362234245917,
+    "session_to_entry": 0.018104329955744798
    },
    "Referral X": {
     "quality": "benchmark",
-    "order_split": 0.18339299735505893,
-    "purchases": 22.056163613843776,
-    "eligible_entries": 27.570204517304717,
-    "sessions": 813.1873977933423,
-    "session_to_entry": 0.02896906941367985
+    "order_split": 0.1389556026097309,
+    "purchases": 16.3801320623854,
+    "eligible_entries": 20.47516507798175,
+    "sessions": 789.8726010189428,
+    "session_to_entry": 0.018104329955744798
    }
   },
   "paid": {
-   "units": 29.7327927895642,
-   "eligible_entries": 37.16599098695525,
-   "sessions": 10907.35818182176,
-   "session_to_entry": 0.0035626947248237,
-   "cost_per_purchase": 142.77282019227383,
+   "units": 32.11967164511926,
+   "eligible_entries": 40.14958955639907,
+   "sessions": 10916.55059425409,
+   "session_to_entry": 0.0037680280653124,
+   "cost_per_purchase": 100.84646748588587,
    "cost_per_purchase_source": "basket",
-   "budget": 4245.034678758585,
-   "budget_pct_of_launch_value": 0.0094334103972413,
+   "budget": 3239.1554222168497,
+   "budget_pct_of_launch_value": 0.007198123160481888,
    "sense_check_breached": false
   },
   "launch_value": 450000.0,
-  "units_per_buyer": 1.1673895097609288,
+  "units_per_buyer": 1.161333275262424,
   "units_per_buyer_source": "products",
-  "buyers": 128.4918176373871,
+  "buyers": 129.16188935179252,
   "buyers_by_group": {
-   "aa_email": 55.457997793451156,
-   "aa_social": 4.008707273658627,
-   "referral_artist": 1.3773300316380563,
-   "search_direct_other": 42.17831194552659,
-   "paid": 25.46947059311268
+   "aa_email": 57.62250252608101,
+   "aa_social": 4.054765066970578,
+   "referral_artist": 1.3295136658503195,
+   "organic_search": 11.025756221230504,
+   "organic_other": 27.471768704708094,
+   "paid": 27.657583166952012
   },
-  "organic_sessions": 8874.73859237179,
-  "total_sessions": 19782.096774193553,
-  "entries_target": 187.5,
+  "organic_sessions": 8865.546179939458,
+  "total_sessions": 19782.096774193546,
+  "entries_target": 187.49999999999997,
   "entry_rate": 0.8,
   "buffer": 0.75,
   "k": 0.967741935483871,
@@ -332,49 +333,57 @@
    "aa_email": 0.9677419354838709,
    "aa_social": 0.967741935483871,
    "referral_artist": 0.967741935483871,
-   "search_direct_other": 0.9677419354838709,
+   "organic_search": 0.967741935483871,
+   "organic_other": 0.967741935483871,
    "paid": 0.967741935483871
   },
   "stretch_from": {
-   "aa_email": 0.4316072323761308,
-   "aa_social": 0.031198152126476086,
-   "referral_artist": 0.010719204202753034,
-   "search_direct_other": 0.32825679269754543,
-   "paid": 0.19821861859709466
+   "aa_email": 0.4461261972495397,
+   "aa_social": 0.031392890637630684,
+   "referral_artist": 0.010293389733787356,
+   "organic_search": 0.08536385056431112,
+   "organic_other": 0.21269252751393602,
+   "paid": 0.21413114430079508
   },
   "stretch_typed": false,
   "stretch_units": -5.0
  },
  "groupTargets": {
   "aa_email": {
-   "entries": 80.92635607052452,
-   "purchases": 64.74108485641962,
-   "units": 64.74108485641962,
-   "sessions": 6030.97111972606
+   "entries": 83.64866198428868,
+   "purchases": 66.91892958743095,
+   "units": 66.91892958743095,
+   "sessions": 6156.782894686409
   },
   "aa_social": {
-   "entries": 5.849653523714267,
-   "purchases": 4.679722818971413,
-   "units": 4.679722818971413,
-   "sessions": 553.5546021665148
+   "entries": 5.886166994555754,
+   "purchases": 4.708933595644604,
+   "units": 4.708933595644604,
+   "sessions": 564.7199752483045
   },
   "referral_artist": {
-   "entries": 2.0098507880161938,
-   "purchases": 1.6078806304129551,
-   "units": 1.6078806304129551,
-   "sessions": 474.8408157432678
+   "entries": 1.9300105750851293,
+   "purchases": 1.5440084600681034,
+   "units": 1.5440084600681034,
+   "sessions": 475.1984745772299
   },
-  "search_direct_other": {
-   "entries": 61.54814863078976,
-   "purchases": 49.23851890463181,
-   "units": 49.23851890463181,
-   "sessions": 1815.372054735948
+  "organic_search": {
+   "entries": 16.00572198080833,
+   "purchases": 12.804577584646667,
+   "units": 12.804577584646667,
+   "sessions": 130.39570127327778
+  },
+  "organic_other": {
+   "entries": 39.87984890886301,
+   "purchases": 31.903879127090406,
+   "units": 31.903879127090406,
+   "sessions": 1538.449134154236
   },
   "paid": {
-   "entries": 37.16599098695525,
-   "purchases": 29.7327927895642,
-   "units": 29.7327927895642,
-   "sessions": 10907.35818182176
+   "entries": 40.14958955639907,
+   "purchases": 32.11967164511926,
+   "units": 32.11967164511926,
+   "sessions": 10916.55059425409
   }
  },
  "channels": [
@@ -382,9 +391,9 @@
    "key": "aa_email",
    "name": "AA Email",
    "now": 83.2,
-   "exp": 64.7,
+   "exp": 66.9,
    "proj": 83.2,
-   "target": 64.7,
+   "target": 66.9,
    "parts": [
     {
      "name": "AA Email Man",
@@ -511,237 +520,237 @@
     {
      "date": "2026-08-16",
      "actual": 27.77,
-     "plan": 6.91,
+     "plan": 7.15,
      "proj": null,
-     "bm": 7.15
+     "bm": 7.39
     },
     {
      "date": "2026-08-17",
      "actual": 32.55,
-     "plan": 19.49,
+     "plan": 20.14,
      "proj": null,
-     "bm": 20.14
+     "bm": 20.81
     },
     {
      "date": "2026-08-18",
      "actual": 32.55,
-     "plan": 21.61,
+     "plan": 22.34,
      "proj": null,
-     "bm": 22.33
+     "bm": 23.08
     },
     {
      "date": "2026-08-19",
      "actual": 32.55,
-     "plan": 24.6,
+     "plan": 25.42,
      "proj": null,
-     "bm": 25.42
+     "bm": 26.27
     },
     {
      "date": "2026-08-20",
      "actual": 32.55,
-     "plan": 28.63,
+     "plan": 29.59,
      "proj": null,
-     "bm": 29.58
+     "bm": 30.58
     },
     {
      "date": "2026-08-21",
      "actual": 50.69,
-     "plan": 31.37,
+     "plan": 32.42,
      "proj": null,
-     "bm": 32.41
+     "bm": 33.5
     },
     {
      "date": "2026-08-22",
      "actual": 50.69,
-     "plan": 33.06,
+     "plan": 34.17,
      "proj": null,
-     "bm": 34.16
+     "bm": 35.31
     },
     {
      "date": "2026-08-23",
      "actual": 50.69,
-     "plan": 33.06,
+     "plan": 34.17,
      "proj": null,
-     "bm": 34.16
+     "bm": 35.31
     },
     {
      "date": "2026-08-24",
      "actual": 51.86,
-     "plan": 36.25,
+     "plan": 37.47,
      "proj": null,
-     "bm": 37.46
+     "bm": 38.72
     },
     {
      "date": "2026-08-25",
      "actual": 52.89,
-     "plan": 39.87,
+     "plan": 41.21,
      "proj": null,
-     "bm": 41.2
+     "bm": 42.58
     },
     {
      "date": "2026-08-26",
      "actual": 52.89,
-     "plan": 42.33,
+     "plan": 43.76,
      "proj": null,
-     "bm": 43.74
+     "bm": 45.22
     },
     {
      "date": "2026-08-27",
      "actual": 52.89,
-     "plan": 44.3,
+     "plan": 45.79,
      "proj": null,
-     "bm": 45.77
+     "bm": 47.31
     },
     {
      "date": "2026-08-28",
      "actual": 68.46,
-     "plan": 46.19,
+     "plan": 47.75,
      "proj": null,
-     "bm": 47.73
+     "bm": 49.34
     },
     {
      "date": "2026-08-29",
      "actual": 68.46,
-     "plan": 48.9,
+     "plan": 50.55,
      "proj": null,
-     "bm": 50.53
+     "bm": 52.23
     },
     {
      "date": "2026-08-30",
      "actual": 68.46,
-     "plan": 49.99,
+     "plan": 51.67,
      "proj": null,
-     "bm": 51.65
+     "bm": 53.39
     },
     {
      "date": "2026-08-31",
      "actual": 70.52,
-     "plan": 50.03,
+     "plan": 51.71,
      "proj": null,
-     "bm": 51.69
+     "bm": 53.43
     },
     {
      "date": "2026-09-01",
      "actual": 70.52,
-     "plan": 50.79,
+     "plan": 52.5,
      "proj": null,
-     "bm": 52.49
+     "bm": 54.25
     },
     {
      "date": "2026-09-02",
      "actual": 75.66,
-     "plan": 51.35,
+     "plan": 53.08,
      "proj": null,
-     "bm": 53.06
+     "bm": 54.85
     },
     {
      "date": "2026-09-03",
      "actual": 75.66,
-     "plan": 51.69,
+     "plan": 53.43,
      "proj": null,
-     "bm": 53.41
+     "bm": 55.21
     },
     {
      "date": "2026-09-04",
      "actual": 75.66,
-     "plan": 52.0,
+     "plan": 53.75,
      "proj": null,
-     "bm": 53.74
+     "bm": 55.54
     },
     {
      "date": "2026-09-05",
      "actual": 75.66,
-     "plan": 52.34,
+     "plan": 54.1,
      "proj": null,
-     "bm": 54.09
+     "bm": 55.91
     },
     {
      "date": "2026-09-06",
      "actual": 75.66,
-     "plan": 52.73,
+     "plan": 54.51,
      "proj": null,
-     "bm": 54.49
+     "bm": 56.32
     },
     {
      "date": "2026-09-07",
      "actual": 75.66,
-     "plan": 52.79,
+     "plan": 54.57,
      "proj": null,
-     "bm": 54.55
+     "bm": 56.38
     },
     {
      "date": "2026-09-08",
      "actual": 75.66,
-     "plan": 53.13,
+     "plan": 54.92,
      "proj": null,
-     "bm": 54.9
+     "bm": 56.75
     },
     {
      "date": "2026-09-09",
      "actual": 75.66,
-     "plan": 54.28,
+     "plan": 56.1,
      "proj": null,
-     "bm": 56.09
+     "bm": 57.97
     },
     {
      "date": "2026-09-10",
      "actual": 75.66,
-     "plan": 55.3,
+     "plan": 57.16,
      "proj": null,
-     "bm": 57.14
+     "bm": 59.06
     },
     {
      "date": "2026-09-11",
      "actual": 75.66,
-     "plan": 56.35,
+     "plan": 58.25,
      "proj": null,
-     "bm": 58.23
+     "bm": 60.19
     },
     {
      "date": "2026-09-12",
      "actual": 75.66,
-     "plan": 57.72,
+     "plan": 59.66,
      "proj": null,
-     "bm": 59.65
+     "bm": 61.65
     },
     {
      "date": "2026-09-13",
      "actual": 75.66,
-     "plan": 59.29,
+     "plan": 61.28,
      "proj": null,
-     "bm": 61.26
+     "bm": 63.32
     },
     {
      "date": "2026-09-14",
      "actual": 75.66,
-     "plan": 60.91,
+     "plan": 62.96,
      "proj": null,
-     "bm": 62.95
+     "bm": 65.06
     },
     {
      "date": "2026-09-15",
      "actual": 75.66,
-     "plan": 62.21,
+     "plan": 64.3,
      "proj": null,
-     "bm": 64.28
+     "bm": 66.45
     },
     {
      "date": "2026-09-16",
      "actual": 75.66,
-     "plan": 63.48,
+     "plan": 65.62,
      "proj": null,
-     "bm": 65.6
+     "bm": 67.81
     },
     {
      "date": "2026-09-17",
      "actual": 83.23,
-     "plan": 64.74,
+     "plan": 66.92,
      "proj": null,
-     "bm": 66.9
+     "bm": 69.15
     }
    ],
-   "bm": 66.9,
-   "bmExp": 66.9
+   "bm": 69.1,
+   "bmExp": 69.1
   },
   {
    "key": "aa_social",
@@ -872,44 +881,44 @@
     {
      "date": "2026-08-16",
      "actual": 2.06,
-     "plan": 0.21,
+     "plan": 0.18,
      "proj": null,
-     "bm": 0.22
+     "bm": 0.18
     },
     {
      "date": "2026-08-17",
      "actual": 2.06,
-     "plan": 0.59,
+     "plan": 0.5,
      "proj": null,
-     "bm": 0.61
+     "bm": 0.51
     },
     {
      "date": "2026-08-18",
      "actual": 2.06,
-     "plan": 1.19,
+     "plan": 1.14,
      "proj": null,
-     "bm": 1.23
+     "bm": 1.18
     },
     {
      "date": "2026-08-19",
      "actual": 2.06,
-     "plan": 1.62,
+     "plan": 1.6,
      "proj": null,
-     "bm": 1.67
+     "bm": 1.65
     },
     {
      "date": "2026-08-20",
      "actual": 2.06,
-     "plan": 1.82,
+     "plan": 1.81,
      "proj": null,
-     "bm": 1.89
+     "bm": 1.87
     },
     {
      "date": "2026-08-21",
      "actual": 2.06,
-     "plan": 2.13,
+     "plan": 2.14,
      "proj": null,
-     "bm": 2.2
+     "bm": 2.21
     },
     {
      "date": "2026-08-22",
@@ -921,196 +930,196 @@
     {
      "date": "2026-08-23",
      "actual": 2.06,
-     "plan": 2.6,
+     "plan": 2.58,
      "proj": null,
-     "bm": 2.69
+     "bm": 2.67
     },
     {
      "date": "2026-08-24",
      "actual": 2.06,
-     "plan": 2.67,
+     "plan": 2.65,
      "proj": null,
-     "bm": 2.75
+     "bm": 2.74
     },
     {
      "date": "2026-08-25",
      "actual": 2.06,
-     "plan": 2.71,
+     "plan": 2.7,
      "proj": null,
-     "bm": 2.8
+     "bm": 2.79
     },
     {
      "date": "2026-08-26",
      "actual": 2.06,
-     "plan": 2.76,
+     "plan": 2.73,
      "proj": null,
-     "bm": 2.86
+     "bm": 2.82
     },
     {
      "date": "2026-08-27",
      "actual": 2.06,
-     "plan": 2.86,
+     "plan": 2.84,
      "proj": null,
-     "bm": 2.95
+     "bm": 2.94
     },
     {
      "date": "2026-08-28",
      "actual": 3.17,
-     "plan": 2.97,
+     "plan": 2.98,
      "proj": null,
-     "bm": 3.07
+     "bm": 3.08
     },
     {
      "date": "2026-08-29",
      "actual": 3.17,
-     "plan": 3.11,
+     "plan": 3.09,
      "proj": null,
-     "bm": 3.21
+     "bm": 3.2
     },
     {
      "date": "2026-08-30",
      "actual": 3.17,
-     "plan": 3.22,
+     "plan": 3.21,
      "proj": null,
-     "bm": 3.33
+     "bm": 3.31
     },
     {
      "date": "2026-08-31",
      "actual": 3.17,
-     "plan": 3.33,
+     "plan": 3.32,
      "proj": null,
-     "bm": 3.44
+     "bm": 3.43
     },
     {
      "date": "2026-09-01",
      "actual": 3.17,
-     "plan": 3.48,
+     "plan": 3.52,
      "proj": null,
-     "bm": 3.59
+     "bm": 3.64
     },
     {
      "date": "2026-09-02",
      "actual": 3.17,
-     "plan": 3.59,
+     "plan": 3.65,
      "proj": null,
-     "bm": 3.71
+     "bm": 3.77
     },
     {
      "date": "2026-09-03",
      "actual": 3.17,
-     "plan": 3.67,
+     "plan": 3.7,
      "proj": null,
-     "bm": 3.8
+     "bm": 3.82
     },
     {
      "date": "2026-09-04",
      "actual": 3.17,
-     "plan": 3.74,
+     "plan": 3.78,
      "proj": null,
-     "bm": 3.87
+     "bm": 3.9
     },
     {
      "date": "2026-09-05",
      "actual": 3.17,
-     "plan": 3.8,
+     "plan": 3.83,
      "proj": null,
-     "bm": 3.92
+     "bm": 3.96
     },
     {
      "date": "2026-09-06",
      "actual": 3.17,
-     "plan": 3.82,
+     "plan": 3.85,
      "proj": null,
-     "bm": 3.95
+     "bm": 3.98
     },
     {
      "date": "2026-09-07",
      "actual": 3.17,
-     "plan": 3.9,
+     "plan": 3.93,
      "proj": null,
-     "bm": 4.03
+     "bm": 4.06
     },
     {
      "date": "2026-09-08",
      "actual": 3.17,
-     "plan": 3.96,
+     "plan": 3.99,
      "proj": null,
-     "bm": 4.1
+     "bm": 4.12
     },
     {
      "date": "2026-09-09",
      "actual": 3.17,
-     "plan": 3.98,
+     "plan": 4.01,
      "proj": null,
-     "bm": 4.11
+     "bm": 4.14
     },
     {
      "date": "2026-09-10",
      "actual": 3.17,
-     "plan": 4.0,
+     "plan": 4.02,
      "proj": null,
-     "bm": 4.13
+     "bm": 4.16
     },
     {
      "date": "2026-09-11",
      "actual": 3.17,
-     "plan": 4.01,
+     "plan": 4.04,
      "proj": null,
-     "bm": 4.14
+     "bm": 4.17
     },
     {
      "date": "2026-09-12",
      "actual": 3.17,
-     "plan": 4.01,
+     "plan": 4.04,
      "proj": null,
-     "bm": 4.14
+     "bm": 4.17
     },
     {
      "date": "2026-09-13",
      "actual": 3.17,
-     "plan": 4.08,
+     "plan": 4.09,
      "proj": null,
-     "bm": 4.21
+     "bm": 4.23
     },
     {
      "date": "2026-09-14",
      "actual": 3.17,
-     "plan": 4.17,
+     "plan": 4.18,
      "proj": null,
-     "bm": 4.31
+     "bm": 4.32
     },
     {
      "date": "2026-09-15",
      "actual": 3.17,
-     "plan": 4.23,
+     "plan": 4.25,
      "proj": null,
-     "bm": 4.37
+     "bm": 4.39
     },
     {
      "date": "2026-09-16",
      "actual": 3.17,
-     "plan": 4.41,
+     "plan": 4.43,
      "proj": null,
-     "bm": 4.55
+     "bm": 4.58
     },
     {
      "date": "2026-09-17",
      "actual": 3.17,
-     "plan": 4.68,
+     "plan": 4.71,
      "proj": null,
-     "bm": 4.84
+     "bm": 4.87
     }
    ],
-   "bm": 4.8,
-   "bmExp": 4.8
+   "bm": 4.9,
+   "bmExp": 4.9
   },
   {
    "key": "referral_artist",
    "name": "Artist",
    "now": 4.5,
-   "exp": 1.6,
+   "exp": 1.5,
    "proj": 4.5,
-   "target": 1.6,
+   "target": 1.5,
    "parts": [
     {
      "name": "Referral Artist",
@@ -1233,250 +1242,246 @@
     {
      "date": "2026-08-16",
      "actual": 1.03,
-     "plan": 0.14,
+     "plan": 0.13,
      "proj": null,
      "bm": 0.14
     },
     {
      "date": "2026-08-17",
      "actual": 3.42,
-     "plan": 0.39,
+     "plan": 0.37,
      "proj": null,
-     "bm": 0.4
+     "bm": 0.38
     },
     {
      "date": "2026-08-18",
      "actual": 3.42,
-     "plan": 0.57,
+     "plan": 0.55,
      "proj": null,
-     "bm": 0.59
+     "bm": 0.57
     },
     {
      "date": "2026-08-19",
      "actual": 3.42,
-     "plan": 0.7,
+     "plan": 0.68,
      "proj": null,
-     "bm": 0.73
+     "bm": 0.7
     },
     {
      "date": "2026-08-20",
      "actual": 3.42,
-     "plan": 0.76,
+     "plan": 0.73,
      "proj": null,
-     "bm": 0.78
+     "bm": 0.75
     },
     {
      "date": "2026-08-21",
      "actual": 3.42,
-     "plan": 0.84,
+     "plan": 0.81,
      "proj": null,
-     "bm": 0.87
+     "bm": 0.84
     },
     {
      "date": "2026-08-22",
      "actual": 3.42,
-     "plan": 0.91,
+     "plan": 0.88,
      "proj": null,
-     "bm": 0.94
+     "bm": 0.91
     },
     {
      "date": "2026-08-23",
      "actual": 3.42,
-     "plan": 0.95,
+     "plan": 0.92,
      "proj": null,
-     "bm": 0.99
+     "bm": 0.95
     },
     {
      "date": "2026-08-24",
+     "actual": 3.42,
+     "plan": 0.92,
+     "proj": null,
+     "bm": 0.95
+    },
+    {
+     "date": "2026-08-25",
+     "actual": 3.42,
+     "plan": 0.93,
+     "proj": null,
+     "bm": 0.96
+    },
+    {
+     "date": "2026-08-26",
      "actual": 3.42,
      "plan": 0.96,
      "proj": null,
      "bm": 0.99
     },
     {
-     "date": "2026-08-25",
+     "date": "2026-08-27",
      "actual": 3.42,
      "plan": 0.97,
      "proj": null,
      "bm": 1.0
     },
     {
-     "date": "2026-08-26",
-     "actual": 3.42,
-     "plan": 1.0,
-     "proj": null,
-     "bm": 1.04
-    },
-    {
-     "date": "2026-08-27",
-     "actual": 3.42,
-     "plan": 1.01,
-     "proj": null,
-     "bm": 1.05
-    },
-    {
      "date": "2026-08-28",
      "actual": 3.42,
-     "plan": 1.01,
+     "plan": 0.97,
      "proj": null,
-     "bm": 1.05
+     "bm": 1.01
     },
     {
      "date": "2026-08-29",
      "actual": 3.42,
-     "plan": 1.03,
+     "plan": 0.99,
      "proj": null,
-     "bm": 1.07
+     "bm": 1.02
     },
     {
      "date": "2026-08-30",
      "actual": 3.42,
-     "plan": 1.05,
+     "plan": 1.01,
      "proj": null,
-     "bm": 1.08
+     "bm": 1.04
     },
     {
      "date": "2026-08-31",
      "actual": 3.42,
-     "plan": 1.07,
+     "plan": 1.03,
      "proj": null,
-     "bm": 1.11
+     "bm": 1.06
     },
     {
      "date": "2026-09-01",
      "actual": 3.42,
-     "plan": 1.19,
+     "plan": 1.14,
      "proj": null,
-     "bm": 1.23
+     "bm": 1.18
     },
     {
      "date": "2026-09-02",
      "actual": 3.42,
-     "plan": 1.25,
+     "plan": 1.2,
      "proj": null,
-     "bm": 1.29
+     "bm": 1.24
     },
     {
      "date": "2026-09-03",
      "actual": 3.42,
-     "plan": 1.25,
+     "plan": 1.2,
      "proj": null,
-     "bm": 1.29
+     "bm": 1.24
     },
     {
      "date": "2026-09-04",
      "actual": 3.42,
-     "plan": 1.25,
+     "plan": 1.2,
      "proj": null,
-     "bm": 1.29
+     "bm": 1.24
     },
     {
      "date": "2026-09-05",
      "actual": 3.42,
-     "plan": 1.25,
+     "plan": 1.2,
      "proj": null,
-     "bm": 1.29
+     "bm": 1.24
     },
     {
      "date": "2026-09-06",
      "actual": 3.42,
-     "plan": 1.25,
+     "plan": 1.2,
      "proj": null,
-     "bm": 1.29
+     "bm": 1.24
     },
     {
      "date": "2026-09-07",
+     "actual": 3.42,
+     "plan": 1.23,
+     "proj": null,
+     "bm": 1.28
+    },
+    {
+     "date": "2026-09-08",
+     "actual": 3.42,
+     "plan": 1.27,
+     "proj": null,
+     "bm": 1.31
+    },
+    {
+     "date": "2026-09-09",
+     "actual": 3.42,
+     "plan": 1.28,
+     "proj": null,
+     "bm": 1.33
+    },
+    {
+     "date": "2026-09-10",
      "actual": 3.42,
      "plan": 1.29,
      "proj": null,
      "bm": 1.33
     },
     {
-     "date": "2026-09-08",
-     "actual": 3.42,
-     "plan": 1.32,
-     "proj": null,
-     "bm": 1.36
-    },
-    {
-     "date": "2026-09-09",
-     "actual": 3.42,
-     "plan": 1.34,
-     "proj": null,
-     "bm": 1.38
-    },
-    {
-     "date": "2026-09-10",
-     "actual": 3.42,
-     "plan": 1.34,
-     "proj": null,
-     "bm": 1.38
-    },
-    {
      "date": "2026-09-11",
      "actual": 3.42,
-     "plan": 1.34,
+     "plan": 1.29,
      "proj": null,
-     "bm": 1.38
+     "bm": 1.33
     },
     {
      "date": "2026-09-12",
      "actual": 3.42,
-     "plan": 1.34,
+     "plan": 1.29,
      "proj": null,
-     "bm": 1.38
+     "bm": 1.33
     },
     {
      "date": "2026-09-13",
      "actual": 3.42,
-     "plan": 1.37,
+     "plan": 1.31,
      "proj": null,
-     "bm": 1.41
+     "bm": 1.36
     },
     {
      "date": "2026-09-14",
      "actual": 3.42,
-     "plan": 1.41,
+     "plan": 1.36,
      "proj": null,
-     "bm": 1.46
+     "bm": 1.4
     },
     {
      "date": "2026-09-15",
      "actual": 3.42,
-     "plan": 1.45,
+     "plan": 1.39,
      "proj": null,
-     "bm": 1.5
+     "bm": 1.44
     },
     {
      "date": "2026-09-16",
      "actual": 3.42,
-     "plan": 1.52,
+     "plan": 1.46,
      "proj": null,
-     "bm": 1.57
+     "bm": 1.51
     },
     {
      "date": "2026-09-17",
      "actual": 4.5,
-     "plan": 1.61,
+     "plan": 1.54,
      "proj": null,
-     "bm": 1.66
+     "bm": 1.6
     }
    ],
-   "bm": 1.7,
-   "bmExp": 1.7
+   "bm": 1.6,
+   "bmExp": 1.6
   },
   {
-   "key": "search_direct_other",
-   "name": "Search etc.",
-   "now": 45.5,
-   "exp": 49.2,
-   "proj": 45.5,
-   "target": 49.2,
+   "key": "organic_search",
+   "name": "Organic Search",
+   "now": 20.1,
+   "exp": 12.8,
+   "proj": 20.1,
+   "target": 12.8,
    "parts": [
-    {
-     "name": "Direct",
-     "value": 25.4
-    },
     {
      "name": "Organic Search",
      "value": 20.1
@@ -1598,245 +1603,606 @@
     {
      "date": "2026-08-16",
      "actual": 0.0,
-     "plan": 0.7,
+     "plan": 0.0,
      "proj": null,
-     "bm": 0.72
+     "bm": 0.0
     },
     {
      "date": "2026-08-17",
      "actual": 0.0,
-     "plan": 1.97,
+     "plan": 0.0,
      "proj": null,
-     "bm": 2.04
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-18",
+     "actual": 0.0,
+     "plan": 0.49,
+     "proj": null,
+     "bm": 0.5
+    },
+    {
+     "date": "2026-08-19",
+     "actual": 0.0,
+     "plan": 0.97,
+     "proj": null,
+     "bm": 1.0
+    },
+    {
+     "date": "2026-08-20",
+     "actual": 0.0,
+     "plan": 1.46,
+     "proj": null,
+     "bm": 1.51
+    },
+    {
+     "date": "2026-08-21",
+     "actual": 3.2,
+     "plan": 2.59,
+     "proj": null,
+     "bm": 2.67
+    },
+    {
+     "date": "2026-08-22",
+     "actual": 3.2,
+     "plan": 3.48,
+     "proj": null,
+     "bm": 3.59
+    },
+    {
+     "date": "2026-08-23",
+     "actual": 3.2,
+     "plan": 3.78,
+     "proj": null,
+     "bm": 3.91
+    },
+    {
+     "date": "2026-08-24",
+     "actual": 3.2,
+     "plan": 4.29,
+     "proj": null,
+     "bm": 4.44
+    },
+    {
+     "date": "2026-08-25",
+     "actual": 5.26,
+     "plan": 4.72,
+     "proj": null,
+     "bm": 4.87
+    },
+    {
+     "date": "2026-08-26",
+     "actual": 5.26,
+     "plan": 4.72,
+     "proj": null,
+     "bm": 4.87
+    },
+    {
+     "date": "2026-08-27",
+     "actual": 5.26,
+     "plan": 4.72,
+     "proj": null,
+     "bm": 4.87
+    },
+    {
+     "date": "2026-08-28",
+     "actual": 7.48,
+     "plan": 4.99,
+     "proj": null,
+     "bm": 5.16
+    },
+    {
+     "date": "2026-08-29",
+     "actual": 7.48,
+     "plan": 6.83,
+     "proj": null,
+     "bm": 7.06
+    },
+    {
+     "date": "2026-08-30",
+     "actual": 7.48,
+     "plan": 7.57,
+     "proj": null,
+     "bm": 7.82
+    },
+    {
+     "date": "2026-08-31",
+     "actual": 7.48,
+     "plan": 7.57,
+     "proj": null,
+     "bm": 7.82
+    },
+    {
+     "date": "2026-09-01",
+     "actual": 7.48,
+     "plan": 7.57,
+     "proj": null,
+     "bm": 7.82
+    },
+    {
+     "date": "2026-09-02",
+     "actual": 12.62,
+     "plan": 7.94,
+     "proj": null,
+     "bm": 8.21
+    },
+    {
+     "date": "2026-09-03",
+     "actual": 12.62,
+     "plan": 8.69,
+     "proj": null,
+     "bm": 8.98
+    },
+    {
+     "date": "2026-09-04",
+     "actual": 13.65,
+     "plan": 8.73,
+     "proj": null,
+     "bm": 9.02
+    },
+    {
+     "date": "2026-09-05",
+     "actual": 13.65,
+     "plan": 9.03,
+     "proj": null,
+     "bm": 9.33
+    },
+    {
+     "date": "2026-09-06",
+     "actual": 13.65,
+     "plan": 9.78,
+     "proj": null,
+     "bm": 10.11
+    },
+    {
+     "date": "2026-09-07",
+     "actual": 13.65,
+     "plan": 9.89,
+     "proj": null,
+     "bm": 10.22
+    },
+    {
+     "date": "2026-09-08",
+     "actual": 13.65,
+     "plan": 9.96,
+     "proj": null,
+     "bm": 10.29
+    },
+    {
+     "date": "2026-09-09",
+     "actual": 13.65,
+     "plan": 10.19,
+     "proj": null,
+     "bm": 10.53
+    },
+    {
+     "date": "2026-09-10",
+     "actual": 13.65,
+     "plan": 10.75,
+     "proj": null,
+     "bm": 11.11
+    },
+    {
+     "date": "2026-09-11",
+     "actual": 13.65,
+     "plan": 11.3,
+     "proj": null,
+     "bm": 11.68
+    },
+    {
+     "date": "2026-09-12",
+     "actual": 13.65,
+     "plan": 11.3,
+     "proj": null,
+     "bm": 11.68
+    },
+    {
+     "date": "2026-09-13",
+     "actual": 13.65,
+     "plan": 11.44,
+     "proj": null,
+     "bm": 11.82
+    },
+    {
+     "date": "2026-09-14",
+     "actual": 13.65,
+     "plan": 11.64,
+     "proj": null,
+     "bm": 12.03
+    },
+    {
+     "date": "2026-09-15",
+     "actual": 13.65,
+     "plan": 11.64,
+     "proj": null,
+     "bm": 12.03
+    },
+    {
+     "date": "2026-09-16",
+     "actual": 13.65,
+     "plan": 12.05,
+     "proj": null,
+     "bm": 12.46
+    },
+    {
+     "date": "2026-09-17",
+     "actual": 20.14,
+     "plan": 12.8,
+     "proj": null,
+     "bm": 13.23
+    }
+   ],
+   "bm": 13.2,
+   "bmExp": 13.2
+  },
+  {
+   "key": "organic_other",
+   "name": "Organic Other",
+   "now": 25.4,
+   "exp": 31.9,
+   "proj": 25.4,
+   "target": 31.9,
+   "parts": [
+    {
+     "name": "Direct",
+     "value": 25.4
+    }
+   ],
+   "daily": [
+    {
+     "date": "2026-07-31",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-01",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-02",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-03",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-04",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-05",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-06",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-07",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-08",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-09",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-10",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-11",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-12",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-13",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-14",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-15",
+     "actual": 0.0,
+     "plan": 0.0,
+     "proj": null,
+     "bm": 0.0
+    },
+    {
+     "date": "2026-08-16",
+     "actual": 0.0,
+     "plan": 0.71,
+     "proj": null,
+     "bm": 0.73
+    },
+    {
+     "date": "2026-08-17",
+     "actual": 0.0,
+     "plan": 2.0,
+     "proj": null,
+     "bm": 2.07
     },
     {
      "date": "2026-08-18",
      "actual": 2.06,
-     "plan": 4.43,
+     "plan": 3.6,
      "proj": null,
-     "bm": 4.58
+     "bm": 3.72
     },
     {
      "date": "2026-08-19",
      "actual": 2.06,
-     "plan": 6.35,
+     "plan": 4.92,
      "proj": null,
-     "bm": 6.56
+     "bm": 5.08
     },
     {
      "date": "2026-08-20",
      "actual": 4.11,
-     "plan": 7.6,
+     "plan": 5.91,
      "proj": null,
-     "bm": 7.85
+     "bm": 6.1
     },
     {
      "date": "2026-08-21",
-     "actual": 12.65,
-     "plan": 10.53,
+     "actual": 9.45,
+     "plan": 8.06,
      "proj": null,
-     "bm": 10.88
+     "bm": 8.33
     },
     {
      "date": "2026-08-22",
-     "actual": 12.65,
-     "plan": 12.77,
+     "actual": 9.45,
+     "plan": 9.89,
      "proj": null,
-     "bm": 13.19
+     "bm": 10.22
     },
     {
      "date": "2026-08-23",
-     "actual": 12.65,
-     "plan": 13.39,
+     "actual": 9.45,
+     "plan": 10.88,
      "proj": null,
-     "bm": 13.84
+     "bm": 11.24
     },
     {
      "date": "2026-08-24",
-     "actual": 13.82,
-     "plan": 17.01,
+     "actual": 10.62,
+     "plan": 13.94,
      "proj": null,
-     "bm": 17.57
+     "bm": 14.4
     },
     {
      "date": "2026-08-25",
-     "actual": 15.88,
-     "plan": 21.14,
+     "actual": 10.62,
+     "plan": 17.08,
      "proj": null,
-     "bm": 21.84
+     "bm": 17.64
     },
     {
      "date": "2026-08-26",
-     "actual": 17.94,
-     "plan": 24.57,
+     "actual": 12.68,
+     "plan": 18.89,
      "proj": null,
-     "bm": 25.39
+     "bm": 19.52
     },
     {
      "date": "2026-08-27",
-     "actual": 19.99,
-     "plan": 26.25,
+     "actual": 14.74,
+     "plan": 19.69,
      "proj": null,
-     "bm": 27.12
+     "bm": 20.35
     },
     {
      "date": "2026-08-28",
-     "actual": 24.44,
-     "plan": 27.27,
+     "actual": 16.96,
+     "plan": 20.1,
      "proj": null,
-     "bm": 28.18
+     "bm": 20.77
     },
     {
      "date": "2026-08-29",
-     "actual": 24.44,
-     "plan": 28.9,
+     "actual": 16.96,
+     "plan": 20.7,
      "proj": null,
-     "bm": 29.86
+     "bm": 21.39
     },
     {
      "date": "2026-08-30",
-     "actual": 24.44,
-     "plan": 29.54,
+     "actual": 16.96,
+     "plan": 21.49,
      "proj": null,
-     "bm": 30.53
+     "bm": 22.21
     },
     {
      "date": "2026-08-31",
-     "actual": 24.44,
-     "plan": 29.61,
+     "actual": 16.96,
+     "plan": 22.41,
      "proj": null,
-     "bm": 30.59
+     "bm": 23.16
     },
     {
      "date": "2026-09-01",
-     "actual": 24.44,
-     "plan": 30.88,
+     "actual": 16.96,
+     "plan": 23.35,
      "proj": null,
-     "bm": 31.91
+     "bm": 24.13
     },
     {
      "date": "2026-09-02",
-     "actual": 29.58,
-     "plan": 32.15,
+     "actual": 16.96,
+     "plan": 23.82,
      "proj": null,
-     "bm": 33.22
+     "bm": 24.62
     },
     {
      "date": "2026-09-03",
-     "actual": 29.58,
-     "plan": 33.42,
+     "actual": 16.96,
+     "plan": 23.82,
      "proj": null,
-     "bm": 34.53
+     "bm": 24.62
     },
     {
      "date": "2026-09-04",
-     "actual": 33.7,
-     "plan": 33.48,
+     "actual": 20.04,
+     "plan": 24.0,
      "proj": null,
-     "bm": 34.6
+     "bm": 24.8
     },
     {
      "date": "2026-09-05",
-     "actual": 33.7,
-     "plan": 33.99,
+     "actual": 20.04,
+     "plan": 24.12,
      "proj": null,
-     "bm": 35.12
+     "bm": 24.92
     },
     {
      "date": "2026-09-06",
-     "actual": 33.7,
-     "plan": 35.26,
+     "actual": 20.04,
+     "plan": 24.12,
      "proj": null,
-     "bm": 36.44
+     "bm": 24.92
     },
     {
      "date": "2026-09-07",
-     "actual": 33.7,
-     "plan": 37.07,
+     "actual": 20.04,
+     "plan": 24.91,
      "proj": null,
-     "bm": 38.31
+     "bm": 25.74
     },
     {
      "date": "2026-09-08",
-     "actual": 34.73,
-     "plan": 38.79,
+     "actual": 21.07,
+     "plan": 25.73,
      "proj": null,
-     "bm": 40.08
+     "bm": 26.58
     },
     {
      "date": "2026-09-09",
-     "actual": 34.73,
-     "plan": 40.06,
+     "actual": 21.07,
+     "plan": 26.26,
      "proj": null,
-     "bm": 41.39
+     "bm": 27.14
     },
     {
      "date": "2026-09-10",
-     "actual": 34.73,
-     "plan": 41.81,
+     "actual": 21.07,
+     "plan": 27.2,
      "proj": null,
-     "bm": 43.2
+     "bm": 28.11
     },
     {
      "date": "2026-09-11",
-     "actual": 34.73,
-     "plan": 43.55,
+     "actual": 21.07,
+     "plan": 28.28,
      "proj": null,
-     "bm": 45.0
+     "bm": 29.22
     },
     {
      "date": "2026-09-12",
-     "actual": 34.73,
-     "plan": 44.64,
+     "actual": 21.07,
+     "plan": 29.33,
      "proj": null,
-     "bm": 46.13
+     "bm": 30.31
     },
     {
      "date": "2026-09-13",
-     "actual": 34.73,
-     "plan": 45.55,
+     "actual": 21.07,
+     "plan": 29.98,
      "proj": null,
-     "bm": 47.07
+     "bm": 30.98
     },
     {
      "date": "2026-09-14",
-     "actual": 34.73,
-     "plan": 46.35,
+     "actual": 21.07,
+     "plan": 30.41,
      "proj": null,
-     "bm": 47.9
+     "bm": 31.43
     },
     {
      "date": "2026-09-15",
-     "actual": 34.73,
-     "plan": 47.01,
+     "actual": 21.07,
+     "plan": 30.78,
      "proj": null,
-     "bm": 48.58
+     "bm": 31.81
     },
     {
      "date": "2026-09-16",
-     "actual": 34.73,
-     "plan": 47.99,
+     "actual": 21.07,
+     "plan": 31.29,
      "proj": null,
-     "bm": 49.59
+     "bm": 32.33
     },
     {
      "date": "2026-09-17",
-     "actual": 45.54,
-     "plan": 49.24,
+     "actual": 25.4,
+     "plan": 31.9,
      "proj": null,
-     "bm": 50.88
+     "bm": 32.97
     }
    ],
-   "bm": 50.9,
-   "bmExp": 50.9
+   "bm": 33.0,
+   "bmExp": 33.0
   },
   {
    "key": "paid",
    "name": "Paid",
    "now": 13.6,
-   "exp": 29.7,
+   "exp": 32.1,
    "proj": 13.6,
-   "target": 29.7,
+   "target": 32.1,
    "parts": [
     {
      "name": "Paid Social",
@@ -1980,350 +2346,369 @@
     {
      "date": "2026-08-19",
      "actual": 0.0,
-     "plan": 0.99,
+     "plan": 1.07,
      "proj": null,
-     "bm": 1.02
+     "bm": 1.11
     },
     {
      "date": "2026-08-20",
      "actual": 0.0,
-     "plan": 1.98,
+     "plan": 2.14,
      "proj": null,
-     "bm": 2.05
+     "bm": 2.21
     },
     {
      "date": "2026-08-21",
      "actual": 1.07,
-     "plan": 2.97,
+     "plan": 3.21,
      "proj": null,
-     "bm": 3.07
+     "bm": 3.32
     },
     {
      "date": "2026-08-22",
      "actual": 1.07,
-     "plan": 3.96,
+     "plan": 4.28,
      "proj": null,
-     "bm": 4.1
+     "bm": 4.43
     },
     {
      "date": "2026-08-23",
      "actual": 1.07,
-     "plan": 4.96,
+     "plan": 5.35,
      "proj": null,
-     "bm": 5.12
+     "bm": 5.53
     },
     {
      "date": "2026-08-24",
      "actual": 6.92,
-     "plan": 5.95,
+     "plan": 6.42,
      "proj": null,
-     "bm": 6.14
+     "bm": 6.64
     },
     {
      "date": "2026-08-25",
      "actual": 6.92,
-     "plan": 6.94,
+     "plan": 7.49,
      "proj": null,
-     "bm": 7.17
+     "bm": 7.74
     },
     {
      "date": "2026-08-26",
      "actual": 6.92,
-     "plan": 7.93,
+     "plan": 8.57,
      "proj": null,
-     "bm": 8.19
+     "bm": 8.85
     },
     {
      "date": "2026-08-27",
      "actual": 6.92,
-     "plan": 8.92,
+     "plan": 9.64,
      "proj": null,
-     "bm": 9.22
+     "bm": 9.96
     },
     {
      "date": "2026-08-28",
      "actual": 12.48,
-     "plan": 9.91,
+     "plan": 10.71,
      "proj": null,
-     "bm": 10.24
+     "bm": 11.06
     },
     {
      "date": "2026-08-29",
      "actual": 12.48,
-     "plan": 10.9,
+     "plan": 11.78,
      "proj": null,
-     "bm": 11.27
+     "bm": 12.17
     },
     {
      "date": "2026-08-30",
      "actual": 12.48,
-     "plan": 11.89,
+     "plan": 12.85,
      "proj": null,
-     "bm": 12.29
+     "bm": 13.28
     },
     {
      "date": "2026-08-31",
      "actual": 12.48,
-     "plan": 12.88,
+     "plan": 13.92,
      "proj": null,
-     "bm": 13.31
+     "bm": 14.38
     },
     {
      "date": "2026-09-01",
      "actual": 12.48,
-     "plan": 13.88,
+     "plan": 14.99,
      "proj": null,
-     "bm": 14.34
+     "bm": 15.49
     },
     {
      "date": "2026-09-02",
      "actual": 12.48,
-     "plan": 14.87,
+     "plan": 16.06,
      "proj": null,
-     "bm": 15.36
+     "bm": 16.6
     },
     {
      "date": "2026-09-03",
      "actual": 12.48,
-     "plan": 15.86,
+     "plan": 17.13,
      "proj": null,
-     "bm": 16.39
+     "bm": 17.7
     },
     {
      "date": "2026-09-04",
      "actual": 12.48,
-     "plan": 16.85,
+     "plan": 18.2,
      "proj": null,
-     "bm": 17.41
+     "bm": 18.81
     },
     {
      "date": "2026-09-05",
      "actual": 12.48,
-     "plan": 17.84,
+     "plan": 19.27,
      "proj": null,
-     "bm": 18.43
+     "bm": 19.91
     },
     {
      "date": "2026-09-06",
      "actual": 12.48,
-     "plan": 18.83,
+     "plan": 20.34,
      "proj": null,
-     "bm": 19.46
+     "bm": 21.02
     },
     {
      "date": "2026-09-07",
      "actual": 12.48,
-     "plan": 19.82,
+     "plan": 21.41,
      "proj": null,
-     "bm": 20.48
+     "bm": 22.13
     },
     {
      "date": "2026-09-08",
      "actual": 12.48,
-     "plan": 20.81,
+     "plan": 22.48,
      "proj": null,
-     "bm": 21.51
+     "bm": 23.23
     },
     {
      "date": "2026-09-09",
      "actual": 12.48,
-     "plan": 21.8,
+     "plan": 23.55,
      "proj": null,
-     "bm": 22.53
+     "bm": 24.34
     },
     {
      "date": "2026-09-10",
      "actual": 12.48,
-     "plan": 22.8,
+     "plan": 24.63,
      "proj": null,
-     "bm": 23.55
+     "bm": 25.45
     },
     {
      "date": "2026-09-11",
      "actual": 12.48,
-     "plan": 23.79,
+     "plan": 25.7,
      "proj": null,
-     "bm": 24.58
+     "bm": 26.55
     },
     {
      "date": "2026-09-12",
      "actual": 12.48,
-     "plan": 24.78,
+     "plan": 26.77,
      "proj": null,
-     "bm": 25.6
+     "bm": 27.66
     },
     {
      "date": "2026-09-13",
      "actual": 12.48,
-     "plan": 25.77,
+     "plan": 27.84,
      "proj": null,
-     "bm": 26.63
+     "bm": 28.76
     },
     {
      "date": "2026-09-14",
      "actual": 12.48,
-     "plan": 26.76,
+     "plan": 28.91,
      "proj": null,
-     "bm": 27.65
+     "bm": 29.87
     },
     {
      "date": "2026-09-15",
      "actual": 12.48,
-     "plan": 27.75,
+     "plan": 29.98,
      "proj": null,
-     "bm": 28.68
+     "bm": 30.98
     },
     {
      "date": "2026-09-16",
      "actual": 12.48,
-     "plan": 28.74,
+     "plan": 31.05,
      "proj": null,
-     "bm": 29.7
+     "bm": 32.08
     },
     {
      "date": "2026-09-17",
      "actual": 13.56,
-     "plan": 29.73,
+     "plan": 32.12,
      "proj": null,
-     "bm": 30.72
+     "bm": 33.19
     }
    ],
-   "bm": 30.7,
-   "bmExp": 30.7
+   "bm": 33.2,
+   "bmExp": 33.2
   }
  ],
  "funnelByGroup": {
   "aa_email": {
    "sessions_actual": 5055.0,
-   "sessions_expected": 6031.0,
+   "sessions_expected": 6156.8,
    "conv_actual": 0.0164648862512364,
-   "conv_expected": 0.010734769504145843,
-   "contrib_traffic": -10.5,
-   "contrib_conversion": 29.0,
+   "conv_expected": 0.01086913908320287,
+   "contrib_traffic": -12.0,
+   "contrib_conversion": 28.3,
    "bps_actual": 0.012348664688427302,
-   "bps_expected": 0.009195533636707281,
-   "contrib_buyers": 18.6,
-   "contrib_per_buyer": 10.4,
-   "sessions_benchmark": 6232.0,
-   "conv_benchmark": 0.010734769504145843,
-   "conv_benchmark_today": 0.010734769504145843,
-   "contrib_traffic_bm": -12.6,
-   "contrib_conversion_bm": 29.0,
-   "contrib_buyers_bm": 18.6,
-   "contrib_per_buyer_bm": 10.4
+   "bps_expected": 0.009359190264092617,
+   "contrib_buyers": 17.5,
+   "contrib_per_buyer": 10.7,
+   "sessions_benchmark": 6362.0,
+   "conv_benchmark": 0.01086913908320287,
+   "conv_benchmark_today": 0.01086913908320287,
+   "contrib_traffic_bm": -14.2,
+   "contrib_conversion_bm": 28.3,
+   "contrib_buyers_bm": 17.5,
+   "contrib_per_buyer_bm": 10.7
   },
   "aa_social": {
    "sessions_actual": 510.0,
-   "sessions_expected": 553.6,
+   "sessions_expected": 564.7,
    "conv_actual": 0.0062156862745098036,
-   "conv_expected": 0.00845394980125864,
-   "contrib_traffic": -0.4,
+   "conv_expected": 0.008338528477895808,
+   "contrib_traffic": -0.5,
    "contrib_conversion": -1.1,
    "bps_actual": 0.004661764705882353,
-   "bps_expected": 0.0072417558411930006,
+   "bps_expected": 0.0071801339507916615,
    "contrib_buyers": -1.5,
    "contrib_per_buyer": 0.4,
-   "sessions_benchmark": 572.0,
-   "conv_benchmark": 0.008453949801258642,
-   "conv_benchmark_today": 0.008453949801258642,
-   "contrib_traffic_bm": -0.5,
+   "sessions_benchmark": 583.5,
+   "conv_benchmark": 0.00833852847789581,
+   "conv_benchmark_today": 0.00833852847789581,
+   "contrib_traffic_bm": -0.6,
    "contrib_conversion_bm": -1.1,
    "contrib_buyers_bm": -1.5,
    "contrib_per_buyer_bm": 0.4
   },
   "referral_artist": {
    "sessions_actual": 252.0,
-   "sessions_expected": 474.8,
+   "sessions_expected": 475.2,
    "conv_actual": 0.017857142857142856,
-   "conv_expected": 0.0033861466350489297,
-   "contrib_traffic": -0.8,
-   "contrib_conversion": 3.6,
+   "conv_expected": 0.0032491864824308672,
+   "contrib_traffic": -0.7,
+   "contrib_conversion": 3.7,
    "bps_actual": 0.013392857142857142,
-   "bps_expected": 0.0029006142394943936,
+   "bps_expected": 0.0027978070995138375,
    "contrib_buyers": 3.1,
    "contrib_per_buyer": 0.6,
-   "sessions_benchmark": 490.7,
-   "conv_benchmark": 0.00338614663504893,
-   "conv_benchmark_today": 0.00338614663504893,
+   "sessions_benchmark": 491.0,
+   "conv_benchmark": 0.0032491864824308672,
+   "conv_benchmark_today": 0.0032491864824308672,
    "contrib_traffic_bm": -0.8,
-   "contrib_conversion_bm": 3.6,
+   "contrib_conversion_bm": 3.7,
    "contrib_buyers_bm": 3.1,
    "contrib_per_buyer_bm": 0.6
   },
-  "search_direct_other": {
-   "sessions_actual": 950.0,
-   "sessions_expected": 1815.4,
-   "conv_actual": 0.04793684210526316,
-   "conv_expected": 0.027123100620712,
-   "contrib_traffic": -23.5,
-   "contrib_conversion": 19.8,
-   "bps_actual": 0.035952631578947375,
-   "bps_expected": 0.023233976658113515,
-   "contrib_buyers": 14.1,
-   "contrib_per_buyer": 5.7,
-   "sessions_benchmark": 1875.9,
-   "conv_benchmark": 0.027123100620712,
-   "conv_benchmark_today": 0.027123100620712,
-   "contrib_traffic_bm": -25.1,
-   "contrib_conversion_bm": 19.8,
-   "contrib_buyers_bm": 14.1,
-   "contrib_per_buyer_bm": 5.7
+  "organic_search": {
+   "sessions_actual": 134.0,
+   "sessions_expected": 130.4,
+   "conv_actual": 0.15029850746268658,
+   "conv_expected": 0.09819785053965373,
+   "contrib_traffic": 0.4,
+   "contrib_conversion": 7.0,
+   "bps_actual": 0.11272388059701494,
+   "bps_expected": 0.08455613270657743,
+   "contrib_buyers": 4.4,
+   "contrib_per_buyer": 2.6,
+   "sessions_benchmark": 134.7,
+   "conv_benchmark": 0.09819785053965374,
+   "conv_benchmark_today": 0.09819785053965374,
+   "contrib_traffic_bm": -0.1,
+   "contrib_conversion_bm": 7.0,
+   "contrib_buyers_bm": 4.4,
+   "contrib_per_buyer_bm": 2.6
+  },
+  "organic_other": {
+   "sessions_actual": 816.0,
+   "sessions_expected": 1538.4,
+   "conv_actual": 0.031127450980392154,
+   "conv_expected": 0.020737688636439447,
+   "contrib_traffic": -15.0,
+   "contrib_conversion": 8.5,
+   "bps_actual": 0.023345588235294118,
+   "bps_expected": 0.017856793633811447,
+   "contrib_buyers": 5.2,
+   "contrib_per_buyer": 3.3,
+   "sessions_benchmark": 1589.7,
+   "conv_benchmark": 0.020737688636439447,
+   "conv_benchmark_today": 0.020737688636439447,
+   "contrib_traffic_bm": -16.0,
+   "contrib_conversion_bm": 8.5,
+   "contrib_buyers_bm": 5.2,
+   "contrib_per_buyer_bm": 3.3
   },
   "paid": {
    "sessions_actual": 3125.0,
-   "sessions_expected": 10907.4,
+   "sessions_expected": 10916.6,
    "conv_actual": 0.0043392000000000005,
-   "conv_expected": 0.0027259389756831283,
-   "contrib_traffic": -21.2,
-   "contrib_conversion": 5.0,
+   "conv_expected": 0.0029422912821954403,
+   "contrib_traffic": -22.9,
+   "contrib_conversion": 4.4,
    "bps_actual": 0.0032544000000000006,
-   "bps_expected": 0.0023350723583608155,
-   "contrib_buyers": 3.4,
+   "bps_expected": 0.002533546006877808,
+   "contrib_buyers": 2.6,
    "contrib_per_buyer": 1.7,
-   "sessions_benchmark": 11270.9,
-   "conv_benchmark": 0.0027259389756831287,
-   "conv_benchmark_today": 0.0027259389756831287,
-   "contrib_traffic_bm": -22.2,
-   "contrib_conversion_bm": 5.0,
-   "contrib_buyers_bm": 3.4,
+   "sessions_benchmark": 11280.4,
+   "conv_benchmark": 0.0029422912821954403,
+   "conv_benchmark_today": 0.0029422912821954403,
+   "contrib_traffic_bm": -24.0,
+   "contrib_conversion_bm": 4.4,
+   "contrib_buyers_bm": 2.6,
    "contrib_per_buyer_bm": 1.7
   }
  },
  "pageFunnel": {
   "from": "2026-07-31",
   "through": "2026-09-19",
-  "feedThrough": "2026-10-27",
+  "feedThrough": "2026-11-09",
   "minSessions": 30,
   "bench": true,
   "basketN": 8,
   "paid": {
    "clickThrough": {
-    "sessions": 3186,
-    "through": 530,
-    "rate": 0.166353,
-    "bm": 0.21863,
+    "sessions": 3189,
+    "through": 532,
+    "rate": 0.166823,
+    "bm": 0.218646,
     "bmN": 5
    },
    "entry": {
-    "sessions": 895,
+    "sessions": 897,
     "through": 13,
-    "rate": 0.014525,
+    "rate": 0.014493,
     "bm": 0.010698,
     "bmN": 8
    }
   },
   "organic": {
    "clickThrough": {
-    "sessions": 3816,
-    "through": 1203,
-    "rate": 0.315252,
-    "bm": 0.241376,
+    "sessions": 3813,
+    "through": 1201,
+    "rate": 0.314975,
+    "bm": 0.241254,
     "bmN": 8
    },
    "entry": {
-    "sessions": 3868,
+    "sessions": 3866,
     "through": 104,
-    "rate": 0.026887,
+    "rate": 0.026901,
     "bm": 0.032541,
     "bmN": 8
    }
@@ -2896,10 +3281,10 @@
    "fullWorks": [],
    "daysLeft": 0
   },
-  "unitTarget": 29.7327927895642,
+  "unitTarget": 32.11967164511926,
   "entriesProjected": 12.5,
   "unitProjected": 13.6,
-  "spendBudget": 4245.03,
+  "spendBudget": 3239.16,
   "spendProjectedTotal": 4086.95,
   "stops": {
    "sellout": null,
@@ -2934,11 +3319,11 @@
    "profitPerUnit": 1179.19,
    "budgetShare": 0.0
   },
-  "benchmarkUnits": 30.7,
-  "benchmarkBudget": 4386.54
+  "benchmarkUnits": 33.2,
+  "benchmarkBudget": 3347.13
  },
  "unitsPerBuyer": {
-  "plan": 1.1674,
+  "plan": 1.1613,
   "actual": 1.3333
  },
  "untracked": {
@@ -2955,14 +3340,14 @@
   "normal": {
    "recentMonths": 18,
    "entries": {
-    "median": 0.0159,
-    "p90": 0.0371,
-    "n": 55
+    "median": 0.0161,
+    "p90": 0.0372,
+    "n": 54
    },
    "units": {
-    "median": 0.0317,
-    "p90": 0.0659,
-    "n": 55
+    "median": 0.0313,
+    "p90": 0.0665,
+    "n": 54
    }
   },
   "high": [
@@ -3032,8 +3417,8 @@
    }
   ],
   "feedThrough": "2026-09-23",
-  "deliveredTarget": 130618.4,
-  "deliveredBenchmark": 134971.6
+  "deliveredTarget": 133343.0,
+  "deliveredBenchmark": 137787.1
  },
  "social": {
   "posts": 1,
@@ -3403,6 +3788,288 @@
       2,
       1
      ]
+    ],
+    "conv": [
+     [
+      "2026-08-17",
+      "AA Email Man",
+      11.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-17",
+      "Direct",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "AA Email Man",
+      7.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "Direct",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "Organic Search",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "Referral Artist",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "untracked",
+      3.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-19",
+      "Paid Social",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-20",
+      "Paid Social",
+      4.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-21",
+      "Direct",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-21",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-21",
+      "Paid Social",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-22",
+      "Direct",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-22",
+      "Paid Social",
+      3.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-22",
+      "untracked",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-23",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-23",
+      "Paid Social",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-24",
+      "AA Email Auto",
+      3.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-24",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-25",
+      "AA Email Man",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-25",
+      "Paid Social",
+      0.5,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-26",
+      "Paid Social",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-27",
+      "AA Email Man",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-27",
+      "Organic Search",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-28",
+      "AA Email Man",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-29",
+      "Organic Search",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-30",
+      "Direct",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-30",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-31",
+      "Direct",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-31",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-03",
+      "Organic Search",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-04",
+      "Direct",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-06",
+      "Direct",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-08",
+      "Direct",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-10",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-10",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-15",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-16",
+      "Direct",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-17",
+      "AA Email Man",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-17",
+      "Direct",
+      1.0,
+      0.0,
+      0.0
+     ]
     ]
    },
    {
@@ -3609,6 +4276,239 @@
       1,
       0
      ]
+    ],
+    "conv": [
+     [
+      "2026-08-17",
+      "AA Email Man",
+      3.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-17",
+      "untracked",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "AA Email Man",
+      4.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "Direct",
+      3.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "Organic Search",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-18",
+      "untracked",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-19",
+      "AA Email Man",
+      3.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-19",
+      "Paid Social",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-20",
+      "AA Email Man",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-20",
+      "Paid Social",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-21",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-21",
+      "Paid Social",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-22",
+      "Paid Social",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-24",
+      "AA Email Man",
+      3.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-25",
+      "AA Email Auto",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-25",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-25",
+      "Paid Social",
+      0.5,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-26",
+      "AA Email Man",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-26",
+      "AA Meta",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-27",
+      "AA Email Man",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-28",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-28",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-29",
+      "Organic Search",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-30",
+      "Organic Search",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-08-31",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-01",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-03",
+      "AA Email Man",
+      2.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-03",
+      "Referral Artist",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-05",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-07",
+      "AA Email Man",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-08",
+      "Organic Search",
+      1.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-10",
+      "AA Email Man",
+      0.0,
+      0.0,
+      0.0
+     ],
+     [
+      "2026-09-16",
+      "Direct",
+      0.0,
+      0.0,
+      0.0
+     ]
     ]
    }
   ],
@@ -3675,18 +4575,11 @@
  },
  "closeForecast": {
   "units": 150.0,
-  "edition": 150.0,
   "pct": 1.0,
   "lo": 150.0,
   "hi": 150.0,
   "pctLo": 1.0,
   "pctHi": 1.0,
-  "today": 150.0,
-  "pctToday": 1.0,
-  "target": 150.0,
-  "daysLeft": 0,
-  "confidence": "high",
-  "confidenceWhy": "the campaign has closed",
   "built": {
    "sold": 150.0,
    "inHand": 0.0,
@@ -3727,9 +4620,17 @@
    "change": null,
    "direction": "stop",
    "spendAtClose": 4086.95,
-   "budget": 4245.03,
+   "budget": 3239.16,
    "rule": "The projection runs at the recommended spend: the level at which the next euro returns what it costs, capped at the spend that sells out, reached from today's by steps of up to 30% a day."
   },
+  "edition": 150.0,
+  "today": 150.0,
+  "pctToday": 1.0,
+  "target": 150.0,
+  "daysLeft": 0,
+  "confidence": "high",
+  "confidenceWhy": "the campaign has closed",
+  "scenarios": null,
   "range": null
  },
  "framing": {
@@ -3737,7 +4638,7 @@
   "frames": 108.0,
   "rate": 0.72,
   "entrants": null,
-  "plan": 0.4564,
+  "plan": 0.464,
   "benchmark": {
    "rate": 0.5302,
    "n": 5,
@@ -3957,22 +4858,22 @@
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": -35.0
+    "value": -28.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": 51.0
+    "value": 47.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": -1.0
+    "value": 8.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -15.0
+    "value": -27.0
    }
   ],
   "closeScale": null,
@@ -3987,44 +4888,44 @@
     {
      "key": "organic_traffic",
      "label": "Organic traffic",
-     "value": -35.0
+     "value": -28.0
     },
     {
      "key": "organic_conversion",
      "label": "Organic conversion",
-     "value": 51.0
+     "value": 47.0
     },
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": -1.0
+     "value": 8.0
     },
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -15.0
+     "value": -27.0
     }
    ],
    "stepsBm": [
     {
      "key": "organic_traffic",
      "label": "Organic traffic",
-     "value": -39.0
+     "value": -32.0
     },
     {
      "key": "organic_conversion",
      "label": "Organic conversion",
-     "value": 51.0
+     "value": 47.0
     },
     {
      "key": "paid_spend",
      "label": "Paid spend",
-     "value": -2.0
+     "value": 7.0
     },
     {
      "key": "paid_efficiency",
      "label": "Paid efficiency",
-     "value": -15.0
+     "value": -27.0
     }
    ]
   },
@@ -4032,22 +4933,22 @@
    {
     "key": "organic_traffic",
     "label": "Organic traffic",
-    "value": -39.0
+    "value": -32.0
    },
    {
     "key": "organic_conversion",
     "label": "Organic conversion",
-    "value": 51.0
+    "value": 47.0
    },
    {
     "key": "paid_spend",
     "label": "Paid spend",
-    "value": -2.0
+    "value": 7.0
    },
    {
     "key": "paid_efficiency",
     "label": "Paid efficiency",
-    "value": -15.0
+    "value": -27.0
    }
   ],
   "closeScaleBm": null
@@ -4136,8 +5037,8 @@
     "artist": "Ai Weiwei",
     "title": "Multiple",
     "quarter": "2025 Q4",
-    "demand": 222.60000000000002,
-    "units": 149.0,
+    "demand": 298.79194630872485,
+    "units": 200.0,
     "price": 2000.0
    },
    {
@@ -4163,8 +5064,8 @@
     "artist": "Ai Weiwei",
     "title": "Arm \u00b7 Multiple",
     "quarter": "2026 Q2",
-    "demand": 204.4,
-    "units": 146.0,
+    "demand": 273.4731034482759,
+    "units": 195.33793103448275,
     "price": 1650.0
    },
    {
@@ -4196,10 +5097,10 @@
    }
   ],
   "units": 155.0,
-  "unitsSold": 132.5,
+  "unitsSold": 135.0,
   "nShort": 7,
   "unitsP25": 140.5,
-  "unitsP75": 209.0,
+  "unitsP75": 246.9,
   "price": 2000.0,
   "priceP25": 1925.0,
   "priceP75": 3593.8,
@@ -4212,74 +5113,82 @@
    "aa_email": 0.9677,
    "aa_social": 0.9677,
    "referral_artist": 0.9677,
-   "search_direct_other": 0.9677,
+   "organic_search": 0.9677,
+   "organic_other": 0.9677,
    "paid": 0.9677
   },
   "stretchFrom": {
-   "aa_email": 0.4316,
-   "aa_social": 0.0312,
-   "referral_artist": 0.0107,
-   "search_direct_other": 0.3283,
-   "paid": 0.1982
+   "aa_email": 0.4461,
+   "aa_social": 0.0314,
+   "referral_artist": 0.0103,
+   "organic_search": 0.0854,
+   "organic_other": 0.2127,
+   "paid": 0.2141
   },
   "stretchTyped": false,
   "stretchUnits": -5.0,
   "stretchPct": -0.0323,
   "unitsByGroup": {
-   "aa_email": 66.9,
-   "aa_social": 4.8,
-   "referral_artist": 1.7,
-   "search_direct_other": 50.9,
-   "paid": 30.7
+   "aa_email": 69.1,
+   "aa_social": 4.9,
+   "referral_artist": 1.6,
+   "organic_search": 13.2,
+   "organic_other": 33.0,
+   "paid": 33.2
   },
   "sessionsByGroup": {
-   "aa_email": 6232.0,
-   "aa_social": 572.0,
-   "referral_artist": 490.7,
-   "search_direct_other": 1875.9,
-   "paid": 11270.9
+   "aa_email": 6362.0,
+   "aa_social": 583.5,
+   "referral_artist": 491.0,
+   "organic_search": 134.7,
+   "organic_other": 1589.7,
+   "paid": 11280.4
   },
   "convByGroup": {
-   "aa_email": 0.010321,
-   "aa_social": 0.006309,
-   "referral_artist": 0.012019,
-   "search_direct_other": 0.028969,
-   "paid": 0.003563
+   "aa_email": 0.011179,
+   "aa_social": 0.004644,
+   "referral_artist": 0.014252,
+   "organic_search": 0.0933,
+   "organic_other": 0.018104,
+   "paid": 0.003768
   },
   "channelsOff": [],
   "unitsAll": 155.0,
-  "unitsSoldAll": 132.5,
+  "unitsSoldAll": 135.0,
   "sessionsAll": 20441.5,
   "entriesAll": 142.5,
   "unitsP25All": 140.5,
-  "unitsP75All": 208.95,
+  "unitsP75All": 246.868276,
   "unitsByGroupAll": {
-   "aa_email": 66.899121,
-   "aa_social": 4.835714,
-   "referral_artist": 1.661477,
-   "search_direct_other": 50.879803,
-   "paid": 30.723886
+   "aa_email": 69.149561,
+   "aa_social": 4.865898,
+   "referral_artist": 1.595475,
+   "organic_search": 13.231397,
+   "organic_other": 32.967342,
+   "paid": 33.190327
   },
   "sessionsByGroupAll": {
-   "aa_email": 6232.00349,
-   "aa_social": 572.006422,
-   "referral_artist": 490.668843,
-   "search_direct_other": 1875.884457,
-   "paid": 11270.936788
+   "aa_email": 6362.008991,
+   "aa_social": 583.543974,
+   "referral_artist": 491.038424,
+   "organic_search": 134.742225,
+   "organic_other": 1589.730772,
+   "paid": 11280.435614
   },
   "convByGroupAll": {
-   "aa_email": 0.010321,
-   "aa_social": 0.006309,
-   "referral_artist": 0.012019,
-   "search_direct_other": 0.028969,
-   "paid": 0.003563
+   "aa_email": 0.011179,
+   "aa_social": 0.004644,
+   "referral_artist": 0.014252,
+   "organic_search": 0.0933,
+   "organic_other": 0.018104,
+   "paid": 0.003768
   },
   "privateRoomShare": 0.1793,
-  "paidBudget": 4386.54,
-  "costPerPurchase": 142.77282,
+  "paidBudget": 3347.13,
+  "costPerPurchase": 100.846467,
   "costPerPurchaseN": 5,
-  "unitsPerBuyer": 1.1674,
-  "buyers": 132.8,
+  "unitsPerBuyer": 1.1613,
+  "buyers": 133.5,
   "sessionsShared": false,
   "lines": null
  },
@@ -4287,182 +5196,191 @@
   "direct_spread": {
    "targets": {
     "edition_size": 150,
-    "paid_pct": 0.2502086,
-    "paid_units": 37.53129,
-    "organic_units": 112.46871,
+    "paid_pct": 0.26428946622122235,
+    "paid_units": 39.64341993318335,
+    "organic_units": 110.35658006681665,
     "per_channel": {
      "AA Email Auto": {
       "quality": "benchmark",
-      "order_split": 0.04830410169150897,
-      "purchases": 5.432700004952832,
-      "eligible_entries": 6.7908750061910395,
-      "sessions": 425.9018108923509,
-      "session_to_entry": 0.01032091187096975
+      "order_split": 0.04975408347345753,
+      "purchases": 5.4906904964896945,
+      "eligible_entries": 6.863363120612118,
+      "sessions": 434.03635732054016,
+      "session_to_entry": 0.0111793559999277
      },
      "AA Email Man": {
       "quality": "benchmark",
-      "order_split": 0.6783137196763903,
-      "purchases": 76.28906902730523,
-      "eligible_entries": 95.36133628413154,
-      "sessions": 5980.755907817325,
-      "session_to_entry": 0.01032091187096975
+      "order_split": 0.6986751900595445,
+      "purchases": 77.10340455250446,
+      "eligible_entries": 96.37925569063057,
+      "sessions": 6094.985843834441,
+      "session_to_entry": 0.0111793559999277
      },
      "AA Meta": {
       "quality": "benchmark",
-      "order_split": 0.02457479434782963,
-      "purchases": 2.76389541881569,
-      "eligible_entries": 3.4548692735196123,
-      "sessions": 275.13663217157176,
-      "session_to_entry": 0.0063091482649842
+      "order_split": 0.024641548282355617,
+      "purchases": 2.719356995992106,
+      "eligible_entries": 3.3991962449901325,
+      "sessions": 280.2019373768777,
+      "session_to_entry": 0.0046439628482972
      },
      "AA X": {
       "quality": "benchmark",
-      "order_split": 0.027947805335745157,
-      "purchases": 3.1432536134423747,
-      "eligible_entries": 3.929067016802968,
-      "sessions": 312.90048363487995,
-      "session_to_entry": 0.0063091482649842
+      "order_split": 0.028023721575007286,
+      "purchases": 3.092602073762469,
+      "eligible_entries": 3.8657525922030858,
+      "sessions": 318.66102680933506,
+      "session_to_entry": 0.0046439628482972
      },
      "Referral Artist": {
       "quality": "benchmark",
-      "order_split": 0.018045956816531174,
-      "purchases": 2.029605483870968,
-      "eligible_entries": 2.5370068548387095,
-      "sessions": 504.42002032258057,
-      "session_to_entry": 0.0120192307692307
-     },
-     "Direct": {
-      "quality": "benchmark",
-      "order_split": 0.05725746782383765,
-      "purchases": 6.4396735440135275,
-      "eligible_entries": 8.04959193001691,
-      "sessions": 196.54053659916963,
-      "session_to_entry": 0.02896906941367985
+      "order_split": 0.01726837129455859,
+      "purchases": 1.9056783993914734,
+      "eligible_entries": 2.382097999239342,
+      "sessions": 503.92899034792896,
+      "session_to_entry": 0.014251781472684
      },
      "Organic Search": {
       "quality": "benchmark",
-      "order_split": 0.025864583442993333,
-      "purchases": 2.908956334520819,
-      "eligible_entries": 3.6361954181510234,
-      "sessions": 88.78211527690979,
-      "session_to_entry": 0.02896906941367985
+      "order_split": 0.14320791946818634,
+      "purchases": 15.803936230993136,
+      "eligible_entries": 19.75492028874142,
+      "sessions": 138.27942960180278,
+      "session_to_entry": 0.09330024813895779
+     },
+     "Direct": {
+      "quality": "benchmark",
+      "order_split": 0.012434974178314058,
+      "purchases": 1.372281223537913,
+      "eligible_entries": 1.715351529422391,
+      "sessions": 140.89966209431284,
+      "session_to_entry": 0.018104329955744798
      },
      "Other": {
       "quality": "benchmark",
-      "order_split": 0.006389318684901871,
-      "purchases": 0.71859843026981,
-      "eligible_entries": 0.8982480378372624,
-      "sessions": 21.93181379758662,
-      "session_to_entry": 0.02896906941367985
+      "order_split": 0.0013876096146657913,
+      "purchases": 0.15313185154234998,
+      "eligible_entries": 0.19141481442793748,
+      "sessions": 15.722889571109468,
+      "session_to_entry": 0.018104329955744798
      },
      "AA Other": {
       "quality": "benchmark",
-      "order_split": 0.0027953664871100525,
-      "purchases": 0.31439126278249924,
-      "eligible_entries": 0.39298907847812403,
-      "sessions": 9.595304337563038,
-      "session_to_entry": 0.02896906941367985
+      "order_split": 0.0006070877984524917,
+      "purchases": 0.06699613323750984,
+      "eligible_entries": 0.0837451665468873,
+      "sessions": 6.878861543010759,
+      "session_to_entry": 0.018104329955744798
      },
      "Referral Meta": {
       "quality": "benchmark",
-      "order_split": 0.009563095875999135,
-      "purchases": 1.0755490567799426,
-      "eligible_entries": 1.3444363209749282,
-      "sessions": 32.82604115153831,
-      "session_to_entry": 0.02896906941367985
+      "order_split": 0.0020768793102876786,
+      "purchases": 0.22919729789487714,
+      "eligible_entries": 0.2864966223685964,
+      "sessions": 23.532947381630883,
+      "session_to_entry": 0.018104329955744798
      },
      "Referral Other": {
       "quality": "benchmark",
-      "order_split": 0.01009437898244207,
-      "purchases": 1.1353017824063723,
-      "eligible_entries": 1.4191272280079652,
-      "sessions": 34.649710112024486,
-      "session_to_entry": 0.02896906941367985
+      "order_split": 0.002192261494674847,
+      "purchases": 0.2419304811644839,
+      "eligible_entries": 0.30241310145560485,
+      "sessions": 24.840333352741915,
+      "session_to_entry": 0.018104329955744798
      },
      "Referral X": {
       "quality": "benchmark",
-      "order_split": 0.0908494108347107,
-      "purchases": 10.217716040839935,
-      "eligible_entries": 12.772145051049918,
-      "sessions": 311.84739098327265,
-      "session_to_entry": 0.02896906941367985
+      "order_split": 0.0197303534504952,
+      "purchases": 2.1773743303061655,
+      "eligible_entries": 2.7217179128827067,
+      "sessions": 223.56300015679219,
+      "session_to_entry": 0.018104329955744798
      }
     },
     "paid": {
-     "units": 37.53129,
-     "eligible_entries": 46.914112499999995,
-     "sessions": 11586.809006129031,
-     "session_to_entry": 0.0035626947248237,
-     "cost_per_purchase": 113.10654866269145,
+     "units": 39.64341993318335,
+     "eligible_entries": 49.55427491647919,
+     "sessions": 11576.565620493973,
+     "session_to_entry": 0.0037680280653124,
+     "cost_per_purchase": 81.7072656338437,
      "cost_per_purchase_source": "basket",
-     "budget": 4245.034678758585,
-     "budget_pct_of_launch_value": 0.0094334103972413,
+     "budget": 3239.1554431146265,
+     "budget_pct_of_launch_value": 0.007198123206921392,
      "sense_check_breached": false
     },
     "launch_value": 450000.0,
-    "units_per_buyer": 1.1673895097609288,
+    "units_per_buyer": 1.161333275262424,
     "units_per_buyer_source": "products",
-    "buyers": 128.4918176373871,
+    "buyers": 129.16188935179252,
     "buyers_by_group": {
-     "aa_email": 70.00385762331715,
-     "aa_social": 5.060135441398473,
-     "referral_artist": 1.7385846513959282,
-     "search_direct_other": 19.539482118769623,
-     "paid": 32.14975780250593
+     "aa_email": 71.12006243886411,
+     "aa_social": 5.004557428565248,
+     "referral_artist": 1.6409401504153505,
+     "organic_search": 13.60844175193547,
+     "organic_other": 3.6517607891024992,
+     "paid": 34.13612679290983
     },
-    "organic_sessions": 8195.287767096774,
-    "total_sessions": 19782.096773225807,
-    "entries_target": 187.5,
+    "organic_sessions": 8205.531279390523,
+    "total_sessions": 19782.0968998845,
+    "entries_target": 187.49999999999997,
     "entry_rate": 0.8,
     "buffer": 0.75,
     "k": 0.967741935483871,
     "k_by_group": {
-     "aa_email": 0.9677419354838709,
-     "aa_social": 0.967741935483871,
-     "referral_artist": 0.9677419354838709,
-     "search_direct_other": 0.9677419354838709,
-     "paid": 0.9677419354838709
+     "aa_email": 0.9677419417273673,
+     "aa_social": 0.9677419417273674,
+     "referral_artist": 0.9677419417273673,
+     "organic_search": 0.9677419417273673,
+     "organic_other": 0.9677419417273674,
+     "paid": 0.9677419417273674
     },
     "stretch_from": {
-     "aa_email": 0.5448117935483872,
-     "aa_social": 0.039380993548387096,
-     "referral_artist": 0.013530703225806453,
-     "search_direct_other": 0.15206790967741937,
-     "paid": 0.2502086
+     "aa_email": 0.5506273003266277,
+     "aa_social": 0.03874639379836383,
+     "referral_artist": 0.012704522662609824,
+     "organic_search": 0.10535957487328758,
+     "organic_other": 0.028272742117888657,
+     "paid": 0.26428946622122235
     },
     "stretch_typed": false,
     "stretch_units": -5.0
    },
    "groupTargets": {
     "aa_email": {
-     "entries": 102.15221129032258,
-     "purchases": 81.72176903225807,
-     "units": 81.72176903225807,
-     "sessions": 6406.657718709676
+     "entries": 103.24261881124269,
+     "purchases": 82.59409504899415,
+     "units": 82.59409504899415,
+     "sessions": 6529.022201154981
     },
     "aa_social": {
-     "entries": 7.3839362903225805,
-     "purchases": 5.907149032258065,
-     "units": 5.907149032258065,
-     "sessions": 588.0371158064518
+     "entries": 7.264948837193218,
+     "purchases": 5.811959069754575,
+     "units": 5.811959069754575,
+     "sessions": 598.8629641862128
     },
     "referral_artist": {
-     "entries": 2.5370068548387095,
-     "purchases": 2.029605483870968,
-     "units": 2.029605483870968,
-     "sessions": 504.42002032258057
+     "entries": 2.382097999239342,
+     "purchases": 1.9056783993914734,
+     "units": 1.9056783993914734,
+     "sessions": 503.92899034792896
     },
-    "search_direct_other": {
-     "entries": 28.51273306451613,
-     "purchases": 22.810186451612907,
-     "units": 22.810186451612907,
-     "sessions": 696.1729122580646
+    "organic_search": {
+     "entries": 19.75492028874142,
+     "purchases": 15.803936230993136,
+     "units": 15.803936230993136,
+     "sessions": 138.27942960180278
+    },
+    "organic_other": {
+     "entries": 5.301139147104124,
+     "purchases": 4.240911317683299,
+     "units": 4.240911317683299,
+     "sessions": 435.43769409959805
     },
     "paid": {
-     "entries": 46.914112499999995,
-     "purchases": 37.53129,
-     "units": 37.53129,
-     "sessions": 11586.809006129031
+     "entries": 49.55427491647919,
+     "purchases": 39.64341993318335,
+     "units": 39.64341993318335,
+     "sessions": 11576.565620493973
     }
    },
    "channels": [
@@ -4470,9 +5388,9 @@
      "key": "aa_email",
      "name": "AA Email",
      "now": 97.4,
-     "exp": 81.7,
+     "exp": 82.6,
      "proj": 97.4,
-     "target": 81.7,
+     "target": 82.6,
      "parts": [
       {
        "name": "AA Email Man",
@@ -4599,245 +5517,245 @@
       {
        "date": "2026-08-16",
        "actual": 29.83,
-       "plan": 8.73,
+       "plan": 8.82,
        "proj": null,
-       "bm": 9.02
+       "bm": 9.12
       },
       {
        "date": "2026-08-17",
        "actual": 34.97,
-       "plan": 24.6,
+       "plan": 24.86,
        "proj": null,
-       "bm": 25.42
+       "bm": 25.69
       },
       {
        "date": "2026-08-18",
        "actual": 34.97,
-       "plan": 27.28,
+       "plan": 27.57,
        "proj": null,
-       "bm": 28.19
+       "bm": 28.49
       },
       {
        "date": "2026-08-19",
        "actual": 34.97,
-       "plan": 31.05,
+       "plan": 31.38,
        "proj": null,
-       "bm": 32.08
+       "bm": 32.42
       },
       {
        "date": "2026-08-20",
        "actual": 34.97,
-       "plan": 36.14,
+       "plan": 36.52,
        "proj": null,
-       "bm": 37.34
+       "bm": 37.74
       },
       {
        "date": "2026-08-21",
        "actual": 58.78,
-       "plan": 39.6,
+       "plan": 40.02,
        "proj": null,
-       "bm": 40.92
+       "bm": 41.35
       },
       {
        "date": "2026-08-22",
        "actual": 58.78,
-       "plan": 41.73,
+       "plan": 42.17,
        "proj": null,
-       "bm": 43.12
+       "bm": 43.58
       },
       {
        "date": "2026-08-23",
        "actual": 58.78,
-       "plan": 41.73,
+       "plan": 42.17,
        "proj": null,
-       "bm": 43.12
+       "bm": 43.58
       },
       {
        "date": "2026-08-24",
        "actual": 60.23,
-       "plan": 45.76,
+       "plan": 46.25,
        "proj": null,
-       "bm": 47.29
+       "bm": 47.79
       },
       {
        "date": "2026-08-25",
        "actual": 61.34,
-       "plan": 50.33,
+       "plan": 50.86,
        "proj": null,
-       "bm": 52.0
+       "bm": 52.56
       },
       {
        "date": "2026-08-26",
        "actual": 61.34,
-       "plan": 53.44,
+       "plan": 54.01,
        "proj": null,
-       "bm": 55.22
+       "bm": 55.81
       },
       {
        "date": "2026-08-27",
        "actual": 61.34,
-       "plan": 55.92,
+       "plan": 56.51,
        "proj": null,
-       "bm": 57.78
+       "bm": 58.4
       },
       {
        "date": "2026-08-28",
        "actual": 79.46,
-       "plan": 58.31,
+       "plan": 58.93,
        "proj": null,
-       "bm": 60.25
+       "bm": 60.89
       },
       {
        "date": "2026-08-29",
        "actual": 79.46,
-       "plan": 61.73,
+       "plan": 62.39,
        "proj": null,
-       "bm": 63.79
+       "bm": 64.47
       },
       {
        "date": "2026-08-30",
        "actual": 79.46,
-       "plan": 63.1,
+       "plan": 63.77,
        "proj": null,
-       "bm": 65.2
+       "bm": 65.9
       },
       {
        "date": "2026-08-31",
        "actual": 81.67,
-       "plan": 63.15,
+       "plan": 63.82,
        "proj": null,
-       "bm": 65.25
+       "bm": 65.95
       },
       {
        "date": "2026-09-01",
        "actual": 81.67,
-       "plan": 64.12,
+       "plan": 64.8,
        "proj": null,
-       "bm": 66.25
+       "bm": 66.96
       },
       {
        "date": "2026-09-02",
        "actual": 87.2,
-       "plan": 64.82,
+       "plan": 65.51,
        "proj": null,
-       "bm": 66.98
+       "bm": 67.69
       },
       {
        "date": "2026-09-03",
        "actual": 87.2,
-       "plan": 65.25,
+       "plan": 65.95,
        "proj": null,
-       "bm": 67.42
+       "bm": 68.14
       },
       {
        "date": "2026-09-04",
        "actual": 87.2,
-       "plan": 65.64,
+       "plan": 66.34,
        "proj": null,
-       "bm": 67.83
+       "bm": 68.55
       },
       {
        "date": "2026-09-05",
        "actual": 87.2,
-       "plan": 66.07,
+       "plan": 66.78,
        "proj": null,
-       "bm": 68.27
+       "bm": 69.0
       },
       {
        "date": "2026-09-06",
        "actual": 87.2,
-       "plan": 66.56,
+       "plan": 67.27,
        "proj": null,
-       "bm": 68.78
+       "bm": 69.52
       },
       {
        "date": "2026-09-07",
        "actual": 87.2,
-       "plan": 66.64,
+       "plan": 67.35,
        "proj": null,
-       "bm": 68.86
+       "bm": 69.59
       },
       {
        "date": "2026-09-08",
        "actual": 87.2,
-       "plan": 67.07,
+       "plan": 67.79,
        "proj": null,
-       "bm": 69.3
+       "bm": 70.04
       },
       {
        "date": "2026-09-09",
        "actual": 87.2,
-       "plan": 68.51,
+       "plan": 69.25,
        "proj": null,
-       "bm": 70.8
+       "bm": 71.55
       },
       {
        "date": "2026-09-10",
        "actual": 87.2,
-       "plan": 69.8,
+       "plan": 70.55,
        "proj": null,
-       "bm": 72.13
+       "bm": 72.9
       },
       {
        "date": "2026-09-11",
        "actual": 87.2,
-       "plan": 71.13,
+       "plan": 71.89,
        "proj": null,
-       "bm": 73.5
+       "bm": 74.29
       },
       {
        "date": "2026-09-12",
        "actual": 87.2,
-       "plan": 72.86,
+       "plan": 73.64,
        "proj": null,
-       "bm": 75.29
+       "bm": 76.1
       },
       {
        "date": "2026-09-13",
        "actual": 87.2,
-       "plan": 74.84,
+       "plan": 75.63,
        "proj": null,
-       "bm": 77.33
+       "bm": 78.16
       },
       {
        "date": "2026-09-14",
        "actual": 87.2,
-       "plan": 76.89,
+       "plan": 77.71,
        "proj": null,
-       "bm": 79.46
+       "bm": 80.3
       },
       {
        "date": "2026-09-15",
        "actual": 87.2,
-       "plan": 78.53,
+       "plan": 79.36,
        "proj": null,
-       "bm": 81.14
+       "bm": 82.01
       },
       {
        "date": "2026-09-16",
        "actual": 87.2,
-       "plan": 80.13,
+       "plan": 80.99,
        "proj": null,
-       "bm": 82.81
+       "bm": 83.69
       },
       {
        "date": "2026-09-17",
        "actual": 97.35,
-       "plan": 81.72,
+       "plan": 82.59,
        "proj": null,
-       "bm": 84.45
+       "bm": 85.35
       }
      ],
-     "bm": 84.4,
-     "bmExp": 84.4
+     "bm": 85.3,
+     "bmExp": 85.3
     },
     {
      "key": "aa_social",
      "name": "AA Meta",
      "now": 3.5,
-     "exp": 5.9,
+     "exp": 5.8,
      "proj": 3.5,
-     "target": 5.9,
+     "target": 5.8,
      "parts": [
       {
        "name": "AA Meta",
@@ -4960,245 +5878,245 @@
       {
        "date": "2026-08-16",
        "actual": 2.21,
-       "plan": 0.27,
+       "plan": 0.22,
        "proj": null,
-       "bm": 0.28
+       "bm": 0.22
       },
       {
        "date": "2026-08-17",
        "actual": 2.21,
-       "plan": 0.75,
+       "plan": 0.61,
        "proj": null,
-       "bm": 0.78
+       "bm": 0.63
       },
       {
        "date": "2026-08-18",
        "actual": 2.21,
-       "plan": 1.51,
+       "plan": 1.41,
        "proj": null,
-       "bm": 1.56
+       "bm": 1.46
       },
       {
        "date": "2026-08-19",
        "actual": 2.21,
-       "plan": 2.04,
+       "plan": 1.97,
        "proj": null,
-       "bm": 2.11
+       "bm": 2.03
       },
       {
        "date": "2026-08-20",
        "actual": 2.21,
-       "plan": 2.3,
+       "plan": 2.23,
        "proj": null,
-       "bm": 2.38
+       "bm": 2.31
       },
       {
        "date": "2026-08-21",
        "actual": 2.21,
-       "plan": 2.69,
+       "plan": 2.64,
        "proj": null,
-       "bm": 2.78
+       "bm": 2.72
       },
       {
        "date": "2026-08-22",
        "actual": 2.21,
-       "plan": 3.04,
+       "plan": 2.98,
        "proj": null,
-       "bm": 3.14
+       "bm": 3.08
       },
       {
        "date": "2026-08-23",
+       "actual": 2.21,
+       "plan": 3.19,
+       "proj": null,
+       "bm": 3.29
+      },
+      {
+       "date": "2026-08-24",
        "actual": 2.21,
        "plan": 3.28,
        "proj": null,
        "bm": 3.39
       },
       {
-       "date": "2026-08-24",
-       "actual": 2.21,
-       "plan": 3.36,
-       "proj": null,
-       "bm": 3.48
-      },
-      {
        "date": "2026-08-25",
        "actual": 2.21,
-       "plan": 3.42,
+       "plan": 3.33,
        "proj": null,
-       "bm": 3.53
+       "bm": 3.44
       },
       {
        "date": "2026-08-26",
        "actual": 2.21,
-       "plan": 3.49,
+       "plan": 3.37,
        "proj": null,
-       "bm": 3.61
+       "bm": 3.48
       },
       {
        "date": "2026-08-27",
        "actual": 2.21,
-       "plan": 3.61,
+       "plan": 3.51,
        "proj": null,
-       "bm": 3.73
+       "bm": 3.62
       },
       {
        "date": "2026-08-28",
        "actual": 3.51,
-       "plan": 3.75,
+       "plan": 3.68,
        "proj": null,
-       "bm": 3.88
+       "bm": 3.8
       },
       {
        "date": "2026-08-29",
        "actual": 3.51,
-       "plan": 3.92,
+       "plan": 3.82,
        "proj": null,
-       "bm": 4.05
+       "bm": 3.95
       },
       {
        "date": "2026-08-30",
        "actual": 3.51,
-       "plan": 4.07,
+       "plan": 3.96,
        "proj": null,
-       "bm": 4.2
+       "bm": 4.09
       },
       {
        "date": "2026-08-31",
        "actual": 3.51,
-       "plan": 4.2,
+       "plan": 4.1,
        "proj": null,
-       "bm": 4.34
+       "bm": 4.24
       },
       {
        "date": "2026-09-01",
        "actual": 3.51,
-       "plan": 4.39,
+       "plan": 4.35,
        "proj": null,
-       "bm": 4.54
+       "bm": 4.49
       },
       {
        "date": "2026-09-02",
        "actual": 3.51,
-       "plan": 4.54,
+       "plan": 4.5,
        "proj": null,
-       "bm": 4.69
+       "bm": 4.65
       },
       {
        "date": "2026-09-03",
        "actual": 3.51,
-       "plan": 4.64,
+       "plan": 4.56,
        "proj": null,
-       "bm": 4.79
+       "bm": 4.72
       },
       {
        "date": "2026-09-04",
        "actual": 3.51,
-       "plan": 4.73,
+       "plan": 4.66,
        "proj": null,
-       "bm": 4.88
+       "bm": 4.82
       },
       {
        "date": "2026-09-05",
        "actual": 3.51,
-       "plan": 4.79,
+       "plan": 4.73,
        "proj": null,
-       "bm": 4.95
+       "bm": 4.89
       },
       {
        "date": "2026-09-06",
        "actual": 3.51,
-       "plan": 4.83,
+       "plan": 4.75,
        "proj": null,
-       "bm": 4.99
+       "bm": 4.91
       },
       {
        "date": "2026-09-07",
+       "actual": 3.51,
+       "plan": 4.84,
+       "proj": null,
+       "bm": 5.01
+      },
+      {
+       "date": "2026-09-08",
        "actual": 3.51,
        "plan": 4.92,
        "proj": null,
        "bm": 5.09
       },
       {
-       "date": "2026-09-08",
-       "actual": 3.51,
-       "plan": 5.0,
-       "proj": null,
-       "bm": 5.17
-      },
-      {
        "date": "2026-09-09",
        "actual": 3.51,
-       "plan": 5.03,
+       "plan": 4.95,
        "proj": null,
-       "bm": 5.19
+       "bm": 5.11
       },
       {
        "date": "2026-09-10",
        "actual": 3.51,
-       "plan": 5.05,
+       "plan": 4.97,
        "proj": null,
-       "bm": 5.21
+       "bm": 5.13
       },
       {
        "date": "2026-09-11",
        "actual": 3.51,
-       "plan": 5.06,
+       "plan": 4.98,
        "proj": null,
-       "bm": 5.23
+       "bm": 5.15
       },
       {
        "date": "2026-09-12",
        "actual": 3.51,
-       "plan": 5.06,
+       "plan": 4.98,
        "proj": null,
-       "bm": 5.23
+       "bm": 5.15
       },
       {
        "date": "2026-09-13",
        "actual": 3.51,
-       "plan": 5.14,
+       "plan": 5.05,
        "proj": null,
-       "bm": 5.32
+       "bm": 5.22
       },
       {
        "date": "2026-09-14",
        "actual": 3.51,
-       "plan": 5.26,
+       "plan": 5.16,
        "proj": null,
-       "bm": 5.44
+       "bm": 5.33
       },
       {
        "date": "2026-09-15",
        "actual": 3.51,
-       "plan": 5.34,
+       "plan": 5.25,
        "proj": null,
-       "bm": 5.51
+       "bm": 5.42
       },
       {
        "date": "2026-09-16",
        "actual": 3.51,
-       "plan": 5.56,
+       "plan": 5.47,
        "proj": null,
-       "bm": 5.75
+       "bm": 5.65
       },
       {
        "date": "2026-09-17",
        "actual": 3.51,
-       "plan": 5.91,
+       "plan": 5.81,
        "proj": null,
-       "bm": 6.1
+       "bm": 6.01
       }
      ],
-     "bm": 6.1,
-     "bmExp": 6.1
+     "bm": 6.0,
+     "bmExp": 6.0
     },
     {
      "key": "referral_artist",
      "name": "Artist",
      "now": 5.1,
-     "exp": 2.0,
+     "exp": 1.9,
      "proj": 5.1,
-     "target": 2.0,
+     "target": 1.9,
      "parts": [
       {
        "name": "Referral Artist",
@@ -5321,245 +6239,245 @@
       {
        "date": "2026-08-16",
        "actual": 1.1,
-       "plan": 0.17,
+       "plan": 0.16,
        "proj": null,
-       "bm": 0.18
+       "bm": 0.17
       },
       {
        "date": "2026-08-17",
        "actual": 3.67,
-       "plan": 0.49,
+       "plan": 0.46,
        "proj": null,
-       "bm": 0.5
+       "bm": 0.47
       },
       {
        "date": "2026-08-18",
        "actual": 3.67,
-       "plan": 0.73,
+       "plan": 0.68,
        "proj": null,
-       "bm": 0.75
+       "bm": 0.7
       },
       {
        "date": "2026-08-19",
        "actual": 3.67,
-       "plan": 0.89,
+       "plan": 0.83,
        "proj": null,
-       "bm": 0.92
+       "bm": 0.86
       },
       {
        "date": "2026-08-20",
        "actual": 3.67,
-       "plan": 0.96,
+       "plan": 0.9,
        "proj": null,
-       "bm": 0.99
+       "bm": 0.93
       },
       {
        "date": "2026-08-21",
        "actual": 3.67,
-       "plan": 1.06,
+       "plan": 1.0,
        "proj": null,
-       "bm": 1.1
+       "bm": 1.03
       },
       {
        "date": "2026-08-22",
+       "actual": 3.67,
+       "plan": 1.08,
+       "proj": null,
+       "bm": 1.12
+      },
+      {
+       "date": "2026-08-23",
+       "actual": 3.67,
+       "plan": 1.13,
+       "proj": null,
+       "bm": 1.17
+      },
+      {
+       "date": "2026-08-24",
+       "actual": 3.67,
+       "plan": 1.14,
+       "proj": null,
+       "bm": 1.18
+      },
+      {
+       "date": "2026-08-25",
        "actual": 3.67,
        "plan": 1.15,
        "proj": null,
        "bm": 1.19
       },
       {
-       "date": "2026-08-23",
+       "date": "2026-08-26",
+       "actual": 3.67,
+       "plan": 1.19,
+       "proj": null,
+       "bm": 1.23
+      },
+      {
+       "date": "2026-08-27",
        "actual": 3.67,
        "plan": 1.2,
        "proj": null,
        "bm": 1.24
       },
       {
-       "date": "2026-08-24",
-       "actual": 3.67,
-       "plan": 1.21,
-       "proj": null,
-       "bm": 1.25
-      },
-      {
-       "date": "2026-08-25",
-       "actual": 3.67,
-       "plan": 1.22,
-       "proj": null,
-       "bm": 1.27
-      },
-      {
-       "date": "2026-08-26",
-       "actual": 3.67,
-       "plan": 1.26,
-       "proj": null,
-       "bm": 1.31
-      },
-      {
-       "date": "2026-08-27",
-       "actual": 3.67,
-       "plan": 1.28,
-       "proj": null,
-       "bm": 1.32
-      },
-      {
        "date": "2026-08-28",
        "actual": 3.67,
-       "plan": 1.28,
+       "plan": 1.2,
        "proj": null,
-       "bm": 1.32
+       "bm": 1.24
       },
       {
        "date": "2026-08-29",
        "actual": 3.67,
-       "plan": 1.3,
+       "plan": 1.22,
        "proj": null,
-       "bm": 1.35
+       "bm": 1.26
       },
       {
        "date": "2026-08-30",
        "actual": 3.67,
-       "plan": 1.32,
+       "plan": 1.24,
        "proj": null,
-       "bm": 1.37
+       "bm": 1.29
       },
       {
        "date": "2026-08-31",
        "actual": 3.67,
-       "plan": 1.35,
+       "plan": 1.27,
        "proj": null,
-       "bm": 1.4
+       "bm": 1.31
       },
       {
        "date": "2026-09-01",
        "actual": 3.67,
-       "plan": 1.5,
+       "plan": 1.41,
        "proj": null,
-       "bm": 1.55
+       "bm": 1.46
       },
       {
        "date": "2026-09-02",
        "actual": 3.67,
-       "plan": 1.58,
+       "plan": 1.48,
        "proj": null,
-       "bm": 1.63
+       "bm": 1.53
       },
       {
        "date": "2026-09-03",
        "actual": 3.67,
-       "plan": 1.58,
+       "plan": 1.48,
        "proj": null,
-       "bm": 1.63
+       "bm": 1.53
       },
       {
        "date": "2026-09-04",
        "actual": 3.67,
-       "plan": 1.58,
+       "plan": 1.48,
        "proj": null,
-       "bm": 1.63
+       "bm": 1.53
       },
       {
        "date": "2026-09-05",
        "actual": 3.67,
-       "plan": 1.58,
+       "plan": 1.48,
        "proj": null,
-       "bm": 1.63
+       "bm": 1.53
       },
       {
        "date": "2026-09-06",
        "actual": 3.67,
-       "plan": 1.58,
+       "plan": 1.48,
        "proj": null,
-       "bm": 1.63
+       "bm": 1.53
       },
       {
        "date": "2026-09-07",
+       "actual": 3.67,
+       "plan": 1.52,
+       "proj": null,
+       "bm": 1.57
+      },
+      {
+       "date": "2026-09-08",
+       "actual": 3.67,
+       "plan": 1.56,
+       "proj": null,
+       "bm": 1.61
+      },
+      {
+       "date": "2026-09-09",
+       "actual": 3.67,
+       "plan": 1.58,
+       "proj": null,
+       "bm": 1.64
+      },
+      {
+       "date": "2026-09-10",
+       "actual": 3.67,
+       "plan": 1.59,
+       "proj": null,
+       "bm": 1.64
+      },
+      {
+       "date": "2026-09-11",
+       "actual": 3.67,
+       "plan": 1.59,
+       "proj": null,
+       "bm": 1.64
+      },
+      {
+       "date": "2026-09-12",
+       "actual": 3.67,
+       "plan": 1.59,
+       "proj": null,
+       "bm": 1.64
+      },
+      {
+       "date": "2026-09-13",
        "actual": 3.67,
        "plan": 1.62,
        "proj": null,
        "bm": 1.68
       },
       {
-       "date": "2026-09-08",
-       "actual": 3.67,
-       "plan": 1.66,
-       "proj": null,
-       "bm": 1.72
-      },
-      {
-       "date": "2026-09-09",
-       "actual": 3.67,
-       "plan": 1.69,
-       "proj": null,
-       "bm": 1.74
-      },
-      {
-       "date": "2026-09-10",
-       "actual": 3.67,
-       "plan": 1.69,
-       "proj": null,
-       "bm": 1.75
-      },
-      {
-       "date": "2026-09-11",
-       "actual": 3.67,
-       "plan": 1.69,
-       "proj": null,
-       "bm": 1.75
-      },
-      {
-       "date": "2026-09-12",
-       "actual": 3.67,
-       "plan": 1.69,
-       "proj": null,
-       "bm": 1.75
-      },
-      {
-       "date": "2026-09-13",
-       "actual": 3.67,
-       "plan": 1.73,
-       "proj": null,
-       "bm": 1.79
-      },
-      {
        "date": "2026-09-14",
        "actual": 3.67,
-       "plan": 1.78,
+       "plan": 1.67,
        "proj": null,
-       "bm": 1.84
+       "bm": 1.73
       },
       {
        "date": "2026-09-15",
        "actual": 3.67,
-       "plan": 1.83,
+       "plan": 1.72,
        "proj": null,
-       "bm": 1.89
+       "bm": 1.78
       },
       {
        "date": "2026-09-16",
        "actual": 3.67,
-       "plan": 1.92,
+       "plan": 1.8,
        "proj": null,
-       "bm": 1.98
+       "bm": 1.86
       },
       {
        "date": "2026-09-17",
        "actual": 5.12,
-       "plan": 2.03,
+       "plan": 1.91,
        "proj": null,
-       "bm": 2.1
+       "bm": 1.97
       }
      ],
-     "bm": 2.1,
-     "bmExp": 2.1
+     "bm": 2.0,
+     "bmExp": 2.0
     },
     {
-     "key": "search_direct_other",
-     "name": "Search etc.",
+     "key": "organic_search",
+     "name": "Organic Search",
      "now": 27.4,
-     "exp": 22.8,
+     "exp": 15.8,
      "proj": 27.4,
-     "target": 22.8,
+     "target": 15.8,
      "parts": [
       {
        "name": "Organic Search",
@@ -5682,245 +6600,601 @@
       {
        "date": "2026-08-16",
        "actual": 0.0,
-       "plan": 0.32,
+       "plan": 0.0,
        "proj": null,
-       "bm": 0.33
+       "bm": 0.0
       },
       {
        "date": "2026-08-17",
        "actual": 0.0,
-       "plan": 0.91,
+       "plan": 0.0,
        "proj": null,
-       "bm": 0.94
+       "bm": 0.0
       },
       {
        "date": "2026-08-18",
        "actual": 0.0,
-       "plan": 2.05,
+       "plan": 0.6,
        "proj": null,
-       "bm": 2.12
+       "bm": 0.62
       },
       {
        "date": "2026-08-19",
        "actual": 0.0,
-       "plan": 2.94,
+       "plan": 1.2,
        "proj": null,
-       "bm": 3.04
+       "bm": 1.24
       },
       {
        "date": "2026-08-20",
        "actual": 0.0,
-       "plan": 3.52,
+       "plan": 1.8,
        "proj": null,
-       "bm": 3.64
+       "bm": 1.86
       },
       {
        "date": "2026-08-21",
        "actual": 4.2,
-       "plan": 4.88,
+       "plan": 3.19,
        "proj": null,
-       "bm": 5.04
+       "bm": 3.3
       },
       {
        "date": "2026-08-22",
        "actual": 4.2,
-       "plan": 5.92,
+       "plan": 4.29,
        "proj": null,
-       "bm": 6.11
+       "bm": 4.43
       },
       {
        "date": "2026-08-23",
        "actual": 4.2,
-       "plan": 6.2,
+       "plan": 4.67,
        "proj": null,
-       "bm": 6.41
+       "bm": 4.82
       },
       {
        "date": "2026-08-24",
        "actual": 4.2,
-       "plan": 7.88,
+       "plan": 5.3,
        "proj": null,
-       "bm": 8.14
+       "bm": 5.48
       },
       {
        "date": "2026-08-25",
        "actual": 6.41,
-       "plan": 9.79,
+       "plan": 5.82,
        "proj": null,
-       "bm": 10.12
+       "bm": 6.02
       },
       {
        "date": "2026-08-26",
        "actual": 6.41,
-       "plan": 11.38,
+       "plan": 5.82,
        "proj": null,
-       "bm": 11.76
+       "bm": 6.02
       },
       {
        "date": "2026-08-27",
        "actual": 6.41,
-       "plan": 12.16,
+       "plan": 5.82,
        "proj": null,
-       "bm": 12.57
+       "bm": 6.02
       },
       {
        "date": "2026-08-28",
        "actual": 9.0,
-       "plan": 12.64,
+       "plan": 6.16,
        "proj": null,
-       "bm": 13.06
+       "bm": 6.37
       },
       {
        "date": "2026-08-29",
        "actual": 9.0,
-       "plan": 13.39,
+       "plan": 8.43,
        "proj": null,
-       "bm": 13.83
+       "bm": 8.71
       },
       {
        "date": "2026-08-30",
        "actual": 9.0,
-       "plan": 13.69,
+       "plan": 9.34,
        "proj": null,
-       "bm": 14.14
+       "bm": 9.65
       },
       {
        "date": "2026-08-31",
        "actual": 9.0,
-       "plan": 13.72,
+       "plan": 9.34,
        "proj": null,
-       "bm": 14.17
+       "bm": 9.65
       },
       {
        "date": "2026-09-01",
        "actual": 9.0,
-       "plan": 14.3,
+       "plan": 9.34,
        "proj": null,
-       "bm": 14.78
+       "bm": 9.65
       },
       {
        "date": "2026-09-02",
        "actual": 14.53,
-       "plan": 14.89,
+       "plan": 9.8,
        "proj": null,
-       "bm": 15.39
+       "bm": 10.13
       },
       {
        "date": "2026-09-03",
        "actual": 14.53,
-       "plan": 15.48,
+       "plan": 10.73,
        "proj": null,
-       "bm": 16.0
+       "bm": 11.09
       },
       {
        "date": "2026-09-04",
        "actual": 18.72,
-       "plan": 15.51,
+       "plan": 10.78,
        "proj": null,
-       "bm": 16.03
+       "bm": 11.13
       },
       {
        "date": "2026-09-05",
        "actual": 18.72,
-       "plan": 15.75,
+       "plan": 11.15,
        "proj": null,
-       "bm": 16.27
+       "bm": 11.52
       },
       {
        "date": "2026-09-06",
        "actual": 18.72,
-       "plan": 16.34,
+       "plan": 12.07,
        "proj": null,
-       "bm": 16.88
+       "bm": 12.48
       },
       {
        "date": "2026-09-07",
        "actual": 18.72,
-       "plan": 17.17,
+       "plan": 12.21,
        "proj": null,
-       "bm": 17.75
+       "bm": 12.62
       },
       {
        "date": "2026-09-08",
        "actual": 18.72,
-       "plan": 17.97,
+       "plan": 12.3,
        "proj": null,
-       "bm": 18.57
+       "bm": 12.71
       },
       {
        "date": "2026-09-09",
        "actual": 18.72,
-       "plan": 18.56,
+       "plan": 12.57,
        "proj": null,
-       "bm": 19.18
+       "bm": 12.99
       },
       {
        "date": "2026-09-10",
        "actual": 18.72,
-       "plan": 19.37,
+       "plan": 13.27,
        "proj": null,
-       "bm": 20.01
+       "bm": 13.72
       },
       {
        "date": "2026-09-11",
        "actual": 18.72,
-       "plan": 20.17,
+       "plan": 13.95,
        "proj": null,
-       "bm": 20.85
+       "bm": 14.41
       },
       {
        "date": "2026-09-12",
        "actual": 18.72,
-       "plan": 20.68,
+       "plan": 13.95,
        "proj": null,
-       "bm": 21.37
+       "bm": 14.41
       },
       {
        "date": "2026-09-13",
        "actual": 18.72,
-       "plan": 21.1,
+       "plan": 14.12,
        "proj": null,
-       "bm": 21.8
+       "bm": 14.59
       },
       {
        "date": "2026-09-14",
        "actual": 18.72,
-       "plan": 21.47,
+       "plan": 14.37,
        "proj": null,
-       "bm": 22.19
+       "bm": 14.85
       },
       {
        "date": "2026-09-15",
        "actual": 18.72,
-       "plan": 21.78,
+       "plan": 14.37,
        "proj": null,
-       "bm": 22.5
+       "bm": 14.85
       },
       {
        "date": "2026-09-16",
        "actual": 18.72,
-       "plan": 22.23,
+       "plan": 14.88,
        "proj": null,
-       "bm": 22.97
+       "bm": 15.37
       },
       {
        "date": "2026-09-17",
        "actual": 27.42,
-       "plan": 22.81,
+       "plan": 15.8,
        "proj": null,
-       "bm": 23.57
+       "bm": 16.33
       }
      ],
-     "bm": 23.6,
-     "bmExp": 23.6
+     "bm": 16.3,
+     "bmExp": 16.3
+    },
+    {
+     "key": "organic_other",
+     "name": "Organic Other",
+     "now": 0.0,
+     "exp": 4.2,
+     "proj": 0.0,
+     "target": 4.2,
+     "parts": [],
+     "daily": [
+      {
+       "date": "2026-07-31",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-01",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-02",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-03",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-04",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-05",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-06",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-07",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-08",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-09",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-10",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-11",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-12",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-13",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-14",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-15",
+       "actual": 0.0,
+       "plan": 0.0,
+       "proj": null,
+       "bm": 0.0
+      },
+      {
+       "date": "2026-08-16",
+       "actual": 0.0,
+       "plan": 0.09,
+       "proj": null,
+       "bm": 0.1
+      },
+      {
+       "date": "2026-08-17",
+       "actual": 0.0,
+       "plan": 0.27,
+       "proj": null,
+       "bm": 0.27
+      },
+      {
+       "date": "2026-08-18",
+       "actual": 0.0,
+       "plan": 0.48,
+       "proj": null,
+       "bm": 0.49
+      },
+      {
+       "date": "2026-08-19",
+       "actual": 0.0,
+       "plan": 0.65,
+       "proj": null,
+       "bm": 0.68
+      },
+      {
+       "date": "2026-08-20",
+       "actual": 0.0,
+       "plan": 0.79,
+       "proj": null,
+       "bm": 0.81
+      },
+      {
+       "date": "2026-08-21",
+       "actual": 0.0,
+       "plan": 1.07,
+       "proj": null,
+       "bm": 1.11
+      },
+      {
+       "date": "2026-08-22",
+       "actual": 0.0,
+       "plan": 1.31,
+       "proj": null,
+       "bm": 1.36
+      },
+      {
+       "date": "2026-08-23",
+       "actual": 0.0,
+       "plan": 1.45,
+       "proj": null,
+       "bm": 1.49
+      },
+      {
+       "date": "2026-08-24",
+       "actual": 0.0,
+       "plan": 1.85,
+       "proj": null,
+       "bm": 1.91
+      },
+      {
+       "date": "2026-08-25",
+       "actual": 0.0,
+       "plan": 2.27,
+       "proj": null,
+       "bm": 2.35
+      },
+      {
+       "date": "2026-08-26",
+       "actual": 0.0,
+       "plan": 2.51,
+       "proj": null,
+       "bm": 2.59
+      },
+      {
+       "date": "2026-08-27",
+       "actual": 0.0,
+       "plan": 2.62,
+       "proj": null,
+       "bm": 2.71
+      },
+      {
+       "date": "2026-08-28",
+       "actual": 0.0,
+       "plan": 2.67,
+       "proj": null,
+       "bm": 2.76
+      },
+      {
+       "date": "2026-08-29",
+       "actual": 0.0,
+       "plan": 2.75,
+       "proj": null,
+       "bm": 2.84
+      },
+      {
+       "date": "2026-08-30",
+       "actual": 0.0,
+       "plan": 2.86,
+       "proj": null,
+       "bm": 2.95
+      },
+      {
+       "date": "2026-08-31",
+       "actual": 0.0,
+       "plan": 2.98,
+       "proj": null,
+       "bm": 3.08
+      },
+      {
+       "date": "2026-09-01",
+       "actual": 0.0,
+       "plan": 3.1,
+       "proj": null,
+       "bm": 3.21
+      },
+      {
+       "date": "2026-09-02",
+       "actual": 0.0,
+       "plan": 3.17,
+       "proj": null,
+       "bm": 3.27
+      },
+      {
+       "date": "2026-09-03",
+       "actual": 0.0,
+       "plan": 3.17,
+       "proj": null,
+       "bm": 3.27
+      },
+      {
+       "date": "2026-09-04",
+       "actual": 0.0,
+       "plan": 3.19,
+       "proj": null,
+       "bm": 3.3
+      },
+      {
+       "date": "2026-09-05",
+       "actual": 0.0,
+       "plan": 3.21,
+       "proj": null,
+       "bm": 3.31
+      },
+      {
+       "date": "2026-09-06",
+       "actual": 0.0,
+       "plan": 3.21,
+       "proj": null,
+       "bm": 3.31
+      },
+      {
+       "date": "2026-09-07",
+       "actual": 0.0,
+       "plan": 3.31,
+       "proj": null,
+       "bm": 3.42
+      },
+      {
+       "date": "2026-09-08",
+       "actual": 0.0,
+       "plan": 3.42,
+       "proj": null,
+       "bm": 3.53
+      },
+      {
+       "date": "2026-09-09",
+       "actual": 0.0,
+       "plan": 3.49,
+       "proj": null,
+       "bm": 3.61
+      },
+      {
+       "date": "2026-09-10",
+       "actual": 0.0,
+       "plan": 3.62,
+       "proj": null,
+       "bm": 3.74
+      },
+      {
+       "date": "2026-09-11",
+       "actual": 0.0,
+       "plan": 3.76,
+       "proj": null,
+       "bm": 3.88
+      },
+      {
+       "date": "2026-09-12",
+       "actual": 0.0,
+       "plan": 3.9,
+       "proj": null,
+       "bm": 4.03
+      },
+      {
+       "date": "2026-09-13",
+       "actual": 0.0,
+       "plan": 3.99,
+       "proj": null,
+       "bm": 4.12
+      },
+      {
+       "date": "2026-09-14",
+       "actual": 0.0,
+       "plan": 4.04,
+       "proj": null,
+       "bm": 4.18
+      },
+      {
+       "date": "2026-09-15",
+       "actual": 0.0,
+       "plan": 4.09,
+       "proj": null,
+       "bm": 4.23
+      },
+      {
+       "date": "2026-09-16",
+       "actual": 0.0,
+       "plan": 4.16,
+       "proj": null,
+       "bm": 4.3
+      },
+      {
+       "date": "2026-09-17",
+       "actual": 0.0,
+       "plan": 4.24,
+       "proj": null,
+       "bm": 4.38
+      }
+     ],
+     "bm": 4.4,
+     "bmExp": 4.4
     },
     {
      "key": "paid",
      "name": "Paid",
      "now": 16.6,
-     "exp": 37.5,
+     "exp": 39.6,
      "proj": 16.6,
-     "target": 37.5,
+     "target": 39.6,
      "parts": [
       {
        "name": "Paid Social",
@@ -6064,312 +7338,331 @@
       {
        "date": "2026-08-19",
        "actual": 0.0,
-       "plan": 1.25,
+       "plan": 1.32,
        "proj": null,
-       "bm": 1.29
+       "bm": 1.37
       },
       {
        "date": "2026-08-20",
        "actual": 0.0,
-       "plan": 2.5,
+       "plan": 2.64,
        "proj": null,
-       "bm": 2.59
+       "bm": 2.73
       },
       {
        "date": "2026-08-21",
        "actual": 1.4,
-       "plan": 3.75,
+       "plan": 3.96,
        "proj": null,
-       "bm": 3.88
+       "bm": 4.1
       },
       {
        "date": "2026-08-22",
        "actual": 1.4,
-       "plan": 5.0,
+       "plan": 5.29,
        "proj": null,
-       "bm": 5.17
+       "bm": 5.46
       },
       {
        "date": "2026-08-23",
        "actual": 1.4,
-       "plan": 6.26,
+       "plan": 6.61,
        "proj": null,
-       "bm": 6.46
+       "bm": 6.83
       },
       {
        "date": "2026-08-24",
        "actual": 8.67,
-       "plan": 7.51,
+       "plan": 7.93,
        "proj": null,
-       "bm": 7.76
+       "bm": 8.19
       },
       {
        "date": "2026-08-25",
        "actual": 8.67,
-       "plan": 8.76,
+       "plan": 9.25,
        "proj": null,
-       "bm": 9.05
+       "bm": 9.56
       },
       {
        "date": "2026-08-26",
        "actual": 8.67,
-       "plan": 10.01,
+       "plan": 10.57,
        "proj": null,
-       "bm": 10.34
+       "bm": 10.92
       },
       {
        "date": "2026-08-27",
        "actual": 8.67,
-       "plan": 11.26,
+       "plan": 11.89,
        "proj": null,
-       "bm": 11.63
+       "bm": 12.29
       },
       {
        "date": "2026-08-28",
        "actual": 15.15,
-       "plan": 12.51,
+       "plan": 13.21,
        "proj": null,
-       "bm": 12.93
+       "bm": 13.65
       },
       {
        "date": "2026-08-29",
        "actual": 15.15,
-       "plan": 13.76,
+       "plan": 14.54,
        "proj": null,
-       "bm": 14.22
+       "bm": 15.02
       },
       {
        "date": "2026-08-30",
        "actual": 15.15,
-       "plan": 15.01,
+       "plan": 15.86,
        "proj": null,
-       "bm": 15.51
+       "bm": 16.39
       },
       {
        "date": "2026-08-31",
        "actual": 15.15,
-       "plan": 16.26,
+       "plan": 17.18,
        "proj": null,
-       "bm": 16.81
+       "bm": 17.75
       },
       {
        "date": "2026-09-01",
        "actual": 15.15,
-       "plan": 17.51,
+       "plan": 18.5,
        "proj": null,
-       "bm": 18.1
+       "bm": 19.12
       },
       {
        "date": "2026-09-02",
        "actual": 15.15,
-       "plan": 18.77,
+       "plan": 19.82,
        "proj": null,
-       "bm": 19.39
+       "bm": 20.48
       },
       {
        "date": "2026-09-03",
        "actual": 15.15,
-       "plan": 20.02,
+       "plan": 21.14,
        "proj": null,
-       "bm": 20.68
+       "bm": 21.85
       },
       {
        "date": "2026-09-04",
        "actual": 15.15,
-       "plan": 21.27,
+       "plan": 22.46,
        "proj": null,
-       "bm": 21.98
+       "bm": 23.21
       },
       {
        "date": "2026-09-05",
        "actual": 15.15,
-       "plan": 22.52,
+       "plan": 23.79,
        "proj": null,
-       "bm": 23.27
+       "bm": 24.58
       },
       {
        "date": "2026-09-06",
        "actual": 15.15,
-       "plan": 23.77,
+       "plan": 25.11,
        "proj": null,
-       "bm": 24.56
+       "bm": 25.94
       },
       {
        "date": "2026-09-07",
        "actual": 15.15,
-       "plan": 25.02,
+       "plan": 26.43,
        "proj": null,
-       "bm": 25.85
+       "bm": 27.31
       },
       {
        "date": "2026-09-08",
        "actual": 15.15,
-       "plan": 26.27,
+       "plan": 27.75,
        "proj": null,
-       "bm": 27.15
+       "bm": 28.68
       },
       {
        "date": "2026-09-09",
        "actual": 15.15,
-       "plan": 27.52,
+       "plan": 29.07,
        "proj": null,
-       "bm": 28.44
+       "bm": 30.04
       },
       {
        "date": "2026-09-10",
        "actual": 15.15,
-       "plan": 28.77,
+       "plan": 30.39,
        "proj": null,
-       "bm": 29.73
+       "bm": 31.41
       },
       {
        "date": "2026-09-11",
        "actual": 15.15,
-       "plan": 30.03,
+       "plan": 31.71,
        "proj": null,
-       "bm": 31.03
+       "bm": 32.77
       },
       {
        "date": "2026-09-12",
        "actual": 15.15,
-       "plan": 31.28,
+       "plan": 33.04,
        "proj": null,
-       "bm": 32.32
+       "bm": 34.14
       },
       {
        "date": "2026-09-13",
        "actual": 15.15,
-       "plan": 32.53,
+       "plan": 34.36,
        "proj": null,
-       "bm": 33.61
+       "bm": 35.5
       },
       {
        "date": "2026-09-14",
        "actual": 15.15,
-       "plan": 33.78,
+       "plan": 35.68,
        "proj": null,
-       "bm": 34.9
+       "bm": 36.87
       },
       {
        "date": "2026-09-15",
        "actual": 15.15,
-       "plan": 35.03,
+       "plan": 37.0,
        "proj": null,
-       "bm": 36.2
+       "bm": 38.23
       },
       {
        "date": "2026-09-16",
        "actual": 15.15,
-       "plan": 36.28,
+       "plan": 38.32,
        "proj": null,
-       "bm": 37.49
+       "bm": 39.6
       },
       {
        "date": "2026-09-17",
        "actual": 16.6,
-       "plan": 37.53,
+       "plan": 39.64,
        "proj": null,
-       "bm": 38.78
+       "bm": 40.96
       }
      ],
-     "bm": 38.8,
-     "bmExp": 38.8
+     "bm": 41.0,
+     "bmExp": 41.0
     }
    ],
    "funnelByGroup": {
     "aa_email": {
      "sessions_actual": 5423.6,
-     "sessions_expected": 6406.7,
+     "sessions_expected": 6529.0,
      "conv_actual": 0.017950063817985938,
-     "conv_expected": 0.012755756998473944,
-     "contrib_traffic": -12.5,
-     "contrib_conversion": 28.2,
+     "conv_expected": 0.012650300842043896,
+     "contrib_traffic": -14.0,
+     "contrib_conversion": 28.8,
      "bps_actual": 0.013462547863489455,
-     "bps_expected": 0.01092673601383159,
-     "contrib_buyers": 16.1,
-     "contrib_per_buyer": 12.1,
-     "sessions_benchmark": 6620.2,
-     "conv_benchmark": 0.012755756998473942,
-     "conv_benchmark_today": 0.012755756998473942,
-     "contrib_traffic_bm": -15.3,
-     "contrib_conversion_bm": 28.2,
-     "contrib_buyers_bm": 16.1,
-     "contrib_per_buyer_bm": 12.1
+     "bps_expected": 0.010892911717513077,
+     "contrib_buyers": 16.2,
+     "contrib_per_buyer": 12.6,
+     "sessions_benchmark": 6746.7,
+     "conv_benchmark": 0.012650300842043896,
+     "conv_benchmark_today": 0.012650300842043896,
+     "contrib_traffic_bm": -16.7,
+     "contrib_conversion_bm": 28.8,
+     "contrib_buyers_bm": 16.2,
+     "contrib_per_buyer_bm": 12.6
     },
     "aa_social": {
      "sessions_actual": 553.6,
-     "sessions_expected": 588.0,
+     "sessions_expected": 598.9,
      "conv_actual": 0.006339869289579694,
-     "conv_expected": 0.010045537727932059,
-     "contrib_traffic": -0.3,
-     "contrib_conversion": -2.1,
+     "conv_expected": 0.009704989984899753,
+     "contrib_traffic": -0.4,
+     "contrib_conversion": -1.9,
      "bps_actual": 0.004754901967184771,
-     "bps_expected": 0.008605129345379587,
-     "contrib_buyers": -2.5,
-     "contrib_per_buyer": 0.4,
-     "sessions_benchmark": 607.6,
-     "conv_benchmark": 0.01004553772793206,
-     "conv_benchmark_today": 0.01004553772793206,
-     "contrib_traffic_bm": -0.5,
-     "contrib_conversion_bm": -2.1,
-     "contrib_buyers_bm": -2.5,
-     "contrib_per_buyer_bm": 0.4
+     "bps_expected": 0.008356765617265843,
+     "contrib_buyers": -2.3,
+     "contrib_per_buyer": 0.5,
+     "sessions_benchmark": 618.8,
+     "conv_benchmark": 0.009704989984899754,
+     "conv_benchmark_today": 0.009704989984899754,
+     "contrib_traffic_bm": -0.6,
+     "contrib_conversion_bm": -1.9,
+     "contrib_buyers_bm": -2.3,
+     "contrib_per_buyer_bm": 0.5
     },
     "referral_artist": {
      "sessions_actual": 294.9,
-     "sessions_expected": 504.4,
+     "sessions_expected": 503.9,
      "conv_actual": 0.01735950368623475,
-     "conv_expected": 0.004023641810594709,
+     "conv_expected": 0.0037816407388583284,
      "contrib_traffic": -0.8,
-     "contrib_conversion": 3.9,
+     "contrib_conversion": 4.0,
      "bps_actual": 0.013019627764676063,
-     "bps_expected": 0.003446700331767343,
+     "bps_expected": 0.003256292417871002,
      "contrib_buyers": 3.3,
-     "contrib_per_buyer": 0.6,
-     "sessions_benchmark": 521.2,
-     "conv_benchmark": 0.004023641810594708,
-     "conv_benchmark_today": 0.004023641810594708,
+     "contrib_per_buyer": 0.7,
+     "sessions_benchmark": 520.7,
+     "conv_benchmark": 0.003781640738858328,
+     "conv_benchmark_today": 0.003781640738858328,
      "contrib_traffic_bm": -0.9,
-     "contrib_conversion_bm": 3.9,
+     "contrib_conversion_bm": 4.0,
      "contrib_buyers_bm": 3.3,
-     "contrib_per_buyer_bm": 0.6
+     "contrib_per_buyer_bm": 0.7
     },
-    "search_direct_other": {
-     "sessions_actual": 246.6,
-     "sessions_expected": 696.2,
-     "conv_actual": 0.11119712835377576,
-     "conv_expected": 0.032765116323798284,
-     "contrib_traffic": -14.7,
-     "contrib_conversion": 19.3,
-     "bps_actual": 0.08339784626533182,
-     "bps_expected": 0.02806699567696843,
-     "contrib_buyers": 15.9,
-     "contrib_per_buyer": 3.4,
-     "sessions_benchmark": 719.4,
-     "conv_benchmark": 0.03276511632379829,
-     "conv_benchmark_today": 0.03276511632379829,
-     "contrib_traffic_bm": -15.5,
-     "contrib_conversion_bm": 19.3,
-     "contrib_buyers_bm": 15.9,
-     "contrib_per_buyer_bm": 3.4
+    "organic_search": {
+     "sessions_actual": 167.4,
+     "sessions_expected": 138.3,
+     "conv_actual": 0.16379567185761731,
+     "conv_expected": 0.11428985696934851,
+     "contrib_traffic": 3.3,
+     "contrib_conversion": 8.3,
+     "bps_actual": 0.12284675389321299,
+     "bps_expected": 0.09841262573271457,
+     "contrib_buyers": 4.8,
+     "contrib_per_buyer": 3.5,
+     "sessions_benchmark": 142.9,
+     "conv_benchmark": 0.11428985696934851,
+     "conv_benchmark_today": 0.11428985696934851,
+     "contrib_traffic_bm": 2.8,
+     "contrib_conversion_bm": 8.3,
+     "contrib_buyers_bm": 4.8,
+     "contrib_per_buyer_bm": 3.5
+    },
+    "organic_other": {
+     "sessions_actual": 79.2,
+     "sessions_expected": 435.4,
+     "conv_actual": 0.0,
+     "conv_expected": 0.009739421678806868,
+     "contrib_traffic": -3.5,
+     "contrib_conversion": -0.8,
+     "bps_actual": 0.0,
+     "bps_expected": 0.00838641403485668,
+     "contrib_buyers": -0.8,
+     "contrib_per_buyer": 0.0,
+     "sessions_benchmark": 450.0,
+     "conv_benchmark": 0.009739421678806868,
+     "conv_benchmark_today": 0.009739421678806868,
+     "contrib_traffic_bm": -3.6,
+     "contrib_conversion_bm": -0.8,
+     "contrib_buyers_bm": -0.8,
+     "contrib_per_buyer_bm": 0.0
     },
     "paid": {
      "sessions_actual": 3373.3,
-     "sessions_expected": 11586.8,
+     "sessions_expected": 11576.6,
      "conv_actual": 0.004920624203475041,
-     "conv_expected": 0.0032391394369361928,
-     "contrib_traffic": -26.6,
-     "contrib_conversion": 5.7,
+     "conv_expected": 0.0034244543012828155,
+     "contrib_traffic": -28.1,
+     "contrib_conversion": 5.0,
      "bps_actual": 0.003690468152606281,
-     "bps_expected": 0.0027746860922191604,
-     "contrib_buyers": 3.6,
+     "bps_expected": 0.00294872658368374,
+     "contrib_buyers": 2.9,
      "contrib_per_buyer": 2.1,
-     "sessions_benchmark": 11973.0,
-     "conv_benchmark": 0.0032391394369361928,
-     "conv_benchmark_today": 0.0032391394369361928,
-     "contrib_traffic_bm": -27.9,
-     "contrib_conversion_bm": 5.7,
-     "contrib_buyers_bm": 3.6,
+     "sessions_benchmark": 11962.5,
+     "conv_benchmark": 0.003424454301282816,
+     "conv_benchmark_today": 0.003424454301282816,
+     "contrib_traffic_bm": -29.4,
+     "contrib_conversion_bm": 5.0,
+     "contrib_buyers_bm": 2.9,
      "contrib_per_buyer_bm": 2.1
     }
    },
@@ -6940,10 +8233,10 @@
      "fullWorks": [],
      "daysLeft": 0
     },
-    "unitTarget": 37.53129,
+    "unitTarget": 39.64341993318335,
     "entriesProjected": 17.7,
     "unitProjected": 16.6,
-    "spendBudget": 4245.03,
+    "spendBudget": 3239.16,
     "spendProjectedTotal": 4086.95,
     "stops": {
      "sellout": null,
@@ -6978,8 +8271,8 @@
      "profitPerUnit": 1179.19,
      "budgetShare": 0.0
     },
-    "benchmarkUnits": 38.8,
-    "benchmarkBudget": 4386.54
+    "benchmarkUnits": 41.0,
+    "benchmarkBudget": 3347.13
    },
    "waterfall": {
     "target": 150.0,
@@ -6988,22 +8281,22 @@
      {
       "key": "organic_traffic",
       "label": "Organic traffic",
-      "value": -28.0
+      "value": -15.0
      },
      {
       "key": "organic_conversion",
       "label": "Organic conversion",
-      "value": 49.0
+      "value": 38.0
      },
      {
       "key": "paid_spend",
       "label": "Paid spend",
-      "value": -1.0
+      "value": 10.0
      },
      {
       "key": "paid_efficiency",
       "label": "Paid efficiency",
-      "value": -20.0
+      "value": -33.0
      }
     ],
     "closeScale": null,
@@ -7018,44 +8311,44 @@
       {
        "key": "organic_traffic",
        "label": "Organic traffic",
-       "value": -28.0
+       "value": -15.0
       },
       {
        "key": "organic_conversion",
        "label": "Organic conversion",
-       "value": 49.0
+       "value": 38.0
       },
       {
        "key": "paid_spend",
        "label": "Paid spend",
-       "value": -1.0
+       "value": 10.0
       },
       {
        "key": "paid_efficiency",
        "label": "Paid efficiency",
-       "value": -20.0
+       "value": -33.0
       }
      ],
      "stepsBm": [
       {
        "key": "organic_traffic",
        "label": "Organic traffic",
-       "value": -32.0
+       "value": -19.0
       },
       {
        "key": "organic_conversion",
        "label": "Organic conversion",
-       "value": 50.0
+       "value": 38.0
       },
       {
        "key": "paid_spend",
        "label": "Paid spend",
-       "value": -3.0
+       "value": 9.0
       },
       {
        "key": "paid_efficiency",
        "label": "Paid efficiency",
-       "value": -20.0
+       "value": -33.0
       }
      ]
     },
@@ -7063,22 +8356,22 @@
      {
       "key": "organic_traffic",
       "label": "Organic traffic",
-      "value": -32.0
+      "value": -19.0
      },
      {
       "key": "organic_conversion",
       "label": "Organic conversion",
-      "value": 50.0
+      "value": 38.0
      },
      {
       "key": "paid_spend",
       "label": "Paid spend",
-      "value": -3.0
+      "value": 9.0
      },
      {
       "key": "paid_efficiency",
       "label": "Paid efficiency",
-      "value": -20.0
+      "value": -33.0
      }
     ],
     "closeScaleBm": null
@@ -7090,7 +8383,7 @@
     "emailOpenRateRef": 16.9,
     "emailClickRateRef": 3.3,
     "emailClickToOpenRef": 19.4,
-    "emailSessionsPerClickRef": 1.493,
+    "emailSessionsPerClickRef": 1.491,
     "emailRefCohort": {
      "n": 44,
      "releases": [
@@ -7167,8 +8460,8 @@
       "artist": "Ai Weiwei",
       "title": "Multiple",
       "quarter": "2025 Q4",
-      "demand": 222.60000000000002,
-      "units": 149.0,
+      "demand": 298.79194630872485,
+      "units": 200.0,
       "price": 2000.0
      },
      {
@@ -7194,8 +8487,8 @@
       "artist": "Ai Weiwei",
       "title": "Arm \u00b7 Multiple",
       "quarter": "2026 Q2",
-      "demand": 204.4,
-      "units": 146.0,
+      "demand": 273.4731034482759,
+      "units": 195.33793103448275,
       "price": 1650.0
      },
      {
@@ -7227,10 +8520,10 @@
      }
     ],
     "units": 155.0,
-    "unitsSold": 132.5,
+    "unitsSold": 135.0,
     "nShort": 7,
     "unitsP25": 140.5,
-    "unitsP75": 209.0,
+    "unitsP75": 246.9,
     "price": 2000.0,
     "priceP25": 1925.0,
     "priceP75": 3593.8,
@@ -7243,78 +8536,86 @@
      "aa_email": 0.9677,
      "aa_social": 0.9677,
      "referral_artist": 0.9677,
-     "search_direct_other": 0.9677,
+     "organic_search": 0.9677,
+     "organic_other": 0.9677,
      "paid": 0.9677
     },
     "stretchFrom": {
-     "aa_email": 0.5448,
-     "aa_social": 0.0394,
-     "referral_artist": 0.0135,
-     "search_direct_other": 0.1521,
-     "paid": 0.2502
+     "aa_email": 0.5506,
+     "aa_social": 0.0387,
+     "referral_artist": 0.0127,
+     "organic_search": 0.1054,
+     "organic_other": 0.0283,
+     "paid": 0.2643
     },
     "stretchTyped": false,
     "stretchUnits": -5.0,
     "stretchPct": -0.0323,
     "unitsByGroup": {
-     "aa_email": 84.4,
-     "aa_social": 6.1,
-     "referral_artist": 2.1,
-     "search_direct_other": 23.6,
-     "paid": 38.8
+     "aa_email": 85.3,
+     "aa_social": 6.0,
+     "referral_artist": 2.0,
+     "organic_search": 16.3,
+     "organic_other": 4.4,
+     "paid": 41.0
     },
     "sessionsByGroup": {
-     "aa_email": 6620.2,
-     "aa_social": 607.6,
-     "referral_artist": 521.2,
-     "search_direct_other": 719.4,
-     "paid": 11973.0
+     "aa_email": 6746.7,
+     "aa_social": 618.8,
+     "referral_artist": 520.7,
+     "organic_search": 142.9,
+     "organic_other": 450.0,
+     "paid": 11962.5
     },
     "convByGroup": {
-     "aa_email": 0.010321,
-     "aa_social": 0.006309,
-     "referral_artist": 0.012019,
-     "search_direct_other": 0.028969,
-     "paid": 0.003563
+     "aa_email": 0.011179,
+     "aa_social": 0.004644,
+     "referral_artist": 0.014252,
+     "organic_search": 0.0933,
+     "organic_other": 0.018104,
+     "paid": 0.003768
     },
     "channelsOff": [],
     "unitsAll": 155.0,
-    "unitsSoldAll": 132.5,
+    "unitsSoldAll": 135.0,
     "sessionsAll": 20441.5,
     "entriesAll": 142.5,
     "unitsP25All": 140.5,
-    "unitsP75All": 208.95,
+    "unitsP75All": 246.868276,
     "unitsByGroupAll": {
-     "aa_email": 66.899121,
-     "aa_social": 4.835714,
-     "referral_artist": 1.661477,
-     "search_direct_other": 50.879803,
-     "paid": 30.723886
+     "aa_email": 69.149561,
+     "aa_social": 4.865898,
+     "referral_artist": 1.595475,
+     "organic_search": 13.231397,
+     "organic_other": 32.967342,
+     "paid": 33.190327
     },
     "sessionsByGroupAll": {
-     "aa_email": 6232.00349,
-     "aa_social": 572.006422,
-     "referral_artist": 490.668843,
-     "search_direct_other": 1875.884457,
-     "paid": 11270.936788
+     "aa_email": 6362.008991,
+     "aa_social": 583.543974,
+     "referral_artist": 491.038424,
+     "organic_search": 134.742225,
+     "organic_other": 1589.730772,
+     "paid": 11280.435614
     },
     "convByGroupAll": {
-     "aa_email": 0.010321,
-     "aa_social": 0.006309,
-     "referral_artist": 0.012019,
-     "search_direct_other": 0.028969,
-     "paid": 0.003563
+     "aa_email": 0.011179,
+     "aa_social": 0.004644,
+     "referral_artist": 0.014252,
+     "organic_search": 0.0933,
+     "organic_other": 0.018104,
+     "paid": 0.003768
     },
     "privateRoomShare": 0.1793,
-    "paidBudget": 4386.54,
-    "costPerPurchase": 113.106549,
+    "paidBudget": 3347.13,
+    "costPerPurchase": 81.707266,
     "costPerPurchaseN": 5,
-    "unitsPerBuyer": 1.1674,
-    "buyers": 132.8,
+    "unitsPerBuyer": 1.1613,
+    "buyers": 133.5,
     "sessionsShared": false,
     "lines": null
    }
   }
  },
- "builtAt": "2026-10-28T13:37:25+00:00"
+ "builtAt": "2026-11-09T13:28:31+00:00"
 }

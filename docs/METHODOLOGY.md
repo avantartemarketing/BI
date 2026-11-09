@@ -98,11 +98,14 @@ the draw cannot name a product for (private room, pre-orders) are shown at
 release level rather than guessed onto a product.
 
 **Direct as a source.** The Overview has a Direct switch. As a channel, Direct
-is what the funnel export attributes to it. Spread, its sessions, entries and
+is what the funnel export attributes to it, and it sits in the Organic Other
+group (Direct, Other, AA Other and the non-artist referrals; Organic Search is
+a group of its own since 9 November 2026, when the owner asked for the two to
+be split across the dashboard). Spread, its sessions, entries and
 units are shared out over the other channels in proportion to what each did
 that day, the way the untracked rows always are, and the benchmark's channel
-split is read the same way (the panel's typical Direct share of the
-Search/direct/other group, spread over every group pro rata). Totals, what has
+split is read the same way (the panel's typical Direct share of the Organic
+Other group, spread over every group pro rata, Organic Search included). Totals, what has
 been sold and the paid budget do not move - paid's cost per unit falls by the
 share of Direct it takes on - while the channel cards, the funnel and paid's
 units do, and the plan's pace shifts a little with the channel mix. The Target
@@ -310,9 +313,10 @@ units times those 240, and its target is that times K:
 | AA Email | 40% | 96 | 120 |
 | AA Meta | 5% | 12 | 15 |
 | Artist's own channels | 2.5% | 6 | 7.5 |
-| Search / direct / other | 32.5% | 78 | 97.5 |
+| Organic Search | 7.5% | 18 | 22.5 |
+| Organic Other | 25% | 60 | 75 |
 | Paid | 20% | 48 | 60 |
-| All five | 100% | 240 | 300 |
+| All six | 100% | 240 | 300 |
 
 Inside a group the target is placed on its channels by the order-split
 medians: AA Email's 120 go about 93% to the manual sends and 7% to the

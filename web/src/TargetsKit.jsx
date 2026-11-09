@@ -23,11 +23,14 @@ import { Arrow, Basket, Cal, Diamond, Dots, Img, Lines, Meta, Plus, ProgressRing
 import { GROUPS } from "../../shared/benchmarkModel.mjs";
 
 /* ---------- words and formats ---------- */
+/* the six display groups, in GROUPS order (shared/benchmarkModel.mjs); Organic
+ * Search and Organic Other were one group, "Direct etc.", until 9 November 2026 */
 export const CH = [
   { key: "aa_email", name: "AA Email", color: "#d9a400" },
   { key: "aa_social", name: "AA Meta", color: "#1877f2" },
   { key: "referral_artist", name: "Artist", color: "#0f7052" },
-  { key: "search_direct_other", name: "Direct etc.", color: "#8a8a8e" },
+  { key: "organic_search", name: "Organic Search", color: "#1f8fa3" },
+  { key: "organic_other", name: "Organic Other", color: "#8a8a8e" },
   { key: "paid", name: "Paid", color: "#5e6ad2" },
 ];
 export const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);

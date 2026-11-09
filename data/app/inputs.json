@@ -108,7 +108,7 @@
     ]
    }
   },
-  "frame_conversion": 0.4564,
+  "frame_conversion": 0.464,
   "budget_sense_check_max_pct_of_launch_value": 0.06,
   "cpe_spend_elasticity": 0.3,
   "cpe_spend_elasticity_note": "Prior for the within-campaign elasticity of cost per entry to the day's budget, net of the wear-out on spend so far and the close's lift: doubling the day's budget makes an entry about 23% dearer at 0.30. Set on 2026-10-27 from etl/analysis/cpe_elasticity_challenge.py rather than the plain fit, which reads low: the budget is raised after cheap days and cheapness persists, so the plain fit (0.15 on 47 campaigns / 814 campaign-days with spend over 20 up to the close; 0.08 on the 42 / 705 of the 2026-09-28 fit) sees big days that were cheap because they were made big on cheap days. Readings that sidestep that: consecutive days alone 0.27 +/- 0.05; two-day windows around budget steps of 30%+ 0.36 on 194 rises and 0.33 on 81 cuts; a backtest predicting the rest of each campaign from the spend it had misses least at 0.25 to 0.35 (30% against 36% at the old pair) with no bias (+8% there). Meta's own price barely moves (impressions on the day's budget: elasticity 0.08); the penalty is in what an impression is worth on a bigger day. Entries do not lag the spend that bought them (yesterday's budget adds 0.03), so same-day readings stand. The width, cpe_spend_elasticity_sd 0.10, spans the readings. A campaign with cpe_fit_min_days of history gets its own elasticity fitted and shrunk to this prior by precision (etl/build.py campaign_cost_terms). Set to 0 to price the day's level flat.",
@@ -129,49 +129,49 @@
    {
     "lo": 0.0,
     "hi": 0.2,
-    "rate": 0.5619,
-    "prints": 614,
-    "frames": 345,
-    "launches": 8,
-    "works": 20
+    "rate": 0.5648,
+    "prints": 648,
+    "frames": 366,
+    "launches": 9,
+    "works": 21
    },
    {
     "lo": 0.2,
     "hi": 0.35,
-    "rate": 0.479,
-    "prints": 3198,
-    "frames": 1532,
-    "launches": 22,
-    "works": 32
+    "rate": 0.4862,
+    "prints": 3336,
+    "frames": 1622,
+    "launches": 24,
+    "works": 37
    },
    {
     "lo": 0.35,
     "hi": 0.5,
-    "rate": 0.3938,
-    "prints": 4203,
-    "frames": 1655,
-    "launches": 9,
-    "works": 17
+    "rate": 0.393,
+    "prints": 4226,
+    "frames": 1661,
+    "launches": 10,
+    "works": 18
    },
    {
     "lo": 0.5,
     "hi": null,
-    "rate": 0.4577,
-    "prints": 15218,
-    "frames": 6966,
-    "launches": 24,
-    "works": 76
+    "rate": 0.4678,
+    "prints": 14944,
+    "frames": 6991,
+    "launches": 22,
+    "works": 74
    }
   ],
   "frame_conversion_source": {
    "kind": "last_12_months",
-   "rate": 0.4564,
-   "prints": 23552,
-   "frames": 10749,
-   "launches": 61,
-   "works": 171,
-   "since": "2025-10-27",
-   "through": "2026-10-27"
+   "rate": 0.464,
+   "prints": 23473,
+   "frames": 10891,
+   "launches": 63,
+   "works": 176,
+   "since": "2025-11-09",
+   "through": "2026-11-09"
   }
  },
  "releases": {
@@ -7952,6 +7952,86 @@
    },
    "campaigns": []
   },
+  "ferrari_sheppard_multiple_2026_q4": {
+   "airtable": {
+    "match": "artist+window",
+    "note": "titles: All Blues / Round Midnight",
+    "products": [
+     {
+      "airtable_id": "3118",
+      "name": "All Blues",
+      "project_code": "FERRARISH-3118",
+      "edition": 100,
+      "target_sellthrough": 1.0,
+      "unit_price": 1250.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": 451.0,
+      "aa_profit_per_unit": 587.0,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": 298.008,
+      "launch_date": "2026-12-09"
+     },
+     {
+      "airtable_id": "3117",
+      "name": "Round Midnight",
+      "project_code": "FERRARISH-3117",
+      "edition": 100,
+      "target_sellthrough": 1.0,
+      "unit_price": 1250.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": 451.0,
+      "aa_profit_per_unit": 587.0,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": 298.008,
+      "launch_date": "2026-12-09"
+     }
+    ],
+    "announce_date": "2026-11-10",
+    "launch_end": "2026-12-09",
+    "private_room_open": null,
+    "marketing_lead": null,
+    "project_manager": "Ruth O'Sullivan",
+    "pm_slack_id": "U0BSZHS2J3Z",
+    "closes": [
+     {
+      "date": "2026-12-09",
+      "works": 2,
+      "names": [
+       "All Blues",
+       "Round Midnight"
+      ]
+     }
+    ]
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null,
+    "marketing_lead": null
+   },
+   "clock": {
+    "private_room_open": "2026-10-26",
+    "announce_date": "2026-11-09",
+    "launch_end": "2026-12-08"
+   },
+   "campaigns": [
+    "FerrariSh_LE_26 \u00b7 Enter draw"
+   ]
+  },
   "ferrari_sheppard_put_some_red_on_it_2026_q1": {
    "airtable": {
     "match": "exact",
@@ -11710,7 +11790,9 @@
     "announce_date": "2026-11-03",
     "launch_end": "2026-11-27"
    },
-   "campaigns": []
+   "campaigns": [
+    "JenniferGuidi_LE_26 \u00b7 Enter draw"
+   ]
   },
   "jenny_holzer_multiple_2025_q1": {
    "airtable": {
@@ -12173,6 +12255,62 @@
    "campaigns": [
     "JohnsonTs_Alliance_26 \u00b7 Enter draw"
    ]
+  },
+  "johnson_tsang_in_position_2026_q4": {
+   "airtable": {
+    "match": "exact",
+    "note": "",
+    "products": [
+     {
+      "airtable_id": "2794",
+      "name": "In Position",
+      "project_code": "JOHNSONTS-2794",
+      "edition": 200,
+      "target_sellthrough": 1.0,
+      "unit_price": 900.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": false,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-12-01"
+     }
+    ],
+    "announce_date": "2026-11-09",
+    "launch_end": "2026-12-01",
+    "private_room_open": null,
+    "marketing_lead": null,
+    "project_manager": "Ruth O'Sullivan",
+    "pm_slack_id": "U0BSZHS2J3Z",
+    "closes": [
+     {
+      "date": "2026-12-01",
+      "works": 1,
+      "names": [
+       "In Position"
+      ]
+     }
+    ]
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null,
+    "marketing_lead": null
+   },
+   "clock": {
+    "private_room_open": "2026-10-26",
+    "announce_date": "2026-11-09",
+    "launch_end": "2026-12-01"
+   },
+   "campaigns": []
   },
   "johnson_tsang_multiple_2022_q1": {
    "airtable": {
@@ -18700,6 +18838,32 @@
    },
    "campaigns": []
   },
+  "nick_thomm_multiple_2027_q1": {
+   "airtable": {
+    "match": "none",
+    "note": "artist not in the Airtable pull",
+    "products": [],
+    "announce_date": null,
+    "launch_end": null,
+    "private_room_open": null,
+    "marketing_lead": null,
+    "project_manager": null,
+    "pm_slack_id": null,
+    "closes": []
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null,
+    "marketing_lead": null
+   },
+   "clock": {
+    "private_room_open": "2027-01-11",
+    "announce_date": "2027-01-25",
+    "launch_end": "2027-02-16"
+   },
+   "campaigns": []
+  },
   "nicolas_holiber_multiple_2022_q2": {
    "airtable": {
     "match": "artist+quarter",
@@ -20872,6 +21036,640 @@
     "Pejac_Repeat_26 \u00b7 Sign-ups"
    ]
   },
+  "pejac_multiple_2026_q4": {
+   "airtable": {
+    "match": "artist+quarter",
+    "note": "titles: FOUR SEASONS [OG Sculpture - 4 units] / LARGE FORMAT PAINTINGS [OG painting - 1/5] / LARGE FORMAT PAINTINGS [OG painting; 2 codes merged as one launch: PejacExhib26 + PejacLE26",
+    "products": [
+     {
+      "airtable_id": "2606",
+      "name": "Barbed Wire [Special Print Edition]",
+      "project_code": "PEJAC-2606",
+      "edition": 20,
+      "target_sellthrough": 1.0,
+      "unit_price": 3500.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": null,
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-12-18"
+     },
+     {
+      "airtable_id": "3094",
+      "name": "Barbed Wire [Standard Print Edition]",
+      "project_code": "PEJAC-3094",
+      "edition": 80,
+      "target_sellthrough": 1.0,
+      "unit_price": 2800.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": null,
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-12-18"
+     },
+     {
+      "airtable_id": "3077",
+      "name": "FOUR SEASONS [OG Sculpture - 4 units]",
+      "project_code": "PEJAC-3077",
+      "edition": 4,
+      "target_sellthrough": 0.75,
+      "unit_price": 16500.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3078",
+      "name": "LARGE FORMAT PAINTINGS [OG painting - 1/5]",
+      "project_code": "PEJAC-3078",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 65000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3080",
+      "name": "LARGE FORMAT PAINTINGS [OG painting - 2/5]",
+      "project_code": "PEJAC-3080",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 65000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3082",
+      "name": "LARGE FORMAT PAINTINGS [OG painting - 3/5]",
+      "project_code": "PEJAC-3082",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 65000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3079",
+      "name": "LARGE FORMAT PAINTINGS [OG painting - 4/5]",
+      "project_code": "PEJAC-3079",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 65000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3081",
+      "name": "LARGE FORMAT PAINTINGS [OG painting - 5/5]",
+      "project_code": "PEJAC-3081",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 65000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3088",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 1/8]",
+      "project_code": "PEJAC-3088",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3087",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 2/8]",
+      "project_code": "PEJAC-3087",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3085",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 3/8]",
+      "project_code": "PEJAC-3085",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3084",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 4/8]",
+      "project_code": "PEJAC-3084",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3090",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 5/8]",
+      "project_code": "PEJAC-3090",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3083",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 6/8]",
+      "project_code": "PEJAC-3083",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3086",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 7/8]",
+      "project_code": "PEJAC-3086",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3089",
+      "name": "MID-FORMAT PAINTINGS [OG Painting 8/8]",
+      "project_code": "PEJAC-3089",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 30000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "2807",
+      "name": "Mind Trip [Special Print Edition]",
+      "project_code": "PEJAC-2807",
+      "edition": 20,
+      "target_sellthrough": 1.0,
+      "unit_price": 2500.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": null,
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-12-18"
+     },
+     {
+      "airtable_id": "3093",
+      "name": "Mind Trip [Standard Print Edition]",
+      "project_code": "PEJAC-3093",
+      "edition": 80,
+      "target_sellthrough": 1.0,
+      "unit_price": 1800.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": null,
+      "frame_price": null,
+      "framing_available": true,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-12-18"
+     },
+     {
+      "airtable_id": "3113",
+      "name": "Postcard",
+      "project_code": "PEJAC-3113",
+      "edition": 500,
+      "target_sellthrough": 1.0,
+      "unit_price": 20.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": null,
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3073",
+      "name": "SELF DEFENCE [OG - Painting 1/6]",
+      "project_code": "PEJAC-3073",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 25000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3071",
+      "name": "SELF DEFENCE [OG - Painting 2/6]",
+      "project_code": "PEJAC-3071",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 25000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3074",
+      "name": "SELF DEFENCE [OG - Painting 3/6]",
+      "project_code": "PEJAC-3074",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 25000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3072",
+      "name": "SELF DEFENCE [OG - Painting 4/6]",
+      "project_code": "PEJAC-3072",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 25000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3076",
+      "name": "SELF DEFENCE [OG - Painting 5/6]",
+      "project_code": "PEJAC-3076",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 25000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3075",
+      "name": "SELF DEFENCE [OG - Painting 6/6]",
+      "project_code": "PEJAC-3075",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 25000.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3092",
+      "name": "Sandbags with Sandcastle [Installation 1]",
+      "project_code": "PEJAC-3092",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 0.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": null,
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     },
+     {
+      "airtable_id": "3091",
+      "name": "Starry Night with Cartridges [Installation 2]",
+      "project_code": "PEJAC-3091",
+      "edition": 1,
+      "target_sellthrough": 0.75,
+      "unit_price": 0.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": null,
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": null,
+      "launch_date": "2026-11-13"
+     }
+    ],
+    "announce_date": "2026-10-22",
+    "launch_end": "2026-12-18",
+    "private_room_open": null,
+    "marketing_lead": null,
+    "project_manager": "Miranda Curtis",
+    "pm_slack_id": "U023YDU3FAR",
+    "closes": [
+     {
+      "date": "2026-11-13",
+      "works": 23,
+      "names": [
+       "FOUR SEASONS [OG Sculpture - 4 units]",
+       "LARGE FORMAT PAINTINGS [OG painting - 1/5]",
+       "LARGE FORMAT PAINTINGS [OG painting - 2/5]",
+       "LARGE FORMAT PAINTINGS [OG painting - 3/5]",
+       "LARGE FORMAT PAINTINGS [OG painting - 4/5]",
+       "LARGE FORMAT PAINTINGS [OG painting - 5/5]",
+       "MID-FORMAT PAINTINGS [OG Painting 1/8]",
+       "MID-FORMAT PAINTINGS [OG Painting 2/8]",
+       "MID-FORMAT PAINTINGS [OG Painting 3/8]",
+       "MID-FORMAT PAINTINGS [OG Painting 4/8]",
+       "MID-FORMAT PAINTINGS [OG Painting 5/8]",
+       "MID-FORMAT PAINTINGS [OG Painting 6/8]",
+       "MID-FORMAT PAINTINGS [OG Painting 7/8]",
+       "MID-FORMAT PAINTINGS [OG Painting 8/8]",
+       "Postcard",
+       "SELF DEFENCE [OG - Painting 1/6]",
+       "SELF DEFENCE [OG - Painting 2/6]",
+       "SELF DEFENCE [OG - Painting 3/6]",
+       "SELF DEFENCE [OG - Painting 4/6]",
+       "SELF DEFENCE [OG - Painting 5/6]",
+       "SELF DEFENCE [OG - Painting 6/6]",
+       "Sandbags with Sandcastle [Installation 1]",
+       "Starry Night with Cartridges [Installation 2]"
+      ]
+     },
+     {
+      "date": "2026-12-18",
+      "works": 4,
+      "names": [
+       "Barbed Wire [Special Print Edition]",
+       "Barbed Wire [Standard Print Edition]",
+       "Mind Trip [Special Print Edition]",
+       "Mind Trip [Standard Print Edition]"
+      ]
+     }
+    ]
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null,
+    "marketing_lead": null
+   },
+   "clock": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null
+   },
+   "campaigns": []
+  },
   "peter_halley_galaxia_ii_2022_q2": {
    "airtable": {
     "match": "exact",
@@ -21246,8 +22044,8 @@
     "marketing_lead": null
    },
    "clock": {
-    "private_room_open": "2023-08-18",
-    "announce_date": "2023-09-01",
+    "private_room_open": "2023-08-17",
+    "announce_date": "2023-08-31",
     "launch_end": "2023-09-20"
    },
    "campaigns": []
@@ -22475,6 +23273,64 @@
     "launch_end": null
    },
    "campaigns": []
+  },
+  "seth_armstrong_micheltorena_2026_q4": {
+   "airtable": {
+    "match": "exact",
+    "note": "",
+    "products": [
+     {
+      "airtable_id": "2909",
+      "name": "Micheltorena",
+      "project_code": "SETHARMST-2909",
+      "edition": 100,
+      "target_sellthrough": 1.0,
+      "unit_price": 900.0,
+      "currency": "EUR",
+      "artist_profit_per_unit": null,
+      "aa_profit_per_unit": null,
+      "aa_revenue_share": null,
+      "aa_profit_share": 0.5,
+      "artist_revenue_cut": null,
+      "deal_type": "profit",
+      "frame_price": null,
+      "framing_available": null,
+      "framing_default": true,
+      "frame_conversion": null,
+      "frame_profit_per_unit": 311.17,
+      "launch_date": "2026-12-03"
+     }
+    ],
+    "announce_date": "2026-11-11",
+    "launch_end": "2026-12-03",
+    "private_room_open": null,
+    "marketing_lead": null,
+    "project_manager": "Claudia Hall",
+    "pm_slack_id": "U0AFTMZUW9L",
+    "closes": [
+     {
+      "date": "2026-12-03",
+      "works": 1,
+      "names": [
+       "Micheltorena"
+      ]
+     }
+    ]
+   },
+   "notion": {
+    "private_room_open": null,
+    "announce_date": null,
+    "launch_end": null,
+    "marketing_lead": null
+   },
+   "clock": {
+    "private_room_open": "2026-10-23",
+    "announce_date": "2026-11-06",
+    "launch_end": "2026-12-03"
+   },
+   "campaigns": [
+    "SethArmstrong_LE_26 \u00b7 Enter draw"
+   ]
   },
   "shaina_mccoy_hoops_2022_q2": {
    "airtable": {
@@ -25276,7 +26132,9 @@
     "announce_date": "2026-10-19",
     "launch_end": "2026-11-13"
    },
-   "campaigns": []
+   "campaigns": [
+    "KukwonWoo_LE_26 \u00b7 Enter draw"
+   ]
   },
   "yoon_hyup_ambre_roulette_2026_q3": {
    "airtable": {
@@ -26166,196 +27024,6 @@
    },
    "campaigns": []
   },
-  "johnson_tsang_in_position_2026_q4": {
-   "airtable": {
-    "match": "exact",
-    "note": "",
-    "products": [
-     {
-      "airtable_id": "2794",
-      "name": "In Position",
-      "project_code": "JOHNSONTS-2794",
-      "edition": 200,
-      "target_sellthrough": 1.0,
-      "unit_price": 900.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": null,
-      "aa_profit_per_unit": null,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": "profit",
-      "frame_price": null,
-      "framing_available": null,
-      "framing_default": false,
-      "frame_conversion": null,
-      "frame_profit_per_unit": null,
-      "launch_date": "2026-12-01"
-     }
-    ],
-    "announce_date": "2026-11-09",
-    "launch_end": "2026-12-01",
-    "private_room_open": null,
-    "marketing_lead": null,
-    "project_manager": "Ruth O'Sullivan",
-    "pm_slack_id": "U0BSZHS2J3Z",
-    "closes": [
-     {
-      "date": "2026-12-01",
-      "works": 1,
-      "names": [
-       "In Position"
-      ]
-     }
-    ]
-   },
-   "notion": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null,
-    "marketing_lead": null
-   },
-   "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
-   },
-   "campaigns": []
-  },
-  "seth_armstrong_micheltorena_2026_q4": {
-   "airtable": {
-    "match": "exact",
-    "note": "",
-    "products": [
-     {
-      "airtable_id": "2909",
-      "name": "Micheltorena",
-      "project_code": "SETHARMST-2909",
-      "edition": 100,
-      "target_sellthrough": 1.0,
-      "unit_price": 900.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": null,
-      "aa_profit_per_unit": null,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": "profit",
-      "frame_price": null,
-      "framing_available": null,
-      "framing_default": true,
-      "frame_conversion": null,
-      "frame_profit_per_unit": 311.17,
-      "launch_date": "2026-12-03"
-     }
-    ],
-    "announce_date": "2026-11-11",
-    "launch_end": "2026-12-03",
-    "private_room_open": null,
-    "marketing_lead": null,
-    "project_manager": "Claudia Hall",
-    "pm_slack_id": "U0AFTMZUW9L",
-    "closes": [
-     {
-      "date": "2026-12-03",
-      "works": 1,
-      "names": [
-       "Micheltorena"
-      ]
-     }
-    ]
-   },
-   "notion": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null,
-    "marketing_lead": null
-   },
-   "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
-   },
-   "campaigns": []
-  },
-  "ferrari_sheppard_multiple_2026_q4": {
-   "airtable": {
-    "match": "artist+window",
-    "note": "titles: All Blues / Round Midnight",
-    "products": [
-     {
-      "airtable_id": "3118",
-      "name": "All Blues",
-      "project_code": "FERRARISH-3118",
-      "edition": 100,
-      "target_sellthrough": 1.0,
-      "unit_price": 1250.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": 451.0,
-      "aa_profit_per_unit": 587.0,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": "profit",
-      "frame_price": null,
-      "framing_available": null,
-      "framing_default": true,
-      "frame_conversion": null,
-      "frame_profit_per_unit": 298.008,
-      "launch_date": "2026-12-09"
-     },
-     {
-      "airtable_id": "3117",
-      "name": "Round Midnight",
-      "project_code": "FERRARISH-3117",
-      "edition": 100,
-      "target_sellthrough": 1.0,
-      "unit_price": 1250.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": 451.0,
-      "aa_profit_per_unit": 587.0,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": "profit",
-      "frame_price": null,
-      "framing_available": null,
-      "framing_default": true,
-      "frame_conversion": null,
-      "frame_profit_per_unit": 298.008,
-      "launch_date": "2026-12-09"
-     }
-    ],
-    "announce_date": "2026-11-10",
-    "launch_end": "2026-12-09",
-    "private_room_open": null,
-    "marketing_lead": null,
-    "project_manager": "Ruth O'Sullivan",
-    "pm_slack_id": "U0BSZHS2J3Z",
-    "closes": [
-     {
-      "date": "2026-12-09",
-      "works": 2,
-      "names": [
-       "All Blues",
-       "Round Midnight"
-      ]
-     }
-    ]
-   },
-   "notion": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null,
-    "marketing_lead": null
-   },
-   "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
-   },
-   "campaigns": []
-  },
   "mark_tansey_multiple_2026_q4": {
    "airtable": {
     "match": "artist+window",
@@ -26495,128 +27163,6 @@
       "names": [
        "(RED)",
        "STAR"
-      ]
-     }
-    ]
-   },
-   "notion": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null,
-    "marketing_lead": null
-   },
-   "clock": {
-    "private_room_open": null,
-    "announce_date": null,
-    "launch_end": null
-   },
-   "campaigns": []
-  },
-  "pejac_multiple_2026_q4": {
-   "airtable": {
-    "match": "artist+window",
-    "note": "titles: Barbed Wire [Special Print Edition] / Barbed Wire [Standard Print Edition] / Mind Trip [Special Print Edition] / Mind Tr; not PejacExhib26 (35 days off)",
-    "products": [
-     {
-      "airtable_id": "2606",
-      "name": "Barbed Wire [Special Print Edition]",
-      "project_code": "PEJAC-2606",
-      "edition": 20,
-      "target_sellthrough": 1.0,
-      "unit_price": 3500.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": null,
-      "aa_profit_per_unit": null,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": null,
-      "frame_price": null,
-      "framing_available": null,
-      "framing_default": true,
-      "frame_conversion": null,
-      "frame_profit_per_unit": null,
-      "launch_date": "2026-12-18"
-     },
-     {
-      "airtable_id": "3094",
-      "name": "Barbed Wire [Standard Print Edition]",
-      "project_code": "PEJAC-3094",
-      "edition": 80,
-      "target_sellthrough": 1.0,
-      "unit_price": 2800.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": null,
-      "aa_profit_per_unit": null,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": null,
-      "frame_price": null,
-      "framing_available": null,
-      "framing_default": true,
-      "frame_conversion": null,
-      "frame_profit_per_unit": null,
-      "launch_date": "2026-12-18"
-     },
-     {
-      "airtable_id": "2807",
-      "name": "Mind Trip [Special Print Edition]",
-      "project_code": "PEJAC-2807",
-      "edition": 20,
-      "target_sellthrough": 1.0,
-      "unit_price": 2500.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": null,
-      "aa_profit_per_unit": null,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": null,
-      "frame_price": null,
-      "framing_available": null,
-      "framing_default": true,
-      "frame_conversion": null,
-      "frame_profit_per_unit": null,
-      "launch_date": "2026-12-18"
-     },
-     {
-      "airtable_id": "3093",
-      "name": "Mind Trip [Standard Print Edition]",
-      "project_code": "PEJAC-3093",
-      "edition": 80,
-      "target_sellthrough": 1.0,
-      "unit_price": 1800.0,
-      "currency": "EUR",
-      "artist_profit_per_unit": null,
-      "aa_profit_per_unit": null,
-      "aa_revenue_share": null,
-      "aa_profit_share": 0.5,
-      "artist_revenue_cut": null,
-      "deal_type": null,
-      "frame_price": null,
-      "framing_available": true,
-      "framing_default": true,
-      "frame_conversion": null,
-      "frame_profit_per_unit": null,
-      "launch_date": "2026-12-18"
-     }
-    ],
-    "announce_date": "2026-11-23",
-    "launch_end": "2026-12-18",
-    "private_room_open": null,
-    "marketing_lead": null,
-    "project_manager": "Miranda Curtis",
-    "pm_slack_id": "U023YDU3FAR",
-    "closes": [
-     {
-      "date": "2026-12-18",
-      "works": 4,
-      "names": [
-       "Barbed Wire [Special Print Edition]",
-       "Barbed Wire [Standard Print Edition]",
-       "Mind Trip [Special Print Edition]",
-       "Mind Trip [Standard Print Edition]"
       ]
      }
     ]
@@ -31530,10 +32076,12 @@
     "marketing_lead": null
    },
    "clock": {},
-   "campaigns": [],
+   "campaigns": [
+    "MattDesla_H2_25 \u00b7 Sign-ups"
+   ],
    "tl": true
   },
-  "william_mapan_unconfined_2026_q4_tl": {
+  "william_mapan_un_confined_2026_q4_tl": {
    "airtable": {
     "match": "none",
     "note": "",
@@ -31550,6 +32098,34 @@
    "feed": {
     "announce_date": "2026-11-04",
     "window_open": "2026-11-24T14:00:00Z",
+    "window_open_adjusted": null
+   },
+   "notion": {
+    "marketing_lead": null
+   },
+   "clock": {},
+   "campaigns": [
+    "WilliamMapan_LE_26 \u00b7 Sign-ups"
+   ],
+   "tl": true
+  },
+  "carrie_mae_weems_multiple_2027_q1_tl": {
+   "airtable": {
+    "match": "none",
+    "note": "",
+    "products": [],
+    "announce_date": null,
+    "launch_end": "2027-02-13",
+    "window_open": null,
+    "window_hours": null,
+    "units_target": null,
+    "private_room_open": null,
+    "marketing_lead": null,
+    "closes": []
+   },
+   "feed": {
+    "announce_date": "2027-01-20",
+    "window_open": "2027-02-11T17:00:00Z",
     "window_open_adjusted": null
    },
    "notion": {
@@ -31632,8 +32208,8 @@
     "closes": []
    },
    "feed": {
-    "announce_date": "2026-11-18",
-    "window_open": "2026-12-15T17:00:00Z",
+    "announce_date": null,
+    "window_open": null,
     "window_open_adjusted": null
    },
    "notion": {
@@ -32945,6 +33521,19 @@
    "private_room_open": "2025-03-21",
    "dates_note": null
   },
+  "ferrari_sheppard_multiple_2026_q4": {
+   "release_name": "Ferrari Sheppard \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Ferrari Sheppard",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": "FerrariSh_LE_26",
+   "code_source": "guess",
+   "campaign_name": "FerrariSh_LE_26 \u00b7 Enter draw",
+   "announce_date": "2026-11-09",
+   "launch_end": "2026-12-08",
+   "private_room_open": "2026-10-26",
+   "dates_note": null
+  },
   "ferrari_sheppard_put_some_red_on_it_2026_q1": {
    "release_name": "Ferrari Sheppard \u00b7 Put Some Red On It \u00b7 2026 Q1",
    "artist": "Ferrari Sheppard",
@@ -33717,9 +34306,9 @@
    "artist": "Jennifer Guidi",
    "title": "Roar Beneath Mist",
    "type": "LE",
-   "campaign_code": null,
-   "code_source": null,
-   "campaign_name": null,
+   "campaign_code": "JenniferGuidi_LE_26",
+   "code_source": "orders",
+   "campaign_name": "JenniferGuidi_LE_26 \u00b7 Enter draw",
    "announce_date": "2026-11-03",
    "launch_end": "2026-11-27",
    "private_room_open": "2026-10-20",
@@ -33814,6 +34403,19 @@
    "announce_date": "2026-06-04",
    "launch_end": "2026-06-11",
    "private_room_open": "2026-05-21",
+   "dates_note": null
+  },
+  "johnson_tsang_in_position_2026_q4": {
+   "release_name": "Johnson Tsang \u00b7 In Position \u00b7 2026 Q4",
+   "artist": "Johnson Tsang",
+   "title": "In Position",
+   "type": "LE",
+   "campaign_code": null,
+   "code_source": null,
+   "campaign_name": null,
+   "announce_date": "2026-11-09",
+   "launch_end": "2026-12-01",
+   "private_room_open": "2026-10-26",
    "dates_note": null
   },
   "johnson_tsang_multiple_2022_q1": {
@@ -35012,6 +35614,19 @@
    "private_room_open": null,
    "dates_note": null
   },
+  "nick_thomm_multiple_2027_q1": {
+   "release_name": "Nick Thomm \u00b7 Multiple \u00b7 2027 Q1",
+   "artist": "Nick Thomm",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "code_source": null,
+   "campaign_name": null,
+   "announce_date": "2027-01-25",
+   "launch_end": "2027-02-16",
+   "private_room_open": "2027-01-11",
+   "dates_note": null
+  },
   "nicolas_holiber_multiple_2022_q2": {
    "release_name": "Nicolas Holiber \u00b7 Multiple \u00b7 2022 Q2",
    "artist": "Nicolas Holiber",
@@ -35246,6 +35861,19 @@
    "private_room_open": "2026-01-09",
    "dates_note": null
   },
+  "pejac_multiple_2026_q4": {
+   "release_name": "Pejac \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Pejac",
+   "title": "Multiple",
+   "type": "LE",
+   "campaign_code": null,
+   "code_source": null,
+   "campaign_name": null,
+   "announce_date": null,
+   "launch_end": null,
+   "private_room_open": null,
+   "dates_note": "campaign clock present but incomplete"
+  },
   "peter_halley_galaxia_ii_2022_q2": {
    "release_name": "Peter Halley \u00b7 Galaxia II \u00b7 2022 Q2",
    "artist": "Peter Halley",
@@ -35319,9 +35947,9 @@
    "campaign_code": null,
    "code_source": null,
    "campaign_name": null,
-   "announce_date": "2023-09-01",
+   "announce_date": "2023-08-31",
    "launch_end": "2023-09-20",
-   "private_room_open": "2023-08-18",
+   "private_room_open": "2023-08-17",
    "dates_note": null
   },
   "robert_longo_untitled_sandy_from_the_series_men_in_the_cities_2026_q3": {
@@ -35569,6 +36197,19 @@
    "announce_date": null,
    "launch_end": null,
    "private_room_open": null,
+   "dates_note": null
+  },
+  "seth_armstrong_micheltorena_2026_q4": {
+   "release_name": "Seth Armstrong \u00b7 Micheltorena \u00b7 2026 Q4",
+   "artist": "Seth Armstrong",
+   "title": "Micheltorena",
+   "type": "LE",
+   "campaign_code": "SethArmstrong_LE_26",
+   "code_source": "orders",
+   "campaign_name": "SethArmstrong_LE_26 \u00b7 Enter draw",
+   "announce_date": "2026-11-06",
+   "launch_end": "2026-12-03",
+   "private_room_open": "2026-10-23",
    "dates_note": null
   },
   "shaina_mccoy_hoops_2022_q2": {
@@ -36109,9 +36750,9 @@
    "artist": "Woo Kuk Won",
    "title": "Multiple",
    "type": "LE",
-   "campaign_code": null,
-   "code_source": null,
-   "campaign_name": null,
+   "campaign_code": "KukwonWoo_LE_26",
+   "code_source": "orders",
+   "campaign_name": "KukwonWoo_LE_26 \u00b7 Enter draw",
    "announce_date": "2026-10-19",
    "launch_end": "2026-11-13",
    "private_room_open": "2026-10-05",
@@ -36312,66 +36953,6 @@
    "private_room_open": null,
    "dates_note": null
   },
-  "johnson_tsang_in_position_2026_q4": {
-   "release_name": "Johnson Tsang \u00b7 In Position \u00b7 2026 Q4",
-   "artist": "Johnson Tsang",
-   "title": "In Position",
-   "type": "LE",
-   "campaign_code": null,
-   "code_source": null,
-   "campaign_name": null,
-   "announce_date": "2026-11-09",
-   "launch_end": "2026-12-01",
-   "private_room_open": "2026-10-26",
-   "dates_note": null,
-   "source": "airtable",
-   "airtable_release": "JohnsonTsLERepeat26",
-   "airtable_ids": "2794",
-   "titles": "In Position",
-   "n_products": 1,
-   "launch_type": "Draw",
-   "project_status": "03. Proofing"
-  },
-  "seth_armstrong_micheltorena_2026_q4": {
-   "release_name": "Seth Armstrong \u00b7 Micheltorena \u00b7 2026 Q4",
-   "artist": "Seth Armstrong",
-   "title": "Micheltorena",
-   "type": "LE",
-   "campaign_code": null,
-   "code_source": null,
-   "campaign_name": null,
-   "announce_date": "2026-11-11",
-   "launch_end": "2026-12-03",
-   "private_room_open": "2026-10-28",
-   "dates_note": null,
-   "source": "airtable",
-   "airtable_release": "SethArmstrongLE26",
-   "airtable_ids": "2909",
-   "titles": "Micheltorena",
-   "n_products": 1,
-   "launch_type": "Draw",
-   "project_status": "3.5. Pre-Launch"
-  },
-  "ferrari_sheppard_multiple_2026_q4": {
-   "release_name": "Ferrari Sheppard \u00b7 Multiple \u00b7 2026 Q4",
-   "artist": "Ferrari Sheppard",
-   "title": "Multiple",
-   "type": "LE",
-   "campaign_code": null,
-   "code_source": null,
-   "campaign_name": null,
-   "announce_date": "2026-11-10",
-   "launch_end": "2026-12-09",
-   "private_room_open": "2026-10-27",
-   "dates_note": null,
-   "source": "airtable",
-   "airtable_release": "FerrariShLERepeat26",
-   "airtable_ids": "3118|3117",
-   "titles": "All Blues / Round Midnight",
-   "n_products": 2,
-   "launch_type": "",
-   "project_status": "03. Proofing"
-  },
   "mark_tansey_multiple_2026_q4": {
    "release_name": "Mark Tansey \u00b7 Multiple \u00b7 2026 Q4",
    "artist": "Mark Tansey",
@@ -36411,26 +36992,6 @@
    "n_products": 2,
    "launch_type": "",
    "project_status": "03. Proofing"
-  },
-  "pejac_multiple_2026_q4": {
-   "release_name": "Pejac \u00b7 Multiple \u00b7 2026 Q4",
-   "artist": "Pejac",
-   "title": "Multiple",
-   "type": "LE",
-   "campaign_code": null,
-   "code_source": null,
-   "campaign_name": null,
-   "announce_date": "2026-11-23",
-   "launch_end": "2026-12-18",
-   "private_room_open": "2026-11-09",
-   "dates_note": null,
-   "source": "airtable",
-   "airtable_release": "PejacLE26",
-   "airtable_ids": "2606|3094|2807|3093",
-   "titles": "Barbed Wire [Special Print Edition] / Barbed Wire [Standard Print Edition] / Mind Trip [Special Print Edition] / Mind Trip [Standard Print Edition]",
-   "n_products": 4,
-   "launch_type": "",
-   "project_status": "1.5. Agreed to edition"
   },
   "jos_parl_the_founders_ap_2021_q4_tl": {
    "release_name": "Jos\u00e9 Parl\u00e1 \u00b7 The Founders AP \u00b7 2021 Q4",
@@ -38285,9 +38846,9 @@
    "artist": "Matt DesLauriers",
    "title": "Serac",
    "type": "TL",
-   "campaign_code": "",
-   "code_source": null,
-   "campaign_name": null,
+   "campaign_code": "MattDesla_H2_25",
+   "code_source": "guessed",
+   "campaign_name": "MattDesla_H2_25 \u00b7 Sign-ups",
    "announce_date": "2026-11-04",
    "launch_end": "2026-11-26",
    "window_open": "2026-11-24T14:00:00Z",
@@ -38302,19 +38863,43 @@
    "launch_type": "Timed",
    "project_status": null,
    "units_target": null,
-   "tl_state": "upcoming"
+   "tl_state": "signups"
   },
-  "william_mapan_unconfined_2026_q4_tl": {
-   "release_name": "William Mapan \u00b7 Unconfined \u00b7 2026 Q4",
+  "william_mapan_un_confined_2026_q4_tl": {
+   "release_name": "William Mapan \u00b7 (Un)confined \u00b7 2026 Q4",
    "artist": "William Mapan",
-   "title": "Unconfined",
+   "title": "(Un)confined",
+   "type": "TL",
+   "campaign_code": "WilliamMapan_LE_26",
+   "code_source": "guessed",
+   "campaign_name": "WilliamMapan_LE_26 \u00b7 Sign-ups",
+   "announce_date": "2026-11-04",
+   "launch_end": "2026-11-26",
+   "window_open": "2026-11-24T14:00:00Z",
+   "window_hours": 48.0,
+   "private_room_open": null,
+   "dates_note": "the feed's launch time; no window length on file: 48 hours assumed",
+   "source": "feed",
+   "airtable_release": null,
+   "airtable_ids": null,
+   "titles": null,
+   "n_products": null,
+   "launch_type": "Timed",
+   "project_status": null,
+   "units_target": null,
+   "tl_state": "signups"
+  },
+  "carrie_mae_weems_multiple_2027_q1_tl": {
+   "release_name": "Carrie Mae Weems \u00b7 Multiple \u00b7 2027 Q1",
+   "artist": "Carrie Mae Weems",
+   "title": "Multiple",
    "type": "TL",
    "campaign_code": "",
    "code_source": null,
    "campaign_name": null,
-   "announce_date": "2026-11-04",
-   "launch_end": "2026-11-26",
-   "window_open": "2026-11-24T14:00:00Z",
+   "announce_date": "2027-01-20",
+   "launch_end": "2027-02-13",
+   "window_open": "2027-02-11T17:00:00Z",
    "window_hours": 48.0,
    "private_room_open": null,
    "dates_note": "the feed's launch time; no window length on file: 48 hours assumed",
@@ -38338,11 +38923,11 @@
    "campaign_name": null,
    "announce_date": "2026-11-02",
    "launch_end": "2026-11-27",
-   "window_open": "2026-11-25T17:00:00Z",
+   "window_open": "2026-11-25T13:00:00Z",
    "window_hours": 48.0,
    "private_room_open": null,
-   "dates_note": "Airtable's launch date at the feed's launch hour; the feed dates the launch 2026-12-15; no window length on file: 48 hours assumed",
-   "source": "feed",
+   "dates_note": "no opening time on file: 14:00 Amsterdam time assumed; no window length on file: 48 hours assumed",
+   "source": "airtable",
    "airtable_release": "CarrieMaeWTL26",
    "airtable_ids": "2504|3048|3049",
    "titles": "Black Love TL 1 / Black Love TL 2 / Black Love TL 3",
@@ -38350,1311 +38935,3178 @@
    "launch_type": "Timed",
    "project_status": "3.5. Pre-Launch",
    "units_target": 999.0,
-   "tl_state": "upcoming"
+   "tl_state": "signups"
   }
  },
  "meta_campaigns": [
   {
-   "name": "RoyLichte_LE_26 \u00b7 Enter draw",
-   "spend": 26884.51,
-   "last": "2026-10-27",
-   "adsets": []
+   "name": "AiWeiwei_Lego_2026 \u00b7 Enter draw",
+   "spend": 24432.43,
+   "last": "2026-11-09",
+   "adsets": [
+    {
+     "name": "A_AiWeiwei Followers & Lookalike - Sculptures",
+     "spend": 12934.55
+    },
+    {
+     "name": "B_AiWeiwei Followers & Lookalike - Prints",
+     "spend": 11497.88
+    }
+   ]
   },
   {
-   "name": "CaiGuoQiang_LE_26 \u00b7 Enter draw",
-   "spend": 22173.1,
-   "last": "2026-10-27",
-   "adsets": []
+   "name": "KukwonWoo_LE_26 \u00b7 Enter draw",
+   "spend": 1372.34,
+   "last": "2026-11-09",
+   "adsets": [
+    {
+     "name": "B_KWoo Followers & Lookalike - Korean",
+     "spend": 914.62
+    },
+    {
+     "name": "A_KWoo Followers & Lookalike",
+     "spend": 457.72
+    }
+   ]
   },
   {
-   "name": "LoieHollowell_LE_26 \u00b7 Enter draw",
-   "spend": 12441.68,
-   "last": "2026-10-26",
-   "adsets": []
+   "name": "JenniferGuidi_LE_26 \u00b7 Enter draw",
+   "spend": 805.16,
+   "last": "2026-11-09",
+   "adsets": [
+    {
+     "name": "A_JGuidi Followers & Lookalike",
+     "spend": 805.16
+    }
+   ]
+  },
+  {
+   "name": "SethArmstrong_LE_26 \u00b7 Enter draw",
+   "spend": 444.78,
+   "last": "2026-11-09",
+   "adsets": [
+    {
+     "name": "A_SArmstrong Followers & Lookalike",
+     "spend": 444.78
+    }
+   ]
+  },
+  {
+   "name": "MattDesla_H2_25 \u00b7 Sign-ups",
+   "spend": 441.5,
+   "last": "2026-11-09",
+   "adsets": [
+    {
+     "name": "A_MDeslauriers",
+     "spend": 441.5
+    }
+   ]
+  },
+  {
+   "name": "WilliamMapan_LE_26 \u00b7 Sign-ups",
+   "spend": 385.48,
+   "last": "2026-11-08",
+   "adsets": [
+    {
+     "name": "A_WMapan",
+     "spend": 385.48
+    }
+   ]
   },
   {
    "name": "Graysons_Census_Survey_26 \u00b7 Form Submissions",
-   "spend": 407.31,
-   "last": "2026-10-25",
-   "adsets": []
+   "spend": 696.07,
+   "last": "2026-11-03",
+   "adsets": [
+    {
+     "name": "A_GPerry Followers & Lookalike",
+     "spend": 483.16
+    },
+    {
+     "name": "B_GPerry Followers & Lookalike (Northern Ireland)",
+     "spend": 73.29
+    },
+    {
+     "name": "C_GPerry Followers & Lookalike (Wales)",
+     "spend": 70.41
+    },
+    {
+     "name": "D_GPerry Followers & Lookalike (Wales)",
+     "spend": 69.21
+    }
+   ]
+  },
+  {
+   "name": "CaiGuoQiang_LE_26 \u00b7 Enter draw",
+   "spend": 25922.97,
+   "last": "2026-10-30",
+   "adsets": [
+    {
+     "name": "B_CGuo-Qiang Followers & Lookalike - Whitelist",
+     "spend": 24682.27
+    },
+    {
+     "name": "C_CGuo-Qiang Followers & Lookalike - Whitelist (90 day visitors)",
+     "spend": 882.42
+    },
+    {
+     "name": "A_CGuo-Qiang Followers & Lookalike",
+     "spend": 358.28
+    }
+   ]
+  },
+  {
+   "name": "RoyLichte_LE_26 \u00b7 Enter draw",
+   "spend": 30848.04,
+   "last": "2026-10-28",
+   "adsets": [
+    {
+     "name": "A_RLichtenstein Estate",
+     "spend": 30848.04
+    }
+   ]
+  },
+  {
+   "name": "LoieHollowell_LE_26 \u00b7 Enter draw",
+   "spend": 12441.76,
+   "last": "2026-10-26",
+   "adsets": [
+    {
+     "name": "A_LHollowell Followers & Lookalike",
+     "spend": 12383.21
+    },
+    {
+     "name": "B_LHollowell Followers & Lookalike (90 day visitors)",
+     "spend": 58.55
+    }
+   ]
   },
   {
    "name": "DavidWojn_LE_26 \u00b7 Enter draw",
    "spend": 18991.85,
    "last": "2026-10-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_DWojnarowicz",
+     "spend": 17986.34
+    },
+    {
+     "name": "B_DWojnarowicz (90 day visitors)",
+     "spend": 1005.51
+    }
+   ]
   },
   {
    "name": "MaurizioCatt_HorseLE_26 \u00b7 Enter draw",
    "spend": 268669.23,
    "last": "2026-10-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_MCattelan Followers & Lookalike",
+     "spend": 117423.08
+    },
+    {
+     "name": "C_MCattelan Followers & Lookalike \u2013 Novecento",
+     "spend": 71882.67
+    },
+    {
+     "name": "D_MCattelan Followers & Lookalike - Novecento Italian",
+     "spend": 37127.25
+    },
+    {
+     "name": "B_MCattelan Followers & Lookalike - Italian",
+     "spend": 20725.33
+    },
+    {
+     "name": "E_MCattelan Followers & Lookalike \u2013 Novecento (90 day visitors)",
+     "spend": 9900.17
+    },
+    {
+     "name": "A_MCattelan Followers & Lookalike - Italian",
+     "spend": 9071.7
+    },
+    {
+     "name": "G_MCattelan Followers & Lookalike \u2013 Novecento - Winch",
+     "spend": 2013.45
+    },
+    {
+     "name": "F_MCattelan Followers & Lookalike - Novecento Italian (90 day visitors)",
+     "spend": 525.58
+    }
+   ]
   },
   {
    "name": "BisaButler_TL_26 \u00b7 Purchases",
    "spend": 6391.86,
    "last": "2026-10-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_BButler Followers & Lookalike",
+     "spend": 6391.86
+    }
+   ]
   },
   {
    "name": "AndyWarhol_TL_26 \u00b7 Enter draw",
    "spend": 343396.7,
    "last": "2026-10-14",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_AWarhol Followers & Lookalike",
+     "spend": 281928.57
+    },
+    {
+     "name": "C_AWarhol Followers & Lookalike (New creative)",
+     "spend": 50967.49
+    },
+    {
+     "name": "D_AWarhol Followers & Lookalike (90 day visitors)",
+     "spend": 9929.99
+    },
+    {
+     "name": "A_AWarhol Followers & Lookalike",
+     "spend": 570.65
+    }
+   ]
   },
   {
    "name": "BisaButler_TL_26 \u00b7 Sign-ups",
-   "spend": 86052.49,
+   "spend": 86052.5,
    "last": "2026-10-13",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_BButler Followers & Lookalike",
+     "spend": 86052.5
+    }
+   ]
   },
   {
    "name": "RobertLongo_LE_26 \u00b7 Enter draw",
    "spend": 39095.52,
    "last": "2026-09-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_RLongo Followers & Lookalike",
+     "spend": 28264.03
+    },
+    {
+     "name": "B_RLongo Followers & Lookalike (90 day visitors)",
+     "spend": 10831.49
+    }
+   ]
   },
   {
    "name": "JulianSchnabel_LE_26 \u00b7 Enter draw",
    "spend": 20924.4,
    "last": "2026-09-25",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C_JSchnabel \u2013 Whitelisting",
+     "spend": 13072.73
+    },
+    {
+     "name": "A_JSchnabel",
+     "spend": 5331.03
+    },
+    {
+     "name": "E_JSchnabel \u2013 Whitelisting (90 day visitors)",
+     "spend": 1516.15
+    },
+    {
+     "name": "D_JSchnabel - French - Whitelist",
+     "spend": 716.14
+    },
+    {
+     "name": "B_JSchnabel - French",
+     "spend": 288.35
+    }
+   ]
   },
   {
    "name": "SalvadorDali_LE_26 \u00b7 Enter draw",
    "spend": 76156.15,
    "last": "2026-09-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_SDal\u00ed",
+     "spend": 67041.27
+    },
+    {
+     "name": "C_SDal\u00ed (90 day visitors)",
+     "spend": 6213.4
+    },
+    {
+     "name": "A_SDal\u00ed \u2013 Spectre",
+     "spend": 2817.27
+    },
+    {
+     "name": "B_SDal\u00ed - Spanish",
+     "spend": 84.21
+    }
+   ]
   },
   {
    "name": "GlennLigon_LE_26 \u00b7 Enter draw",
    "spend": 4086.95,
    "last": "2026-08-26",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Glenn Ligon",
+     "spend": 4086.95
+    }
+   ]
   },
   {
    "name": "Parra_LE_26 \u00b7 Enter draw",
    "spend": 3272.64,
    "last": "2026-08-21",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Parra Followers & Lookalike",
+     "spend": 3163.73
+    },
+    {
+     "name": "B_Parra Followers & Lookalike (90 day visitors)",
+     "spend": 108.91
+    }
+   ]
   },
   {
    "name": "JamesJean_Blossom_26 \u00b7 Enter draw",
-   "spend": 25936.13,
+   "spend": 25936.15,
    "last": "2026-08-20",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JJean Followers & Lookalike",
+     "spend": 25153.58
+    },
+    {
+     "name": "A_JJean Followers & Lookalike (90 day visitors)",
+     "spend": 782.57
+    }
+   ]
   },
   {
    "name": "Abdulnasser_LE_26 \u00b7 Enter draw",
-   "spend": 7482.43,
+   "spend": 7482.44,
    "last": "2026-08-20",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_AGharem Followers & Lookalike",
+     "spend": 7024.08
+    },
+    {
+     "name": "B_AGharem Followers & Lookalike - Arabic",
+     "spend": 334.27
+    },
+    {
+     "name": "C_AGharem Followers & Lookalike (90 day visitors)",
+     "spend": 124.09
+    }
+   ]
   },
   {
    "name": "ZengFanzhi_LE_26 \u00b7 Enter draw",
    "spend": 5386.98,
    "last": "2026-08-20",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ZFanzhi",
+     "spend": 3472.11
+    },
+    {
+     "name": "A_ZFanzhi - HK",
+     "spend": 1079.41
+    },
+    {
+     "name": "C_ZFanzhi (90 day visitors)",
+     "spend": 835.46
+    }
+   ]
   },
   {
    "name": "Inventory_Test_26",
    "spend": 1433.5,
    "last": "2026-08-13",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "AliB_Inv",
+     "spend": 721.35
+    },
+    {
+     "name": "JaumeP_Inv",
+     "spend": 712.15
+    }
+   ]
   },
   {
    "name": "JaumePlen_LE_26 \u00b7 Enter draw",
    "spend": 53972.12,
    "last": "2026-08-05",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JPlensa",
+     "spend": 46286.03
+    },
+    {
+     "name": "C_JPlensa - ES",
+     "spend": 5071.25
+    },
+    {
+     "name": "B_JPlensa (90 day visitors)",
+     "spend": 2596.16
+    },
+    {
+     "name": "C_JPlensa - ES (90 day visitors)",
+     "spend": 18.68
+    }
+   ]
   },
   {
    "name": "PietMondrian_LE_26 \u00b7 Enter draw",
    "spend": 5617.55,
    "last": "2026-08-04",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ PMondrian",
+     "spend": 5617.55
+    }
+   ]
   },
   {
    "name": "AhmedM_Salam_26 \u00b7 Enter draw",
    "spend": 2928.59,
    "last": "2026-07-24",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Ahmed Followers & Lookalike - GCC",
+     "spend": 1330.82
+    },
+    {
+     "name": "A_Ahmed Followers & Lookalike",
+     "spend": 1160.13
+    },
+    {
+     "name": "D_Ahmed Followers & Lookalike - GCC (90 day visitors)",
+     "spend": 222.14
+    },
+    {
+     "name": "C_Ahmed Followers & Lookalike (90 day visitors)",
+     "spend": 215.5
+    }
+   ]
   },
   {
    "name": "YoonHyup_LE_26 \u00b7 Enter draw",
    "spend": 9142.11,
    "last": "2026-07-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_YHyup Followers & Lookalike",
+     "spend": 4475.19
+    },
+    {
+     "name": "C_YHyup Followers & Lookalike (90 day visitors)",
+     "spend": 3704.37
+    },
+    {
+     "name": "B_YHyup Followers & Lookalike - Korean",
+     "spend": 709.51
+    },
+    {
+     "name": "D_YHyup Followers & Lookalike - Korean (90 day visitors)",
+     "spend": 253.04
+    }
+   ]
   },
   {
    "name": "ZengFanzhi_TL_26 \u00b7 Enter draw",
-   "spend": 11252.96,
+   "spend": 11253.0,
    "last": "2026-07-22",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ZFanzhi",
+     "spend": 4515.72
+    },
+    {
+     "name": "A_ZFanzhi - HK",
+     "spend": 3825.63
+    },
+    {
+     "name": "A_ZFanzhi \u2013 (90 day visitors)",
+     "spend": 2164.5
+    },
+    {
+     "name": "A_ZFanzhi - HK \u2013 (90 day visitors)",
+     "spend": 747.15
+    }
+   ]
   },
   {
    "name": "Backside_LE_26 \u00b7 Enter draw",
    "spend": 985.63,
    "last": "2026-07-14",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Backsideworks. Followers & Lookalike",
+     "spend": 495.13
+    },
+    {
+     "name": "A_Backsideworks. Followers & Lookalike - JP",
+     "spend": 490.5
+    }
+   ]
   },
   {
    "name": "LY_LE_26 \u00b7 Enter draw",
-   "spend": 693.41,
+   "spend": 693.42,
    "last": "2026-07-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_LY",
+     "spend": 602.62
+    },
+    {
+     "name": "A_LY \u2013 JP 2",
+     "spend": 90.78
+    },
+    {
+     "name": "A_LY \u2013 Japan",
+     "spend": 0.02
+    },
+    {
+     "name": "A_LY \u2013 JP 2 \u2013 Copy",
+     "spend": 0.0
+    }
+   ]
   },
   {
    "name": "GregoryCrewd_TL_26 \u00b7 Purchases",
    "spend": 10359.5,
    "last": "2026-07-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_GCrewdsonFollowers & Lookalike",
+     "spend": 8606.4
+    },
+    {
+     "name": "B_Avant Arte (90 day visitors)",
+     "spend": 1753.1
+    }
+   ]
   },
   {
    "name": "GregoryCrewd_TL_26 \u00b7 Sign-ups",
    "spend": 43661.05,
    "last": "2026-06-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_GCrewdson Followers & Lookalike",
+     "spend": 43661.05
+    }
+   ]
   },
   {
    "name": "HankWillisT_LE_26 \u00b7 Enter draw",
    "spend": 14280.84,
    "last": "2026-06-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_HWThomasFollowers & Lookalike",
+     "spend": 9635.18
+    },
+    {
+     "name": "B_Avant Arte (90 day visitors)",
+     "spend": 4645.66
+    }
+   ]
   },
   {
    "name": "FelipePantone_LE_26 \u00b7 Enter draw",
    "spend": 16749.76,
    "last": "2026-06-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_FPantone Followers & Lookalike",
+     "spend": 13327.31
+    },
+    {
+     "name": "B_Avant Arte (90 day visitors)",
+     "spend": 3422.45
+    }
+   ]
   },
   {
    "name": "GiuseppePen_LE_26 \u00b7 Enter draw",
    "spend": 1414.04,
    "last": "2026-06-27",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_GPenone Followers & Lookalike",
+     "spend": 998.9
+    },
+    {
+     "name": "A_GPenone Followers & Lookalike - Italian",
+     "spend": 415.14
+    }
+   ]
   },
   {
    "name": "UrsFischer_LE_26 \u00b7 Enter draw",
-   "spend": 5293.06,
+   "spend": 5293.08,
    "last": "2026-06-25",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_UrsFischer Followers & Lookalike",
+     "spend": 3742.3
+    },
+    {
+     "name": "B_Avant Arte (90 day visitors)",
+     "spend": 1550.78
+    }
+   ]
   },
   {
    "name": "JR: Boost - Impressions",
    "spend": 34.67,
    "last": "2026-06-21",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Boost - Impressions",
+     "spend": 34.67
+    }
+   ]
   },
   {
    "name": "JohnsonTs_Alliance_26 \u00b7 Enter draw",
    "spend": 2850.42,
    "last": "2026-06-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JTsang Followers & Lookalike",
+     "spend": 2839.94
+    },
+    {
+     "name": "B_Avant Arte (90 day visitors)",
+     "spend": 10.48
+    }
+   ]
   },
   {
    "name": "CindySher_LE_26 \u00b7 Enter draw",
    "spend": 8872.1,
    "last": "2026-06-10",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_CSherman Followers & Lookalike",
+     "spend": 8370.76
+    },
+    {
+     "name": "B_Avant Arte (90 day visitors)",
+     "spend": 501.34
+    }
+   ]
   },
   {
    "name": "AiWeiwei_Guardian2_26 \u00b7 Purchases",
    "spend": 16747.71,
    "last": "2026-06-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Weiwei Followers & Lookalike",
+     "spend": 15826.59
+    },
+    {
+     "name": "B_Avant Arte (90 day visitors)",
+     "spend": 810.18
+    },
+    {
+     "name": "C_Avant Arte (90 day visitors) \u2013 Higher spend",
+     "spend": 110.94
+    }
+   ]
   },
   {
    "name": "AliceB_AIB_25 \u00b7 Purchases",
    "spend": 460.14,
    "last": "2026-06-03",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Alice Followers & Lookalike",
+     "spend": 460.14
+    }
+   ]
   },
   {
    "name": "AiWeiwei_Guardian2_26 \u00b7 Sign-ups",
    "spend": 38797.12,
    "last": "2026-06-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_AWeiwei Followers & Lookalike",
+     "spend": 38797.12
+    }
+   ]
   },
   {
    "name": "Albers_LE_26 \u00b7 Enter draw",
-   "spend": 53306.18,
+   "spend": 53306.22,
    "last": "2026-05-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Albers Followers & Lookalike - Josef",
+     "spend": 27295.55
+    },
+    {
+     "name": "A_Albers Followers & Lookalike \u2013 Annie",
+     "spend": 20976.75
+    },
+    {
+     "name": "A_Albers Followers & Lookalike",
+     "spend": 5033.92
+    }
+   ]
   },
   {
    "name": "AntonyMic_LE_26 \u00b7 Enter draw",
    "spend": 1867.45,
    "last": "2026-05-21",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_A Micallef Followers & Lookalike",
+     "spend": 1739.54
+    },
+    {
+     "name": "A_A Micallef Followers & Lookalike - German",
+     "spend": 127.91
+    }
+   ]
   },
   {
    "name": "JoelMesler_TL_26 \u00b7 Sign-ups",
    "spend": 5275.12,
    "last": "2026-05-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JMesler Followers & Lookalike",
+     "spend": 5275.12
+    }
+   ]
   },
   {
    "name": "EddieMart_LE_25 \u00b7 Enter draw",
    "spend": 4034.54,
    "last": "2026-05-12",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Eddie Followers & Lookalike",
+     "spend": 4034.54
+    }
+   ]
   },
   {
    "name": "GraysonPerry_TL_25 \u00b7 Purchases",
    "spend": 2193.51,
    "last": "2026-05-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_GPerry",
+     "spend": 2193.51
+    }
+   ]
   },
   {
    "name": "Maurizio_Therapy_26 \u00b7 Enter draw",
    "spend": 6230.61,
    "last": "2026-05-05",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Maurizio Followers & Lookalike",
+     "spend": 3167.0
+    },
+    {
+     "name": "A_Maurizio Followers & Lookalike \u2013 Italy",
+     "spend": 3063.61
+    }
+   ]
   },
   {
    "name": "GraysonPerry_TL_25 \u00b7 Sign-ups",
    "spend": 31010.9,
    "last": "2026-04-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_GPerry",
+     "spend": 31010.9
+    }
+   ]
   },
   {
    "name": "ShirinNeshat_TL_26 \u00b7 Purchases",
    "spend": 1313.27,
    "last": "2026-04-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_SNeshat",
+     "spend": 1313.27
+    }
+   ]
   },
   {
    "name": "ShirinNeshat_TL_26 \u00b7 Sign-ups",
    "spend": 19876.36,
    "last": "2026-04-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Neshat",
+     "spend": 17819.72
+    },
+    {
+     "name": "A_Neshat \u2013 Italy",
+     "spend": 1574.59
+    },
+    {
+     "name": "A_Neshat \u2013 GCC",
+     "spend": 482.05
+    }
+   ]
   },
   {
    "name": "Maurizio_NonaOra_26 \u00b7 Enter draw",
    "spend": 110046.19,
    "last": "2026-04-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Maurizio Followers & Lookalike",
+     "spend": 71436.54
+    },
+    {
+     "name": "B_Maurizio Followers & Lookalike \u2013 Italy",
+     "spend": 35181.49
+    },
+    {
+     "name": "C_Maurizio Followers & Lookalike \u2013 France",
+     "spend": 3428.16
+    }
+   ]
   },
   {
    "name": "Paulnsect_Repeat_25 \u00b7 Enter draw",
    "spend": 1050.77,
    "last": "2026-04-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_PInsect Followers & Lookalike",
+     "spend": 1050.77
+    }
+   ]
   },
   {
    "name": "AiWeiwei_FingerSE_25 \u00b7 Enter draw",
    "spend": 6576.35,
    "last": "2026-04-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_AWeiwei Followers & Lookalike",
+     "spend": 6576.35
+    }
+   ]
   },
   {
    "name": "LucianFreud_TL_26 \u00b7 Purchases",
    "spend": 1066.49,
    "last": "2026-04-16",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ LFreud",
+     "spend": 1066.49
+    }
+   ]
   },
   {
    "name": "LucianFreud_TL_26 \u00b7 Sign-ups",
    "spend": 9707.3,
    "last": "2026-04-12",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ LFreud",
+     "spend": 9707.3
+    }
+   ]
   },
   {
    "name": "GrantRiven_LE_26 \u00b7 Enter draw",
    "spend": 806.2,
    "last": "2026-03-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_GYun Followers & Lookalike",
+     "spend": 806.2
+    }
+   ]
   },
   {
    "name": "MickaleneT_TL_26 \u00b7 Purchases",
    "spend": 5745.97,
    "last": "2026-03-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ MThomas followers & Lookalike",
+     "spend": 5463.29
+    },
+    {
+     "name": "A_ MThomas followers & Lookalike \u2013 France",
+     "spend": 282.68
+    }
+   ]
   },
   {
    "name": "Collector_Report_26 \u00b7 Form Submissions",
    "spend": 1122.41,
    "last": "2026-03-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Adv+",
+     "spend": 1122.41
+    }
+   ]
   },
   {
    "name": "JeffKoons_LE_25 \u00b7 Enter draw",
    "spend": 71089.83,
    "last": "2026-03-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JKoons Followers & Lookalike",
+     "spend": 42753.99
+    },
+    {
+     "name": "B_LACMA Followers & Lookalike",
+     "spend": 28335.84
+    }
+   ]
   },
   {
    "name": "MickaleneT_TL_26 \u00b7 Sign-ups",
    "spend": 41419.8,
    "last": "2026-03-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ MThomas followers & Lookalike",
+     "spend": 37474.0
+    },
+    {
+     "name": "B_ Lookalike (3%)",
+     "spend": 3945.8
+    }
+   ]
   },
   {
    "name": "Drift_LE_25 \u00b7 Enter draw",
    "spend": 1281.43,
    "last": "2026-03-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_DRIFT Followers & Lookalike",
+     "spend": 1281.43
+    }
+   ]
   },
   {
    "name": "EmCooper_TL_25 \u00b7 Purchases",
    "spend": 381.07,
    "last": "2026-03-06",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ EmCooper followers & Lookalike",
+     "spend": 381.07
+    }
+   ]
   },
   {
    "name": "LucTuymans_LE_26 \u00b7 Enter draw",
    "spend": 311.07,
    "last": "2026-03-05",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_LTuymans Followers & Lookalike",
+     "spend": 311.07
+    }
+   ]
   },
   {
    "name": "JeanMichel_LE_25 \u00b7 Enter draw",
    "spend": 5772.76,
    "last": "2026-02-27",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Othoniel Followers & Lookalike - English - Copy",
+     "spend": 3188.79
+    },
+    {
+     "name": "A_Othoniel Followers & Lookalike - Korean",
+     "spend": 2583.97
+    }
+   ]
   },
   {
    "name": "EmCooper_TL_25 \u00b7 Sign-ups",
    "spend": 5314.81,
    "last": "2026-02-25",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ EmCooper followers & Lookalike",
+     "spend": 5314.81
+    }
+   ]
   },
   {
    "name": "Katharina_TL_25 \u00b7 Purchases",
    "spend": 1600.89,
    "last": "2026-02-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ KGrosse followers & Lookalike",
+     "spend": 1232.71
+    },
+    {
+     "name": "B_ KGrosse followers & Lookalike \u2013 German",
+     "spend": 368.18
+    }
+   ]
   },
   {
    "name": "ManRay_TL_25 \u00b7 Purchases",
    "spend": 1294.78,
    "last": "2026-02-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ ManRay",
+     "spend": 1294.78
+    }
+   ]
   },
   {
    "name": "ManRay_TL_25 \u00b7 Sign-ups",
    "spend": 23688.45,
    "last": "2026-02-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ ManRay",
+     "spend": 23688.45
+    }
+   ]
   },
   {
    "name": "MaurizioC_LE_26 \u00b7 Enter draw",
    "spend": 4820.38,
    "last": "2026-02-16",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Maurizio Followers & Lookalike \u2013 Italy",
+     "spend": 2671.19
+    },
+    {
+     "name": "A_Maurizio Followers & Lookalike",
+     "spend": 2149.19
+    }
+   ]
   },
   {
    "name": "NiceAunties_AIB_25 \u00b7 Purchases",
    "spend": 1457.55,
    "last": "2026-02-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_NiceAunties Followers & Lookalike",
+     "spend": 1457.55
+    }
+   ]
   },
   {
    "name": "JoanaB_AIB_26 \u00b7 Purchases",
    "spend": 630.64,
    "last": "2026-02-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JBernd Followers & Lookalike",
+     "spend": 630.64
+    }
+   ]
   },
   {
    "name": "Katharina_TL_25 \u00b7 Sign-ups",
    "spend": 15875.99,
    "last": "2026-02-13",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ KGrosse followers & Lookalike",
+     "spend": 15875.99
+    }
+   ]
   },
   {
    "name": "MarinaAbr-1502 \u00b7 Purchases",
    "spend": 4071.14,
    "last": "2026-02-12",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ MAbramovi\u0107 followers & Lookalike",
+     "spend": 2055.88
+    },
+    {
+     "name": "B_ MAbramovi\u0107 followers & Lookalike \u2013 Italy",
+     "spend": 2015.26
+    }
+   ]
   },
   {
    "name": "MarinaAbr-1502 \u00b7 Sign-ups",
    "spend": 64915.42,
    "last": "2026-02-10",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ MAbramovi\u0107 followers & Lookalike",
+     "spend": 64915.42
+    }
+   ]
   },
   {
    "name": "DenitzaZ_AIB_26 \u00b7 Purchases",
    "spend": 66.25,
    "last": "2026-02-04",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_DZafirova Followers & Lookalike",
+     "spend": 66.25
+    }
+   ]
   },
   {
    "name": "Pejac_Repeat_26 \u00b7 Sign-ups",
    "spend": 8948.86,
    "last": "2026-02-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ Pejac followers & Lookalike",
+     "spend": 6314.03
+    },
+    {
+     "name": "A_ Pejac followers & Lookalike \u2013 Release Page",
+     "spend": 2634.83
+    }
+   ]
   },
   {
    "name": "Vladsng_AIB_26 \u00b7 Purchases",
    "spend": 228.85,
    "last": "2026-02-01",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_VladD Followers & Lookalike",
+     "spend": 228.85
+    }
+   ]
   },
   {
    "name": "FerrariSh_LE_26 \u00b7 Enter draw",
    "spend": 8335.77,
    "last": "2026-01-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ FSheppard Lookalike & Followers",
+     "spend": 8335.77
+    }
+   ]
   },
   {
    "name": "TomasSanchez_TL_26 \u00b7 Purchases",
    "spend": 1921.81,
    "last": "2026-01-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_TS\u00e1nchez Followers & Lookalike",
+     "spend": 1921.81
+    }
+   ]
   },
   {
    "name": "Solienne_AIB_26 \u00b7 Purchases",
    "spend": 28.57,
    "last": "2026-01-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Solienne Followers & Lookalike",
+     "spend": 28.57
+    }
+   ]
   },
   {
    "name": "AiWeiwei_SelfPortrait_26 \u00b7 Sign-ups",
    "spend": 18035.97,
    "last": "2026-01-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ AWeiwei followers & Lookalike",
+     "spend": 18035.97
+    }
+   ]
   },
   {
    "name": "LeeUfan_LE_26 \u00b7 Enter draw",
    "spend": 13479.81,
    "last": "2026-01-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ LUfan Lookalike & Followers - Korea",
+     "spend": 11806.64
+    },
+    {
+     "name": "A_ LUfan Lookalike & Followers - English",
+     "spend": 1673.17
+    }
+   ]
   },
   {
    "name": "AiWeiwei_SelfPortrait_26 \u00b7 Purchases",
    "spend": 320.62,
    "last": "2026-01-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ AWeiwei followers & Lookalike",
+     "spend": 320.62
+    }
+   ]
   },
   {
    "name": "TomasSanchez_TL_26 \u00b7 Sign-ups",
    "spend": 22191.73,
    "last": "2026-01-27",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ TS\u00e1nchez followers & Lookalike",
+     "spend": 22191.73
+    }
+   ]
   },
   {
    "name": "JoakimOja_LE_25 \u00b7 Enter draw",
    "spend": 2842.23,
    "last": "2026-01-22",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ JOjanen Lookalike & Followers",
+     "spend": 2842.23
+    }
+   ]
   },
   {
    "name": "Saype_AIB_25 \u00b7 Purchases",
    "spend": 990.32,
    "last": "2025-12-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Saype Followers & Lookalike 1",
+     "spend": 990.32
+    }
+   ]
   },
   {
    "name": "KeitaMor_TL_25 \u00b7 Purchases",
    "spend": 1894.08,
    "last": "2025-12-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_KMorimoto Followers & Lookalike",
+     "spend": 1397.83
+    },
+    {
+     "name": "A_KMorimoto Followers & Lookalike - JP",
+     "spend": 496.25
+    }
+   ]
   },
   {
    "name": "KeitaMor_TL_25 \u00b7 Sign-ups",
-   "spend": 4809.93,
+   "spend": 4809.94,
    "last": "2025-12-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ KMorimoto followers & Lookalike",
+     "spend": 3297.53
+    },
+    {
+     "name": "A_ KMorimoto followers & Lookalike \u2013 JP",
+     "spend": 1512.41
+    }
+   ]
   },
   {
    "name": "KenN_AIB_25 \u00b7 Purchases",
    "spend": 175.18,
    "last": "2025-11-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_KNwadiogbu Followers & Lookalike",
+     "spend": 175.18
+    }
+   ]
   },
   {
    "name": "WilliamBl_LE_25 \u00b7 Enter draw",
    "spend": 275.08,
    "last": "2025-11-20",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ SirJSoane\u2019s  Lookalike & Followers",
+     "spend": 275.08
+    }
+   ]
   },
   {
    "name": "LSeyah_AIB_25 \u00b7 Purchases",
    "spend": 226.56,
    "last": "2025-11-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_LSeyah Followers & Lookalike",
+     "spend": 226.56
+    }
+   ]
   },
   {
    "name": "MaurizioC_Rev_25 \u00b7 Enter draw",
    "spend": 27238.68,
    "last": "2025-11-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Maurizio Followers & Lookalike",
+     "spend": 20585.36
+    },
+    {
+     "name": "B_Maurizio Followers & Lookalike \u2013 Italy",
+     "spend": 6653.32
+    }
+   ]
   },
   {
    "name": "CindySher_TL_25 \u00b7 Purchases",
    "spend": 5999.25,
    "last": "2025-11-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ CSherman Lookalike",
+     "spend": 5999.25
+    }
+   ]
   },
   {
    "name": "Judy_Triptych_25 \u00b7 Enter draw",
    "spend": 4148.37,
    "last": "2025-11-14",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JChicago Followers & Lookalike",
+     "spend": 4148.37
+    }
+   ]
   },
   {
    "name": "WyneV_AIB_25 \u00b7 Purchases",
    "spend": 92.73,
    "last": "2025-11-14",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_WyneV Followers & Lookalike",
+     "spend": 92.73
+    }
+   ]
   },
   {
    "name": "AiWeiwei_LE_25 \u00b7 Enter draw",
    "spend": 6306.1,
    "last": "2025-11-13",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Weiwei Followers & Lookalike",
+     "spend": 6306.1
+    }
+   ]
   },
   {
    "name": "CindySher_TL_25\u00b7 Sign-ups",
    "spend": 15232.24,
    "last": "2025-11-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ CSherman Lookalike",
+     "spend": 15232.24
+    }
+   ]
   },
   {
    "name": "Ai Weiwei - TEST",
    "spend": 4.41,
    "last": "2025-11-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Test",
+     "spend": 4.41
+    }
+   ]
   },
   {
    "name": "JamesJean_Sun_25 \u00b7 Purchases",
    "spend": 893.21,
    "last": "2025-11-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ JJean Followers & Lookalike",
+     "spend": 893.21
+    }
+   ]
   },
   {
    "name": "HarmoniaR_Two_25 \u00b7 Purchases",
    "spend": 1943.77,
    "last": "2025-10-31",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ HRosales Followers & Lookalike",
+     "spend": 1943.77
+    }
+   ]
   },
   {
    "name": "JamesJean_Sun_25 \u00b7 Sign-ups",
    "spend": 2834.56,
    "last": "2025-10-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_James Followers & Lookalike \u2013 Sculpture",
+     "spend": 2026.53
+    },
+    {
+     "name": "A_James Followers & Lookalike - Print",
+     "spend": 808.03
+    }
+   ]
   },
   {
    "name": "AlexKatz_H2_25 \u00b7 Enter draw",
    "spend": 30007.6,
    "last": "2025-10-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Guggenheim Followers & Lookalike",
+     "spend": 30007.6
+    }
+   ]
   },
   {
    "name": "HarmoniaR_Two_25 \u00b7 Sign-ups",
    "spend": 6101.5,
    "last": "2025-10-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_ Rosales Followers & Lookalike",
+     "spend": 6101.5
+    }
+   ]
   },
   {
    "name": "SirJoanC_TL_25 \u00b7 Purchases",
    "spend": 1071.09,
    "last": "2025-10-24",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Followers & Lookalike",
+     "spend": 1071.09
+    }
+   ]
   },
   {
    "name": "SirJoanC_TL_25 \u00b7 Sign-ups",
    "spend": 12341.67,
    "last": "2025-10-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Followers & Lookalike",
+     "spend": 12341.67
+    }
+   ]
   },
   {
    "name": "MadeleineG_AIB_25 \u00b7 Purchases",
    "spend": 67.46,
    "last": "2025-10-22",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_MGross Followers & Lookalike",
+     "spend": 67.46
+    }
+   ]
   },
   {
    "name": "AhmedMat_Magnet_25 \u00b7 Enter draw",
    "spend": 7637.95,
    "last": "2025-10-14",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Ahmed Followers & Lookalike - GCC",
+     "spend": 5665.39
+    },
+    {
+     "name": "A_Ahmed Followers & Lookalike",
+     "spend": 1972.56
+    }
+   ]
   },
   {
    "name": "RTanchum_AIB_25 \u00b7 Purchases",
    "spend": 106.48,
    "last": "2025-10-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_RTanchum Followers & Lookalike",
+     "spend": 106.48
+    }
+   ]
   },
   {
    "name": "Inventory_Test_25",
    "spend": 5680.28,
    "last": "2025-10-10",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "BonyR_Inv_2",
+     "spend": 3147.8
+    },
+    {
+     "name": "MarcJ_Inv",
+     "spend": 1475.46
+    },
+    {
+     "name": "SoYoun_Inv",
+     "spend": 779.04
+    },
+    {
+     "name": "BridgetM_Inv",
+     "spend": 277.98
+    }
+   ]
   },
   {
    "name": "MGross_AIB_25 \u00b7 Purchases",
    "spend": 66.6,
    "last": "2025-10-05",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_MGross Followers & Lookalike",
+     "spend": 66.6
+    }
+   ]
   },
   {
    "name": "Art_Museums_Survey_25 \u00b7 Form Submissions",
    "spend": 830.56,
    "last": "2025-09-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Avant Arte IG Followers",
+     "spend": 466.39
+    },
+    {
+     "name": "Adv+",
+     "spend": 358.33
+    },
+    {
+     "name": "Avant Arte IG Engagement",
+     "spend": 5.84
+    }
+   ]
   },
   {
    "name": "CleonPeter_Timed_25 \u00b7 Purchases",
    "spend": 2345.07,
    "last": "2025-09-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Followers & Lookalike",
+     "spend": 2345.07
+    }
+   ]
   },
   {
    "name": "CleonPeter_Timed_25 \u00b7 Sign-ups",
    "spend": 5343.54,
    "last": "2025-09-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Followers & Lookalike",
+     "spend": 5343.54
+    }
+   ]
   },
   {
    "name": "JTsang_AIB_25 \u00b7 Purchases",
    "spend": 435.32,
    "last": "2025-09-12",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_JTsang Followers & Lookalike",
+     "spend": 435.32
+    }
+   ]
   },
   {
    "name": "GlennBrow_Two_25 \u00b7 Sign-ups",
    "spend": 1075.15,
    "last": "2025-09-10",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Brown Followers & Lookalike (Release Page)",
+     "spend": 1075.15
+    }
+   ]
   },
   {
    "name": "AiWeiwei_NVase_25 \u00b7 Purchases",
    "spend": 4804.99,
    "last": "2025-09-04",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Weiwei Followers & Lookalike (Release Page)",
+     "spend": 3106.34
+    },
+    {
+     "name": "B_Weiwei Followers & Lookalike (Product Page)",
+     "spend": 1698.65
+    }
+   ]
   },
   {
    "name": "YSodeaoka_AIB_25 \u00b7 Purchases",
    "spend": 356.58,
    "last": "2025-09-04",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_YSodeaoka Followers & Lookalike",
+     "spend": 356.58
+    }
+   ]
   },
   {
    "name": "AiWeiwei_NVase_25 \u00b7 Sign-ups",
    "spend": 25115.0,
    "last": "2025-08-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Weiwei Followers & Lookalike (Product Page)",
+     "spend": 12699.76
+    },
+    {
+     "name": "A_Weiwei Followers & Lookalike (Release Page)",
+     "spend": 12415.24
+    }
+   ]
   },
   {
    "name": "Eniwamura_Neojomon_25 \u00b7 Enter draw",
    "spend": 5896.91,
    "last": "2025-08-27",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Iwamura Lookalike",
+     "spend": 5896.91
+    }
+   ]
   },
   {
    "name": "Inventory_Test_Q4_24",
    "spend": 6119.69,
    "last": "2025-08-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "DevanS_Inv",
+     "spend": 877.3
+    },
+    {
+     "name": "PaulI_Inv",
+     "spend": 871.96
+    },
+    {
+     "name": "BonyR_Inv",
+     "spend": 814.15
+    },
+    {
+     "name": "GiselaM_Inv",
+     "spend": 807.15
+    },
+    {
+     "name": "TakeruA_Inv",
+     "spend": 675.31
+    },
+    {
+     "name": "GuimiY_Inv",
+     "spend": 598.13
+    },
+    {
+     "name": "BridgetM_Inv",
+     "spend": 453.55
+    },
+    {
+     "name": "TomasS_Inv",
+     "spend": 389.27
+    },
+    {
+     "name": "TahneeL_Inv",
+     "spend": 325.36
+    },
+    {
+     "name": "JohnsonTs_Inv",
+     "spend": 307.51
+    }
+   ]
   },
   {
    "name": "JohnsonTs_Rememb_25 \u00b7 Enter draw",
    "spend": 2745.47,
    "last": "2025-08-12",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Johnson Lookalike",
+     "spend": 2745.47
+    }
+   ]
   },
   {
    "name": "JustinO_AIB_25 \u00b7 Purchases",
    "spend": 1212.26,
    "last": "2025-08-03",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_OBrien Followers & Lookalike",
+     "spend": 1212.26
+    }
+   ]
   },
   {
    "name": "TObata_AIB_25 \u00b7 Purchases",
    "spend": 102.52,
    "last": "2025-08-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_TObata Followers & Lookalike",
+     "spend": 102.52
+    }
+   ]
   },
   {
    "name": "PietParra_Dip_25 \u00b7 Purchases",
    "spend": 906.15,
    "last": "2025-07-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Parra Followers & Lookalike",
+     "spend": 906.15
+    }
+   ]
   },
   {
    "name": "DavidC_AIB_25 \u00b7 Purchases",
    "spend": 1529.37,
    "last": "2025-07-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_David Followers & Lookalike",
+     "spend": 1529.37
+    }
+   ]
   },
   {
    "name": "SHong_AIB_25 \u00b7 Purchases",
    "spend": 724.55,
    "last": "2025-07-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_SHong Followers & Lookalike",
+     "spend": 724.55
+    }
+   ]
   },
   {
    "name": "PietParra_Dip_25 \u00b7 Sign-ups",
    "spend": 16687.9,
    "last": "2025-07-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Parra Followers & Lookalike",
+     "spend": 16687.9
+    }
+   ]
   },
   {
    "name": "JamesJarv_HangInThe_25 \u00b7 Enter draw",
    "spend": 4056.58,
    "last": "2025-07-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_James Lookalike",
+     "spend": 4056.58
+    }
+   ]
   },
   {
    "name": "CarrieMae_TL_25 \u00b7 Purchases",
    "spend": 6385.64,
    "last": "2025-07-25",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Carrie Followers & Lookalike",
+     "spend": 6385.64
+    }
+   ]
   },
   {
    "name": "CarrieMae_TL_25 \u00b7 Sign-ups",
    "spend": 45349.9,
    "last": "2025-07-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Carrie Followers & Lookalike",
+     "spend": 45349.9
+    }
+   ]
   },
   {
    "name": "LucianFre_TL_25 \u00b7 Purchases",
    "spend": 1006.83,
    "last": "2025-07-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 531.87
+    },
+    {
+     "name": "B_Lookalike \u2013 Framing",
+     "spend": 474.96
+    }
+   ]
   },
   {
    "name": "LucianFre_TL_25 \u00b7 Sign-ups",
    "spend": 11963.02,
    "last": "2025-07-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 11963.02
+    }
+   ]
   },
   {
    "name": "GabrielleG_AIB_25 \u00b7 Purchases",
    "spend": 1764.82,
    "last": "2025-07-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Gabrielle Followers & Lookalike",
+     "spend": 1764.82
+    }
+   ]
   },
   {
    "name": "FelipePan_TL_25 \u00b7 Purchases",
    "spend": 2330.12,
    "last": "2025-07-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Felipe Followers & Lookalike",
+     "spend": 1179.85
+    },
+    {
+     "name": "B_Felipe Followers & Lookalike - test",
+     "spend": 1150.27
+    }
+   ]
   },
   {
    "name": "FelipePan_TL_25 - sign ups",
    "spend": 7503.16,
    "last": "2025-06-27",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Felipe Followers & Lookalike",
+     "spend": 7503.16
+    }
+   ]
   },
   {
    "name": "LeeUfan_From_25 \u00b7 Enter draw",
    "spend": 26643.03,
    "last": "2025-06-26",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C_Dia Followers & Lookalike (KR)",
+     "spend": 13437.7
+    },
+    {
+     "name": "C_Dia Followers & Lookalike (KR) - From Point",
+     "spend": 6027.64
+    },
+    {
+     "name": "A_Dia Followers & Lookalike (Eng) - From Point",
+     "spend": 3252.52
+    },
+    {
+     "name": "B_Dia Followers & Lookalike (JP)",
+     "spend": 2518.34
+    },
+    {
+     "name": "A_Dia Followers & Lookalike (Eng)",
+     "spend": 1406.83
+    }
+   ]
   },
   {
    "name": "GraysonPe_Large_25 \u00b7 Pre-order",
    "spend": 596.35,
    "last": "2025-06-26",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 596.35
+    }
+   ]
   },
   {
    "name": "AliceN_AIB_25 \u00b7 Purchases",
    "spend": 1.72,
    "last": "2025-06-25",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Alice Neave Followers & Lookalike",
+     "spend": 1.72
+    }
+   ]
   },
   {
    "name": "JenStark_TL_25 \u00b7 Purchases",
    "spend": 521.76,
    "last": "2025-06-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Jen Followers & Lookalike",
+     "spend": 521.76
+    }
+   ]
   },
   {
    "name": "ThomasL_AIB_25 \u00b7 Purchases",
    "spend": 1764.45,
    "last": "2025-06-10",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 1764.45
+    }
+   ]
   },
   {
    "name": "AIB_Waitlist_25 \u00b7 Sign-ups",
-   "spend": 1162.51,
+   "spend": 1162.56,
    "last": "2025-06-10",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Avant Arte Followers & Lookalike",
+     "spend": 937.47
+    },
+    {
+     "name": "B_Avant Arte Followers & Lookalike \u2013 15k",
+     "spend": 225.09
+    }
+   ]
   },
   {
    "name": "Boosting for Views",
    "spend": 174.47,
    "last": "2025-06-06",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Boost Emanoel Araj\u00fao",
+     "spend": 43.06
+    },
+    {
+     "name": "Boost Dia Condo",
+     "spend": 42.79
+    },
+    {
+     "name": "Boost Lisa Yuskavage (India)",
+     "spend": 23.53
+    },
+    {
+     "name": "Boost Sugimoto (India)",
+     "spend": 16.1
+    },
+    {
+     "name": "Boost Weiwei Lisson",
+     "spend": 15.66
+    },
+    {
+     "name": "Boost Mickalene",
+     "spend": 13.79
+    },
+    {
+     "name": "Boost Maurizio Cattelan (India)",
+     "spend": 12.2
+    },
+    {
+     "name": "Boost Mark Bradford (India)",
+     "spend": 7.34
+    }
+   ]
   },
   {
    "name": "JudyChica_TL_25 \u00b7 Purchase",
    "spend": 5151.37,
    "last": "2025-06-04",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Judy Followers & Lookalike COPY",
+     "spend": 3541.94
+    },
+    {
+     "name": "A_Judy Followers & Lookalike",
+     "spend": 1609.43
+    }
+   ]
   },
   {
    "name": "MarkBradf_Broad_25 \u00b7 Purchases",
    "spend": 6996.03,
    "last": "2025-06-03",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_The Broad Followers & Lookalike",
+     "spend": 6996.03
+    }
+   ]
   },
   {
    "name": "JenStark_TL_25 \u00b7 Sign-ups",
    "spend": 3170.37,
    "last": "2025-05-31",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Jen Followers & Lookalike",
+     "spend": 3170.37
+    }
+   ]
   },
   {
    "name": "JudyChica_TL_25 \u00b7 Sign-ups",
    "spend": 9578.59,
    "last": "2025-05-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Judy Followers & Lookalike",
+     "spend": 9578.59
+    }
+   ]
   },
   {
    "name": "MarkBradf_Broad_25 \u00b7 Sign-ups",
    "spend": 13534.18,
    "last": "2025-05-27",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_The Broad Followers & Lookalike",
+     "spend": 13534.18
+    }
+   ]
   },
   {
    "name": "Friedrich_Storm_25 \u00b7 Purchases",
    "spend": 4853.02,
    "last": "2025-05-20",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Friedrich Followers & Lookalike",
+     "spend": 4853.02
+    }
+   ]
   },
   {
    "name": "Friedrich_Storm_25 \u00b7 Sign-ups",
    "spend": 22694.37,
    "last": "2025-05-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Friedrich Followers & Lookalike",
+     "spend": 22694.37
+    }
+   ]
   },
   {
    "name": "ThomasL_AIB_25 \u00b7 Sign-ups",
    "spend": 692.35,
    "last": "2025-05-12",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 692.35
+    }
+   ]
   },
   {
    "name": "JonnyNies_2TL_25 \u00b7 Purchases",
    "spend": 891.18,
    "last": "2025-05-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 891.18
+    }
+   ]
   },
   {
    "name": "AliceB_AIB_25 \u00b7 Sign-ups",
    "spend": 700.84,
    "last": "2025-05-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Alice Followers & Lookalike",
+     "spend": 700.84
+    }
+   ]
   },
   {
    "name": "RobertLon_MenIn_25 \u00b7 Purchases",
    "spend": 14100.3,
    "last": "2025-05-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Robert Followers & Lookalike",
+     "spend": 14100.3
+    }
+   ]
   },
   {
    "name": "RobertLon_MenIn_25 \u00b7 Sign-ups",
    "spend": 15908.02,
    "last": "2025-04-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Robert Followers & Lookalike",
+     "spend": 15908.02
+    }
+   ]
   },
   {
    "name": "GabrielleG_AIB_25 \u00b7 Sign ups",
    "spend": 333.15,
    "last": "2025-04-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Gabrielle Followers & Lookalike",
+     "spend": 333.15
+    }
+   ]
   },
   {
    "name": "JonnyNies_2TL_25 \u00b7 Sign-ups",
    "spend": 1682.45,
    "last": "2025-04-27",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 1682.45
+    }
+   ]
   },
   {
    "name": "SayreGome_America_25 \u00b7 Draw",
    "spend": 1993.3,
    "last": "2025-04-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Sayre Followers & Lookalike",
+     "spend": 1993.3
+    }
+   ]
   },
   {
    "name": "Oscaryi_Cool_25 \u00b7 Draw",
    "spend": 2998.91,
    "last": "2025-04-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Oscar Followers & Lookalike",
+     "spend": 2998.91
+    }
+   ]
   },
   {
    "name": "HajimeSor_Untitled_25 \u00b7 Draw",
    "spend": 16366.47,
    "last": "2025-04-05",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Nanzuka Followers & Lookalike",
+     "spend": 16366.47
+    }
+   ]
   },
   {
    "name": "TomasSanc_Pair_25 \u00b7 Purchases",
    "spend": 11034.92,
    "last": "2025-04-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Tomas Followers & Lookalike",
+     "spend": 11034.92
+    }
+   ]
   },
   {
    "name": "TomasSanc_Pair_25 \u00b7 Sign-ups",
    "spend": 15052.35,
    "last": "2025-03-20",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Tomas Followers & Lookalike",
+     "spend": 15052.35
+    }
+   ]
   },
   {
    "name": "Mickalene_MultiTL_25 \u00b7 Purchases",
    "spend": 8783.66,
    "last": "2025-03-20",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Mickalene Followers & Lookalike",
+     "spend": 8783.66
+    }
+   ]
   },
   {
    "name": "Mickalene_MultiTL_25 \u00b7 Sign-ups",
    "spend": 47268.1,
    "last": "2025-03-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Mickalene Followers & Lookalike \u2013 No overlay",
+     "spend": 17060.43
+    },
+    {
+     "name": "D_Mickalene Followers & Lookalike \u2013 PP 7s Delay",
+     "spend": 13519.51
+    },
+    {
+     "name": "C_Mickalene Followers & Lookalike \u2013 PP No overlay",
+     "spend": 13083.17
+    },
+    {
+     "name": "B_Mickalene Followers & Lookalike \u2013 7s Delay",
+     "spend": 3604.99
+    }
+   ]
   },
   {
    "name": "ShirinNes_TL_25 \u00b7 Purchases",
    "spend": 6198.86,
    "last": "2025-02-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 6198.86
+    }
+   ]
   },
   {
    "name": "JamesJean_Maze_25 \u00b7 Purchases",
    "spend": 2429.63,
    "last": "2025-02-21",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_James Followers",
+     "spend": 2429.63
+    }
+   ]
   },
   {
    "name": "JamesJean_Maze_25 \u00b7 Sign-ups",
    "spend": 34837.89,
    "last": "2025-02-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_James Followers & Lookalike",
+     "spend": 30021.03
+    },
+    {
+     "name": "E_James Followers & Lookalike - No overlay",
+     "spend": 2782.49
+    },
+    {
+     "name": "B_James Followers & Lookalike \u2013 Immediate",
+     "spend": 940.8
+    },
+    {
+     "name": "C_James Followers & Lookalike \u2013 10s Delay",
+     "spend": 940.43
+    },
+    {
+     "name": "D_James Followers & Lookalike \u2013 8s Delay",
+     "spend": 153.14
+    }
+   ]
   },
   {
    "name": "ShirinNes_TL_25 \u00b7 Sign-ups",
    "spend": 11118.79,
    "last": "2025-02-14",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 11118.79
+    }
+   ]
   },
   {
    "name": "WillCotto_Unicorn_25 \u2027 Draw",
    "spend": 5596.88,
    "last": "2025-02-14",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Will Followers & Lookalike USE",
+     "spend": 5596.88
+    }
+   ]
   },
   {
    "name": "BarryMcge_TL2_25 \u00b7 Purchases",
    "spend": 7998.36,
    "last": "2025-02-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 7998.36
+    }
+   ]
   },
   {
    "name": "BarryMcge_TL2_25 \u00b7 Sign-ups",
    "spend": 21895.88,
    "last": "2025-02-05",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 21895.88
+    }
+   ]
   },
   {
    "name": "AiWeiwei_Snake_25 - Sign-ups",
    "spend": 26881.19,
    "last": "2025-01-28",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C_Weiwei Followers & Lookalike \u2013 New",
+     "spend": 9611.76
+    },
+    {
+     "name": "B_Weiwei Followers & Lookalike \u2013 Copy",
+     "spend": 8764.65
+    },
+    {
+     "name": "A_Weiwei Followers & Lookalike",
+     "spend": 8504.78
+    }
+   ]
   },
   {
    "name": "DanielleM_Sand_25 \u00b7 Purchases",
    "spend": 8742.25,
    "last": "2025-01-24",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Danielle Followers & Lookalike",
+     "spend": 8742.25
+    }
+   ]
   },
   {
    "name": "Multiple_Amphorae_24 \u00b7 Draw",
    "spend": 18660.83,
    "last": "2025-01-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "AdamPendleton_Amphorae",
+     "spend": 7634.11
+    },
+    {
+     "name": "JoshSmith_Amphorae",
+     "spend": 4057.24
+    },
+    {
+     "name": "JordanCasteel_Amphorae",
+     "spend": 3056.22
+    },
+    {
+     "name": "JennyHolzer_Amphorae",
+     "spend": 2147.64
+    },
+    {
+     "name": "HarlandMiller_Amphorae",
+     "spend": 1765.62
+    }
+   ]
   },
   {
    "name": "DanielleM_Sand_25 \u00b7 Sign-ups",
    "spend": 15067.13,
    "last": "2025-01-23",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Danielle Followers & Lookalike",
+     "spend": 15067.13
+    }
+   ]
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK \u2013 Insiders",
    "spend": 19261.99,
    "last": "2024-10-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike - UK",
+     "spend": 19261.99
+    }
+   ]
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases",
    "spend": 8754.53,
    "last": "2024-10-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 8184.33
+    },
+    {
+     "name": "B_Lookalike \u2013 UK, 4%",
+     "spend": 570.2
+    }
+   ]
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK \u2013 Copy",
-   "spend": 1450.38,
+   "spend": 1450.39,
    "last": "2024-10-29",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike - UK",
+     "spend": 1450.39
+    }
+   ]
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Purchases - UK",
    "spend": 723.93,
    "last": "2024-10-25",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike - UK",
+     "spend": 723.93
+    }
+   ]
   },
   {
    "name": "GraysonPE_Magical_24 \u00b7 Sign-ups",
    "spend": 4418.46,
    "last": "2024-10-22",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 4418.46
+    }
+   ]
   },
   {
    "name": "Beeple_Tree_24 \u00b7 Sign-ups",
    "spend": 4011.96,
    "last": "2024-10-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 4011.96
+    }
+   ]
   },
   {
    "name": "Beeple_Tree_24 \u00b7 Purchases",
    "spend": 534.87,
    "last": "2024-10-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Lookalike",
+     "spend": 534.87
+    }
+   ]
   },
   {
    "name": "JohnsonTs_Moment_24 \u00b7 Draw",
    "spend": 1840.29,
    "last": "2024-10-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Buyers lookalike",
+     "spend": 1295.02
+    },
+    {
+     "name": "B | Johnson followers",
+     "spend": 545.27
+    }
+   ]
   },
   {
    "name": "TakuObata_BBoy_24 \u00b7 Draw",
    "spend": 1929.94,
    "last": "2024-10-01",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "D | Taku followers (JP)",
+     "spend": 1121.59
+    },
+    {
+     "name": "C | Buyers lookalike (JP)",
+     "spend": 651.08
+    },
+    {
+     "name": "A | Buyers lookalike (UK,US,CA,FR)",
+     "spend": 79.69
+    },
+    {
+     "name": "B | Taku followers (UK,US,CA,FR)",
+     "spend": 77.58
+    }
+   ]
   },
   {
    "name": "Vhils_Timed_24 \u00b7 Purchases",
    "spend": 5481.28,
    "last": "2024-09-26",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Lookalike",
+     "spend": 2783.72
+    },
+    {
+     "name": "A_Vhils_Followers",
+     "spend": 2697.56
+    }
+   ]
   },
   {
    "name": "Vhils_Timed_24 \u00b7 Sign-ups",
    "spend": 1733.35,
    "last": "2024-09-24",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Vhils_Followers",
+     "spend": 1259.81
+    },
+    {
+     "name": "B_Lookalike",
+     "spend": 473.54
+    }
+   ]
   },
   {
    "name": "Vhils_Timed_24 \u00b7 Sign-ups \u2013 Onboard",
    "spend": 1672.58,
    "last": "2024-09-24",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A_Vhils_Followers",
+     "spend": 1208.55
+    },
+    {
+     "name": "B_Lookalike",
+     "spend": 464.03
+    }
+   ]
   },
   {
    "name": "AiWeiwei_Dragon_24 \u00b7 Purchases",
    "spend": 10756.89,
    "last": "2024-09-06",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Lookalike",
+     "spend": 8760.33
+    },
+    {
+     "name": "A_Weiwei Followers",
+     "spend": 1996.56
+    }
+   ]
   },
   {
    "name": "AiWeiwei_Dragon_24 \u00b7 Sign-ups",
    "spend": 20026.52,
    "last": "2024-09-05",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B_Lookalike",
+     "spend": 14667.78
+    },
+    {
+     "name": "A_Weiwei Followers",
+     "spend": 5358.74
+    }
+   ]
   },
   {
    "name": "CristinAd_Tentacula_24 \u00b7 Pre-orders",
    "spend": 332.1,
    "last": "2024-09-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Buyers lookalike",
+     "spend": 332.1
+    }
+   ]
   },
   {
    "name": "HankWilli_onlybond_24 \u00b7 Purchases",
    "spend": 4375.12,
    "last": "2024-08-09",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Hank_followers",
+     "spend": 4375.12
+    }
+   ]
   },
   {
    "name": "HankWilli_onlybond_24 \u00b7 Sign ups",
    "spend": 6894.19,
    "last": "2024-08-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Buyers_Lookalike",
+     "spend": 6264.25
+    },
+    {
+     "name": "Hank_Followers",
+     "spend": 629.94
+    }
+   ]
   },
   {
    "name": "Magdalena_Mouse_24 \u00b7 Purchases",
    "spend": 513.35,
    "last": "2024-08-06",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Buyers lookalike",
+     "spend": 513.35
+    }
+   ]
   },
   {
    "name": "GabrielMo_DoubleTL_24 \u00b7 Sign-ups",
    "spend": 618.69,
    "last": "2024-07-03",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Buyers Lookalike",
+     "spend": 618.69
+    }
+   ]
   },
   {
    "name": "Mickalene_MayaInter_24 \u00b7 Purchases",
    "spend": 3258.81,
    "last": "2024-06-26",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Buyers Lookalike",
+     "spend": 2728.94
+    },
+    {
+     "name": "B | Mickalene Followers",
+     "spend": 529.87
+    }
+   ]
   },
   {
    "name": "Mickalene_MayaInter_24 \u00b7 Sign ups",
    "spend": 8970.93,
    "last": "2024-06-25",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Buyers Lookalike",
+     "spend": 7607.86
+    },
+    {
+     "name": "C | Mickalene Followers",
+     "spend": 897.86
+    },
+    {
+     "name": "B | Buyers Lookalike \u2013 A+ Creative",
+     "spend": 465.21
+    }
+   ]
   },
   {
    "name": "EddieMart_Scaffold_24 \u00b7 Purchases",
    "spend": 2025.72,
    "last": "2024-06-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Buyers lookalike",
+     "spend": 1349.75
+    },
+    {
+     "name": "B | Buyers lookalike \u2013 wider",
+     "spend": 675.97
+    }
+   ]
   },
   {
    "name": "MIWAKOMAT_JUN24  \u00b7 Purchases",
    "spend": 1047.68,
    "last": "2024-06-13",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Buyers Lookalike UK, EU, TW, KR, SG, JP",
+     "spend": 716.52
+    },
+    {
+     "name": "Buyers Lookalike JP",
+     "spend": 331.16
+    }
+   ]
   },
   {
    "name": "MIWAKOMAT_JUN24  \u00b7 Sign-ups",
    "spend": 4211.85,
    "last": "2024-06-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Buyers Lookalike UK, EU, TW, KR, SG, ID \u2013 SS",
+     "spend": 1660.97
+    },
+    {
+     "name": "Miwa followers \u2013 SS",
+     "spend": 1478.0
+    },
+    {
+     "name": "Buyers Lookalike JP \u2013 SS",
+     "spend": 686.34
+    },
+    {
+     "name": "Buyers Lookalike UK, EU, TW, KR, SG, ID",
+     "spend": 199.71
+    },
+    {
+     "name": "Buyers Lookalike JP",
+     "spend": 185.55
+    },
+    {
+     "name": "Miwa followers",
+     "spend": 1.28
+    }
+   ]
   },
   {
    "name": "JRMILANAPR \u00b7 Purchases",
    "spend": 2903.62,
    "last": "2024-05-02",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Advantage Plus",
+     "spend": 2508.86
+    },
+    {
+     "name": "B | Advantage Plus Milan",
+     "spend": 394.76
+    }
+   ]
   },
   {
    "name": "JRMILANAPR \u00b7 Sign-ups",
    "spend": 4624.3,
    "last": "2024-04-30",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B | Advantage Plus",
+     "spend": 2029.88
+    },
+    {
+     "name": "A | Buyers lookalike",
+     "spend": 1740.9
+    },
+    {
+     "name": "C | Advantage Plus IT & FR",
+     "spend": 601.59
+    },
+    {
+     "name": "D | Advantage Plus IT",
+     "spend": 251.93
+    }
+   ]
   },
   {
    "name": "RUSCHAACTU \u00b7 Purchases",
    "spend": 10485.33,
    "last": "2024-04-13",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B | LACMA Followers",
+     "spend": 6685.13
+    },
+    {
+     "name": "A | Lookalikes (Both)",
+     "spend": 3800.2
+    }
+   ]
   },
   {
    "name": "RUSCHAACTU \u00b7 Purchases \u2013 Replacement",
    "spend": 427.39,
    "last": "2024-04-13",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Lookalikes (Both)",
+     "spend": 400.44
+    },
+    {
+     "name": "B | LACMA Followers",
+     "spend": 26.95
+    }
+   ]
   },
   {
    "name": "RUSCHAACTU \u00b7 Sign-ups",
    "spend": 12233.94,
    "last": "2024-04-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C | LACMA Followers",
+     "spend": 4409.46
+    },
+    {
+     "name": "D | Dia Followers & Engagers",
+     "spend": 3019.4
+    },
+    {
+     "name": "B | Lookalike (Current)",
+     "spend": 2573.79
+    },
+    {
+     "name": "A | Lookalike (New)",
+     "spend": 2211.71
+    },
+    {
+     "name": "E | Advantage Plus USA",
+     "spend": 19.58
+    }
+   ]
   },
   {
    "name": "Inventory Test",
    "spend": 703.46,
    "last": "2024-03-06",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Inventory Test CT Only",
+     "spend": 514.78
+    },
+    {
+     "name": "Inventory Test",
+     "spend": 188.68
+    }
+   ]
   },
   {
    "name": "BALDSATIRE \u00b7 Draw Entries",
    "spend": 308.02,
    "last": "2024-02-21",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Lookalike",
+     "spend": 308.02
+    }
+   ]
   },
   {
    "name": "WEIWEIGUAR \u00b7 Purchase",
    "spend": 4677.97,
    "last": "2024-02-16",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Weiwei Followers",
+     "spend": 2363.19
+    },
+    {
+     "name": "C | Lookalike (Current)",
+     "spend": 2314.78
+    }
+   ]
   },
   {
    "name": "WEIWEIGUAR \u00b7 Sign-ups",
    "spend": 7131.94,
    "last": "2024-02-15",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C | Lookalike (Current)",
+     "spend": 4324.59
+    },
+    {
+     "name": "A | Weiwei Followers",
+     "spend": 1740.9
+    },
+    {
+     "name": "B | Lookalike (New)",
+     "spend": 1066.45
+    }
+   ]
   },
   {
    "name": "MATTSIERRA \u00b7 Purchases",
    "spend": 181.5,
    "last": "2024-02-08",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Lookalike (AA Buyers)",
+     "spend": 181.5
+    }
+   ]
   },
   {
    "name": "MATTSIERRA \u00b7 Sign-ups",
    "spend": 663.79,
    "last": "2024-02-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C | Lookalike (AA Buyers)",
+     "spend": 513.46
+    },
+    {
+     "name": "B | Lookalike (Matt Followers)",
+     "spend": 107.4
+    },
+    {
+     "name": "B | Lookalike (Matt Followers) \u2013 Copy",
+     "spend": 34.59
+    },
+    {
+     "name": "B | Lookalike (Matt Followers) \u2013 Copy 2",
+     "spend": 8.34
+    }
+   ]
   },
   {
    "name": "Test Boost Reach",
    "spend": 9.17,
    "last": "2024-02-07",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Test Boost Reach",
+     "spend": 9.17
+    }
+   ]
   },
   {
    "name": "TOMASTLE24 \u00b7 Purchases",
    "spend": 1009.76,
    "last": "2024-01-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "B | Tomas Sanchez Followers",
+     "spend": 401.37
+    },
+    {
+     "name": "A | Lookalike",
+     "spend": 392.74
+    },
+    {
+     "name": "C | Madspatial",
+     "spend": 215.65
+    }
+   ]
   },
   {
    "name": "TOMASTLE24 \u00b7 Sign-ups",
    "spend": 2586.17,
    "last": "2024-01-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C | Lookalike",
+     "spend": 1233.24
+    },
+    {
+     "name": "D | Tomas Sanchez Followers",
+     "spend": 1125.74
+    },
+    {
+     "name": "F | Madspatial",
+     "spend": 113.53
+    },
+    {
+     "name": "B | Avant Arte Insiders",
+     "spend": 67.91
+    },
+    {
+     "name": "E | Tomas Sanchez Engagers",
+     "spend": 28.96
+    },
+    {
+     "name": "A | Avant Arte Main Followers",
+     "spend": 16.79
+    }
+   ]
   },
   {
    "name": "ANISHTLE23 \u00b7 Purchases",
    "spend": 4602.8,
    "last": "2023-12-18",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C | Lookalike",
+     "spend": 3053.18
+    },
+    {
+     "name": "A | Avant Arte Main Followers",
+     "spend": 1049.88
+    },
+    {
+     "name": "B | Avant Arte Insiders",
+     "spend": 451.15
+    },
+    {
+     "name": "D | Retargeting",
+     "spend": 48.59
+    }
+   ]
   },
   {
    "name": "ANISHTLE23 \u00b7 Sign-ups",
    "spend": 734.06,
    "last": "2023-12-11",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "C | Lookalike",
+     "spend": 247.34
+    },
+    {
+     "name": "A | Avant Arte Main Followers",
+     "spend": 243.6
+    },
+    {
+     "name": "B | Avant Arte Insiders",
+     "spend": 243.12
+    }
+   ]
   },
   {
    "name": "CREWDTWILI \u00b7 Purchase",
    "spend": 153.74,
    "last": "2023-11-17",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | Avant Arte Main Followers",
+     "spend": 153.74
+    }
+   ]
   },
   {
    "name": "JJEANDES23 \u00b7 Purchase",
    "spend": 1756.79,
    "last": "2023-10-19",
-   "adsets": []
+   "adsets": [
+    {
+     "name": "A | James Jean Followers",
+     "spend": 758.86
+    },
+    {
+     "name": "D | Lookalike Audience",
+     "spend": 506.42
+    },
+    {
+     "name": "C | Avant Arte Main Followers",
+     "spend": 244.84
+    },
+    {
+     "name": "B | Avant Arte Insiders Followers",
+     "spend": 226.17
+    },
+    {
+     "name": "E | Retargeting",
+     "spend": 20.5
+    }
+   ]
   },
   {
    "name": "Facebook_BuyNow_Insect_11/18/2022",
    "spend": 0.0,
    "last": null,
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Broad 21+",
+     "spend": 0.0
+    }
+   ]
   },
   {
    "name": "Facebook_Inventory_Greene_11/23/2022",
    "spend": 0.0,
    "last": null,
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Broad 21+",
+     "spend": 0.0
+    }
+   ]
   },
   {
    "name": "Facebook_Inventory_SET1_122022",
    "spend": 0.0,
    "last": null,
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Broad",
+     "spend": 0.0
+    }
+   ]
   },
   {
    "name": "Facebook_Inventory_SET2_122022",
    "spend": 0.0,
    "last": null,
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Broad",
+     "spend": 0.0
+    }
+   ]
   },
   {
    "name": "Facebook_Signup_Homepage_Evergreen",
    "spend": 0.0,
    "last": null,
-   "adsets": []
+   "adsets": [
+    {
+     "name": "Broad 21+ _ Video",
+     "spend": 0.0
+    }
+   ]
   }
  ]
 }

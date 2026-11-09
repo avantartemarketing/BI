@@ -122,11 +122,11 @@ check(tl.code_of("CindySher_TL_25· Sign-ups") == "CindySher_TL_25" and tl.code_
 PROFILE = {
     "n": 8, "signups": 1282.0, "sessions": 25782.0, "units": 339.0, "orders": 272.0,
     "signup_order_rate": 0.103, "purchases_per_order": 1.182, "cost_per_signup": 9.809, "cost_per_sale": 25.585,
-    "share_signups": {"aa_email": 0.176, "aa_social": 0.053, "referral_artist": 0.029, "search_direct_other": 0.085, "paid": 0.657},
-    "share_sessions": {"aa_email": 0.2, "aa_social": 0.05, "referral_artist": 0.05, "search_direct_other": 0.3, "paid": 0.4},
-    "share_units": {"aa_email": 0.3, "aa_social": 0.08, "referral_artist": 0.1, "search_direct_other": 0.295, "paid": 0.225},
-    "conv": {"aa_email": 0.05, "aa_social": 0.03, "referral_artist": 0.02, "search_direct_other": 0.01, "paid": 0.08},
-    "signup_order_rate_by_group": {"aa_email": 0.215, "aa_social": 0.148, "referral_artist": 0.172, "search_direct_other": 0.216, "paid": 0.064},
+    "share_signups": {"aa_email": 0.176, "aa_social": 0.053, "referral_artist": 0.029, "organic_search": 0.025, "organic_other": 0.06, "paid": 0.657},
+    "share_sessions": {"aa_email": 0.2, "aa_social": 0.05, "referral_artist": 0.05, "organic_search": 0.1, "organic_other": 0.2, "paid": 0.4},
+    "share_units": {"aa_email": 0.3, "aa_social": 0.08, "referral_artist": 0.1, "organic_search": 0.095, "organic_other": 0.2, "paid": 0.225},
+    "conv": {"aa_email": 0.05, "aa_social": 0.03, "referral_artist": 0.02, "organic_search": 0.008, "organic_other": 0.012, "paid": 0.08},
+    "signup_order_rate_by_group": {"aa_email": 0.215, "aa_social": 0.148, "referral_artist": 0.172, "organic_search": 0.19, "organic_other": 0.23, "paid": 0.064},
 }
 for key in ("signups", "sessions", "units"):
     PROFILE[f"{key}_by_group"] = {g: PROFILE[f"share_{key}"][g] * PROFILE[key] for g in tl.GROUPS}

@@ -74,9 +74,12 @@ SAVED_PATH = APP / "baskets.json"
 # it has units (BENCHMARK_SPEC §4.2).
 PEOPLE_PATH = APP / "release_people.csv"
 
-# The five display groups (docs/DATA_MODEL.md §1.3). Order matters: it is the
-# order the profile dicts and the per-channel table are written in.
-GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"]
+# The six display groups (docs/DATA_MODEL.md §1.3; etl/build.py DISPLAY_GROUPS
+# names their channels). Order matters: it is the order the profile dicts and
+# the per-channel table are written in. Organic Search and Organic Other were
+# one group, search_direct_other, until 9 November 2026; a panel written before
+# the split has to be regrouped (release_clusters.py --regroup) before it reads.
+GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "organic_other", "paid"]
 
 READY_WINDOW_DAYS = 365   # "last 12 months" for the all_12m basket
 MIN_MEMBERS = 1           # an empty basket cannot be used; one launch can (§3.2) - its own
@@ -741,7 +744,7 @@ def _shares(rows: pd.DataFrame, prefix: str) -> dict[str, float]:
     """Median share per group, renormalised to sum to 1.
 
     Each group's median is taken over a different subset of launches, so the
-    five rarely sum to 1 on their own. Renormalising is what makes
+    six rarely sum to 1 on their own. Renormalising is what makes
     `share[g] * total` sum back to the headline median (§3.2).
     """
     raw = {g: _median(rows, f"{prefix}{g}") for g in GROUPS}

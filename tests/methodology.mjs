@@ -35,8 +35,8 @@ const says = (text, why) => assert.ok(exFlat.includes(flat(text)), `the example 
 // the release and its basket, as the example states them
 const release = { edition_size: 300, unit_price: 1500 };
 const median = 240;
-const share = { aa_email: 0.40, aa_social: 0.05, referral_artist: 0.025, search_direct_other: 0.325, paid: 0.20 };
-const sessions = { aa_email: 8000, aa_social: 2000, referral_artist: 1000, search_direct_other: 5000, paid: 4000 };
+const share = { aa_email: 0.40, aa_social: 0.05, referral_artist: 0.025, organic_search: 0.075, organic_other: 0.25, paid: 0.20 };
+const sessions = { aa_email: 8000, aa_social: 2000, referral_artist: 1000, organic_search: 1500, organic_other: 3500, paid: 4000 };
 const costed = 6, cpp = 200;
 const profile = {
   units: median, units_by_group: Object.fromEntries(GROUPS.map((g) => [g, share[g] * median])),
@@ -51,14 +51,14 @@ says(`**K = ${release.edition_size} ÷ ${median} = ${fmt(t.k, 2)}**`, "K = targe
 assert.strictEqual(t.k, 1.25);
 
 // the channel split: each group's median share of the median launch, times K
-const rows = { aa_email: "AA Email", aa_social: "AA Meta", referral_artist: "Artist's own channels", search_direct_other: "Search / direct / other", paid: "Paid" };
+const rows = { aa_email: "AA Email", aa_social: "AA Meta", referral_artist: "Artist's own channels", organic_search: "Organic Search", organic_other: "Organic Other", paid: "Paid" };
 const num = (v) => (Number.isInteger(v) ? fmt(v) : fmt(v, 1));
 for (const g of GROUPS) {
   const bm = profile.units_by_group[g], tg = t.units_by_group[g];
   assert.ok(Math.abs(tg - bm * t.k) < 1e-9, `${g}: target = benchmark x K`);
   says(`| ${rows[g]} | ${fmtPct(share[g], share[g] * 100 % 1 ? 1 : 0)} | ${num(bm)} | ${num(tg)} |`, `${g}'s row`);
 }
-says(`| All five | 100% | ${median} | ${release.edition_size} |`, "the groups sum to the median and to the edition");
+says(`| All six | 100% | ${median} | ${release.edition_size} |`, "the groups sum to the median and to the edition");
 assert.ok(Math.abs(GROUPS.reduce((a, g) => a + t.units_by_group[g], 0) - release.edition_size) < 1e-9);
 
 // inside a group: the order-split medians, renormalised (etl/build.py _group_channel_split)

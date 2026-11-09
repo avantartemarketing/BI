@@ -17,7 +17,10 @@
  * names, with the basket's full medians as the *All fields; profileOf turns
  * that block back into a profile so the switches can be re-read in place.
  */
-export const GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
+/* The six display groups, as etl/baskets.py GROUPS and etl/build.py
+ * DISPLAY_GROUPS have them (Organic Search and Organic Other were one group,
+ * search_direct_other, until 9 November 2026). */
+export const GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "organic_other", "paid"];
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const byGroup = (src, f) => Object.fromEntries(GROUPS.map((g) => [g, f(g, num((src || {})[g]))]));

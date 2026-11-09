@@ -47,20 +47,24 @@ check(close(day2["AA Email Man"], 40.0 + 20 * 10 / 470), f"day 2's Direct lands 
 check(build.redistribute_untracked(df).equals(build.redistribute_channel(df, "Untracked")), "the untracked fold is the same rule")
 sh = build.channel_share(df, "Direct")
 check(close(sh["entries"], 90 / 560, 1e-3), f"Direct's share of the frame's entries: {sh}")
-shg = build.channel_share(df, "Direct", within_group=True)
-check(close(shg["entries"], 90 / 150, 1e-3), f"and of its own group: {shg}")
+check(build.channel_share(df, "Direct", within_group=True)["entries"] == 1.0, "and of its own group, Organic Other, which nothing else here is in")
+with_other = pd.concat([df, df.iloc[[0]].assign(channel="Referral Other", Draw_Entries_Eligible_Units=10.0)], ignore_index=True)
+shg = build.channel_share(with_other, "Direct", within_group=True)
+check(close(shg["entries"], 90 / 100, 1e-3), f"and of Organic Other beside a referral: {shg}")
 
 # ---- the benchmark's split, spread the same way
 profile = {"units": 800.0, "sessions": 40000.0, "entries": 1000.0,
-           "units_by_group": {"aa_email": 300.0, "aa_social": 50.0, "referral_artist": 30.0, "search_direct_other": 220.0, "paid": 200.0},
-           "sessions_by_group": {"aa_email": 10000.0, "aa_social": 2000.0, "referral_artist": 500.0, "search_direct_other": 7500.0, "paid": 20000.0},
+           "units_by_group": {"aa_email": 300.0, "aa_social": 50.0, "referral_artist": 30.0, "organic_search": 70.0, "organic_other": 150.0, "paid": 200.0},
+           "sessions_by_group": {"aa_email": 10000.0, "aa_social": 2000.0, "referral_artist": 500.0, "organic_search": 2500.0, "organic_other": 5000.0, "paid": 20000.0},
            "share_units": {}, "share_sessions": {}, "conv": {g: 0.03 for g in baskets.GROUPS}}
 norm = {"units": 0.5, "sessions": 0.6, "entries": 0.55, "n": 20, "recentMonths": 18}
 sp = build.spread_profile(profile, norm)
 ug = sp["units_by_group"]
 check(close(sum(ug.values()), 800.0), f"the median units do not move: {sum(ug.values())}")
-rest = 800.0 - 110.0
-check(close(ug["search_direct_other"], 110.0 + 110.0 * 110.0 / rest) and close(ug["paid"], 200.0 + 110.0 * 200.0 / rest), f"Direct's half of the group lands pro rata: {ug}")
+# Direct is half of Organic Other's 150: 75 leave the group for every group, Organic Search included
+rest = 800.0 - 75.0
+check(close(ug["organic_other"], 75.0 + 75.0 * 75.0 / rest) and close(ug["paid"], 200.0 + 75.0 * 200.0 / rest)
+      and close(ug["organic_search"], 70.0 + 75.0 * 70.0 / rest), f"Direct's half of Organic Other lands pro rata: {ug}")
 check(close(sum(sp["sessions_by_group"].values()), 40000.0) and sp["conv"] == profile["conv"], "sessions kept, conversion held")
 check(build.spread_profile(profile, None) is profile, "no norm, no change")
 
@@ -142,12 +146,14 @@ check("channels" in var and "funnelByGroup" in var and "paid" in var and "target
       f"the differing blocks ride under the variant: {sorted(var)}")
 check("hero" not in var or abs(var["hero"]["now"] - snap["hero"]["now"]) <= 1, f"the hero's secured units do not move: {var.get('hero', {}).get('now')} vs {snap['hero']['now']}")
 check(all(k not in var for k in ("economics", "untracked", "directShare", "email", "social", "draw", "edition", "id")), "what Direct cannot touch is not in the variant")
-sdo_t = var["groupTargets"]["search_direct_other"]["units"]
-check(sdo_t < snap["groupTargets"]["search_direct_other"]["units"] and close(sum(g["units"] for g in var["groupTargets"].values()), sum(g["units"] for g in snap["groupTargets"].values()), 1e-6),
-      f"the target split moves the same way and still adds up: {sdo_t} vs {snap['groupTargets']['search_direct_other']['units']}")
-sdo = lambda chans: next(c for c in chans if c["key"] == "search_direct_other")
+sdo_t = var["groupTargets"]["organic_other"]["units"]
+check(sdo_t < snap["groupTargets"]["organic_other"]["units"] and close(sum(g["units"] for g in var["groupTargets"].values()), sum(g["units"] for g in snap["groupTargets"].values()), 1e-6),
+      f"the target split moves the same way and still adds up: {sdo_t} vs {snap['groupTargets']['organic_other']['units']}")
+sdo = lambda chans: next(c for c in chans if c["key"] == "organic_other")
+osr = lambda chans: next(c for c in chans if c["key"] == "organic_search")
 paid = lambda chans: next(c for c in chans if c["key"] == "paid")
-check(sdo(var["channels"])["now"] < sdo(snap["channels"])["now"], f"Search/direct/other loses Direct: {sdo(var['channels'])['now']} < {sdo(snap['channels'])['now']}")
+check(sdo(var["channels"])["now"] < sdo(snap["channels"])["now"], f"Organic Other loses Direct: {sdo(var['channels'])['now']} < {sdo(snap['channels'])['now']}")
+check(osr(var["channels"])["now"] > osr(snap["channels"])["now"], f"Organic Search takes its share too: {osr(var['channels'])['now']} > {osr(snap['channels'])['now']}")
 check(paid(var["channels"])["now"] > paid(snap["channels"])["now"], f"paid gains its share: {paid(var['channels'])['now']} > {paid(snap['channels'])['now']}")
 check(var["paid"]["entriesToDate"] > snap["paid"]["entriesToDate"] and var["paid"]["cumRoi"] > snap["paid"]["cumRoi"], "paid ROI reads the entries it is given")
 # each channel is published to a tenth of a unit, so two builds of the same

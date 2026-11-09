@@ -1,13 +1,13 @@
 {
  "window": [
   "2023-01-01",
-  "2026-10-26"
+  "2026-11-08"
  ],
- "channel_days": 395846,
+ "channel_days": 401685,
  "columns": {
   "Page_Views_Total": {
-   "export": 6169496.0,
-   "rebuilt": 6169496.0,
+   "export": 6295325.0,
+   "rebuilt": 6295325.0,
    "pct": 0.0,
    "kind": "counts",
    "within_tolerance": true,
@@ -15,8 +15,8 @@
    "max_abs_diff": 0.0
   },
   "Sessions_Total": {
-   "export": 2973802.0,
-   "rebuilt": 2973802.0,
+   "export": 3056988.0,
+   "rebuilt": 3056988.0,
    "pct": 0.0,
    "kind": "counts",
    "within_tolerance": true,
@@ -24,17 +24,17 @@
    "max_abs_diff": 0.0
   },
   "Draw_Entries": {
-   "export": 33005.0,
-   "rebuilt": 33006.0,
-   "pct": 3.0298439630359037e-05,
+   "export": 33620.0,
+   "rebuilt": 33621.0,
+   "pct": 2.97441998810232e-05,
    "kind": "people",
    "within_tolerance": true,
    "channel_days_differing": 1,
    "max_abs_diff": 1.0
   },
   "Preorder_App": {
-   "export": 13753.0,
-   "rebuilt": 13753.0,
+   "export": 14049.0,
+   "rebuilt": 14049.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -42,8 +42,8 @@
    "max_abs_diff": 0.0
   },
   "Collectors_Eligible_Entries": {
-   "export": 27793.0,
-   "rebuilt": 27793.0,
+   "export": 28319.0,
+   "rebuilt": 28319.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -51,8 +51,8 @@
    "max_abs_diff": 0.0
   },
   "Draw_Entry_Eligible": {
-   "export": 13614.0,
-   "rebuilt": 13614.0,
+   "export": 13715.0,
+   "rebuilt": 13715.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -60,8 +60,8 @@
    "max_abs_diff": 0.0
   },
   "Draw_Winner": {
-   "export": 15947.0,
-   "rebuilt": 15947.0,
+   "export": 16641.0,
+   "rebuilt": 16641.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -69,8 +69,8 @@
    "max_abs_diff": 0.0
   },
   "Preorder_App_Eligable": {
-   "export": 11735.0,
-   "rebuilt": 11735.0,
+   "export": 11994.0,
+   "rebuilt": 11994.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -78,8 +78,8 @@
    "max_abs_diff": 0.0
   },
   "Preorder_Winner": {
-   "export": 9000.0,
-   "rebuilt": 9000.0,
+   "export": 9365.0,
+   "rebuilt": 9365.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -87,8 +87,8 @@
    "max_abs_diff": 0.0
   },
   "Unique_Customers": {
-   "export": 24793.0,
-   "rebuilt": 24793.0,
+   "export": 25568.0,
+   "rebuilt": 25568.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -96,17 +96,17 @@
    "max_abs_diff": 0.0
   },
   "Customer_Draw": {
-   "export": 5878.0,
-   "rebuilt": 5873.0,
-   "pct": -0.0008506294658046955,
+   "export": 6066.0,
+   "rebuilt": 6059.0,
+   "pct": -0.0011539729640619848,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 4,
+   "channel_days_differing": 6,
    "max_abs_diff": 2.0
   },
   "Customer_Preorder_App": {
-   "export": 8599.0,
-   "rebuilt": 8599.0,
+   "export": 8853.0,
+   "rebuilt": 8853.0,
    "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
@@ -114,17 +114,17 @@
    "max_abs_diff": 0.0
   },
   "Customer_Private_Room": {
-   "export": 4712.0,
-   "rebuilt": 4669.0,
-   "pct": -0.009125636672325976,
+   "export": 4850.0,
+   "rebuilt": 4809.0,
+   "pct": -0.008453608247422681,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 33,
+   "channel_days_differing": 35,
    "max_abs_diff": 7.0
   },
   "Customers_Presale_Offered": {
-   "export": 204.0,
-   "rebuilt": 204.0,
+   "export": 206.0,
+   "rebuilt": 206.0,
    "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
@@ -132,8 +132,8 @@
    "max_abs_diff": 0.0
   },
   "Customer_Other": {
-   "export": 5448.0,
-   "rebuilt": 5448.0,
+   "export": 5641.0,
+   "rebuilt": 5641.0,
    "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
@@ -141,8 +141,8 @@
    "max_abs_diff": 0.0
   },
   "Draw_Entry_Eligible_No_Conv": {
-   "export": 10910.0,
-   "rebuilt": 10910.0,
+   "export": 10771.0,
+   "rebuilt": 10771.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -150,8 +150,8 @@
    "max_abs_diff": 0.0
   },
   "Preorder_App_Eligible_No_Conv": {
-   "export": 3171.0,
-   "rebuilt": 3171.0,
+   "export": 3144.0,
+   "rebuilt": 3144.0,
    "pct": 0.0,
    "kind": "people",
    "within_tolerance": true,
@@ -159,8 +159,8 @@
    "max_abs_diff": 0.0
   },
   "Total_Product_Units": {
-   "export": 28076.0,
-   "rebuilt": 28076.0,
+   "export": 29081.0,
+   "rebuilt": 29081.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
@@ -168,17 +168,17 @@
    "max_abs_diff": 0.0
   },
   "Product_Units_Draw": {
-   "export": 6182.0,
-   "rebuilt": 6177.0,
-   "pct": -0.0008087997411840828,
+   "export": 6443.0,
+   "rebuilt": 6435.0,
+   "pct": -0.0012416576129132392,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 4,
+   "channel_days_differing": 6,
    "max_abs_diff": 2.0
   },
   "Product_Units_Preorder_App": {
-   "export": 9682.0,
-   "rebuilt": 9682.0,
+   "export": 9985.0,
+   "rebuilt": 9985.0,
    "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
@@ -186,17 +186,17 @@
    "max_abs_diff": 0.0
   },
   "Product_Units_Private_Room": {
-   "export": 5371.0,
-   "rebuilt": 5313.0,
-   "pct": -0.010798733941537889,
+   "export": 5527.0,
+   "rebuilt": 5472.0,
+   "pct": -0.00995114890537362,
    "kind": "route",
    "within_tolerance": true,
-   "channel_days_differing": 33,
+   "channel_days_differing": 35,
    "max_abs_diff": 10.0
   },
   "Product_Units_Presale_Offered": {
-   "export": 239.0,
-   "rebuilt": 239.0,
+   "export": 244.0,
+   "rebuilt": 244.0,
    "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
@@ -204,8 +204,8 @@
    "max_abs_diff": 0.0
   },
   "Product_Units_Other": {
-   "export": 6665.0,
-   "rebuilt": 6665.0,
+   "export": 6945.0,
+   "rebuilt": 6945.0,
    "pct": 0.0,
    "kind": "route",
    "within_tolerance": true,
@@ -213,8 +213,8 @@
    "max_abs_diff": 0.0
   },
   "Draw_Entries_Total_Units": {
-   "export": 32931.0,
-   "rebuilt": 32931.0,
+   "export": 33712.0,
+   "rebuilt": 33712.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
@@ -222,8 +222,8 @@
    "max_abs_diff": 0.0
   },
   "Draw_Entries_Total_Units_No_Conv": {
-   "export": 10297.0,
-   "rebuilt": 10297.0,
+   "export": 10057.0,
+   "rebuilt": 10057.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,
@@ -231,8 +231,8 @@
    "max_abs_diff": 0.0
   },
   "Draw_Entries_Eligible_Units": {
-   "export": 27271.0,
-   "rebuilt": 27271.0,
+   "export": 27937.0,
+   "rebuilt": 27937.0,
    "pct": 0.0,
    "kind": "units",
    "within_tolerance": true,

@@ -5,6 +5,13 @@ Reproduce with `node server/bigquery.js --write --full && python3 etl/analysis/r
 the script prints everything quoted here and writes `data/release_clusters.csv` (every release's
 window, features and basket) and `data/release_cluster_baskets.json` (the quartile tables).*
 
+*Regrouped on 2026-11-09 (`release_clusters.py --regroup`): the Search / direct / other group
+this analysis reads was split into Organic Search and Organic Other (Direct, Other, AA Other and
+the non-artist referrals) across the dashboard, and the panel's per-group columns were read
+again on the export through that day, the windows, features, clusters and these tables
+untouched. The tables below still name the group as it was; the next full run clusters on
+six session shares and rewrites them.*
+
 ## 1. The question, and the short answer
 
 The target model plans every channel and funnel stage from quartiles of one pooled panel
@@ -413,10 +420,11 @@ Raw channels, share of sessions (median per basket):
    (paid share, then size), so a re-run that changes the ranking would need the names
    checked. Each run writes the channel attribution it read, the export's last day and its
    own date on every row (`attribution_basis`, `attribution_through`, `panel_built`), and
-   each launch's Direct share of its Search/direct/other group (`direct_in_group_sessions`,
-   `_entries`, `_units`), which the dashboard's Direct switch reads so its share and the split
-   it spreads come from one pull. What a re-run needs is in the README ("Re-running the
-   benchmark panel").
+   each launch's Direct share of its Organic Other group (`direct_in_group_sessions`,
+   `_entries`, `_units`; of the Search/direct/other group before 9 November 2026), which the
+   dashboard's Direct switch reads so its share and the split it spreads come from one pull.
+   What a re-run needs is in the README ("Re-running the benchmark panel"); a change to the
+   groups alone takes `--regroup`, which leaves the clusters as they are.
 
 **Caveats.** 81 of the 108 windows are inferred (validated above, but inferred). Oversubscription
 is measured against units *sold*, not the edition size, which the funnel does not carry, so an

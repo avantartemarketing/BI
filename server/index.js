@@ -170,7 +170,7 @@ require("./agent").install(app, {
 
 // the display groups a release can set aside - "not running paid", "the
 // artist has no channels of their own" (BENCHMARK_SPEC 4.3; etl/baskets.py GROUPS)
-const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
+const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "organic_other", "paid"];
 // the inputs of the quartile-lever model, retired 2026-09-23 (docs/DATA_MODEL.md
 // §3), and the artist posting tier, retired 2026-10-07 (the artist-posts
 // benchmark reads every completed campaign): a save drops them from a release
