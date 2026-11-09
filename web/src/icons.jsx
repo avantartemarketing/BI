@@ -55,6 +55,7 @@ export const Scatter = ({ w = 14 }) => I('<circle cx="5" cy="10" r="1.6"></circl
 export const Slack = ({ w = 15 }) => I('<path d="M6 2.5v11M10 2.5v11M2.5 6h11M2.5 10h11"></path>', w);
 export const Diamond = ({ w = 14, filled = true }) => <svg width={w} height={w} viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1l5 5-5 5-5-5z" fill={filled ? "#5e6ad2" : "none"} stroke={filled ? "#5e6ad2" : "#8a8a8e"} strokeWidth="1.3" /></svg>;
 export const Warn = ({ w = 14 }) => <svg width={w} height={w} viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.2l6 10.6H2z" fill="#e8743b" /><path d="M8 6.4v3.2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" /><circle cx="8" cy="11.4" r="0.85" fill="#fff" /></svg>;
+export const Refresh = ({ w = 13 }) => I('<path d="M13 8a5 5 0 1 1-1.5-3.6"></path><path d="M13 2.5v3h-3"></path>', w, 1.5);
 export const Spinner = ({ w = 11 }) => <svg className="spin" width={w} height={w} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M8 2a6 6 0 1 1-6 6" /></svg>;
 export const Meta = () => <span style={{ width: 16, height: 16, flex: "0 0 16px", borderRadius: 4, background: "#1877f2", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700 }} aria-hidden="true">M</span>;
 

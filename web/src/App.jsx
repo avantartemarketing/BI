@@ -51,9 +51,14 @@ const COMPARE_PREF = "compareTo";
 const readComparePref = () => { try { return localStorage.getItem(COMPARE_PREF) === "benchmark" ? "benchmark" : "target"; } catch { return "target"; } };
 
 /* The server's refresh status, polled every 5 minutes (every 15 s while a
- * refresh is in flight). undefined = still asking, null = could not read it. */
+ * refresh is in flight). undefined = still asking, null = could not read it.
+ * `start` asks the server for a refresh now (POST /api/refresh) and takes the
+ * status it answers with, so the page sees running:true at once and reloads
+ * when the run lands. Resolves false when the server would not start one. */
 function useRefreshStatus() {
   const [st, setSt] = useState(undefined);
+  const start = useCallback(() => fetch("/api/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+    .then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setSt(d); return !!d; }).catch(() => false), []);
   useEffect(() => {
     let live = true;
     const poll = () => fetch("/api/refresh/status").then((r) => (r.ok ? r.json() : null)).then((d) => { if (live) setSt(d); }).catch(() => { if (live) setSt(null); });
@@ -66,7 +71,7 @@ function useRefreshStatus() {
     const id = setInterval(() => fetch("/api/refresh/status").then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) setSt(d); }).catch(() => {}), 15 * 1000);
     return () => clearInterval(id);
   }, [st && st.running]);
-  return st;
+  return [st, start];
 }
 
 export default function App() {
@@ -82,7 +87,7 @@ export default function App() {
   const setDirectSpread = (v) => { setDirectSpreadState(v); try { localStorage.setItem(DIRECT_PREF, v ? "1" : "0"); } catch { /* per-browser convenience only */ } };
   const [compareTo, setCompareToState] = useState(readComparePref);
   const setCompareTo = (v) => { setCompareToState(v); try { localStorage.setItem(COMPARE_PREF, v); } catch { /* per-browser convenience only */ } };
-  const st = useRefreshStatus();
+  const [st, startRefresh] = useRefreshStatus();
 
   useEffect(() => { fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {}); }, []);
   const loadIndex = useCallback(() => getJSON("/api/index").then((ix) => { setIndex(ix); return ix; }), []);
@@ -139,7 +144,7 @@ export default function App() {
           <Permissions me={me} onMenu={() => setNav(true)} />
         ) : route.view === "release" ? (
           <ReleasePage snap={snap} snapError={snapError} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
-            directSpread={directSpread} setDirectSpread={setDirectSpread} compareTo={compareTo} setCompareTo={setCompareTo} onSaved={onSaved} onRefreshed={onRefreshed} onOpen={pick} onMenu={() => setNav(true)} />
+            directSpread={directSpread} setDirectSpread={setDirectSpread} compareTo={compareTo} setCompareTo={setCompareTo} onSaved={onSaved} onRefreshed={onRefreshed} onRefresh={startRefresh} onOpen={pick} onMenu={() => setNav(true)} />
         ) : (
           <Releases groups={groups} asOf={index && index.asOf} onPick={pick} />
         )}

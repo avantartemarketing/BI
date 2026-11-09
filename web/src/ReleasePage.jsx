@@ -7,7 +7,7 @@ import { initial as watchInitial, step as watchStep } from "../../shared/refresh
 import { freshness } from "../../shared/freshness.mjs";
 import { Avatar, Badge, Menu, MenuItem, Seg, useMenu } from "./ui.jsx";
 import { fmt, fmtDay } from "./format.mjs";
-import { Cal, Caret, Chev, Clock, Display, Hamburger, ProgressRing, Ring, Warn, X } from "./icons.jsx";
+import { Cal, Caret, Chev, Clock, Display, Hamburger, ProgressRing, Refresh, Ring, Spinner, Warn, X } from "./icons.jsx";
 import { wordsOf } from "./vocab.mjs";
 import { releaseClock } from "./sections.mjs";
 import { canBenchmark, canTarget, compareOf } from "./compare.mjs";
@@ -113,10 +113,34 @@ function CompareSwitch({ snap, vs, onChange }) {
   );
 }
 
+/* The header's refresh button, beside the freshness line: starts a pull and
+ * rebuild now (POST /api/refresh) instead of waiting for the hourly one. It
+ * spins while any refresh runs, whoever started it, and the page reloads when
+ * that run lands (Strips, shared/refreshWatch.mjs). */
+function RefreshButton({ st, onRefresh }) {
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const running = !!(st && st.running);
+  const clock = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const title = failed ? "Could not start a refresh - try signing in again"
+    : running ? `Refreshing since ${st.runningSince ? clock(st.runningSince) : "just now"}; this page reloads when it lands`
+    : "Refresh data now: pulls the latest from BigQuery and rebuilds the pages, a few minutes";
+  const go = () => {
+    setBusy(true); setFailed(false);
+    onRefresh().then((ok) => { if (!ok) { setFailed(true); setTimeout(() => setFailed(false), 6000); } }).finally(() => setBusy(false));
+  };
+  return (
+    <button className={`ib refreshb${failed ? " bad" : ""}`} aria-label={running ? "Refresh running" : "Refresh data now"} title={title}
+      onClick={go} disabled={busy || running}>
+      {busy || running ? <Spinner w={12} /> : <Refresh />}
+    </button>
+  );
+}
+
 /* The warning strip under the header: stale data, a failed refresh, a
  * coverage gap, no targets, one line's basis. Only when something needs
  * saying; one line each. */
-function Strips({ snap, st, onRefreshed, line, lines, onSetup }) {
+function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup }) {
   const [hidden, setHidden] = useState({});
   const strips = [];
   // stale: built from data older than the last full day (shared/refreshWatch.mjs says when to reload)
@@ -130,7 +154,7 @@ function Strips({ snap, st, onRefreshed, line, lines, onSetup }) {
     if (r.reload) onRefreshed();
   }, [st && st.at, st && st.running]);
   const [retrying, setRetrying] = useState(false);
-  const retry = () => { setRetrying(true); fetch("/api/refresh", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {}).finally(() => setTimeout(() => setRetrying(false), 4000)); };
+  const retry = () => { setRetrying(true); onRefresh().finally(() => setRetrying(false)); };
   if (ageDays >= 2 && !snap.catalogue) {
     const clock = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
     const through = fmtDay(new Date(snap.asOf + "T00:00:00Z"), true);
@@ -164,7 +188,7 @@ function Strips({ snap, st, onRefreshed, line, lines, onSetup }) {
   ));
 }
 
-export default function ReleasePage({ snap, snapError, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, onSaved, onRefreshed, onOpen, onMenu }) {
+export default function ReleasePage({ snap, snapError, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
   const tab = route.tab || "overview";
   const setTab = (t) => setRoute({ ...route, tab: t, basket: false });
   const [horizon, setHorizon] = useState("today");
@@ -217,11 +241,12 @@ export default function ReleasePage({ snap, snapError, row, asOf, st, route, set
         <span style={{ flex: 1 }} />
         {tab === "targets" && <span id="phead-status" style={{ display: "inline-flex", alignItems: "center", gap: 8 }} />}
         {f && f.label && tab === "overview" && <span className="fresh" title={[f.head, f.body].filter(Boolean).join(" · ")}>{f.warn ? "⚠ " : ""}{f.label}</span>}
+        {tab === "overview" && onRefresh && <RefreshButton st={st} onRefresh={onRefresh} />}
         {tab === "overview" && <DisplayMenu directSpread={directSpread} setDirectSpread={setDirectSpread} snap={snap} />}
       </header>
       {tab === "overview" && (
         <>
-          <Strips snap={snap} st={st} onRefreshed={onRefreshed} line={lineVariant ? view.line : null} lines={lines} onSetup={() => setTab("targets")} />
+          <Strips snap={snap} st={st} onRefreshed={onRefreshed} onRefresh={onRefresh} line={lineVariant ? view.line : null} lines={lines} onSetup={() => setTab("targets")} />
           <div className="chips">
             <StatusChip snap={snap} row={row} asOf={asOf} />
             <DatesChip snap={snap} />
