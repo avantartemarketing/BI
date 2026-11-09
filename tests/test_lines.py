@@ -112,9 +112,12 @@ while d <= TODAY:
     dsa, dul = (d - announce).days, (launch - d).days
     for ch, sess, ent in CH:
         s_, e_ = sess * (1 + 0.1 * rnd.random()), ent * 10
+        # the converting units (docs 7) as the rebuilt funnel carries them: a
+        # tenth of the entry units claimed, a fifth waiting as pre-orders, half as plain entries
         rows.append({"channel": ch, "event_date": d, "simple_release_name": name, "campaign_stage": "launch",
                      "Sessions_Total": s_, "Total_Product_Units": e_ * 0.3, "Product_Units_Private_Room": 0.0,
                      "Draw_Entries_Total_Units_No_Conv": e_ * 0.7, "Draw_Entries_Eligible_Units": e_,
+                     "Conv_Units_Claimed": e_ * 0.1, "Conv_Units_Pending_Preorder": e_ * 0.2, "Conv_Units_Pending_Draw": e_ * 0.5,
                      "days_since_announcement": dsa, "days_until_launch": dul, "pct_days_since_announcement": dsa / LL, "pct_days_until_launch": dul / LL})
     d += timedelta(days=1)
 at = pd.DataFrame(rows)
@@ -124,14 +127,16 @@ while d <= TODAY:
     sp_rows.append({"campaign_name": base["campaign_name"], "spend_date": d, "impressions": 1000, "reach": 800, "link_clicks": 40, "spend": 500.0, "adset_name": "Bricks"})
     d += timedelta(days=1)
 spend = pd.DataFrame(sp_rows)
-# the draws: one per work, entries by day and channel; the prints draw a
-# third of the entries, the bricks two thirds
+# the draws: one per work, entries by day and channel; each print draws two
+# entries for each one a brick draws (six tenths of the entries on the three
+# prints, four tenths on the four bricks), ten a channel-day in all, the
+# funnel's eligible units; each draw's conversions are its share of the funnel's
 draws, patterns, DRAW_OF = [], [], {}
 for i, (title, aid) in enumerate(PRINTS + BRICKS):
     did = f"draw_{aid}"
     DRAW_OF[title] = did
     weight = 1.0 if aid.startswith("p") else 0.5
-    daily, d = [], announce
+    daily, conv, d = [], [], announce
     while d <= TODAY:
         for ch, _, ent in CH:
             if ch == "Untracked":
@@ -139,11 +144,13 @@ for i, (title, aid) in enumerate(PRINTS + BRICKS):
             n = int(round(ent * weight * 2))
             if n:
                 daily.append([d.isoformat(), ch, n, int(round(n * 0.7))])
+                conv.append([d.isoformat(), ch, n * 0.1, n * 0.2, n * 0.5])
         d += timedelta(days=1)
     elig = sum(x[2] for x in daily); open_ = sum(x[3] for x in daily)
     draws.append({"id": did, "first": announce.isoformat(), "last": TODAY.isoformat(), "entrants": elig + 5, "eligible": elig,
-                  "winners": 0, "sold": 0, "open": open_, "wonUnpaid": 0, "purchaseUnits": 0.0, "daily": daily})
+                  "winners": 0, "sold": 0, "open": open_, "wonUnpaid": 0, "purchaseUnits": 0.0, "daily": daily, "conv": conv})
     patterns.append({"open": [did], "won": [], "sold": [], "bought": 0, "max": 1, "pre": [], "n": open_})
+by_draw = {dd["id"]: dd for dd in draws}
 build._PRODUCTS_FEED = {name: {"draws": draws, "entrants": 500, "eligible": 450, "allocated": False, "patterns": patterns}}
 build._ORDERS_FEED = {}
 build._UNITS_FEED = {}
@@ -212,6 +219,35 @@ check(P["paid"]["entriesToDate"] < B["paid"]["entriesToDate"] and close(P["paid"
 check(P["economics"]["aaProfitPerUnit"] == 1000.0 and B["economics"]["aaProfitPerUnit"] == 150.0 and P["line"]["ppuBasis"] == "paid entries",
       f"a paid entry's profit is its own product's: {P['economics']['aaProfitPerUnit']}, {B['economics']['aaProfitPerUnit']} ({P['line']['ppuBasis']})")
 check(P["paid"]["cumRoi"] > B["paid"]["cumRoi"], f"the prints' ad set earns the higher ROI: {P['paid']['cumRoi']} vs {B['paid']['cumRoi']}")
+# the converting units a line's ROI is priced on are its own draws' (docs 7),
+# each draw's claimed units and its waiting entries at the release's two
+# rates, never the release's (which here also run from the private room's
+# opening, weeks before the draws' first day)
+conv_of = lambda s: sum(float(x.get("converting") or 0.0) for x in s["paid"]["daily"] if not x.get("partial"))
+pre_rate, ent_rate = P["paid"]["preorderRate"], 1 - P["paid"]["dropOff"]
+def draws_conv(titles):
+    ids = {DRAW_OF[t] for t in titles}
+    return sum(c[2] + c[3] * pre_rate + c[4] * ent_rate for dd in draws if dd["id"] in ids for c in dd["conv"] if c[1] == "Paid Social")
+cp, cb, cr = conv_of(P), conv_of(B), conv_of(snap)
+exp_p, exp_b = draws_conv(t for t, _ in PRINTS), draws_conv(t for t, _ in BRICKS)
+check(P["line"]["conversionsBasis"] == "draws" and close(cp, exp_p, 1e-3) and close(cb, exp_b, 1e-3) and cp < cr,
+      f"a line's converting units are its own draws': {cp} vs {exp_p}, {cb} vs {exp_b}, the release's {cr} ({P['line'].get('conversionsBasis')})")
+check(close(P["paid"]["cumRoi"], (1 - P["paid"]["cannibalisation"]) * 1000.0 / ((P["paid"]["spendToDate"] / cp) * P["paid"]["aaBudgetShare"]), 2e-3),
+      f"the prints' ROI is their profit per unit over the price of their own converting unit: {P['paid']['cumRoi']}")
+# a feed from before the draws carried their conversions: the release's,
+# shared out by the line's share of each channel-day's eligible entry units
+# (here half of the paid channel's six a day, on the days the draws ran)
+for dd in build._PRODUCTS_FEED[name]["draws"]:
+    dd.pop("conv")
+old = build.with_direct_spread(build.build_release, rel, at, spend, emails, content, curves, TODAY,
+                               build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+PO = {**old, **old["variants"]["lines"]["Lego2026"]}
+ps = at[(at["channel"] == "Paid Social") & (at["event_date"] >= announce)]
+line_elig = sum(x[2] for t, _ in PRINTS for x in by_draw[DRAW_OF[t]]["daily"] if x[1] == "Paid Social") / len(ps)
+exp_old = float(((ps["Conv_Units_Claimed"] + ps["Conv_Units_Pending_Preorder"] * pre_rate + ps["Conv_Units_Pending_Draw"] * ent_rate)
+                 * (line_elig / ps["Draw_Entries_Eligible_Units"]).clip(upper=1.0)).sum())
+check(PO["line"]["conversionsBasis"] == "entries share" and close(conv_of(PO), exp_old, 1e-3),
+      f"without each draw's conversions the line reads its share of the release's: {conv_of(PO)} vs {exp_old} ({PO['line'].get('conversionsBasis')})")
 check(L["Lego2026"]["paid"]["spendToDate"] == P["paid"]["spendToDate"] and L["Lego2026"]["hero"] == P["hero"], "the combined page's line summary is the line's own reading")
 check(P["edition"] == {"target": 300, "total": 300} and B["edition"] == {"target": 900, "total": 3000}, f"each line's edition: {P['edition']}, {B['edition']}")
 check([p["name"] for p in P["sellthrough"]["products"]] == [t for t, _ in PRINTS] and len(B["sellthrough"]["products"]) == 4,

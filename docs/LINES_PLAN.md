@@ -196,6 +196,10 @@ section 4b.
 - The draws' daily series land in `data/app/release_products.json` on the
   next run of the events aggregation; until then a line's entries are the
   release's shared out by its draws' entrants, and the page says so.
+- Settled 9 November 2026: the converting units a line's paid ROI is priced
+  on are its own draws' too (each draw's `conv` series). Until then the
+  release's stood on every line, and the prints' ad set read an ROI three
+  times what it was (16.3 for 5.3 on one set of economics).
 - The toy-brick target sell-through, to be entered in Airtable on the four
   records; the line's basket and K wait on it.
 - The units-per-buyer rate for this release, from the brief.

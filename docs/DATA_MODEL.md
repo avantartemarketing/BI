@@ -1383,10 +1383,17 @@ profile's `sessions_by_group` and `conv` are re-read on them.
 two entry columns with the line's draws' daily series from `release_products.json` (each
 draw's `daily`: `[day, channel, eligible, open]`, one unit per eligible entry on the draw,
 dated and attributed as its first row; `aggregate_events.products_file`), adding rows for
-channel-days the funnel has none on; the sessions stay the shared page's. A draw is the
+channel-days the funnel has none on; the sessions stay the shared page's. The three
+converting-unit columns the paid ROI is priced on (`CONV_COLS`, §2.2) are replaced the same
+way from each draw's `conv`: `[day, channel, claimed, pending pre-order, pending draw]`, the
+rebuilt export's figures per draw (`aggregate_events.draw_conversions`), so the lines sum to
+the release. `line.conversionsBasis` says so ("draws"); on a feed whose draws carry no `conv`
+the release's columns are scaled by the line's share of each channel-day's eligible entry
+units ("entries share"). Before 9 November 2026 the release's columns stood on every line,
+so a line's spend was priced on the whole campaign's conversions. A draw is the
 line's when the name typed against it, or the product the orders feed pairs it with, names
 one of the line's works (`line_draws`, the sell-through card's `_names_title` rule). Without
-daily series on the draws the release's entries are scaled by the line's share of eligible
+daily series on the draws the release's entries and conversions are scaled by the line's share of eligible
 entrants (`entriesBasis` "share"); without draws, zero. The units are the line's own works'
 rows of the units feed (`line_units`, through `swap_units`), or, on a page reading the
 funnel's units, the release's scaled by the line's share of the draws' sales, else of the
@@ -1843,7 +1850,9 @@ re-runs the same rule on the server.
 
 `etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
 release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
-`wonUnpaid`, `purchaseUnits`, first and last entry day) and the **entry patterns** - the
+`wonUnpaid`, `purchaseUnits`, first and last entry day), their eligible entries by day and
+channel (`daily`) and their converting units by day and channel (`conv`, the rebuilt
+export's `Conv_Units_*` columns per draw, §4b), and the **entry patterns** - the
 multiset of (open draws, unpaid wins, paid wins, pieces bought, max quantity, pre-order
 entries) with how many
 entrants share each. Patterns are enough to run the allocation anywhere and name nobody.

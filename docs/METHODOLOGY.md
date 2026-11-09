@@ -793,7 +793,19 @@ run-rate projection and recommendation run on them alone, while the
 combined page's paid cards read the whole campaign. A paid entry's profit is
 the product it entered for: a line's ROI reads its works' profit per unit
 weighted by the paid entries on each, so the prints' ad set and the
-bricks' are judged on what they actually sell.
+bricks' are judged on what they actually sell. The converting units it is
+priced on (section 7) are its own draws' as well: each draw carries what its
+entrants bought once their claim was tried and what still waits, by day and
+channel, and a line's page reads those of its draws (9 November 2026; a feed
+from before the draws carried them shares the release's out by the line's
+share of each channel-day's entries). Until then the whole release's
+converting units stood on every line's page, so the prints' ad set on Ai
+Weiwei's toy-brick release read its EUR 11.5k of spend against the 114
+units the whole campaign had converted, when its own 40 paid entries had
+made 37 of them: a converting entry at EUR 98 instead of EUR 301, and an
+ROI three times what it was (16.3 for 5.3 on one set of economics, the
+bricks' 3.1 for 2.1). The release page, which reads the whole campaign
+against all of its conversions, was right throughout.
 
 **Two things to know.** The allocator awards a flexible entrant the priciest
 work they entered first, so someone in both lines' draws is counted on the

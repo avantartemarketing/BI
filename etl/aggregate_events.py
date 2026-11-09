@@ -166,7 +166,36 @@ def units(sub: pd.DataFrame, col: str, name: str) -> pd.DataFrame:
 
 
 def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | None = None) -> list[pd.DataFrame]:
-    """The CONV_COLUMNS, on the eligible entry rows' own day and channel.
+    """The CONV_COLUMNS by KEY (channel, day, release and clock), what the
+    rebuilt export carries after its own columns: conversion_rows summed."""
+    rows = conversion_rows(de, pu, as_of)
+    return [] if rows is None else [units(rows, c, c) for c in CONV_COLUMNS]
+
+
+def draw_conversions(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | None = None) -> pd.DataFrame:
+    """The CONV_COLUMNS by release, draw, day and channel: the same figures as
+    the rebuilt export's, read per draw, so a release selling two lines of
+    work on one page prices each line's paid spend on what its own draws'
+    entrants bought and still wait for (etl/build.py line_actuals). Rows
+    with no draw id are left out (they are on no line). Empty when there is
+    nothing to read."""
+    cols = ["simple_release_name", "draw_id", "event_date", CH] + CONV_COLUMNS
+    # a frame without the channel, the clock or the once units (a synthetic
+    # feed): no channel, no clock, one unit a row
+    fill = {CH: "Untracked", "units_once": 1.0, **{c: np.nan for c in CLOCK}}
+    de = de.assign(**{c: v for c, v in fill.items() if c not in de.columns})
+    rows = conversion_rows(de, pu, as_of)
+    if rows is None:
+        return pd.DataFrame(columns=cols)
+    did = rows["draw_id"].astype(str).str.strip()
+    rows = rows[did.notna() & (did != "") & (did.str.lower() != "nan")].assign(draw_id=did)
+    return (rows.groupby(["simple_release_name", "draw_id", "event_date", CH], observed=True)[CONV_COLUMNS]
+                .sum().reset_index())[cols]
+
+
+def conversion_rows(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | None = None) -> pd.DataFrame | None:
+    """The eligible entry rows with their CONV_COLUMNS, each on its own day,
+    channel and draw (None when there are no eligible rows).
 
     Pre-orders are given through the window as they come in (the entry wins
     and is charged); the draw is held on launch day, when the entries stop.
@@ -191,7 +220,7 @@ def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | N
     k = ["simple_release_name", "aa_account_id"]
     el = de[de["draw_entry_eligible"] & de["aa_account_id"].notna()]
     if el.empty:
-        return []
+        return None
     draws = el.assign(draw=el["draw_id"].astype(str))
     per_draw = (draws.groupby(k + ["draw"], observed=True)
                      .agg(w=("winner", "any"), b=("draw_with_purchase", "any"), p=("pre_order", "any")).reset_index())
@@ -229,11 +258,10 @@ def conversion_parts(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | N
     pre_share = np.where(ent["n_open"] > 0, ent["n_pre"] / ent["n_open"].where(ent["n_open"] > 0, 1), 0.0)
     ent["pend_pre"], ent["pend_draw"] = pending * pre_share, pending * (1 - pre_share)
     ent = ent[["u", "rows", "claimed_units", "pend_pre", "pend_draw"]]
-    rows = el[KEY + ["aa_account_id", "units_once"]].join(ent, on=k)
+    rows = el[KEY + ["aa_account_id", "draw_id", "units_once"]].join(ent, on=k)
     w = np.where(rows["u"] > 0, rows["units_once"] / rows["u"].where(rows["u"] > 0, 1), 1.0 / rows["rows"])
-    rows = rows.assign(Conv_Units_Claimed=rows["claimed_units"] * w, Conv_Units_Pending_Preorder=rows["pend_pre"] * w,
+    return rows.assign(Conv_Units_Claimed=rows["claimed_units"] * w, Conv_Units_Pending_Preorder=rows["pend_pre"] * w,
                        Conv_Units_Pending_Draw=rows["pend_draw"] * w)
-    return [units(rows, c, c) for c in CONV_COLUMNS]
 
 
 def rebuild(browsing: pd.DataFrame, ev: pd.DataFrame) -> pd.DataFrame:
@@ -646,7 +674,17 @@ def products_file(ev: pd.DataFrame) -> dict:
     share each: enough to run the allocation anywhere, and nothing that names
     anyone. `pre` is the open entries the person made as a pre-order, which
     convert at their own rate.
+
+    Each draw also carries `conv`, its share of the rebuilt export's
+    CONV_COLUMNS by day and channel (`draw_conversions`): the units its
+    entrants bought once their claim was tried, and the entry units still
+    waiting as pre-orders and as plain entries, so a line of work's paid ROI
+    is priced on its own draws' conversions (docs/LINES_PLAN.md).
     """
+    conv = draw_conversions(ev[ev["event_name"] == "draw entry intent"], ev[ev["event_name"] == "purchase"],
+                            as_of=ev["event_date"].max())
+    conv = conv.assign(simple_release_name=conv["simple_release_name"].astype(str), channel=conv[CH].astype(str),
+                       day=conv["event_date"].dt.date.astype(str)) if len(conv) else None
     cols = ["simple_release_name", "aa_account_id", "draw_id", "event_date", "draw_entry_eligible", "winner",
             "draw_with_purchase", "pre_order", "draw_entry_multiset_preference_max_quantity", CH]
     de = ev[(ev["event_name"] == "draw entry intent") & ev["draw_id"].notna() & ev["aa_account_id"].notna()]
@@ -688,6 +726,7 @@ def products_file(ev: pd.DataFrame) -> dict:
         sub = sub.assign(open=E & ~W & ~B, won_unpaid=W & ~B, sold=W & B)
         draws = []
         t = tagged[tagged["simple_release_name"] == rel].set_index("draw_id")["units"] if len(tagged) else pd.Series(dtype=float)
+        cv = conv[conv["simple_release_name"] == rel] if conv is not None else None
         for did, d in sub.groupby("draw_id", observed=True):
             # the draw's eligible entries by the day they were made and the
             # channel they came from, with the ones still open among them: a
@@ -699,12 +738,18 @@ def products_file(ev: pd.DataFrame) -> dict:
                        .groupby(["day", "channel"], observed=True)
                        .agg(eligible=("eligible", "size"), open=("open", "sum")).reset_index()
                        .sort_values(["day", "channel"]))
+            # the draw's conversions by the day and channel of each eligible
+            # row, as the rebuilt export lands them, so the lines sum to the release
+            dc = cv[cv["draw_id"] == str(did)].sort_values(["day", "channel"]) if cv is not None else None
             draws.append({
                 "id": str(did), "first": d["first"].min().date().isoformat(), "last": d["last"].max().date().isoformat(),
                 "entrants": int(len(d)), "eligible": int(d["eligible"].sum()), "winners": int(d["winner"].sum()),
                 "sold": int(d["sold"].sum()), "open": int(d["open"].sum()), "wonUnpaid": int(d["won_unpaid"].sum()),
                 "purchaseUnits": float(t.get(str(did), 0.0)) if len(t) else 0.0,
                 "daily": [[r.day, str(r.channel), int(r.eligible), int(r.open)] for r in daily.itertuples(index=False)],
+                "conv": ([[r.day, r.channel, round(float(r.Conv_Units_Claimed), 4), round(float(r.Conv_Units_Pending_Preorder), 4),
+                           round(float(r.Conv_Units_Pending_Draw), 4)] for r in dc.itertuples(index=False)]
+                         if dc is not None else []),
             })
         draws.sort(key=lambda d: (d["first"], d["id"]))
         patterns: dict[tuple, int] = {}

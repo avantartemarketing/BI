@@ -972,6 +972,17 @@ def line_actuals(rat: pd.DataFrame, release: dict, name: str, units_feed: bool =
     to fill from the line's own orders. Where the feed's draws carry no
     daily series yet, the release's entries are scaled by the line's share
     of eligible entrants over its draws, and the page says so (`basis`).
+    The converting units the paid ROI is priced on (CONV_COLS, docs 7) are
+    the line's own draws' too, from each draw's `conv` series, so a line's
+    spend is read against what its own entrants bought and still wait for;
+    a feed from before the draws carried them shares the release's out by
+    the line's share of each channel-day's eligible entry units
+    (`conversions` says which). Until 9 November 2026 the release's whole
+    converting units stood on every line, so the prints' ad set on Ai
+    Weiwei's toy-brick release read its 11.5k of spend against the 114 units
+    the whole campaign converted when its own 40 paid entries had made 37 of
+    them: an ROI three times what it was (16.3 for 5.3).
+
     Also returns the paid entries by product the line's ROI reads its profit
     off (with_entry_profit)."""
     feed = load_products_feed().get(name) or {}
@@ -984,30 +995,51 @@ def line_actuals(rat: pd.DataFrame, release: dict, name: str, units_feed: bool =
     for c in ecols:
         if c not in out.columns:
             out[c] = 0.0
+    ccols = [c for c in CONV_COLS if c in out.columns]
     if mine and all(isinstance(draws[d].get("daily"), list) for d in mine):
-        rows = []
+        # the draws' own conversions, when every draw of the line carries them
+        own_conv = bool(ccols) and all(isinstance(draws[d].get("conv"), list) for d in mine)
+        cols = ecols + (ccols if own_conv else [])
+        rows, crows = [], []
         for did in mine:
             title = titles.get(did) or did
             for day, ch, elig, open_ in draws[did]["daily"]:
                 rows.append({"channel": str(ch), "event_date": date.fromisoformat(str(day)[:10]),
                              "elig": float(elig), "open": float(open_), "title": title})
+            if own_conv:
+                for day, ch, claimed, pend_pre, pend_draw in draws[did]["conv"]:
+                    crows.append({"channel": str(ch), "event_date": date.fromisoformat(str(day)[:10]),
+                                  "Conv_Units_Claimed": float(claimed), "Conv_Units_Pending_Preorder": float(pend_pre),
+                                  "Conv_Units_Pending_Draw": float(pend_draw)})
         ent = pd.DataFrame(rows, columns=["channel", "event_date", "elig", "open", "title"])
         paid = ent[ent["channel"].map(GROUP_OF).eq("paid")]
         info["paidByProduct"] = {t: float(v) for t, v in paid.groupby("title")["elig"].sum().items()}
-        by = ent.groupby(["channel", "event_date"], as_index=False)[["elig", "open"]].sum()
-        out["Draw_Entries_Eligible_Units"] = 0.0
-        out["Draw_Entries_Total_Units_No_Conv"] = 0.0
+        by = (ent.groupby(["channel", "event_date"], as_index=False)[["elig", "open"]].sum()
+                 .rename(columns={"elig": "Draw_Entries_Eligible_Units", "open": "Draw_Entries_Total_Units_No_Conv"}))
+        if own_conv:
+            cv = (pd.DataFrame(crows, columns=["channel", "event_date"] + CONV_COLS)
+                    .groupby(["channel", "event_date"], as_index=False)[CONV_COLS].sum())
+            by = by.merge(cv, on=["channel", "event_date"], how="outer").fillna(0.0)
+        # the release's eligible units per row, the share the older feed's conversions are read at
+        rel_elig = out["Draw_Entries_Eligible_Units"].astype(float).copy()
+        for c in cols:
+            out[c] = 0.0
         key = out[["channel", "event_date"]].astype(str).agg("|".join, axis=1) if len(out) else pd.Series(dtype=str)
         have = dict(zip(key, out.index))
         extra = []
-        for r in by.itertuples(index=False):
-            k = f"{r.channel}|{r.event_date}"
+        for r in by.to_dict("records"):
+            k = f"{r['channel']}|{r['event_date']}"
+            vals = {c: float(r[c]) for c in cols}
             if k in have:
-                out.loc[have[k], "Draw_Entries_Eligible_Units"] = r.elig
-                out.loc[have[k], "Draw_Entries_Total_Units_No_Conv"] = r.open
+                for c, v in vals.items():
+                    out.loc[have[k], c] = v
             else:
-                extra.append({"channel": r.channel, "event_date": r.event_date, "simple_release_name": name,
-                              "Draw_Entries_Eligible_Units": r.elig, "Draw_Entries_Total_Units_No_Conv": r.open})
+                extra.append({"channel": r["channel"], "event_date": r["event_date"], "simple_release_name": name, **vals})
+        if ccols and not own_conv:
+            share = (out["Draw_Entries_Eligible_Units"].astype(float) / rel_elig.where(rel_elig > 0, np.nan)).fillna(0.0).clip(upper=1.0)
+            for c in ccols:
+                out[c] = out[c].astype(float) * share
+        info["conversions"] = "draws" if own_conv else "entries share" if ccols else "entry rate"
         if extra:
             add = pd.DataFrame(extra)
             for c in out.columns:
@@ -1021,13 +1053,15 @@ def line_actuals(rat: pd.DataFrame, release: dict, name: str, units_feed: bool =
     elif mine:
         tot = sum(float(draws[d].get("eligible") or 0) for d in draws)
         share = (sum(float(draws[d].get("eligible") or 0) for d in mine) / tot) if tot > 0 else 0.0
-        for c in ecols:
+        for c in ecols + ccols:
             out[c] = out[c].astype(float) * share
         info["basis"] = "share"
         info["share"] = round(share, 4)
+        info["conversions"] = "entries share" if ccols else "entry rate"
     else:
-        for c in ecols:
+        for c in ecols + ccols:
             out[c] = 0.0
+        info["conversions"] = "none"
     # the units: the line's own orders where the units feed covers the
     # release (swap_units, line_units); else the funnel's units scaled by the
     # line's share of the draws' sales, or of the edition before any sale
@@ -7361,6 +7395,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # page's on every line
         "line": ({"key": release["line"], "name": release.get("line_name"), "products": list(release.get("line_products") or []),
                   "adsets": list(release.get("adsets") or []), "entriesBasis": (line_info or {}).get("basis"),
+                  "conversionsBasis": (line_info or {}).get("conversions"),
                   "draws": (line_info or {}).get("draws") or [], "sessionsShared": True,
                   "ppuBasis": release.get("ppu_basis") or "target units"} if line is not None else None),
         # the lines the release sells, on the combined page (with_direct_spread
