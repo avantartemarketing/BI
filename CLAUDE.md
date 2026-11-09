@@ -10,8 +10,9 @@
 - Keys and tokens live only in environment variables (Render, or the Claude cloud environment). Never paste one into chat, a file in the repo or a log line. If one appears anywhere it should not, say so and ask for it to be rotated.
 
 ## Conventions
-- Develop and push on `claude/bi-dashboard-data-model-d6czue`; Render deploys from it on push. Do not open pull requests unless asked.
-- Push live straight away: when a session is given another working branch, every push to it is also pushed to `claude/bi-dashboard-data-model-d6czue` in the same step (a fast-forward, `git push origin HEAD:claude/bi-dashboard-data-model-d6czue`), so the dashboard always runs the latest commit. The repository owner asked for this on 15 October 2026; no need to ask each time.
+- `main` is the live branch: Render deploys from it on every push. Do not open pull requests unless asked.
+- Push live straight away, automatically: every push to a session's working branch is also pushed to `main` in the same step (`git push origin HEAD:main`, a fast-forward; if `main` has moved, merge it in first, never force-push), so the dashboard always runs the latest commit. The repository owner asked for this on 15 October 2026 and for `main` as the live branch on 9 November 2026; no need to ask each time.
+- Until Render's service is repointed from `claude/bi-dashboard-data-model-d6czue` to `main`, push to that branch as well (`git push origin HEAD:claude/bi-dashboard-data-model-d6czue`). Remove this line once Render deploys from `main`.
 - Mockup before live: before pushing any change the owner would see on the dashboard (layout, styling, wording, charts, cards), show them a mockup first (a screenshot of the change rendered with realistic data, before and after where useful) and wait for their go-ahead. Only then push, to both branches as above. Changes with nothing visible (data, server, docs) still push straight away. Asked by the repository owner on 3 November 2026.
 - No em dashes anywhere (code, docs, commits, chat): use a plain hyphen.
 - No model identifiers in commits, code comments or anything pushed.

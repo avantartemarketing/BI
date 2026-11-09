@@ -881,7 +881,11 @@ apart from the sell-through posts.
 ## Deploying on Render
 
 The repo ships `render.yaml` - create a Blueprint service from the repo and Render will
-`npm ci && npm run build` then `npm start`. The paid-spend decision log
+`npm ci && npm run build` then `npm start`. The live branch is `main` (since 9 November 2026;
+before that `claude/bi-dashboard-data-model-d6czue`): Render auto-deploys every push to it, and
+every session pushes its work to `main` in the same step as to its own branch (CLAUDE.md,
+Conventions), so the dashboard always runs the latest commit. The service's branch is set in
+the Render dashboard under Settings -> Build & Deploy -> Branch. The paid-spend decision log
 (`POST /api/decisions`) appends to `data/decisions.log.jsonl`; attach a persistent disk and
 set `DECISIONS_PATH` if the log must survive deploys.
 
