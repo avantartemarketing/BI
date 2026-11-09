@@ -4,7 +4,10 @@
  * of the campaign) and a confidence word set by that range's width. One
  * bar for the release: today's units deep, the units at close light, the
  * range a pale band behind, the units target a dashed tick; then the same
- * bar per work, a work the projection fills marked "Likely sells out".
+ * bar per work, a work the projection fills marked "Likely sells out". Every
+ * bar is a row with its name on the left and its share on the right, the
+ * release's first ("All works"), and the key sits under them all at the
+ * foot of the card (5 November 2026).
  * The head carries the share at close, a confidence lozenge and the daily
  * spend the projection assumes (the recommended level, reached from today's
  * by steps of up to 30% a day); its change from today's and the spend at
@@ -154,12 +157,15 @@ export default function SellThroughClose({ snap, vs = "target" }) {
           tip={[rangeWord ? `${rangeWord} (${fmt(cf.lo)}-${fmt(cf.hi)})${range && range.note ? `: ${range.note}` : ""}` : null, cf.confidenceWhy || null, "", working].filter((x) => x !== null).join("\n")}>{confWord} confidence</Loz>}
         {spendLoz}
       </Head>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <RangeBar xmax={xmax} today={cf.today} units={cf.units} lo={ranged ? cf.lo : null} hi={ranged ? cf.hi : null} target={cf.target}
-          title={`Today ${fmt(cf.today)} · at close ${fmt(cf.units)}${ranged ? ` · range ${fmt(cf.lo)}-${fmt(cf.hi)}` : ""}${has(cf.target) ? ` · ${refName.toLowerCase()} ${fmt(cf.target)}` : ""}`} />
-        <Keys legend={legend} />
+      <div style={{ "--nmw": `${Math.min(Math.max(nameLen, 8), 30)}ch` }}>
+        <div className="prow st" title={`Today ${fmt(cf.today)} · at close ${fmt(cf.units)}${ranged ? ` · range ${fmt(cf.lo)}-${fmt(cf.hi)}` : ""}${has(cf.target) ? ` · ${refName.toLowerCase()} ${fmt(cf.target)}` : ""}`}>
+          <span className="nm">{works.length > 0 ? "All works" : "Edition"}</span>
+          <RangeBar xmax={xmax} today={cf.today} units={cf.units} lo={ranged ? cf.lo : null} hi={ranged ? cf.hi : null} target={cf.target} />
+          <span className="fig"><b>{byPct ? fmtPct(cf.pct, 0) : fmt(cf.units)}</b></span>
+        </div>
+        {worksBody}
       </div>
-      {works.length > 0 && <div style={{ "--nmw": `${Math.min(Math.max(nameLen, 8), 30)}ch`, marginTop: 8 }}>{worksBody}</div>}
+      <Keys legend={legend} style={{ marginTop: 14 }} />
     </Card>
   );
 }

@@ -55,8 +55,8 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
         {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}
         <Sect>Channels and funnel</Sect>
         <ChannelsVsTargets snap={snap} vs={vs} horizon={horizon} />
-        {targeted && vs && <Waterfall snap={snap} vs={vs} horizon={horizon} />}
         <FunnelTable snap={snap} vs={vs} />
+        {targeted && vs && <Waterfall snap={snap} vs={vs} horizon={horizon} />}
         {snap.email && <EmailFunnel snap={snap} vs={vs} />}
         {paidLines.length > 0 ? paidLines.map((l) => (
           <React.Fragment key={`paid:${l.key}`}>
