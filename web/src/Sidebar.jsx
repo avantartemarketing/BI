@@ -1,10 +1,10 @@
-/* The sidebar: the workspace menu and the search at the top, Releases and
- * Targets, then In flight, Upcoming and Recent with a dot per release and
+/* The sidebar: the workspace menu (all releases, methodology, sign out) and
+ * the search at the top, then In flight, Upcoming and Recent with a dot per release and
  * nothing else on the row; a slim hover card says the status, the pace
  * against target and when the release closes or opens. On a phone it is a
  * drawer the page's menu button opens. */
 import React, { useState } from "react";
-import { Caret, Caret8, Search, Releases as ReleasesIcon, Targets as TargetsIcon, Book, Key, SignOut } from "./icons.jsx";
+import { Caret, Caret8, Search, Releases as ReleasesIcon, Book, Key, SignOut } from "./icons.jsx";
 import { Badge, Menu, MenuItem, useMenu } from "./ui.jsx";
 import { nameOf, stateColor, statusWord, vsTarget, whenWords } from "./rows.mjs";
 
@@ -20,7 +20,7 @@ function Row({ r, asOf, on, onPick, onHover, onLeave }) {
   );
 }
 
-export default function Sidebar({ groups, asOf, currentId, view, me, open, onClose, onPick, onReleases, onTargets, onPermissions, onSearch }) {
+export default function Sidebar({ groups, asOf, currentId, view, me, open, onClose, onPick, onReleases, onPermissions, onSearch }) {
   const ws = useMenu();
   const [hov, setHov] = useState(null);   // { r, top }
   const onHover = (r, top) => setHov({ r, top });
@@ -37,14 +37,13 @@ export default function Sidebar({ groups, asOf, currentId, view, me, open, onClo
           </button>
           <button className="nv-ib" aria-label="Search releases" title="Search releases  ⌘K" onClick={onSearch}><Search /></button>
           <Menu open={ws.open} onClose={ws.close} style={{ top: 32, left: 0, width: 220 }}>
+            <MenuItem icon={<ReleasesIcon />} onClick={() => { ws.close(); onReleases(); }}>All releases</MenuItem>
             <MenuItem icon={<Book />} onClick={() => { ws.close(); window.open("/methodology", "_blank", "noreferrer"); }}>Methodology</MenuItem>
             {me && me.admin && <MenuItem icon={<Key />} onClick={() => { ws.close(); onPermissions(); }}>Permissions</MenuItem>}
             <div className="msep" />
             <MenuItem icon={<SignOut />} right={me && me.email ? me.email.split("@")[0] : ""} onClick={() => { window.location.href = "/auth/logout"; }}>Sign out</MenuItem>
           </Menu>
         </div>
-        <button className={`nv-row${view === "releases" ? " on" : ""}`} onClick={onReleases}><ReleasesIcon />Releases</button>
-        <button className="nv-row" onClick={onTargets} title="This release's targets"><TargetsIcon />Targets</button>
         {sections.map(([name, rows]) => (
           <div key={name} style={{ display: "flex", flexDirection: "column", gap: 1 }}>
             <div className="nv-gap" />

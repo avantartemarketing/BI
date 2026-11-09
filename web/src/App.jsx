@@ -138,7 +138,6 @@ export default function App() {
       <div className="app">
         <Sidebar groups={groups} asOf={index && index.asOf} currentId={releaseId} view={route.view} me={me} open={nav} onClose={() => setNav(false)}
           onPick={pick} onReleases={() => go({ view: "releases" })} onPermissions={() => go({ view: "permissions" })}
-          onTargets={() => { const id = releaseId || (groups.live[0] && groups.live[0].id); if (id) pick(id, "targets"); }}
           onSearch={() => setPalette(true)} />
         {route.view === "permissions" ? (
           <Permissions me={me} onMenu={() => setNav(true)} />
