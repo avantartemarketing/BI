@@ -352,8 +352,13 @@ def future_cohort(patterns: list[dict], units: float, to_set) -> list[dict] | No
 
 def sell_through_products(products: list[dict], patterns: list[dict], rate: float = 0.8, edition=None,
                           sold_total=None, future_units: float = 0.0, expected_today=None,
-                          benchmark_today=None, benchmark_close=None, preorder_rate=None) -> dict:
-    """The per-product block the card reads (mirror of sellThroughProducts)."""
+                          benchmark_today=None, benchmark_close=None, preorder_rate=None,
+                          future_patterns=None) -> dict:
+    """The per-product block the card reads (mirror of sellThroughProducts).
+    `future_patterns` are the entrants the ones still to come look like, the
+    entrants so far (`patterns`) when left out; a line's page passes the
+    patterns kept to its own works (line_patterns), since the units still to
+    come on that page are the line's own."""
     attributed = sum(float(p.get("sold") or 0) for p in products)
     sold_all = max(float(sold_total), attributed) if _finite(sold_total) else attributed
     unattributed = max(sold_all - attributed, 0.0)
@@ -379,7 +384,8 @@ def sell_through_products(products: list[dict], patterns: list[dict], rate: floa
     # left (future_cohort, mirror of sellThroughProducts); by demand so far,
     # held to the room, where there is no pattern to read (split_future)
     to_set = _product_sets(products)
-    cohort = future_cohort(patterns, future / alloc["rate"], to_set) if all_editions and future > 0 else None
+    cohort = future_cohort(patterns if future_patterns is None else future_patterns, future / alloc["rate"], to_set) \
+        if all_editions and future > 0 else None
     placed = allocate_entries(
         [{**p, "sold": float(p.get("sold") or 0) + assumed[i] + drafts_of(p) + alloc["products"][i]["shown"], "drafts": 0, "claimsInFlight": 0}
          for i, p in enumerate(products)], cohort, alloc["rate"], alloc["rate"]) if cohort else None

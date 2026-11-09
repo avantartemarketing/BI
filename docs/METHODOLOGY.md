@@ -799,7 +799,14 @@ bricks' are judged on what they actually sell.
 work they entered first, so someone in both lines' draws is counted on the
 prints until a work fills. And the sell-through card's allocation runs over
 every work on every view: a line's page shows its works' rows out of the
-same allocation, never one run on its works alone.
+same allocation, never one run on its works alone. The units still to come
+on a line's page are the line's own, though (its ad set's and its organic
+course), so they are placed on its works alone: the entrants so far kept to
+the line's draws stand for the ones still to come (`line_patterns`, 9
+November 2026). Spread over every work and then read on the line's rows, a
+line read only its share of them, and its paid ROI ahead started that share
+below the ROI just measured (Ai Weiwei's prints a third of it, with a spend
+plan sized to match).
 
 ## 8. Where the numbers come from
 

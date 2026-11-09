@@ -235,6 +235,22 @@ check(B2["paid"]["spendToDate"] == 0 and B2["line"]["adsets"] == [], f"no ad set
 check(P2["line"]["entriesBasis"] == "share" and close(P2["line"]["share"] if "share" in P2["line"] else 0.5, 0.5, 0.2) or P2["line"]["entriesBasis"] == "share",
       f"without daily series the entries are shared by the draws' entrants: {P2['line']}")
 
+# ---- the units still to come on a line's page are the line's own: placed on
+# its works alone, not spread over every work in the release and then read on
+# the line's rows (which read the line its share of them, and started its paid
+# ROI ahead that share below the ROI measured). Two works a line, three
+# entrants a work so far, plenty of room: every future unit lands on the line
+two = [{"name": "Print A", "edition": 100, "sold": 0, "draws": ["dA"]}, {"name": "Print B", "edition": 100, "sold": 0, "draws": ["dB"]},
+       {"name": "Brick C", "edition": 100, "sold": 0, "draws": ["dC"]}, {"name": "Brick D", "edition": 100, "sold": 0, "draws": ["dD"]}]
+pats = [{"open": [d], "won": [], "sold": [], "pre": [], "bought": 0, "max": 1, "n": 3} for d in ("dA", "dB", "dC", "dD")] + \
+       [{"open": ["dA", "dC"], "won": [], "sold": [], "pre": [], "bought": 0, "max": 2, "n": 2}]
+lp = build.line_patterns(pats, two, ["Print A", "Print B"])
+check(len(lp) == 3 and all(set(x["open"]) <= {"dA", "dB"} for x in lp), f"a line's patterns keep its own draws only: {lp}")
+spread = build.restrict_products(build.sell_through_products(two, pats, future_units=20.0), ["Print A", "Print B"])
+own = build.restrict_products(build.sell_through_products(two, pats, future_units=20.0, future_patterns=lp), ["Print A", "Print B"])
+check(close(own["futureEntriesPredicted"], 20.0, 0.05), f"the line's future units all land on its works: {own['futureEntriesPredicted']}")
+check(spread["futureEntriesPredicted"] < 15.0, f"(spread over the release they did not: {spread['futureEntriesPredicted']})")
+
 # ---- a one-line release builds as before: no lines, no line variants
 build.pricing.release_products = fake_products(ONE_CODE)
 snap1 = build.with_direct_spread(build.build_release, copy.deepcopy(base), at, spend, emails, content, curves, TODAY,
