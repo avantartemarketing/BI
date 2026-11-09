@@ -12,9 +12,10 @@
  * more than one line, and a release of one work is that work's row alone
  * (9 November 2026).
  * The head carries the share at close, a confidence lozenge and the daily
- * spend the projection assumes (the recommended level, reached from today's
- * by steps of up to 30% a day); its change from today's and the spend at
- * close are on that lozenge's hover. The working - what the projection is
+ * spend the projection assumes: today's spend held to the close by default
+ * (9 November 2026), the recommended level (reached from today's by steps
+ * of up to 30% a day) or no paid from the dropdown; its change from today's
+ * and the spend at close are on that lozenge's hover. The working - what the projection is
  * built from, the range's source and the confidence reason - is on the
  * confidence lozenge's hover. A closed release has the
  * projection equal to its units, so the range and the paid assumption are
@@ -90,7 +91,9 @@ function PaidPick({ scenarios, mode, onChange }) {
 
 export default function SellThroughClose({ snap, vs = "target" }) {
   const base = snap.closeForecast;
-  const [mode, setMode] = useState("recommended");
+  // today's spend held to the close is the default read (9 November 2026,
+  // the owner's ask); the recommended level and no paid are a pick away
+  const [mode, setMode] = useState("current");
   const title = "Sell-through at close";
   if (!base || !has(base.units)) return <Card title={title}><div className="empty-state">No projection at close yet</div></Card>;
   // the reading under the chosen paid assumption; the block's own figures are the recommended one's
