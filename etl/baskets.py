@@ -58,8 +58,10 @@ import pandas as pd
 # from inside etl/, so both spellings of the neighbour are tried.
 try:
     from pricing import RATES_TO_EUR
+    import paid_cost
 except ImportError:  # pragma: no cover - the shim's import path
     from etl.pricing import RATES_TO_EUR
+    from etl import paid_cost
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -647,34 +649,72 @@ def _num_or_none(value: object) -> float | None:
 
 
 PAID_COST_MIN_UNITS = 5     # a launch's cost per paid unit is a reading from this many paid units
+PAID_COST_MIN_ENTRIES = 5   # and its cost per paid entry from this many paid entries
 PAID_COST_MIN_MEMBERS = 3   # and a basket's median needs this many members with one
+PAID_COST_COLUMNS = ("paid_spend_eur", "paid_spend_campaign_eur", "paid_entries", "cost_per_paid_unit",
+                     "cost_per_paid_entry", "paid_entry_to_unit", "cost_per_entry_ref")
+# The panel's terms for pricing a paid entry, set by attach_paid_costs from
+# the readings it writes (paid_cost.panel_terms): the slope the backtest
+# chose, the reference price, the paid entry to unit rate, and the backtest
+# itself. What prices a release whose basket has too few readings
+# (build.paid_pricing); the build logs it and hands it to the tab.
+PAID_COST: dict = {}
 
 
-def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: dict) -> pd.DataFrame:
-    """Two columns on the panel, per launch: `paid_spend_eur`, Meta's spend under
-    the launch's campaign code (the campaign names are "code · objective")
-    from the panel window's start to the close, and `cost_per_paid_unit`, that
-    over the launch's paid units of demand with its Untracked units folded in
-    (demand_share_paid x all demand, the share Untracked left out of): what
-    the spend bought, whether or not the edition had room for it.
+def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: dict,
+                      slope: float | None = None, terms: dict | None = None) -> pd.DataFrame:
+    """What each panel launch paid for its paid entries and units, from Meta's
+    spend under its campaign code (the campaign names are "code · objective")
+    from the panel window's start to the close (docs/DATA_MODEL.md 4 E):
+
+      paid_spend_campaign_eur  the code's spend in the window
+      paid_spend_eur           the launch's share of it: a code several
+                               launches share (a group launch) bought entries
+                               for all of them, so each takes its share by
+                               its paid entries, equal shares when none has
+                               any; counted once per launch until 9 November
+                               2026, which priced a group's members at the
+                               whole campaign each
+      paid_entries             its tracked paid entries
+      cost_per_paid_entry      its share of the spend over them, from
+                               PAID_COST_MIN_ENTRIES entries
+      cost_per_paid_unit       its share over its paid units of demand with
+                               its Untracked units folded in (demand_share_paid
+                               x all demand, the share Untracked left out of:
+                               what the spend bought, whether or not the
+                               edition had room for it), from
+                               PAID_COST_MIN_UNITS tracked paid units
+      paid_entry_to_unit       those units over those entries
+      cost_per_entry_ref       its cost per paid entry brought to the
+                               reference spend on the curve (paid_cost):
+                               what it would have paid per entry at a
+                               typical campaign's spend, the figure a basket
+                               takes its median of
 
     That is the basis the page prices its own paid units on - spend to the
     close over the paid channel's units after the Untracked fold, the Funnel
     by channel card's cost per unit to date - so the plan price a basket gives
     and the actual it is read against are one figure. The panel window runs on
     to three days after the allocation, and spend in that tail is none the
-    page ever counts; the tracked paid units alone left the plan some 7%
-    dearer per unit than the page reads its own. The window still opens 45
-    days before the announce where the page opens at the private room, which
-    is the one difference left (docs/DATA_MODEL.md 4 E). A reading needs some
-    spend and at least PAID_COST_MIN_UNITS tracked paid units; otherwise NaN,
-    and so is a launch whose code has no spend on file. `codes` maps release
-    name to campaign code (the orders feed's, docs 2.4). The basket's median
-    of the column is the price a paid unit is planned at (basket_profile,
-    cost_per_purchase)."""
+    page ever counts; the window still opens 45 days before the announce where
+    the page opens at the private room, which is the one difference left. A
+    launch whose code has no spend on file, or no window, reads NaN
+    throughout. `codes` maps release name to campaign code (the orders
+    feed's, docs 2.4).
+
+    The panel's own terms (the slope, the reference price, the entry to unit
+    rate, the backtest) are written to PAID_COST: `slope` holds it (the tests'
+    determinism), `terms` carries the benchmarks' k, reference_spend and
+    slope_bounds."""
     out = panel.copy()
-    out["paid_spend_eur"] = float("nan")
-    out["cost_per_paid_unit"] = float("nan")
+    for c in PAID_COST_COLUMNS:
+        out[c] = float("nan")
+    t = terms or {}
+    k = float(t.get("k") or paid_cost.K_DEFAULT)
+    s_ref = float(t.get("reference_spend") or paid_cost.REFERENCE_SPEND)
+    bounds = tuple(t.get("slope_bounds") or (paid_cost.SLOPE_GRID[0], paid_cost.SLOPE_GRID[-1]))
+    PAID_COST.clear()
+    PAID_COST.update(paid_cost.panel_terms([], slope, k, s_ref, bounds))
     if spend is None or not len(spend) or not codes or not len(out):
         return out
     if not {"campaign_name", "spend_date", "spend"} <= set(spend.columns):
@@ -692,6 +732,7 @@ def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: di
     # the page sums spend to the close; a row without one keeps its window's end
     ends = pd.to_datetime(col("close"), errors="coerce").fillna(pd.to_datetime(col("window_end"), errors="coerce"))
     units = pd.to_numeric(col("units_paid"), errors="coerce")
+    entries = pd.to_numeric(col("entries_paid"), errors="coerce")
     # the paid units the spend bought, on the benchmark's own basis: paid
     # demand (demand_columns) with Untracked folded in; a frame without it
     # reads the sold units with the same fold
@@ -699,18 +740,63 @@ def attach_paid_costs(panel: pd.DataFrame, spend: pd.DataFrame | None, codes: di
     folded = pd.to_numeric(col("unit_share_paid"), errors="coerce") * pd.to_numeric(col("tot_total_product_units"), errors="coerce")
     folded = demand.where(demand > 0, folded)
     folded = folded.where(folded > 0, units)
-    spends, costs = [], []
-    for name, s0, s1, u, f in zip(out["release_name"], starts, ends, units, folded):
-        g = by_code.get(codes.get(str(name)) or "")
+    names = [str(n) for n in out["release_name"]]
+    # each launch's spend under its code in its own window
+    totals: list[float] = []
+    for name, s0, s1 in zip(names, starts, ends):
+        g = by_code.get(codes.get(name) or "")
         if g is None or pd.isna(s0) or pd.isna(s1):
-            spends.append(float("nan")); costs.append(float("nan"))
+            totals.append(float("nan"))
             continue
-        total = float(g.loc[(g["spend_date"] >= s0) & (g["spend_date"] <= s1), "spend"].sum())
-        spends.append(total)
-        ok = total > 0 and not pd.isna(u) and float(u) >= PAID_COST_MIN_UNITS and not pd.isna(f) and float(f) > 0
-        costs.append(total / float(f) if ok else float("nan"))
+        totals.append(float(g.loc[(g["spend_date"] >= s0) & (g["spend_date"] <= s1), "spend"].sum()))
+    # a code shared by several launches: each takes its share by its paid entries
+    sharing: dict[str, list[int]] = {}
+    for i, name in enumerate(names):
+        code = codes.get(name)
+        if code and not pd.isna(totals[i]):
+            sharing.setdefault(str(code), []).append(i)
+    share = [1.0] * len(names)
+    for idx in sharing.values():
+        if len(idx) < 2:
+            continue
+        ents = [float(entries.iloc[i]) if not pd.isna(entries.iloc[i]) and float(entries.iloc[i]) > 0 else 0.0 for i in idx]
+        tot = sum(ents)
+        for i, e in zip(idx, ents):
+            share[i] = (e / tot) if tot > 0 else 1.0 / len(idx)
+    nan = float("nan")
+    spends, camp, ents_out, costs, ecosts, e2us = [], [], [], [], [], []
+    for i, (u, f, e) in enumerate(zip(units, folded, entries)):
+        total = totals[i]
+        if pd.isna(total):
+            for xs in (spends, camp, ents_out, costs, ecosts, e2us):
+                xs.append(nan)
+            continue
+        own = total * share[i]
+        ok_u = total > 0 and not pd.isna(u) and float(u) >= PAID_COST_MIN_UNITS and not pd.isna(f) and float(f) > 0
+        ok_e = total > 0 and not pd.isna(e) and float(e) >= PAID_COST_MIN_ENTRIES
+        spends.append(own)
+        camp.append(total)
+        ents_out.append(float(e) if not pd.isna(e) else nan)
+        costs.append(own / float(f) if ok_u else nan)
+        ecosts.append(own / float(e) if ok_e else nan)
+        e2us.append(float(f) / float(e) if ok_e and not pd.isna(f) and float(f) > 0 else nan)
     out["paid_spend_eur"] = spends
+    out["paid_spend_campaign_eur"] = camp
+    out["paid_entries"] = ents_out
     out["cost_per_paid_unit"] = costs
+    out["cost_per_paid_entry"] = ecosts
+    out["paid_entry_to_unit"] = e2us
+    # the panel's terms from the readings, then each reading at the reference spend
+    price = pd.to_numeric(col("unit_price_eur"), errors="coerce")
+    dem = pd.to_numeric(col("demand_units"), errors="coerce")
+    dem = dem.where(dem > 0, pd.to_numeric(col("tot_total_product_units"), errors="coerce"))
+    rows = [{"release": names[i], "cpe": ecosts[i], "spend": camp[i], "entries": ents_out[i],
+             "price": _num(price.iloc[i]), "demand": _num(dem.iloc[i]), "entry_to_unit": _num(e2us[i])}
+            for i in range(len(names)) if not pd.isna(ecosts[i]) and ecosts[i] > 0]
+    PAID_COST.update(paid_cost.panel_terms(rows, slope, k, s_ref, bounds))
+    w = float(PAID_COST["slope"])
+    out["cost_per_entry_ref"] = [paid_cost.reference_price(c, s, w, k, s_ref) if not pd.isna(c) and c > 0 else nan
+                                 for c, s in zip(ecosts, camp)]
     return out
 
 
@@ -773,6 +859,9 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
     priced = priced[priced > 0]
     costed = pd.to_numeric(rows.get("cost_per_paid_unit"), errors="coerce") if "cost_per_paid_unit" in rows.columns else pd.Series(dtype=float)
     n_costed = int((costed > 0).sum())
+    costed_e = pd.to_numeric(rows.get("cost_per_entry_ref"), errors="coerce") if "cost_per_entry_ref" in rows.columns else pd.Series(dtype=float)
+    n_costed_entries = int((costed_e > 0).sum())
+    enough_entries = n_costed_entries >= PAID_COST_MIN_MEMBERS
     return {
         "n": len(used),
         "members": used,
@@ -806,6 +895,16 @@ def basket_profile(panel: pd.DataFrame, members: list[str]) -> dict:
         # have one; 0 says the panel constant stands in (build.cost_per_purchase_for)
         "cost_per_purchase": _median(rows, "cost_per_paid_unit", positive=True) if n_costed >= PAID_COST_MIN_MEMBERS else 0.0,
         "n_costed": n_costed,
+        # what a paid entry cost them, at the reference spend on the curve
+        # (cost_per_entry_ref: the price the plan's budget is read from,
+        # build.paid_pricing) and as they paid it (cost_per_entry), and their
+        # paid entry to unit rate, each the median over the members with a
+        # reading once PAID_COST_MIN_MEMBERS have one; 0 says the panel's
+        # terms stand in
+        "cost_per_entry_ref": _median(rows, "cost_per_entry_ref", positive=True) if enough_entries else 0.0,
+        "cost_per_entry": _median(rows, "cost_per_paid_entry", positive=True) if enough_entries else 0.0,
+        "paid_entry_to_unit": _median(rows, "paid_entry_to_unit", positive=True) if enough_entries else 0.0,
+        "n_costed_entries": n_costed_entries,
     }
 
 
@@ -942,8 +1041,14 @@ def candidate_rows(panel: pd.DataFrame) -> list[dict]:
             "entries": _num(r.get("tot_draw_entries_eligible_units")),
             "units_per_buyer": _num(r.get("units_per_buyer")),
             "private_room_share": _num(r.get("private_room_share")),
-            # what a paid unit cost this launch, or null (attach_paid_costs)
+            # what a paid unit and a paid entry cost this launch, the entry's
+            # price at the reference spend, its paid entry to unit rate, and
+            # the campaign's spend behind them, or null (attach_paid_costs)
             "cost_per_paid_unit": _num_or_none(r.get("cost_per_paid_unit")),
+            "cost_per_paid_entry": _num_or_none(r.get("cost_per_paid_entry")),
+            "cost_per_entry_ref": _num_or_none(r.get("cost_per_entry_ref")),
+            "paid_entry_to_unit": _num_or_none(r.get("paid_entry_to_unit")),
+            "paid_spend": _num_or_none(r.get("paid_spend_campaign_eur")),
             # the edition's unit price in euros and its size, from Airtable
             # via the panel (etl/pricing.py); 0 where Airtable has no match
             "price": _num(r.get("unit_price_eur")),

@@ -17,9 +17,12 @@
  * names, with the basket's full medians as the *All fields; profileOf turns
  * that block back into a profile so the switches can be re-read in place.
  */
+import { averagePrice, marginalPrice, spendForEntries } from "./paidCost.mjs";
+
 export const GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const typed = (v) => (v === null || v === undefined || v === "" ? 0 : Math.max(num(v), 0));
 const byGroup = (src, f) => Object.fromEntries(GROUPS.map((g) => [g, f(g, num((src || {})[g]))]));
 
 /* The groups this release will not run, kept to the known ones, deduplicated
@@ -97,6 +100,75 @@ export function profileOf(bm) {
     units_per_buyer: num(bm.unitsPerBuyer),
     // what a paid unit cost the basket's launches (0: none read), and how many had a reading
     cost_per_purchase: num(bm.costPerPurchase), n_costed: num(bm.costPerPurchaseN),
+    // and a paid entry: at the reference spend on the curve, as paid, the
+    // paid entry to unit rate, and the members with a reading
+    cost_per_entry_ref: num(bm.costPerEntryRef), cost_per_entry: num(bm.costPerEntry),
+    paid_entry_to_unit: num(bm.paidEntryToUnit), n_costed_entries: num(bm.costPerEntryN),
+  };
+}
+
+/* The panel's terms for pricing a paid entry (etl/build.py paid_terms): the
+ * build's, on the benchmarks as paid_cost, else the file's defaults with no
+ * reference price, which leaves the constant per unit to stand in. */
+export function paidTerms(b) {
+  const t = { ...((b && b.paid_cost) || {}) };
+  const bounds = (b && b.paid_cost_slope_bounds) || [0.2, 0.7];
+  if (!(num(t.k) > 0)) t.k = num(b && b.cpe_wearout_k) || 100;
+  if (!(num(t.reference_spend) > 0)) t.reference_spend = num(b && b.paid_cost_reference_spend) || 10000;
+  if (t.slope === null || t.slope === undefined) t.slope = num(bounds[0]);
+  t.slope = num(t.slope);
+  t.reference_price = num(t.reference_price);
+  t.entry_to_unit = num(t.entry_to_unit);
+  return t;
+}
+
+/* The paid budget for `units` paid units and the prices behind it, to the
+ * figure of etl/build.py paid_pricing (docs step 5): the units asked for as
+ * entries at the basket's paid entry to unit rate (else the panel's, else
+ * the entry rate), priced flat at a typed figure (per unit, cost_per_purchase,
+ * or per entry, cost_per_entry), else on the curve at the basket's reference
+ * price (three costed members), else at the panel's, else flat at the
+ * constant per unit while the panel is too thin. A profile read with Direct
+ * spread carries cost_scale: the typed figures and the panel's take it, the
+ * basket's already have. */
+export function paidPricing(profile, inp, b, units, e2o) {
+  const prof = profile || {};
+  const t = paidTerms(b);
+  const scale = num(prof.cost_scale) > 0 ? num(prof.cost_scale) : 1;
+  const slope = t.slope, k = t.k, sRef = t.reference_spend;
+  const e2u = num(prof.paid_entry_to_unit) > 0 ? num(prof.paid_entry_to_unit) : t.entry_to_unit > 0 ? t.entry_to_unit : num(e2o);
+  units = num(units);
+  const entries = e2u > 0 ? units / e2u : 0;
+  const ownUnit = typed(inp && inp.cost_per_purchase), ownEntry = typed(inp && inp.cost_per_entry);
+  const basketRef = num(prof.cost_per_entry_ref), basketUnit = num(prof.cost_per_purchase), panelRef = t.reference_price;
+  let ref = null, flat = 0, source, basis;
+  if (ownUnit > 0) { flat = ownUnit * scale; source = "release"; basis = "unit"; }
+  else if (ownEntry > 0) { flat = e2u > 0 ? (ownEntry * scale) / e2u : 0; source = "release"; basis = "entry"; }
+  else if (basketRef > 0) { ref = basketRef; source = "basket"; basis = "curve"; }
+  else if (basketUnit > 0) { flat = basketUnit; source = "basket"; basis = "unit"; }
+  else if (panelRef > 0) { ref = panelRef * scale; source = "panel"; basis = "curve"; }
+  else {
+    const table = (b && b.cost_per_purchase) || {};
+    const pick = inp && inp.cpp_pick;
+    flat = num(pick && table[pick] !== undefined ? table[pick] : table.Median) * scale; source = "panel"; basis = "unit";
+  }
+  let budget, perUnit, perEntry, marginal;
+  if (ref !== null) {
+    budget = spendForEntries(entries, ref, slope, k, sRef);
+    perEntry = entries > 0 ? budget / entries : averagePrice(0, ref, slope, k, sRef);
+    marginal = marginalPrice(budget, ref, slope, k, sRef);
+    perUnit = units > 0 ? budget / units : e2u > 0 ? perEntry / e2u : 0;
+  } else {
+    budget = units * flat;
+    perUnit = flat;
+    perEntry = flat * e2u;
+    marginal = perEntry;
+  }
+  return {
+    budget, entries, entry_to_unit: e2u,
+    cost_per_purchase: perUnit, cost_per_purchase_source: source, cost_source: source, cost_basis: basis,
+    cost_per_entry: perEntry, cost_per_entry_ref: ref, marginal_cost_per_entry: marginal,
+    cost_slope: ref !== null ? slope : null,
   };
 }
 
@@ -201,16 +273,6 @@ export function benchmarkTargets(profile, inp, b) {
   // the rate the whole page runs on (etl/build.py entry_rate)
   const ownRate = num(inp.entry_conversion_rate);
   const e2o = ownRate > 0 && ownRate <= 1 ? ownRate : (num(b.eligible_entry_to_order) || 0.8);
-  // what a paid unit costs to buy: the release's own figure, else the basket's
-  // median cost per paid unit, else the panel's constant (etl/build.py
-  // cost_per_purchase_for), and where it came from. A profile read with Direct
-  // spread carries the scale its paid units took (spread_profile): the typed
-  // figure and the constant take it too, as the basket's already has, so the
-  // budget is the same whichever way Direct is read
-  const own = num(inp.cost_per_purchase), basket = num(profile.cost_per_purchase);
-  const scale = num(profile.cost_scale) > 0 ? num(profile.cost_scale) : 1;
-  const cpp = own > 0 ? own * scale : basket > 0 ? basket : num((b.cost_per_purchase || {}).Median) * scale;
-  const cppSource = own > 0 ? "release" : basket > 0 ? "basket" : "panel";
   const upb = num(inp.units_per_buyer) > 0 ? num(inp.units_per_buyer) : (num(profile.units_per_buyer) > 0 ? num(profile.units_per_buyer) : 1);
   const price = num(inp.unit_price);
   const maxPct = num(b.budget_sense_check_max_pct_of_launch_value);
@@ -218,7 +280,7 @@ export function benchmarkTargets(profile, inp, b) {
   const sg = byGroup(profile.sessions_by_group, (_g, v) => v);
   const bmPaid = ug.paid;
   const bmSessions = GROUPS.reduce((s, g) => s + sg[g], 0);
-  const bmBudget = bmPaid * cpp, bmLaunchValue = median * price;
+  const bmLaunchValue = median * price;
   // where the stretch comes from (4.4): each group's target is its benchmark
   // plus its share of the gap to the edition, its sessions at its own uplift;
   // the basket's own shares, the default, lift every group by K
@@ -227,7 +289,13 @@ export function benchmarkTargets(profile, inp, b) {
   const kg = byGroup(ug, (g, v) => (v > 0 ? units[g] / v : 0));
   const sessions = byGroup(sg, (g, v) => v * kg[g]);
   const paidUnits = units.paid;
-  const budget = paidUnits * cpp, launchValue = size * price;
+  // the paid units asked for as entries and priced on the curve, or flat
+  // where a figure was typed (paidPricing, etl/build.py paid_pricing); the
+  // benchmark's budget is its paid units at the plan's average price per unit
+  const pricing = paidPricing(profile, inp, b, paidUnits, e2o);
+  const cpp = pricing.cost_per_purchase, cppSource = pricing.cost_source;
+  const budget = pricing.budget, launchValue = size * price;
+  const bmBudget = bmPaid * cpp;
   return {
     k, k_by_group: kg, stretch_from: weights, stretch_typed: stretchTyped(inp, ug), stretch_units: size - median,
     edition_size: size, cost_per_purchase: cpp, cost_per_purchase_source: cppSource, units_per_buyer: upb,
@@ -240,7 +308,7 @@ export function benchmarkTargets(profile, inp, b) {
     entry_rate: e2o,
     total_sessions: GROUPS.reduce((s, g) => s + sessions[g], 0),
     paid: {
-      units: paidUnits, budget, cost_per_purchase: cpp, cost_per_purchase_source: cppSource,
+      units: paidUnits, ...pricing,
       budget_pct_of_launch_value: launchValue > 0 ? budget / launchValue : null,
       sense_check_breached: launchValue > 0 ? budget / launchValue > maxPct : false,
     },

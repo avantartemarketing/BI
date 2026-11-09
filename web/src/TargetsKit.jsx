@@ -560,6 +560,13 @@ export function liveProfile(rows) {
     units_per_buyer: positive(rows.map((r) => r.units_per_buyer)),
     cost_per_purchase: rows.filter((r) => r.cost_per_paid_unit > 0).length >= 3 ? positive(rows.map((r) => r.cost_per_paid_unit)) : 0,
     n_costed: rows.filter((r) => r.cost_per_paid_unit > 0).length,
+    // and what a paid entry cost them: at the reference spend on the curve
+    // (what the budget is read from), as paid, and the paid entry to unit
+    // rate, over the members with a reading once three have one
+    cost_per_entry_ref: rows.filter((r) => r.cost_per_entry_ref > 0).length >= 3 ? positive(rows.map((r) => r.cost_per_entry_ref)) : 0,
+    cost_per_entry: rows.filter((r) => r.cost_per_entry_ref > 0).length >= 3 ? positive(rows.map((r) => r.cost_per_paid_entry)) : 0,
+    paid_entry_to_unit: rows.filter((r) => r.cost_per_entry_ref > 0).length >= 3 ? positive(rows.map((r) => r.paid_entry_to_unit)) : 0,
+    n_costed_entries: rows.filter((r) => r.cost_per_entry_ref > 0).length,
     share_units, share_sessions,
     units_by_group: Object.fromEntries(GROUPS.map((g) => [g, share_units[g] * total])),
     sessions_by_group: Object.fromEntries(GROUPS.map((g) => [g, share_sessions[g] * sessions])),

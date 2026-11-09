@@ -26,8 +26,12 @@ etl/                    Python pipeline
   pricing.py              the join from that file to the release panel (python3 etl/pricing.py
                           prints the matching report and the unmatched releases)
   release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
+  paid_cost.py            the price of a paid entry as the plan reads it: the cost curve and the
+                          leave-one-out backtest that picks its slope on every build (step 5)
   analysis/               one-off studies behind documented decisions (cpe_elasticity.py and
                           cpe_elasticity_challenge.py - the price of a bigger day,
+                          cost_backtest.py - the standing backtest of the plan's cost per entry
+                          on the live panel,
                           projection_backtest.py - the range on the projection at close, writes
                           etl/projection_backtest.json which build.py reads,
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables,
