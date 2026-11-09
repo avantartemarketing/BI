@@ -21,7 +21,8 @@
  * work by their variant (workGroups.mjs), each with its share at close;
  * the range, the units and the figures behind the legend are on hover. */
 import React, { useState } from "react";
-import { Card, Head, Loz, Seg } from "../ui.jsx";
+import { Card, Head, Loz, Menu, MenuItem, useMenu } from "../ui.jsx";
+import { Caret } from "../icons.jsx";
 import { COL, Keys, sw, kfmt } from "../charts.jsx";
 import { fmt, fmtPct, fmtMoney } from "../format.mjs";
 import { groupByLine, shownNames } from "../workGroups.mjs";
@@ -61,6 +62,30 @@ const scaleOf = (r) => (has(r.edition) && r.edition > 0 ? r.edition : Math.max(1
 
 // the paid assumptions the card can read the close under (closeForecast.scenarios)
 const MODES = [["recommended", "Recommended"], ["current", "Today's"], ["none", "None"]];
+
+/* The paid assumption the close is read under, as a dropdown: the chosen
+ * one's name on the chip, each option with its daily spend beside it. */
+function PaidPick({ scenarios, mode, onChange }) {
+  const m = useMenu();
+  const daily = (k) => (scenarios[k].paid && scenarios[k].paid.daily) || 0;
+  const tip = {
+    recommended: `${money(daily("recommended"))} a day: the level at which the next euro of paid spend returns what it costs, reached from today's by steps of up to 30% a day`,
+    current: `${money(daily("current"))} a day: today's daily spend held to the close`,
+    none: "No more paid spend from now: the organic course alone",
+  };
+  const cur = MODES.find(([k]) => k === mode) || MODES[0];
+  return (
+    <span style={{ position: "relative", display: "inline-flex" }}>
+      <button className="chip" aria-haspopup="menu" aria-expanded={m.open} aria-label={`Paid assumption: ${cur[1]}`} title={tip[cur[0]]} onClick={m.toggle}>{cur[1]}<Caret /></button>
+      <Menu open={m.open} onClose={m.close} label="Paid assumption" style={{ top: 30, right: 0, width: 260 }}>
+        {MODES.map(([k, l]) => (
+          <MenuItem key={k} radio checked={mode === k} title={tip[k]} right={`${money(daily(k))}/day`}
+            onClick={() => { m.close(); onChange(k); }}>{l}</MenuItem>
+        ))}
+      </Menu>
+    </span>
+  );
+}
 
 export default function SellThroughClose({ snap, vs = "target" }) {
   const base = snap.closeForecast;
@@ -148,13 +173,8 @@ export default function SellThroughClose({ snap, vs = "target" }) {
   const spendLoz = paid && has(paid.daily) && !complete
     ? <Loz tip={spendTip || undefined}>{paid.daily > 0 ? `${money(paid.daily)} a day` : "No paid spend"}</Loz>
     : null;
-  // the toggle: the three paid assumptions, each with its daily figure
-  const seg = scenarios && !complete
-    ? <Seg label="Paid assumption" value={mode} onChange={setMode}
-        options={MODES.map(([k, l]) => [k, l,
-          k === "recommended" ? `${money(scenarios[k].paid && scenarios[k].paid.daily)} a day: the level at which the next euro of paid spend returns what it costs, reached from today's by steps of up to 30% a day`
-            : k === "current" ? `${money(scenarios[k].paid && scenarios[k].paid.daily)} a day: today's daily spend held to the close` : "No more paid spend from now: the organic course alone"])} />
-    : null;
+  // the paid assumption: a dropdown of the three, each with its daily figure
+  const seg = scenarios && !complete ? <PaidPick scenarios={scenarios} mode={mode} onChange={setMode} /> : null;
   return (
     <Card title={title} aria={title} seg={seg}>
       <Head v={byPct ? fmtPct(cf.pct, 0) : fmt(cf.units)} u={complete ? (byPct ? "at the close" : "units at the close") : byPct ? null : "units"}>
