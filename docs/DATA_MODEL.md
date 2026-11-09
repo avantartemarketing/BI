@@ -2330,7 +2330,8 @@ be attributed to one release.
 campaign code from the day its window opens (§6.3), or from the day after an earlier launch by
 the same artist closed when that is later: sends join by code alone, and an artist's launches
 can carry one code between them (Zeng Fanzhi's July Rainbow sends were tagged with the LE's).
-The reference rates (open, clicks per open, sessions per click) and the delivered fallback are
+The reference rates (open, clicks per open, sessions per click; and sessions per open, the last
+two multiplied, the Email funnel card's rung since 9 November 2026) and the delivered fallback are
 the medians of completed draw launches, read for each release **without its own sends and
 without the launches that closed after it** (left out by id, name and campaign code): the email
 form of "a release is never a member of its own benchmark" (§4a.2). A live release reads the
@@ -2338,9 +2339,9 @@ whole cohort, every launch in it having closed before today.
 
 **The Direct switch leaves the email plan alone.** The sends the plan asks for are read on AA
 Email's sessions as the funnel attributes them, and the Spread view's
-`benchmarks.emailSessionsPerClickRef` carries the spread's share of the basket's email sessions,
-so the chain still multiplies out to the plan's sessions and the sessions-per-click rung reads
-spread against spread.
+`benchmarks.emailSessionsPerClickRef` (and `emailSessionsPerOpenRef` with it) carries the
+spread's share of the basket's email sessions, so the chain still multiplies out to the plan's
+sessions and the sessions-per-open rung reads spread against spread.
 
 ### Social content (Emplifi)
 Post/story-level per platform (instagram 90%, twitter/X since 2025-08). Join via Labels →
@@ -2455,7 +2456,7 @@ actuals-only page omits it.
 | `funnelByGroup[g].sessions_benchmark`, `conv_benchmark` | the basket's sessions by today (the sessions rung's reference) and its conversion at close (the conversion rung's fallback on a snapshot without `conv_benchmark_today`) |
 | `funnelByGroup[g].conv_benchmark_today`, `contrib_traffic_bm`, `contrib_conversion_bm`, `contrib_buyers_bm`, `contrib_per_buyer_bm` | the same three-factor decomposition against the basket's pace by today, summing to the group's actual − its benchmark today; the waterfalls' walk from the benchmark, and the conversion rungs' reference (Funnel by channel; a timed launch's Organic funnel), so a rung and the step beside it read the same figure |
 | `pageFunnel` | the Page funnel card (§2.6): `from`, `through` (the window read, the sales window to today), `feedThrough` (the pages feed's newest day), `minSessions`, `bench` (a basket was read), `basketN`, and per side (`paid`, `organic`) per step (`clickThrough`: release page → product page; `entry`: product page → draw entry) `{sessions, through, rate, bm, bmN}`: the sessions on the step's first page, how many went on, the share (null under `minSessions`), the basket's median by today (null without a basket or a member with enough sessions) and the members it was read over. Null on a page built without the feed; the card then says so. The same in both Direct views |
-| `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median. Read on the sessions as the funnel attributes them, so the same in both Direct views (§8) |
+| `email.deliveredTarget`, `deliveredBenchmark` | the sends the plan's and the basket's AA Email sessions by today imply at the cohort's open rate, clicks per open and sessions per click (`benchmarks.emailSessionsPerClickRef`); the cohort's median send on the delivery-timing curve until two launches give a sessions-per-click median. Read on the sessions as the funnel attributes them, so the same in both Direct views (§8). The Email funnel card reads the last two rates as one rung, sessions per open, against `benchmarks.emailSessionsPerOpenRef` (their product, so delivered x open rate x sessions per open is the plan's sessions) |
 | `sellthrough.benchmarkUnits` | the benchmark on the sell-through prediction |
 | `sellthrough.conversion`, `inHandUnits` | the entry → order rate the prediction runs at, and the entries in hand before it (§6.3) |
 | `sellthrough.products[]` | per product: `key`, `name`, `draws`, `edition`, `sold`, `drafts`, `entrants`, `inHand.{open, won}`, `allocated`, `pinned`, `fixed`, `flexible`, `predicted`, `shown`, `room`, `oversubscribed`, `futurePredicted`, `pct`, `pctClose`, `expectedToday`, `benchmarkToday`, `benchmarkClose` (§6.3) |

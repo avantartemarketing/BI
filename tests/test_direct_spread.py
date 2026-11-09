@@ -191,6 +191,10 @@ check(snap_e["email"]["deliveredTarget"] and snap_e["email"]["deliveredBenchmark
 check(f_sess > 1.001 and snap_e["benchmarks"]["emailSessionsPerClickRef"] == 1.39
       and abs(var_e["benchmarks"]["emailSessionsPerClickRef"] - 1.39 * f_sess) < 0.002,
       f"the spread lands in sessions per click: x{f_sess:.4f}, {snap_e['benchmarks']['emailSessionsPerClickRef']} -> {var_e['benchmarks']['emailSessionsPerClickRef']}")
+spo = 0.195 * 1.39 * 100
+check(abs(snap_e["benchmarks"]["emailSessionsPerOpenRef"] - spo) < 0.06
+      and abs(var_e["benchmarks"]["emailSessionsPerOpenRef"] - spo * f_sess) < 0.06,
+      f"sessions per open is clicks per open x sessions per click, spread alike: {snap_e['benchmarks']['emailSessionsPerOpenRef']} -> {var_e['benchmarks']['emailSessionsPerOpenRef']}")
 for label, view in (("base", snap_e), ("spread", {**snap_e, **var_e})):
     sess = view["funnelByGroup"]["aa_email"]["sessions_expected"]
     chain = view["email"]["deliveredTarget"] * 0.166 * 0.195 * view["benchmarks"]["emailSessionsPerClickRef"]

@@ -2246,11 +2246,18 @@ def email_refs(bench: dict | None) -> dict:
     cohort behind them; the UI falls back to fixed defaults on None."""
     if not bench or bench.get("open_rate") is None:
         return {"emailOpenRateRef": None, "emailClickRateRef": None, "emailClickToOpenRef": None,
-                "emailSessionsPerClickRef": None, "emailRefCohort": None}
+                "emailSessionsPerClickRef": None, "emailSessionsPerOpenRef": None, "emailRefCohort": None}
+    ctor, spc = bench.get("ctor_rate"), bench.get("spc_rate")
     return {"emailOpenRateRef": round(bench["open_rate"] * 100, 1),
             "emailClickRateRef": round(bench["click_rate"] * 100, 1),
-            "emailClickToOpenRef": round(bench["ctor_rate"] * 100, 1) if bench.get("ctor_rate") is not None else None,
-            "emailSessionsPerClickRef": round(bench["spc_rate"], 3) if bench.get("spc_rate") is not None else None,
+            "emailClickToOpenRef": round(ctor * 100, 1) if ctor is not None else None,
+            "emailSessionsPerClickRef": round(spc, 3) if spc is not None else None,
+            # sessions per opened email, the Email funnel card's one rung for
+            # what an open goes on to (9 November 2026): the cohort's clicks
+            # per open times its sessions per click, the product rather than
+            # a median of each launch's own, so delivered x open rate x
+            # sessions per open still multiplies out to the plan's sessions
+            "emailSessionsPerOpenRef": round(ctor * spc * 100, 1) if (ctor is not None and spc is not None) else None,
             "emailRefCohort": bench["cohort"]}
 
 def build_curves(at: pd.DataFrame, members: list[str] | None = None) -> dict:
@@ -7278,6 +7285,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # basis, so the chain still multiplies out to the plan's sessions and
         # the rung reads a spread actual against a spread reference
         email_refs_out["emailSessionsPerClickRef"] = round(email_bench["spc_rate"] * spread_f, 3)
+        if email_bench.get("ctor_rate") is not None:
+            email_refs_out["emailSessionsPerOpenRef"] = round(email_bench["ctor_rate"] * email_bench["spc_rate"] * spread_f * 100, 1)
 
     # ---- social content
     ct = content[(content["campaign_code"] == release["campaign_code"])

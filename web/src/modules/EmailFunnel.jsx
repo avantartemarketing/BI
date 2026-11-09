@@ -2,11 +2,14 @@
  * from the plan or the basket, as the page's Compare to switch reads (the
  * basket alone on a release without targets), a bar right of the line where
  * this launch runs above it and left where below, no key; the figures
- * themselves in the readout. The first four stages are the chain the email
+ * themselves in the readout. The first three stages are the chain the email
  * sessions are built from (docs/DATA_MODEL.md, email.deliveredTarget):
- * delivered x open rate x clicks per open x sessions per click = AA Email
- * sessions, so their deviations multiply to the sessions' own against the
- * same reference, the figure Funnel by channel shows (9 November 2026). The
+ * delivered x open rate x sessions per open = AA Email sessions, so their
+ * deviations multiply to the sessions' own against the same reference, the
+ * figure Funnel by channel shows (9 November 2026). Sessions per open is
+ * what an open goes on to, in one rung: clicks per open and sessions per
+ * click were two rungs until the owner asked for one, and its reference is
+ * the cohort's two rates multiplied, so the chain still holds. The
  * plan holds every rate at the basket's and scales only the volume, so the
  * rates read the same reference either way and Delivered is where the plan
  * and the basket differ. The sends come from the sends on file (snap.email),
@@ -42,8 +45,12 @@ export function emailStages(snap, vs = "target") {
     out.push({ name: "Delivered", v: e.delivered, ref: finite(ref) && ref > 0 ? ref : null, n: `${fmt(e.sends)} send${e.sends === 1 ? "" : "s"}`, kind: "count" });
   }
   if (e.delivered > 0 && finite(e.opened)) out.push({ name: "Open rate", v: e.opened / e.delivered, ref: pctRef(refs.emailOpenRateRef), n: `${fmt(e.opened)} of ${fmt(e.delivered)} delivered` });
-  if (e.opened > 0 && finite(e.clicked)) out.push({ name: "Clicks per open", v: e.clicked / e.opened, ref: pctRef(refs.emailClickToOpenRef), n: `${fmt(e.clicked)} clicks from ${fmt(e.opened)} opened` });
-  if (e.clicked > 0 && finite(sessions)) out.push({ name: "Sessions per click", v: sessions / e.clicked, ref: finite(refs.emailSessionsPerClickRef) && refs.emailSessionsPerClickRef > 0 ? refs.emailSessionsPerClickRef : null, n: `${fmt(sessions)} AA Email sessions from ${fmt(e.clicked)} clicks`, kind: "ratio" });
+  // the reference for sessions per open; a snapshot built before the rung
+  // existed carries the two rates it is the product of
+  const spoRef = finite(refs.emailSessionsPerOpenRef) ? pctRef(refs.emailSessionsPerOpenRef)
+    : finite(refs.emailClickToOpenRef) && refs.emailClickToOpenRef > 0 && finite(refs.emailSessionsPerClickRef) && refs.emailSessionsPerClickRef > 0
+      ? (refs.emailClickToOpenRef / 100) * refs.emailSessionsPerClickRef : null;
+  if (e.opened > 0 && finite(sessions)) out.push({ name: "Sessions per open", v: sessions / e.opened, ref: spoRef, n: `${fmt(sessions)} AA Email sessions from ${fmt(e.opened)} opened` });
   const ct = org.clickThrough;
   if (works > 1 && ct && finite(ct.rate)) out.push({ name: "Release to product page", v: ct.rate, ref: finite(ct.bm) && ct.bm > 0 ? ct.bm : null, n: `${fmt(ct.through)} of ${fmt(ct.sessions)} organic sessions`, src: "pages" });
   const en = org.entry;
@@ -83,10 +90,10 @@ export default function EmailFunnel({ snap, vs = "target" }) {
   const signedPc = (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}%`;
   const show = (s, v) => (s.kind === "count" ? fmt(v) : s.kind === "ratio" ? (Math.round(v * 100) / 100).toFixed(2) : pc(v * 100));
   const refName = (s) => (s.kind === "count" ? (byPlan ? "Plan by today" : "Basket by today") : s.src === "pages" ? `${RefWord}, organic sessions` : byPlan ? "Plan (the basket's rate)" : "Basket");
-  // the four sends stages multiply to the AA Email sessions against the same reference
+  // the three sends stages multiply to the AA Email sessions against the same reference
   const sessRef = byPlan ? g.sessions_expected : g.sessions_benchmark;
   const sessDev = finite(sessions) && finite(sessRef) && sessRef > 0 ? (sessions / sessRef - 1) * 100 : null;
-  const chained = steps.filter((s) => !s.src).length === 4 && steps.filter((s) => !s.src).every((s) => finite(s.ref) && s.ref > 0);
+  const chained = steps.filter((s) => !s.src).length === 3 && steps.filter((s) => !s.src).every((s) => finite(s.ref) && s.ref > 0);
   return (
     <Card title="Email funnel" aria="Email funnel">
       {head}
@@ -104,7 +111,7 @@ export default function EmailFunnel({ snap, vs = "target" }) {
         }}
         aria={`Email funnel against the ${refWord}: ${steps.map((s, i) => `${s.name} ${show(s, s.v)}${finite(s.ref) && s.ref > 0 ? ` (${signedPc(dev[i])} against ${show(s, s.ref)})` : ""}`).join("; ")}`} />
       {chained && sessDev !== null && (
-        <div className="cnote" title={`Delivered x open rate x clicks per open x sessions per click = AA Email sessions, so the four bars multiply to the sessions against the ${refWord}, the figure Funnel by channel shows. The plan holds the rates at ${basketWords}' and scales the volume, so Delivered is where the plan and the basket part.`}>
+        <div className="cnote" title={`Delivered x open rate x sessions per open = AA Email sessions, so the three bars multiply to the sessions against the ${refWord}, the figure Funnel by channel shows. The plan holds the rates at ${basketWords}' and scales the volume, so Delivered is where the plan and the basket part.`}>
           Together: AA Email sessions <b className={sessDev >= 0 ? "rag-up" : sessDev >= -20 ? "rag-near" : "rag-dn"}>{signedPc(sessDev)}</b> vs {refWord}
         </div>
       )}

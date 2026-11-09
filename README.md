@@ -455,7 +455,9 @@ place to look when a release's email rows are blank. The email references are
 recomputed from that file at every refresh: open rate, click rate, clicks per open and
 sessions per click (AA Email sessions over tracked clicks) as the median pooled rate
 across completed draw launches of the last 24 months (configured and discovered), each
-release's read without its own sends and without the launches that closed after it. The
+release's read without its own sends and without the launches that closed after it, and
+sessions per open as the last two multiplied (the Email funnel card's one rung for what an
+open goes on to, since 9 November 2026). The
 delivered target is the sends the release's own AA Email sessions plan implies by today
 at those rates, so a release sending to a small list is judged against a volume that fits
 it, and the benchmark's sends are the same at the basket's pace (the waterfall's walk from
@@ -939,8 +941,10 @@ and its own options behind a ⋯ menu:
   as before); ⋯ holds Post to Slack.
 - **Framing** (docs §6.4): the share of prints framed, buyers and entrants as bars with the
   basket's rate as a tick.
-- **Email funnel**: open rate, click rate, release page to product page (when the release
-  has more than one work) and product page to entry, each as its deviation from the basket.
+- **Email funnel**: delivered, open rate and sessions per open as their deviation from the
+  plan or the basket (the three multiply to the AA Email sessions Funnel by channel shows),
+  then release page to product page (when the release has more than one work) and product
+  page to entry against the basket.
 - **Where the buyers are** on a release with geography, **Signups to outcome** and the
   **Sell-through** and **Framing forecast by work** on a timed launch (docs/TL_SPEC.md).
 - **Funnel by channel**, beside it: sessions and conversion per channel against
