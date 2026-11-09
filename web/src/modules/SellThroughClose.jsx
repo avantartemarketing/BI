@@ -6,8 +6,10 @@
  * range a pale band behind, the units target a dashed tick; then the same
  * bar per work, a work the projection fills marked "Likely sells out". Every
  * bar is a row with its name on the left and its share on the right, the
- * release's first ("All works"), and the key sits under them all at the
- * foot of the card (5 November 2026).
+ * release's first ("All works", or the works' shared name where they are
+ * variants of one work), and the key sits under them all at the foot of the
+ * card (5 November 2026). A header per line only when the release sells
+ * more than one line (9 November 2026).
  * The head carries the share at close, a confidence lozenge and the daily
  * spend the projection assumes (the recommended level, reached from today's
  * by steps of up to 30% a day); its change from today's and the spend at
@@ -116,9 +118,10 @@ export default function SellThroughClose({ snap, vs = "target" }) {
     );
   };
   const keyed = works.map((w, i) => ({ ...w, key: w.key || w.name || String(i) }));
-  const groups = groupByLine(snap, keyed) || [{ key: "_all", name: "By work", rows: keyed }];
+  // a header per line only when the release sells more than one; otherwise the works follow the release's row
+  const groups = groupByLine(snap, keyed);
   let nameLen = 0;
-  const worksBody = groups.map((g) => {
+  const worksBody = groups ? groups.map((g) => {
     const sn = shownNames(g.rows);
     nameLen = Math.max(nameLen, sn.longest);
     return (
@@ -127,7 +130,9 @@ export default function SellThroughClose({ snap, vs = "target" }) {
         {g.rows.map((w, i) => workRow(w, sn.names[i]))}
       </div>
     );
-  });
+  }) : (() => { const sn = shownNames(keyed); nameLen = sn.longest; return keyed.map((w, i) => workRow(w, sn.names[i])); })();
+  // the release's row is named by the works' shared name where they are variants of one work
+  const allName = !groups && shownNames(keyed).base ? shownNames(keyed).base : works.length > 0 ? "All works" : "Edition";
   // the paid assumption: the change from today's spend, as a share of it
   const dir = paid ? paid.direction : null;
   const chg = paid && has(paid.change) ? Math.round(Math.abs(paid.change) * 100) : null;
@@ -159,7 +164,7 @@ export default function SellThroughClose({ snap, vs = "target" }) {
       </Head>
       <div style={{ "--nmw": `${Math.min(Math.max(nameLen, 8), 30)}ch` }}>
         <div className="prow st" title={`Today ${fmt(cf.today)} · at close ${fmt(cf.units)}${ranged ? ` · range ${fmt(cf.lo)}-${fmt(cf.hi)}` : ""}${has(cf.target) ? ` · ${refName.toLowerCase()} ${fmt(cf.target)}` : ""}`}>
-          <span className="nm">{works.length > 0 ? "All works" : "Edition"}</span>
+          <span className="nm">{allName}</span>
           <RangeBar xmax={xmax} today={cf.today} units={cf.units} lo={ranged ? cf.lo : null} hi={ranged ? cf.hi : null} target={cf.target} />
           <span className="fig"><b>{byPct ? fmtPct(cf.pct, 0) : fmt(cf.units)}</b></span>
         </div>

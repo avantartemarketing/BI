@@ -12,10 +12,11 @@
  * to the release's, an editions lozenge says so. The menu posts the card to
  * Slack as a message composed on the server from the same snapshot
  * (server/slack.js), at the page's horizon and, on a line's page, for that
- * line. A release selling two lines of work lists the rows under a header
- * per line. Rows that are variants of one work ("Toy Brick (Red)", "Toy
- * Brick (Blue)") show only the variant, the shared name in the header and
- * the full name in the hover. */
+ * line. The release is one row above the works ("All works"), as on the
+ * Sell-through at close card beside it. A release selling two lines of work
+ * lists the works under a header per line. Rows that are variants of one
+ * work ("Toy Brick (Red)", "Toy Brick (Blue)") show only the variant, the
+ * shared name on the release's row and the full name in the hover. */
 import React, { useState } from "react";
 import { Card, Head, Loz, Note } from "../ui.jsx";
 import { Keys, COL, sw } from "../charts.jsx";
@@ -27,7 +28,10 @@ import { Slack } from "../icons.jsx";
 import "../cards.css";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
-const SEG = { paid: COL.DEEP, drafts: COL.MID, winners: COL.LIGHT, future: COL.PALE };
+/* today's units in three depths of indigo by how sure they are, the units
+ * still to come in the light indigo the Sell-through at close card uses for
+ * its at-close figure, so the one tint means the same on both (9 November 2026) */
+const SEG = { paid: COL.DEEP, drafts: COL.IND, winners: COL.MID, future: COL.LIGHT };
 
 /* a row's segments in the order they stack */
 function segmentsOf(row, close) {
@@ -169,7 +173,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
     return (
       <div className="prow st" key={r.key} title={tip}>
         <span className="nm">{short || r.name}</span>
-        <Bar row={r} close={close} maxV={maxFor(r)} tick={tl ? r.edition : null} />
+        <Bar row={r} close={close} maxV={r.key === "_all" ? Math.max(r.edition ?? 0, unitsOf(r), 1) : maxFor(r)} tick={tl ? r.edition : null} />
         <span className="fig"><b>{finite(pctRow) ? `${Math.round(pctRow * 100)}%` : fmt(unitsOf(r))}</b></span>
       </div>
     );
@@ -192,14 +196,20 @@ export default function SellThrough({ snap, horizon = "today" }) {
     longest = Math.max(longest, sn.longest);
     return { v: sn.base ? { base: sn.base } : null, rows: g.rows.map((r, i) => row(r, sn.names[i])) };
   };
+  // the release as one row above the works, as on Sell-through at close: named
+  // by the works' shared name where they are variants of one work, else "All works"
+  const allRow = fromFeed && rows.length > 1 ? {
+    key: "_all", name: shownNames(rows).base || "All works", edition, sold, soldAssumed: 0, drafts: draftsAll ?? 0, shown: inHandAll, futurePredicted: futureAll,
+    oversubscribed: 0, pct: headPct, pctClose: st.pct ?? null, entrants: null,
+  } : null;
   const body = (() => {
-    if (groups) return groups.map((g) => {
+    const top = allRow ? row(allRow) : null;
+    if (groups) return [top, ...groups.map((g) => {
       const { v, rows: rs } = groupRows(g);
       return <div className="stgrp" key={`g:${g.key}`}>{groupHead(g, v && v.base)}{rs}</div>;
-    });
-    const { v, rows: rs } = groupRows({ rows });
-    // one list of variants: their shared name heads it
-    return v ? <div className="stgrp">{groupHead({ key: "_all", name: v.base, rows }, v.base)}{rs}</div> : rs;
+    })];
+    const { rows: rs } = groupRows({ rows });
+    return [top, ...rs];
   })();
   return (
     <Card title={W.sellThroughTitle} menu={menu} right={right} aria={W.sellThroughTitle}>
