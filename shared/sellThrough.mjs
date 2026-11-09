@@ -362,7 +362,7 @@ function futureCohort(patterns, units, toSet) {
  * that no product can be named for yet, and it is carried at release level
  * rather than guessed onto products. */
 export function sellThroughProducts({ products, patterns, rate = 0.8, edition = null, soldTotal = null, futureUnits = 0,
-  expectedToday = null, benchmarkToday = null, benchmarkClose = null, preorderRate = null }) {
+  expectedToday = null, benchmarkToday = null, benchmarkClose = null, preorderRate = null, futurePatterns = null }) {
   const attributed = products.reduce((t, p) => t + (Number(p.sold) || 0), 0);
   const soldAll = finite(soldTotal) ? Math.max(Number(soldTotal), attributed) : attributed;
   const unattributed = Math.max(soldAll - attributed, 0);
@@ -397,7 +397,9 @@ export function sellThroughProducts({ products, patterns, rate = 0.8, edition = 
   const draftsOf = (p) => (finite(p.drafts) ? Number(p.drafts) : 0);
   const demand = alloc.products.map((a, i) => (Number(products[i].sold) || 0) + assumed[i] + draftsOf(products[i]) + a.shown);
   const toSet = productSets(products);
-  const cohort = allEditions && future > 0 ? futureCohort(patterns, future / alloc.rate, toSet) : null;
+  // the entrants still to come look like futurePatterns when given (a line's
+  // page: the patterns kept to its own works), else like the entrants so far
+  const cohort = allEditions && future > 0 ? futureCohort(futurePatterns || patterns, future / alloc.rate, toSet) : null;
   const placed = cohort ? allocateEntries({
     products: products.map((p, i) => ({ ...p, sold: (Number(p.sold) || 0) + assumed[i] + draftsOf(p) + alloc.products[i].shown, drafts: 0, claimsInFlight: 0 })),
     patterns: cohort, rate: alloc.rate, preorderRate: alloc.rate,

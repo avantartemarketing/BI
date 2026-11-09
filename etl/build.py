@@ -1078,6 +1078,24 @@ def with_entry_profit(release: dict, paid_by_product: dict) -> dict:
     return r
 
 
+def line_patterns(patterns: list[dict], products: list[dict], names: list[str]) -> list[dict]:
+    """The entrants so far kept to one line's works, for the entrants still
+    to come on that line's page: each pattern with only the line's draws, and
+    the patterns with none of them left out. The units still to come on a
+    line's page are the line's own (its ad set's and its organic course), so
+    they are placed on its works alone; spread over every work in the release
+    and then read on the line's rows, a line read only its share of them, and
+    its paid ROI ahead started that share below the ROI just measured."""
+    draws = {str(d) for p in products if any(sellthrough._names_title(n, p.get("name")) for n in names)
+             for d in (p.get("draws") or [])}
+    out = []
+    for pat in patterns or []:
+        kept = {k: [d for d in (pat.get(k) or []) if str(d) in draws] for k in ("open", "won", "sold", "pre")}
+        if kept["open"] or kept["won"] or kept["sold"]:
+            out.append({**pat, **kept})
+    return out
+
+
 def restrict_products(pp: dict, names: list[str]) -> dict:
     """The per-product sell-through block kept to the line's works, its
     headline figures the kept rows added up: the allocation ran over every
@@ -3677,7 +3695,9 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
         patterns = entries_in_hand(patterns, feed["draws"], entries_since)
     pp = sell_through_products(products, patterns, rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
-                               benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate)
+                               benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate,
+                               future_patterns=(line_patterns(patterns, products, list(release["line_products"]))
+                                                if release.get("line_products") else None))
     if release.get("line_products"):
         # one line's page: the rows of its works, the allocation over every work
         pp = restrict_products(pp, list(release["line_products"]))
