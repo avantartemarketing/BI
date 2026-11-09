@@ -68,6 +68,10 @@ tests/                  the sell-through rule on fixtures, in both languages, an
                         (python3 tests/test_sellthrough.py runs both sides), the events
                         aggregation on a synthetic feed, the build block, the save path
 server/index.js         Express service: serves the SPA + /api/* + the spend decision log
+server/mcp/             the connector: the same read-only data as an MCP server at /mcp, for a
+                        Claude outside the dashboard ("The connector" below)
+docs/CONNECTOR_GUIDE.md what that Claude reads first: the tools, the tables, the channel groups,
+                        the traps
 web/                    React (Vite) SPA - the dashboard per the design handoff
 render.yaml             Render deployment (single web service)
 sources/                NOT in git: raw exports (workbooks, CSVs, draw entries with PII)
@@ -604,6 +608,62 @@ Without a Google client configured - local development, or a broken deployment -
 login page falls back to the old password form (`LOGIN_PASSWORD`, default accounts from
 `LOGIN_USERS`) and the dormant magic-link flow (`RESEND_API_KEY`, `MAIL_FROM`). The
 moment the two Google variables are set, those routes answer 404.
+
+## The connector (MCP)
+
+The dashboard's data for a Claude outside the dashboard. `POST /mcp` is a Model Context
+Protocol server (`server/mcp/index.js`): a colleague in claude.ai or Claude Code adds it
+as a connector and asks questions of the same data, without the repository and without a
+key of their own. It reads; it cannot change a target, an input, a page or the data.
+
+**What it offers.** Eight tools. `start_here` hands over the guide
+(`docs/CONNECTOR_GUIDE.md`: which tool answers what, the BigQuery tables and columns, the
+channel groups, how Untracked and Direct are read, worked queries, the traps); keep that
+file true, it is the context a chat has. Five are the Agent's read-only tools, unchanged:
+`list_releases`, `get_release`, `describe_table`, `query_table`, `read_docs`. Two reach
+BigQuery: `bigquery_tables` (the tables the dashboard is built on and any table's
+columns, by name, since the service account is granted tables and cannot list the
+dataset) and `bigquery_sql` (one SELECT, through `query()` in `server/bigquery.js`).
+
+**Switching it on.** Set `MCP_TOKEN` on Render to a long random string (24 characters at
+least; `openssl rand -base64 32` makes one). Unset, or shorter, the route answers 404 and
+the server is as it was. Set, every request must carry it, as `Authorization: Bearer
+<token>` or `X-API-Key: <token>`. The route sits ahead of the session gate, because a
+Claude has no browser session; the token opens `/mcp` and nothing else.
+
+**Adding it in claude.ai**, once, by an Owner: Organisation settings > Connectors > Add >
+Custom > Web. Give it a name, the URL `https://<the dashboard's host>/mcp`, set
+Authentication to "No sign in", and under Request headers add `Authorization` with the
+value `Bearer <token>`. Members then find it under Customize > Connectors and click
+Connect. claude.ai edits a connector by removing it and adding it again, which is also
+how the token is rotated: change `MCP_TOKEN` on Render, then re-add.
+
+**Adding it in Claude Code:**
+
+```
+claude mcp add --transport http avant-arte-bi https://<the dashboard's host>/mcp --header "Authorization: Bearer <token>"
+```
+
+**One shared credential.** Everyone who uses the connector reads as the connector: the
+log cannot say who asked, and access is all or nothing, removed by rotating the token.
+Per-person sign-in would be an OAuth flow on the dashboard's Google sign-in; not built.
+
+**Limits** (environment, all optional): `MCP_RATE_PER_MIN` requests a minute across
+everyone (120); `MCP_SQL_MAX_GB` the most one query may scan (10; the funnel tables are
+not partitioned, so a typical query scans 0.3 to 1 GB); `MCP_SQL_WAIT_S` how long one may
+run (90); `MCP_SQL_CONCURRENCY` queries at once (3). A result is cut at 1,000 rows and
+says so.
+
+**Personal data.** The SQL tool reports counts, not people. A query that reads an address
+or a column that names a person (name, phone, handle, date of birth, order note) is
+refused before it runs; a result carrying one is refused when its header arrives;
+`query()` refuses an address column or a cell shaped like one, and every cell is masked
+for an address on the way out. These are fences against accidents, not a boundary: the
+token reads whatever the service account reads. The log line names the tool, the rows,
+the bytes scanned and the time, and never the question, the query, the result or the
+token.
+
+`node tests/mcp.mjs` runs the route on a local port with a stand-in for BigQuery.
 
 ## Target setting
 

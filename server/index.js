@@ -36,6 +36,12 @@ const DECISIONS_PATH = process.env.DECISIONS_PATH || path.join(ROOT, "data", "de
 
 app.use(express.json());
 
+// the connector (server/mcp/): the dashboard's read-only data for a Claude
+// outside it, as an MCP server at /mcp. It is registered ahead of the session
+// gate because a Claude has no browser session: its own token is what lets a
+// request in (MCP_TOKEN; unset, the route answers 404).
+require("./mcp").install(app, { ROOT, DATA, SOURCES: process.env.SOURCES_PATH, readSnapshot: (id) => readSnapshot(id) });
+
 // password login (avantarte.com only) - installs /login, /auth/* and the gate;
 // every route registered after this line requires a signed session cookie.
 const auth = require("./auth");
