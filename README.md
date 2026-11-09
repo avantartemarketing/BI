@@ -231,7 +231,8 @@ There are two paths to the same two files, and BigQuery wins whenever it is conf
 
 ### BigQuery (preferred; `server/bigquery.js`)
 
-Reads `le_funnel_report_split_touch_export` and `meta_ads_insights_export` straight from
+Reads `le_funnel_report_split_touch_export` and `ads_insights_AA_export` (Meta spend by ad,
+summed to campaign × ad set × day so a line of work reads its own ad sets) straight from
 `avantarte-data-production.AA_company_tables` - the origin of every funnel and spend
 number in the dashboard. Prefer it: the sheet tabs below are query *exports* capped at
 50,000 rows per tab, and that cap does not error. It silently drops the oldest days as
@@ -242,7 +243,8 @@ handful of complete campaigns rather than the hundreds we have run.
   `GOOGLE_SERVICE_ACCOUNT_JSON` if one account does both jobs). The account needs
   **BigQuery Data Viewer** on the dataset and **BigQuery Job User** on the project.
 - `BQ_PROJECT` (default `avantarte-data-production`), `BQ_DATASET` (default
-  `AA_company_tables`), `BQ_FUNNEL_TABLE`, `BQ_SPEND_TABLE`, `BQ_LOCATION`.
+  `AA_company_tables`), `BQ_FUNNEL_TABLE`, `BQ_SPEND_TABLE` (default `ads_insights_AA_export`;
+  `meta_ads_insights_export`, the campaign-level table, is still read if named, with no ad sets), `BQ_LOCATION`.
 - `BQ_SINCE` (default `2025-01-01`) - how far back to pull. Widening it is the whole
   point of this path; it also sets the bill, since BigQuery charges per byte scanned and
   both queries filter on the partition column - and the memory, see below.
@@ -254,7 +256,7 @@ handful of complete campaigns rather than the hundreds we have run.
   `BQ_TL=off` skips it, `node server/bigquery.js --write --tl` pulls it alone.
 
 The funnel table is required; **spend is optional**. A service account granted the funnel
-dataset but not `meta_ads_insights_export` still refreshes the funnel, and spend falls
+dataset but not the spend table still refreshes the funnel, and spend falls
 back to the sheet's `meta_ads_insights_Extract` tab so paid spend keeps moving (the
 refresh note reads `spend only: N rows from the sheet`). If that tab is unreachable too,
 the previous `data/spend_daily.csv` keeps serving and the header reads **Sources stale**

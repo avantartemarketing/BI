@@ -3,7 +3,8 @@
  *
  * This replaces the Google Sheet relay for the two files the ETL reads:
  *   le_funnel_report_split_touch_export -> sources/across_time.csv
- *   meta_ads_insights_export            -> data/spend_daily.csv
+ *   ads_insights_AA_export              -> data/spend_daily.csv
+ *     (one row per ad a day, summed here to campaign x ad set x day)
  * Same two files, same row converters as the sheet path (sheets.js), so
  * build.py is unchanged and the two feeds are interchangeable. A third,
  * BigQuery-only feed takes the conversion events of the event-level table:
@@ -64,7 +65,7 @@
  *                                  release names against upstream, default 24
  * The service account needs BigQuery Data Viewer on the dataset and BigQuery
  * Job User on the project. Spend is optional - if the account cannot see
- * meta_ads_insights_export the funnel still refreshes (BQ_SPEND=off skips it
+ * the spend table the funnel still refreshes (BQ_SPEND=off skips it
  * outright). Set BIGQUERY=off to force the sheet path back on. */
 const fs = require("fs");
 const path = require("path");
@@ -104,7 +105,13 @@ const META = path.join(SOURCES, "across_time.meta.json");
 const PROJECT = process.env.BQ_PROJECT || "avantarte-data-production";
 const DATASET = process.env.BQ_DATASET || "AA_company_tables";
 const FUNNEL_TABLE = process.env.BQ_FUNNEL_TABLE || "le_funnel_report_split_touch_export";
-const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "meta_ads_insights_export";
+// Meta spend by ad (account, campaign, ad set, ad, day; added by the data team
+// on 9 November 2026), read at ad set grain so a release running an ad set per
+// line of work can split its spend (docs/LINES_PLAN.md). Its totals agree with
+// the campaign-level meta_ads_insights_export to the cent on every campaign.
+const SPEND_TABLE = process.env.BQ_SPEND_TABLE || "ads_insights_AA_export";
+// the campaign-level table, still read whole if BQ_SPEND_TABLE names it
+const SPEND_TABLE_CAMPAIGN = "meta_ads_insights_export";
 // point this at the data team's email-free view when it exists: same columns, same guards
 const EVENTS_TABLE = process.env.BQ_EVENTS_TABLE || "LE_Funnel_Report";
 // the timed launches' event table: the same shape, the same address column, the same rules
@@ -409,9 +416,17 @@ const funnelSql = () =>
 const funnelNamesSql = () =>
   `SELECT DISTINCT simple_release_name FROM \`${PROJECT}.${DATASET}.${FUNNEL_TABLE}\`\n` +
   "WHERE event_date >= @since AND event_date < @before AND simple_release_name IS NOT NULL";
-const spendSql = () =>
-  `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
-  "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date";
+// The ad-level table summed to campaign x ad set x day: the ads under an ad
+// set are not read apart, and reach summed over ads overstates the ad set's
+// own (nothing on the page reads reach). The campaign-level table, if
+// BQ_SPEND_TABLE names it, is read whole as before (its ad set blank).
+const spendSql = () => SPEND_TABLE === SPEND_TABLE_CAMPAIGN
+  ? `SELECT * FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
+    "WHERE spend_date >= @since\nORDER BY campaign_name, spend_date"
+  : "SELECT campaign_name, spend_date, SUM(impressions) AS impressions, SUM(reachs) AS reachs,\n" +
+    "  SUM(link_clicks) AS link_clicks, ROUND(SUM(spend), 2) AS spend, IFNULL(adset_name, '') AS adset_name\n" +
+    `FROM \`${PROJECT}.${DATASET}.${SPEND_TABLE}\`\n` +
+    "WHERE spend_date >= @since\nGROUP BY campaign_name, spend_date, adset_name\nORDER BY campaign_name, spend_date, adset_name";
 
 // ---------------------------------------------------------------- orders and drafts by product
 

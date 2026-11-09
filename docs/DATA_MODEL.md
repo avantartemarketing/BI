@@ -455,7 +455,7 @@ All funnel data originates in BigQuery `avantarte-data-production.AA_company_tab
 | LE funnel lifetime rollup (importrange "Export!A:AB") | channel × release | sessions (D), Total Product Units (S), eligible entries (M/N/Y), units by route (O/P/Q/R), page views (AA), entries (V/W/X/Z/AB) | launch-total actuals, benchmarks |
 | `tl_funnel_report_split_touch_export` (+ lifetime) | same, TL metrics (subs) | sessions, subs, customers, units by sub | TL side |
 | `Order_Line_Concept` (BigQuery) | Shopify order line | quantity, list and paid price, financial status, draft origin, private room, product, release | units paid and awaiting payment per product, list price, the product each draw sold (§2.4) |
-| `meta_ads_insights_export` | campaign × spend_date | impressions, reach, link_clicks, **spend** | paid spend actuals |
+| `ads_insights_AA_export` | ad × spend_date (campaign, ad set, ad) | impressions, reach, link_clicks, **spend** | paid spend actuals, read at campaign × ad set × day; `meta_ads_insights_export` is the same spend at campaign grain |
 | Meta lifetime ("Meta Data for Paid") | campaign | + 7d-click conversions (Purchases, Enter Draw…) | Meta-side attribution |
 | HubSpot email feed (`server/hubspot.js`) | email send | Delivered, Opened, Clicked, Unsubscribed | email funnel rungs |
 | Emplifi content export | post/story | impressions, reach, engagements, saves, story metrics | social funnel rungs |
@@ -463,7 +463,7 @@ All funnel data originates in BigQuery `avantarte-data-production.AA_company_tab
 
 **The dashboard reads the BigQuery tables directly when a key is configured**
 (`server/bigquery.js`, `BIGQUERY_SERVICE_ACCOUNT_JSON`): `le_funnel_report_split_touch_export`
-and `meta_ads_insights_export` are pulled from `BQ_SINCE` (default 2025-01-01) into the same two
+and `ads_insights_AA_export` (summed to campaign × ad set × day) are pulled from `BQ_SINCE` (default 2025-01-01) into the same two
 CSVs the sheet path writes, so `build.py` is unchanged and the feeds are interchangeable. The
 sheet path remains as the fallback, and is the reason to prefer BigQuery: its accumulator tabs
 silently truncate (the LE daily tab is capped at exactly 100k rows and has lost everything before
@@ -782,7 +782,7 @@ production model has to serve. Everything else in a table is never selected.
 | `LE_Funnel_Report` | `server/bigquery.js` (units feed, §2.4) | event_name, shopify_order_id, event_timestamp, AA_session_custom_channel_group_split_touch | `data/units_paid.csv`: the channel of each paid order's earliest purchase event, which sets the channel split of units sold on every card |
 | `LE_Funnel_Report` | `server/bigquery.js` (orders and units feeds: the live entries behind a person's draft, §2.4) | event_name, simple_release_name, aa_account_id, draw_id, draw_with_purchase, draw_entry_eligible, winner, event_date | `data/orders_by_product.csv`, `data/units_paid.csv` (only through which drafts count; aggregates only) |
 | `Collector_Concept` | `server/bigquery.js` (the same link, account to Shopify customer) | aa_account_id, shopify_customer_id | `data/orders_by_product.csv`, `data/units_paid.csv` (joined inside BigQuery; no column of it leaves) |
-| `meta_ads_insights_export` | `server/bigquery.js` (spend feed) | campaign_name, spend_date, impressions, reach, link_clicks, spend | `data/spend_daily.csv`: paid spend by campaign × day |
+| `ads_insights_AA_export` | `server/bigquery.js` (spend feed) | campaign_name, adset_name, spend_date, impressions, reachs, link_clicks, spend (summed over the ads of each ad set) | `data/spend_daily.csv`: paid spend by campaign × ad set × day |
 | `Order_Line_Concept` | `server/bigquery.js` (orders feed, §2.4) | simple_release_name, release_name, product_title, shopify_product_id, sku, quantity, order_source_type, cancelled_order, order_financial_status, order_originated_from_drafts, is_private_room, shopify_product_variant_price, shopify_product_type, is_test_order, launch_date, shopify_order_created_date_CET, shopify_draft_order_created_at, shopify_order_id, order_lineitem_id, refund_processed_at, customer_id, framing_offered, shopify_order_facilitator, shopify_order_tags (the last four joined and filtered on inside BigQuery; none leaves) | `data/orders_by_product.csv`, `data/draw_products.csv`, `data/units_paid.csv`, `data/units_by_country.csv` (units paid and orders per release by the country the order ships to, else is billed to; since 28 October 2026) |
 
 Granted and profiled, not yet read: `Order_Concept` (order level: basket size and items,
