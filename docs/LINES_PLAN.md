@@ -187,12 +187,12 @@ section 4b.
 
 ## 8. Open checks
 
-- Whether `meta_ads_insights_export` carries ad set columns. The pull reads
-  `adset_name` (or `ad_set_name`) when the table has it and writes it to
-  `data/spend_daily.csv`; on a campaign-level export the column is blank and
-  a line reads no spend until an ad-set-level export exists (the data team,
-  or `BQ_SPEND_TABLE` pointed at one). BigQuery credentials were not
-  available in the session that built this, so the schema was not read.
+- Settled 9 November 2026: `meta_ads_insights_export` is campaign-level, so
+  the data team added `ads_insights_AA_export` (one row per ad a day, with
+  campaign, ad set and ad). The pull now reads it, summed to campaign x ad
+  set x day; its totals agree with the campaign table on every campaign. A
+  line still reads no spend until its ad sets are named on the Target
+  setting tab.
 - The draws' daily series land in `data/app/release_products.json` on the
   next run of the events aggregation; until then a line's entries are the
   release's shared out by its draws' entrants, and the page says so.
