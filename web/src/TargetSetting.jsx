@@ -54,7 +54,7 @@ function normaliseLE(raw) {
   for (const k of LEGACY_KEYS) if (raw[k] !== undefined && raw[k] !== null) topLegacy[k] = raw[k];
   // the figures that can be cleared ride as null when absent, so a clearing
   // (and an undo) reaches the server, which keeps a key it is not sent
-  const start = { entry_conversion_rate: null, preorder_conversion_rate: null, cost_per_purchase: null, cannibalisation: null, stretch_from: null, marketing_lead: null, campaign_code: "", prefer_recent: true, ...raw };
+  const start = { entry_conversion_rate: null, preorder_conversion_rate: null, cost_per_purchase: null, cost_per_entry: null, cannibalisation: null, stretch_from: null, marketing_lead: null, campaign_code: "", prefer_recent: true, ...raw };
   for (const k of LEGACY_KEYS) delete start[k];
   Object.assign(start, {
     channels_off: raw.channels_off || (legacyTier === "N/A" ? ["referral_artist"] : []),
@@ -194,6 +194,27 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
   const panelCpp = panelTerms.reference_price > 0 && panelTerms.entry_to_unit > 0 ? panelTerms.reference_price / panelTerms.entry_to_unit : Number((b.cost_per_purchase || {}).Median) || 0;
   const cpp = T ? T.paid.cost_per_purchase : panelCpp;
   const cppSource = T ? T.paid.cost_source : "panel";
+  // the cost per entry row: the plan's average at its own spend (the panel's
+  // reference price with no basket yet), the last entry's price, where the
+  // price came from and how, and the middle half of launches against the
+  // curve (the panel's backtest, paid_cost.range_low/high)
+  const P = T ? T.paid : null;
+  const typedEntry = Number(inp.cost_per_entry) > 0, typedUnit = Number(inp.cost_per_purchase) > 0;
+  const cpe = P ? P.cost_per_entry : panelTerms.reference_price > 0 ? panelTerms.reference_price : panelCpp;
+  const cpeBasis = P ? P.cost_basis : panelTerms.reference_price > 0 ? "curve" : "unit";
+  const cpeTag = typedEntry ? "Typed" : typedUnit ? "Per unit" : cppSource === "basket" ? "Basket" : "Panel";
+  const cpeRange = panelTerms.range_low > 0 && panelTerms.range_high > 0 && cpeBasis === "curve" ? [cpe * panelTerms.range_low, cpe * panelTerms.range_high] : null;
+  const nCosted = profile ? Number(profile.n_costed_entries) || 0 : 0;
+  const cpeTip = typedEntry
+    ? "The average cost per paid entry the plan holds: paid entries at this price is the paid budget. Clear it for the basket's price on the curve."
+    : typedUnit
+      ? "Priced per unit: the cost per unit typed below sets the budget, and this is what it comes to per entry. Clear that figure, or type an average per entry here, to price on the curve."
+      : cpeBasis === "curve"
+        ? `What a paid entry costs on average at this plan's spend${P ? `: ${fmt(Math.round(P.entries))} entries for ${fmt(Math.round(P.units))} units at ${fmt(P.entry_to_unit, 2)} units an entry` : ""}, priced on the cost curve from ${cppSource === "basket" ? `the basket's reference price (the median of its ${nCosted} costed launches)` : "the panel's reference price (fewer than three of the basket's launches have a reading)"}, €${fmt(Math.round(P ? P.cost_per_entry_ref : panelTerms.reference_price))} an entry at €${fmt(panelTerms.reference_spend)} of spend: the more a launch spends, the dearer each entry${P ? `, and the last one costs €${fmt(Math.round(P.marginal_cost_per_entry))}` : ""}.${cpeRange ? ` Launches land between €${fmt(Math.round(cpeRange[0]))} and €${fmt(Math.round(cpeRange[1]))} against the curve, the middle half.` : ""} Type an average to hold it flat.`
+        : "What a paid entry costs to buy: paid entries at this price is the paid budget. The panel is too thin to price on the curve, so the constant per unit stands in. Type an average to hold it flat.";
+  const breached = !!(P && P.sense_check_breached);
+  const budgetTip = paidOff ? "Paid is not in plan." : !T ? "Choose a basket first."
+    : `${P.cost_basis === "unit" ? `Paid units × €${fmt(Math.round(P.cost_per_purchase))} per unit` : `${fmt(Math.round(P.entries))} paid entries × €${fmt(Math.round(P.cost_per_entry))} on average${P.cost_basis === "curve" ? ` (€${fmt(Math.round(P.marginal_cost_per_entry))} for the last) on the ${cppSource === "basket" ? "basket's" : "panel's"} curve` : ", typed"}`}${T.benchmark && T.benchmark.paid_budget ? `; the benchmark's is ${fmtMoney(T.benchmark.paid_budget, 0)}` : ""}. ${breached ? "Over" : "Under"} the 6% of launch value sense check.`;
   const activeGroups = profile ? CH.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
   const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
   const shares = T && T.stretch_from ? T.stretch_from : evenShares;
@@ -503,14 +524,16 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               <Group>Paid</Group>
               <CampaignsProp code={codeInForce} chosen={inp.campaign_names} all={meta.meta_campaigns} suggested={sourced.campaigns} asOf={snap.asOf} onChange={(names) => setInp({ ...inp, campaign_names: names })} />
               {!codeInForce && <EditRow id="t-code" label="Code" text value={inp.campaign_code || ""} placeholder="Artist_LE_26" tag="" tip="The code the email, Instagram and artist-post feeds tag this campaign with. Read off the Meta campaign's name once one is ticked." onCommit={(raw) => setInp((prev) => ({ ...prev, campaign_code: raw }))} />}
-              <Prop label="Paid budget" tip={paidOff ? "Paid is not in plan." : T ? `Paid units × ${fmtMoney(cpp)} per unit${T.benchmark && T.benchmark.paid_budget ? `; the benchmark's is ${fmtMoney(T.benchmark.paid_budget, 0)}` : ""}. ${sense ? "Over" : "Under"} the 6% of launch value sense check.` : "Choose a basket first."}>
+              <Prop label="Paid budget" tip={budgetTip}>
                 <Val ic={<Wallet />} tag={!paidOff && T && T.paid.budget_pct_of_launch_value ? `${fmtPct(T.paid.budget_pct_of_launch_value, 1)} of value` : ""}>
                   {paidOff ? "–" : T ? <span style={sense ? { color: "var(--red)" } : undefined}>{fmtMoney(T.paid.budget, 0)}</span> : "–"}
                 </Val>
               </Prop>
-              <EditRow id="t-cpu" label="Cost per unit" glyph="€" value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)} placeholder={fmtMoney(cpp, 0)}
-                tag={Number(inp.cost_per_purchase) > 0 ? "Typed" : cppSource === "basket" ? "Basket" : "Panel"} typed={Number(inp.cost_per_purchase) > 0}
-                tip="What a paid unit costs to buy: paid units at this price is the paid budget. Blank is the basket's median cost per paid unit, or the panel's when fewer than three of the basket's launches have spend on file." onCommit={numCommit("cost_per_purchase", 0, 1e7)} />
+              <EditRow id="t-cpe" label="Cost per entry" glyph="€" value={inp.cost_per_entry === null || inp.cost_per_entry === undefined ? "" : String(inp.cost_per_entry)} placeholder={fmtMoney(cpe, 0)}
+                tag={cpeTag} typed={typedEntry} tip={cpeTip} onCommit={numCommit("cost_per_entry", 0, 1e7)}
+                right={P && cpeBasis === "curve" && !typedEntry && !typedUnit ? <span className="sub" title={`The last entry bought costs €${fmt(Math.round(P.marginal_cost_per_entry))}: the price rises as the spend adds up`}>last €{fmt(Math.round(P.marginal_cost_per_entry))}</span> : null} />
+              {typedUnit && <EditRow id="t-cpu" label="Cost per unit" glyph="€" value={String(inp.cost_per_purchase)} placeholder="" tag="Typed" typed
+                tip="The older figure: a flat price per paid unit, typed before the plan priced entries on the curve. It still sets the budget. Clear it to price on the curve, or type a cost per entry above." onCommit={numCommit("cost_per_purchase", 0, 1e7)} />}
               <EditRow id="t-cann" label="Cannibalised" glyph="%" value={inp.cannibalisation === null || inp.cannibalisation === undefined ? "" : String(Math.round(Number(inp.cannibalisation) * 1000) / 10)} placeholder={`${cannDefault}%`}
                 tag={inp.cannibalisation !== null && inp.cannibalisation !== undefined ? "Typed" : "Default"} typed={inp.cannibalisation !== null && inp.cannibalisation !== undefined}
                 tip="The share of paid entries that would have come anyway. The ROI and the budget floor read profit net of it." onCommit={numCommit("cannibalisation", 0, 95, 100)} />

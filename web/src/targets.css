@@ -50,6 +50,7 @@
 .pr .val.num .q { text-align: left; }
 .pr .val .dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 4px; flex: 0 0 8px; }
 .pr .val .loz { flex: 0 0 auto; }
+.pr .val.edit .sub { font-size: 11.5px; color: var(--faint); white-space: nowrap; flex: 0 0 auto; }   /* a note beside a typed value: the last entry's price on the cost per entry row */
 .pr .wrap { position: relative; min-width: 0; }
 .pr .chipb .tag { margin-left: 8px; }
 .pr .chipb.ro { cursor: default; }
