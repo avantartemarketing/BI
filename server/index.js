@@ -36,6 +36,12 @@ const DECISIONS_PATH = process.env.DECISIONS_PATH || path.join(ROOT, "data", "de
 
 app.use(express.json());
 
+// the connector (server/mcp/): the dashboard's read-only data for a Claude
+// outside it, as an MCP server at /mcp. It is registered ahead of the session
+// gate because a Claude has no browser session: its own token is what lets a
+// request in (MCP_TOKEN; unset, the route answers 404).
+require("./mcp").install(app, { ROOT, DATA, SOURCES: process.env.SOURCES_PATH, readSnapshot: (id) => readSnapshot(id) });
+
 // password login (avantarte.com only) - installs /login, /auth/* and the gate;
 // every route registered after this line requires a signed session cookie.
 const auth = require("./auth");
@@ -229,7 +235,7 @@ function defaultsFor(id, disc) {
     airtable_release: disc.airtable_release || null, airtable_ids: disc.airtable_ids || null,
     preorder_conversion_rate: null,
     prefer_recent: true,
-    cost_per_purchase: null, cannibalisation: null, channels_off: [],
+    cost_per_purchase: null, cost_per_entry: null, cannibalisation: null, channels_off: [],
     stretch_from: null,
   };
 }
@@ -336,15 +342,18 @@ app.post("/api/inputs/:id", route(async (req, res) => {
       if (!dateOf(f)) errors.push(`${f} is needed to set targets - none in the ${isTL ? "feed or Airtable" : "Notion log, the funnel's clock or Airtable"}, so type it`);
     }
   }
-  // what a paid unit costs to buy, in euros: paid units x this is the paid budget.
-  // Empty means the basket's median cost per paid unit, else the panel's median
-  // (etl/benchmarks.json cost_per_purchase; etl/build.py cost_per_purchase_for).
-  if (body.cost_per_purchase !== undefined) {
-    if (body.cost_per_purchase === null || body.cost_per_purchase === "") next.cost_per_purchase = null;
+  // what a paid unit costs to buy, in euros: paid units x this is the paid
+  // budget (the older figure); and what a paid entry costs on average, the
+  // figure the tab takes now: paid entries x this is the budget. Empty means
+  // the basket's own price on the curve, else the panel's (etl/build.py
+  // paid_pricing, etl/paid_cost.py).
+  for (const [field, word] of [["cost_per_purchase", "unit"], ["cost_per_entry", "entry"]]) {
+    if (body[field] === undefined) continue;
+    if (body[field] === null || body[field] === "") next[field] = null;
     else {
-      const v = Number(body.cost_per_purchase);
-      if (!Number.isFinite(v) || v <= 0) errors.push("cost_per_purchase must be a positive number (euros per paid unit) or empty");
-      else next.cost_per_purchase = Math.round(v * 100) / 100;
+      const v = Number(body[field]);
+      if (!Number.isFinite(v) || v <= 0) errors.push(`${field} must be a positive number (euros per paid ${word}) or empty`);
+      else next[field] = Math.round(v * 100) / 100;
     }
   }
   // the share of paid entries that would have come anyway (docs 7), a

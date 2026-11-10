@@ -266,15 +266,57 @@ stays on the snapshot as data.
 ### Step 5 - paid budget
 
 ```
-paid_units  = benchmark_paid_units × K
-paid_budget = paid_units × cost per purchase
+paid_units   = benchmark_paid_units × K
+paid_entries = paid_units ÷ paid entry to unit rate
+paid_budget  = the spend that buys them on the cost curve
 ```
 
-The cost per purchase is the price of a paid unit, taken in this order: the
-release's own figure, where one is typed on the Target setting tab; else the
-basket's median cost per paid unit (each launch's Meta spend over its paid units
-of demand), once three or more of the basket's launches have one on file; else the
-panel's €177. The tab says which of the three priced the release.
+The paid units are asked for as paid entries at the basket's paid entry to unit
+rate (its launches' paid units of demand over their paid entries; the panel's
+rate where the basket has none), and the entries are priced on a curve, not at
+a constant (9 November 2026, `etl/paid_cost.py`). Across the panel's launches
+the average price of a paid entry rose with how much the launch spent in all, a
+launch spending twice as much paying about half as much again per entry, and
+that, not Meta's auction price, is most of the spread between launches. The
+average price over a campaign that spends S in all is
+
+```
+average price(S) = reference price × ((K + S) ÷ (K + €10,000)) ^ slope
+```
+
+the reference price being what a launch pays per entry at the reference spend of
+€10,000 (a typical campaign), K the wear-out's scale (€100, §7), and the slope
+chosen on every build by a leave-one-out backtest over the costed panel (below),
+held between 0.20 (the wear-out a campaign's own days show, §7) and 0.70. The
+budget is the spend S at which S ÷ average price(S) is the entries wanted:
+buying twice the entries costs more than twice, and the last entry costs more
+than the average (the derivative, average × (K + S) ÷ (K + S − slope × S)), so
+the plan can say what the marginal entry is costing.
+
+The price comes in this order: the release's own figure, where one is typed on
+the Target setting tab (a cost per entry, the average the plan expects, or the
+older cost per unit; either prices flat, entries or units at that price); else
+the basket's median reference price over its launches with a reading (each
+one's Meta spend under its campaign code to the close, a code several launches
+share split between them by their paid entries, over its paid entries, brought
+to the reference spend on the curve), once three or more have one; else the
+costed panel's median reference price (€159 at the time of writing; the build
+log and the tab carry today's); and only while the panel is too thin to
+backtest, the constant €177 per unit. The tab says which priced the release.
+
+**The backtest** (`etl/paid_cost.py backtest`; `python3
+etl/analysis/cost_backtest.py` prints it): each launch with 20 paid entries and
+€500 of spend is left out in turn and its average price per paid entry
+predicted from the others, by the panel's median (what the plan fell back to
+until 9 November 2026), by the nearest eight launches by price and demand (a
+basket's kind of answer) and by the curve at each slope on a grid; the slope
+kept is the one whose neighbourhood on the grid misses least. On 9 November
+2026, over 27 launches: the median missed by a factor of 1.53 either way and
+had 48% of launches within ±50%; the curve at 0.55 by 1.44 and 56%; the nearest
+eight by 1.77 and 41%; a regression on spend, organic sessions and price
+fitted well in sample (R² 0.69) and no better than the median out of it, which
+is why the plan carries a curve and no more features. The build logs the table
+on every refresh, and a method replaces the curve only when it beats it there.
 
 Sense check: **paid budget should stay under 6% of launch value** - the dashboard
 flags a breach but does not block it. A release that will not run paid says so
@@ -321,17 +363,23 @@ of 20,000 becoming a target of 20,000 × 1.25 = 25,000, while the conversion
 rates stay the basket's. Entries target 300 ÷ 0.8 = 375, against 240 ÷ 0.8 =
 300 for the benchmark.
 
-No cost per purchase is typed for the release, and 6 of the 8 launches in the
-basket have a cost per paid unit on file (their Meta spend over their paid
-units), so the median of those six, €200, prices a paid unit. Paid budget
-60 × €200 = **€12,000** (benchmark 48 × €200 = €9,600), 2.7% of the launch
-value and inside the 6% sense check. Had fewer than three of the launches had
-a reading, the panel's €177 would have priced it: 60 × €177 = €10,620.
+No cost per entry is typed for the release, and 6 of the 8 launches in the
+basket have a cost per paid entry on file, so the median of their reference
+prices, €150 an entry at €10,000 of spend, prices the paid entries on the curve
+(slope 0.5 here; the build picks today's). The basket's launches brought 1.2
+paid units of demand per paid entry, so the 60 paid units are 50 entries, and
+the spend that buys 50 entries on the curve is **€5,668**: €113 an entry on
+average, €94 a unit, and €223 for the last entry bought. That is 1.3% of the
+launch value and inside the 6% sense check; the benchmark's 48 units at the
+same €94 are €4,534. Had fewer than three of the launches had a reading, the
+whole costed panel's reference price would have priced it the same way; and
+while the panel is too thin to backtest at all, the constant €177 per unit:
+60 × €177 = €10,620.
 
 Paid runs from the day after the announce to the close. On a campaign 25 days
-long that is 24 days, so the plan spends €12,000 ÷ 24 = €500 a day, and 13
+long that is 24 days, so the plan spends €5,668 ÷ 24 = €236 a day, and 13
 days after the announce the paid plan by today is (13 − 1) ÷ 24 = half of it:
-30 of the 60 units, and €6,000 spent. The organic groups are read off the
+30 of the 60 units, and €2,834 spent. The organic groups are read off the
 basket's own pace curves instead (§5).
 
 ## 5. Targets across time: the campaign clock

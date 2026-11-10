@@ -37,7 +37,7 @@ import {
   memberRows, membersOf, norm, signed, useAutosave, useCandidates, useEconomicsItem, useIndexRows, useInputs, useSlackDoc, PCT,
 } from "./TargetsKit.jsx";
 import { resolveProducts, releaseEconomics, releaseLines, LEGACY_KEYS } from "../../shared/economics.mjs";
-import { applyChannelsOff, benchmarkTargets, channelsOffOf, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
+import { applyChannelsOff, benchmarkTargets, channelsOffOf, paidTerms, profileOf, rebalanceShares, stretchWeights } from "../../shared/benchmarkModel.mjs";
 import { similarMembers } from "../../shared/basketRule.mjs";
 import "./targets.css";
 
@@ -181,14 +181,19 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
   const paidOff = isOff("paid");
   const stretchFrom = inp.stretch_from && typeof inp.stretch_from === "object" && !Array.isArray(inp.stretch_from) ? inp.stretch_from : null;
   const stretchTyped = !!(stretchFrom && CH.some((g) => !isOff(g.key) && Number(stretchFrom[g.key]) > 0));
-  const basketCpp = profile && Number(profile.cost_per_purchase) > 0 ? Number(profile.cost_per_purchase) : 0;
-  const panelCpp = Number((b.cost_per_purchase || {}).Median) || 0;
-  const cpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : basketCpp > 0 ? basketCpp : panelCpp;
   const partialEdition = econ.edition_total > econ.edition_size && econ.edition_size > 0;
+  // the typed prices go to the model as typed: it prices the paid units on
+  // the basket's curve, else the panel's, where nothing is typed (paidPricing)
   const T = profile ? benchmarkTargets(profile, {
-    edition_size: editionSize, unit_price: econ.unit_price || 0, cost_per_purchase: cpp,
+    edition_size: editionSize, unit_price: econ.unit_price || 0, cost_per_purchase: inp.cost_per_purchase, cost_per_entry: inp.cost_per_entry,
     units_per_buyer: (snap.targets || {}).units_per_buyer || 0, entry_conversion_rate: inp.entry_conversion_rate, stretch_from: stretchFrom,
   }, b) : null;
+  // the price a paid unit is planned at: the model's, else, with no basket
+  // yet, the panel's reference price per unit
+  const panelTerms = paidTerms(b);
+  const panelCpp = panelTerms.reference_price > 0 && panelTerms.entry_to_unit > 0 ? panelTerms.reference_price / panelTerms.entry_to_unit : Number((b.cost_per_purchase || {}).Median) || 0;
+  const cpp = T ? T.paid.cost_per_purchase : panelCpp;
+  const cppSource = T ? T.paid.cost_source : "panel";
   const activeGroups = profile ? CH.map((g) => g.key).filter((g) => !isOff(g) && Number((profile.units_by_group || {})[g]) > 0) : [];
   const evenShares = profile ? stretchWeights({ stretch_from: null }, profile.units_by_group) : {};
   const shares = T && T.stretch_from ? T.stretch_from : evenShares;
@@ -327,8 +332,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
     const lbm = built && built.benchmark ? built.benchmark : null;
     const picked = linePicks[ln.key] || null;
     const lprof = picked && picked.profile ? applyChannelsOff(picked.profile, off) : lbm ? applyChannelsOff(profileOf(lbm), off) : null;
-    const lcpp = Number(inp.cost_per_purchase) > 0 ? Number(inp.cost_per_purchase) : lprof && Number(lprof.cost_per_purchase) > 0 ? Number(lprof.cost_per_purchase) : panelCpp;
-    const lT = lprof && lprof.units > 0 ? benchmarkTargets(lprof, { edition_size: ln.edition_size, unit_price: ln.unit_price || 0, cost_per_purchase: lcpp, units_per_buyer: 0, entry_conversion_rate: inp.entry_conversion_rate, stretch_from: settings.stretch_from || null }, b) : null;
+    const lT = lprof && lprof.units > 0 ? benchmarkTargets(lprof, { edition_size: ln.edition_size, unit_price: ln.unit_price || 0, cost_per_purchase: inp.cost_per_purchase, cost_per_entry: inp.cost_per_entry, units_per_buyer: 0, entry_conversion_rate: inp.entry_conversion_rate, stretch_from: settings.stretch_from || null }, b) : null;
+    const lcpp = lT ? lT.paid.cost_per_purchase : panelCpp;
     const summary = (snap.lines || []).find((x) => x.key === ln.key) || null;
     const edited = picked ? picked.kind === "bespoke" : !!(settings.benchmark_basket && settings.benchmark_basket.kind === "bespoke");
     const n = picked ? (picked.members || []).length : lbm && lbm.basket ? lbm.basket.n : null;
@@ -503,8 +508,8 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
                   {paidOff ? "–" : T ? <span style={sense ? { color: "var(--red)" } : undefined}>{fmtMoney(T.paid.budget, 0)}</span> : "–"}
                 </Val>
               </Prop>
-              <EditRow id="t-cpu" label="Cost per unit" glyph="€" value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)} placeholder={fmtMoney(basketCpp > 0 ? basketCpp : panelCpp, 0)}
-                tag={Number(inp.cost_per_purchase) > 0 ? "Typed" : basketCpp > 0 ? "Basket" : "Panel"} typed={Number(inp.cost_per_purchase) > 0}
+              <EditRow id="t-cpu" label="Cost per unit" glyph="€" value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)} placeholder={fmtMoney(cpp, 0)}
+                tag={Number(inp.cost_per_purchase) > 0 ? "Typed" : cppSource === "basket" ? "Basket" : "Panel"} typed={Number(inp.cost_per_purchase) > 0}
                 tip="What a paid unit costs to buy: paid units at this price is the paid budget. Blank is the basket's median cost per paid unit, or the panel's when fewer than three of the basket's launches have spend on file." onCommit={numCommit("cost_per_purchase", 0, 1e7)} />
               <EditRow id="t-cann" label="Cannibalised" glyph="%" value={inp.cannibalisation === null || inp.cannibalisation === undefined ? "" : String(Math.round(Number(inp.cannibalisation) * 1000) / 10)} placeholder={`${cannDefault}%`}
                 tag={inp.cannibalisation !== null && inp.cannibalisation !== undefined ? "Typed" : "Default"} typed={inp.cannibalisation !== null && inp.cannibalisation !== undefined}

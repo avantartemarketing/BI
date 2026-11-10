@@ -872,8 +872,8 @@ plan sold nothing in the median launch - shows its actuals rather than a target 
 model.
 
 What stayed, and where it moved: the cost per purchase is a figure per release
-(`cost_per_purchase`, € per paid unit; blank means the basket's median cost per paid unit, else
-the panel's median, §4 E); the Referral
+(`cost_per_purchase`, € per paid unit, and since 9 November 2026 `cost_per_entry`, € per paid
+entry; blank means the basket's price on the cost curve, else the panel's, §4 E); the Referral
 Artist tier became the artist posting tier (`artist_posting_tier`), itself retired on 7 October
 2026 when the artist-posts benchmark went to the all-campaign median; "N/A" on Referral Artist became the artist's own channels not in plan
 (`channels_off`, spec §4.3); and the order-split medians still place a group's target on its
@@ -967,24 +967,38 @@ Keep 0.8 as the planning constant; surface the per-channel table as diagnostics.
 rate prices the demand the benchmark is read on (§4a.2).
 
 **E. Cost per purchase (paid)**: quartiles over 22 hand-curated historical paid campaigns
-(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. Since 2026-09-23 the price of a
-paid unit comes from the basket first: each panel launch's cost per paid unit is Meta's spend
-under its campaign code from its window's start to the close, over its paid units of demand
-(§4a.2: what the spend bought, whether or not the edition had room for it) with the launch's
-Untracked units folded in (`demand_share_paid` × all demand), the page's own basis for a paid
-unit (`baskets.attach_paid_costs`, a reading from 5 tracked paid units and
-some spend; the campaign code is the orders feed's, §2.4), and the basket's median over the
-members with a reading prices the paid budget once three have one (`profile.cost_per_purchase`,
-`n_costed`). Until 2026-09-28 it was the spend over the whole panel window, to three days after
-the allocation, over the tracked paid units alone: a basis about 7% dearer per unit than the
-page's, and far dearer for a launch that spent after its close (Felipe Pantone spent 15,121 of
-its 16,750 there), so paid read cheaper against plan than it was. The one difference left is
-the window's start, 45 days before the announce where the page opens at the private room;
-no costed launch on file has spend that early. The release's own
-`cost_per_purchase` on the Target setting tab comes before it (Abdulnasser Gharem carries
-€291, the quartile it was planned at), and the Median constant stands in when the basket has
-too few readings. `targets.paid.cost_per_purchase_source` says which of the three priced it. Companion stats (static): ROI
-2.2/3.4/6.9, paid % of units .11/.21/.31.
+(mixing LE + TL): **Low €128.75 / Median €177 / High €291**. Since 2026-09-23 the price comes
+from the basket first, and since 9 November 2026 it is a price per paid entry on a curve
+(`etl/paid_cost.py`, docs/METHODOLOGY.md step 5): each panel launch's cost per paid entry is
+Meta's spend under its campaign code from its window's start to the close, over its tracked
+paid entries (`baskets.attach_paid_costs`, a reading from 5 paid entries and some spend; the
+campaign code is the orders feed's, §2.4), and beside it its cost per paid unit over its paid
+units of demand (§4a.2: what the spend bought, whether or not the edition had room for it)
+with the launch's Untracked units folded in (`demand_share_paid` × all demand), the page's own
+basis for a paid unit, and the two counts' ratio (`paid_entry_to_unit`). A campaign code
+several launches share (Multiple_Amphorae_24, eight) bought entries for all of them, so its
+spend is split between them by their paid entries (equal shares when none has any); until 9
+November it was counted once per launch, which priced Jenny Holzer and Harland Miller at the
+whole campaign each (about €1,950 a unit) in any basket they joined. Each launch's price is
+then brought to the reference spend on the curve (`cost_per_entry_ref`: average price =
+reference price × ((K + spend) ÷ (K + €10,000)) ^ slope, the campaign's whole spend being its
+place on it, K = `cpe_wearout_k`, the slope the backtest's), and the basket's median over the
+members with a reading prices the paid budget once three have one (`profile.cost_per_entry_ref`,
+`cost_per_entry`, `paid_entry_to_unit`, `n_costed_entries`; the per-unit `cost_per_purchase`
+and `n_costed` stay beside them). The panel's own terms (`baskets.PAID_COST`, on the
+benchmarks as `paid_cost`: `slope`, `reference_price`, `entry_to_unit`, `n`, `range_low`,
+`range_high`, the `backtest`) price a release whose basket has fewer; the Median constant per
+unit stands in only while the panel is too thin to backtest (8 scored launches). Until
+2026-09-28 the spend was the whole panel window's, to three days after the allocation, over
+the tracked paid units alone: a basis about 7% dearer per unit than the page's, and far
+dearer for a launch that spent after its close (Felipe Pantone spent 15,121 of its 16,750
+there), so paid read cheaper against plan than it was. The one difference left is the
+window's start, 45 days before the announce where the page opens at the private room; no
+costed launch on file has spend that early. The release's own `cost_per_entry` (the average
+the plan expects) or `cost_per_purchase` on the Target setting tab comes before it (Abdulnasser
+Gharem carries €291 a unit, the quartile it was planned at), flat. `targets.paid.cost_source`
+says which priced it (`release`, `basket`, `panel`) and `cost_basis` how (`curve`, `entry`,
+`unit`). Companion stats (static): ROI 2.2/3.4/6.9, paid % of units .11/.21/.31.
 
 Recomputation policy for the rebuild: recompute quartiles nightly from BigQuery over a
 **correctly filtered panel** (year ≥ 2024, exclude undersubscribed: oversubscription ≤ 10 units,
@@ -1089,7 +1103,7 @@ sessions`. Groups are the five display groups of §1.3. The volumes are the pane
 the private room to two days after the close, so a session benchmark carries some traffic
 from before the private room that the page never counts: a few per cent of sessions on most
 launches, more on a channel that runs early (Parra's artist referrals, 2,173 on the panel
-against 1,398 on the page). The cost per paid unit is on the page's basis (§4 E).
+against 1,398 on the page). The costs per paid entry and unit are on the page's basis (§4 E).
 
 **Units are demand, not sales** (`baskets.demand_columns`, on the panel as it loads). A
 comparable that sold out with people left wanting - We are the Revolution: 1,000 offered, 987
@@ -1267,8 +1281,14 @@ units[g]     = profile["units_by_group"][g] + stretch × w[g]   # sums to editio
 k[g]         = units[g] / profile["units_by_group"][g]         # the group's own uplift; K for every group with the basket's shares
 sessions[g]  = profile["sessions_by_group"][g] × k[g]          # conversion held
 entries[g]   = units[g] / 0.8                                  # the eligible-entry → order rate, §4 D
-paid_budget  = units["paid"] × cost_per_purchase               # the release's figure, else the basket's median cost per paid unit, else the panel constant (§4 E)
+paid_entries = units["paid"] / paid_entry_to_unit              # the basket's rate, else the panel's, else the entry rate
+paid_budget  = spend_for_entries(paid_entries, reference price)  # the spend that buys them on the cost curve (paid_pricing, §4 E): the basket's median reference price, else the panel's; a typed cost per entry or per unit prices flat
 ```
+
+`paid_pricing` returns the budget with `entries`, `entry_to_unit`, `cost_per_purchase` (the
+budget over the units: the average price per unit the paid plan and the benchmark's budget
+read), `cost_per_entry` (the average), `cost_per_entry_ref`, `marginal_cost_per_entry` (the
+last entry's), `cost_slope`, `cost_source` and `cost_basis`, all under `targets.paid`.
 
 `compute_targets` returns `edition_size`, `paid_pct`, `paid_units`, `organic_units`,
 `per_channel`, `paid{…}`, `launch_value`, `units_per_buyer`, `buyers`, `buyers_by_group`,
@@ -1372,7 +1392,8 @@ release). The combined page's basket block is the lines' profiles read together:
 `units_sold`, `entries`, the middle half and `units_by_group` summed; `sessions_by_group`
 the **larger line's per group** and `sessions` their sum; `conv` per group the lines'
 entries (each line's rate times its sessions) over the shared sessions; prices and rates
-weighted by units; the cost per paid unit weighted by benchmark paid units; `members` the
+weighted by units; the costs per paid unit and per paid entry (reference and as paid) and
+the paid entry to unit rate weighted by benchmark paid units; `members` the
 union, `n` the smaller; `benchmark.lines` names each line's basket. Each line's targets are
 `benchmark_targets` on its own profile and stretch; the release's are the lines' summed
 (`per_channel` purchases and entries, paid units and budget, `entries_target`), with
@@ -2431,7 +2452,7 @@ data), `reOfferRecovery`.
 ```
 dim_release(release_name PK, campaign_code, type LE|TL, artist, announce_date,
             private_room_open, launch_end, campaign_length_days, edition_size, unit_price,
-            economics…, benchmark_basket, channels_off, cost_per_purchase, cannibalisation)
+            economics…, benchmark_basket, channels_off, cost_per_purchase, cost_per_entry, cannibalisation)
 dim_product(release_name FK, product_name, edition)
 fact_funnel_daily(release_name, channel, event_date, sessions, page_views, draw_entries,
             eligible_entry_units, eligible_units_no_conv, units_total, units_by_route…,
@@ -2474,8 +2495,11 @@ actuals-only page omits it.
 | `builtAt` | when the page was written (UTC, `write_page`): the header reads it beside `asOf`, so a page's age is its own and not the refresh's. A page that fails to build keeps its previous file and its previous index row (`guard_page`, README "One page's failure never stops the build"), and its `builtAt` says so |
 | `benchmark.unitsByGroup`, `sessionsByGroup`, `convByGroup` | the per-group medians. The conversion held is `unitsByGroup / sessionsByGroup` (session → unit), the rate `funnelByGroup.conv_benchmark` carries and the Target setting tab's `Session → unit (held)` column shows; `convByGroup` is the basket's median session → eligible entry rate (`conv_sess_entry`), descriptive only - no target is read from it |
 | `benchmark.paidBudget` | benchmark paid units × the cost per purchase in force: the basket's own budget, unscaled, the same figure as `paid.benchmarkBudget`. The target's budget, × K, is `targets.paid.budget` (§4a.3) |
-| `benchmark.costPerPurchase`, `costPerPurchaseN` | the basket's median cost per paid unit (0 when fewer than three members have a reading, and the panel constant prices the budget; 6 dp, the precision the Target setting tab prices the budget at) and the members with one (§4 E) |
-| `targets.paid.cost_per_purchase`, `cost_per_purchase_source` | the price a paid unit is planned at and where it came from: `release`, `basket` or `panel` |
+| `benchmark.costPerPurchase`, `costPerPurchaseN` | the basket's median cost per paid unit (0 when fewer than three members have a reading; 6 dp, the precision the Target setting tab prices the budget at) and the members with one (§4 E) |
+| `benchmark.costPerEntryRef`, `costPerEntry`, `paidEntryToUnit`, `costPerEntryN` | the basket's median cost per paid entry at the reference spend on the curve (what the budget is read from), as paid, its paid entry to unit rate, and the members with a reading (0 when fewer than three have one, and the panel's terms price the budget; §4 E) |
+| `targets.paid.cost_per_purchase`, `cost_per_purchase_source` | the average price a paid unit is planned at (the budget over the units) and where it came from: `release`, `basket`, `panel` or `lines` |
+| `targets.paid.entries`, `entry_to_unit`, `cost_per_entry`, `cost_per_entry_ref`, `marginal_cost_per_entry`, `cost_slope`, `cost_source`, `cost_basis` | the paid entries asked for and the rate, the average price per entry, the reference price and the last entry's where the curve priced it, the curve's slope, and the source and basis (`curve`, `entry`, `unit`) of the price (§4a.3) |
+| `benchmarks.paid_cost` (inputs.json) | the panel's terms for a paid entry as the build set them: `slope` (and `slope_source`), `k`, `reference_spend`, `reference_price`, `entry_to_unit`, `n`, `range_low`, `range_high`, `spread`, and the `backtest` table (§4 E) |
 | `benchmark.channelsOff` | the display groups this release set aside (BENCHMARK_SPEC §4.3); their medians are zero above and the other channels carry the target |
 | `benchmark.unitsAll`, `unitsSoldAll`, `sessionsAll`, `entriesAll`, `unitsP25All`, `unitsP75All`, `unitsByGroupAll`, `sessionsByGroupAll`, `convByGroupAll` | the basket's full medians before any channel was set aside, so the page can say what left and the browser can re-read the basket as the switches move; at the build's precision (6 dp, as `costPerPurchase`), so the Target setting tab rebuilds `targets.paid.budget` and `paidBudget` to the cent with nothing edited |
 | `benchmark.privateRoomShare` | the basket's median private-room share of email units - descriptive; nothing derives a target from it since the split went (§3) |

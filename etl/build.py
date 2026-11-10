@@ -66,6 +66,7 @@ import pandas as pd
 # changed anything. build.py is only ever run as a script (server/sheets.js
 # execs it), so etl/ is on the path.
 import baskets
+import paid_cost   # the price of a paid entry as the plan reads it: the curve and its backtest (docs step 5)
 import pricing
 import tl   # timed launches: the release model, the panel and the pages (docs/TL_SPEC.md)
 # The per-product sell-through rule (docs §6.3): the entries in hand allocated
@@ -708,9 +709,13 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
     paid_after = float((out.get("units_by_group") or {}).get("paid") or 0.0)
     if paid_before > 0 and paid_after > 0:
         out["cost_scale"] = paid_before / paid_after
-        cpp = float(profile.get("cost_per_purchase") or 0.0)
-        if cpp > 0:
-            out["cost_per_purchase"] = cpp * out["cost_scale"]
+        # the prices per unit and per entry alike: the entries scale with the
+        # units at the basket's entry to unit rate, and the curve's budget
+        # reads entries x reference price, so the budget does not move
+        for key in ("cost_per_purchase", "cost_per_entry_ref", "cost_per_entry"):
+            v = float(profile.get(key) or 0.0)
+            if v > 0:
+                out[key] = v * out["cost_scale"]
     out["direct_spread"] = norm
     return out
 
@@ -814,6 +819,11 @@ def combine_profiles(profiles: list[dict]) -> dict:
     paid_w = [(_num(pr.get("cost_per_purchase")), _num((pr.get("units_by_group") or {}).get("paid"))) for pr in profiles]
     out["cost_per_purchase"] = _num(_wmean([(c, w) for c, w in paid_w if c > 0]))
     out["n_costed"] = int(min(int(pr.get("n_costed") or 0) for pr in profiles))
+    # and what a paid entry costs them, the same way
+    for key in ("cost_per_entry_ref", "cost_per_entry", "paid_entry_to_unit"):
+        pairs = [(_num(pr.get(key)), _num((pr.get("units_by_group") or {}).get("paid"))) for pr in profiles]
+        out[key] = _num(_wmean([(c, w) for c, w in pairs if c > 0]))
+    out["n_costed_entries"] = int(min(int(pr.get("n_costed_entries") or 0) for pr in profiles))
     if any("cost_scale" in pr for pr in profiles):
         out["cost_scale"] = _num(_wmean([(_num(pr.get("cost_scale") or 1.0), w) for pr, w in zip(profiles, w_units)]))
     if any("direct_spread" in pr for pr in profiles):
@@ -896,6 +906,7 @@ def combine_targets(line_targets: dict[str, dict], release: dict, profile: dict)
             cur["eligible_entries"] += float(pc["eligible_entries"])
     paid_units = sum(float(t["paid"]["units"]) for t in parts)
     budget = sum(float(t["paid"]["budget"]) for t in parts)
+    paid_entries = sum(float(t["paid"].get("entries") or 0.0) for t in parts)
     organic_units = size - paid_units
     for c, pc in per_channel.items():
         pc["order_split"] = (pc["purchases"] / organic_units) if organic_units else 0.0
@@ -922,7 +933,11 @@ def combine_targets(line_targets: dict[str, dict], release: dict, profile: dict)
         "paid": {
             "units": paid_units, "eligible_entries": paid_units / e2o, "sessions": 0.0, "session_to_entry": 0.0,
             "cost_per_purchase": (budget / paid_units) if paid_units > 0 else 0.0,
-            "cost_per_purchase_source": "lines", "budget": budget,
+            "cost_per_purchase_source": "lines", "cost_source": "lines", "cost_basis": "lines", "budget": budget,
+            # the lines' paid entries together, and what the budget pays per entry over them
+            "entries": paid_entries, "entry_to_unit": (paid_units / paid_entries) if paid_entries > 0 else 0.0,
+            "cost_per_entry": (budget / paid_entries) if paid_entries > 0 else 0.0,
+            "cost_per_entry_ref": None, "marginal_cost_per_entry": None, "cost_slope": None,
             "budget_pct_of_launch_value": budget / launch_value if launch_value else None,
             "sense_check_breached": (budget / launch_value) > BENCH["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
         },
@@ -1401,11 +1416,20 @@ def artist_posts_benchmarks(ap: pd.DataFrame, as_of: date) -> dict:
 
 # ---------------------------------------------------------------- target model (docs §3)
 
+def _typed(v) -> float:
+    """A typed positive figure as a float, else 0."""
+    try:
+        return float(v) if v not in (None, "") and float(v) > 0 else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def cost_per_purchase_for(release: dict, b: dict = BENCH, profile: dict | None = None) -> float:
-    """What a paid unit costs to buy, the price the paid budget is set at:
-    the release's own figure (cost_per_purchase on the Target setting tab),
-    else the basket's median cost per paid unit (its launches' Meta spend
-    over their paid units, baskets.attach_paid_costs; on the profile as
+    """The flat price of a paid unit, as the budget was set before the curve
+    (9 November 2026; paid_pricing is what prices the budget now): the
+    release's own figure (cost_per_purchase on the Target setting tab), else
+    the basket's median cost per paid unit (its launches' Meta spend over
+    their paid units, baskets.attach_paid_costs; on the profile as
     cost_per_purchase, 0 when too few members have a reading), else the
     panel's constant. A release saved while the figure was still a quartile
     pick (cpp_pick, retired) is read at that quartile. On a profile read with
@@ -1413,9 +1437,9 @@ def cost_per_purchase_for(release: dict, b: dict = BENCH, profile: dict | None =
     cost_scale, as the basket's figure already has (spread_profile), so the
     budget is the same whichever way Direct is read."""
     scale = float((profile or {}).get("cost_scale") or 1.0)
-    own = release.get("cost_per_purchase")
-    if own not in (None, "") and float(own) > 0:
-        return float(own) * scale
+    own = _typed(release.get("cost_per_purchase"))
+    if own > 0:
+        return own * scale
     basket = float((profile or {}).get("cost_per_purchase") or 0)
     if basket > 0:
         return basket
@@ -1425,11 +1449,113 @@ def cost_per_purchase_for(release: dict, b: dict = BENCH, profile: dict | None =
 
 
 def cost_per_purchase_source(release: dict, b: dict = BENCH, profile: dict | None = None) -> str:
-    """Where cost_per_purchase_for's figure came from: release, basket or panel."""
-    own = release.get("cost_per_purchase")
-    if own not in (None, "") and float(own) > 0:
+    """Where the paid price came from: release (a typed cost per entry or per
+    unit), basket (its own readings) or panel."""
+    if _typed(release.get("cost_per_purchase")) > 0 or _typed(release.get("cost_per_entry")) > 0:
         return "release"
-    return "basket" if float((profile or {}).get("cost_per_purchase") or 0) > 0 else "panel"
+    prof = profile or {}
+    return "basket" if float(prof.get("cost_per_entry_ref") or 0) > 0 or float(prof.get("cost_per_purchase") or 0) > 0 else "panel"
+
+
+def paid_terms(b: dict = BENCH) -> dict:
+    """The panel's terms for pricing a paid entry (paid_cost.panel_terms): the
+    build's, carried on the benchmarks as paid_cost once the panel has been
+    costed (baskets.PAID_COST), else the benchmarks file's defaults with no
+    reference price, which leaves the constant per unit to stand in."""
+    t = dict(b.get("paid_cost") or baskets.PAID_COST or {})
+    bounds = b.get("paid_cost_slope_bounds") or [paid_cost.SLOPE_GRID[0], paid_cost.SLOPE_GRID[-1]]
+    t.setdefault("k", float(b.get("cpe_wearout_k") or paid_cost.K_DEFAULT))
+    t.setdefault("reference_spend", float(b.get("paid_cost_reference_spend") or paid_cost.REFERENCE_SPEND))
+    t.setdefault("slope", float(bounds[0]))
+    t.setdefault("reference_price", 0.0)
+    t.setdefault("entry_to_unit", 0.0)
+    return t
+
+
+def paid_pricing(release: dict, b: dict, profile: dict | None, units: float, e2o: float) -> dict:
+    """The paid budget for `units` paid units and the prices behind it (docs
+    step 5, 9 November 2026). The units are asked for as paid entries at the
+    basket's paid entry to unit rate (else the panel's, else the entry rate
+    the page runs on), and the entries are priced in this order:
+
+      release  a typed cost per unit (cost_per_purchase, the older figure) or
+               cost per entry (cost_per_entry, the average the plan expects):
+               flat, the budget is units or entries at that price
+      basket   the basket's median reference price (cost_per_entry_ref, three
+               costed members): the budget is the spend that buys the entries
+               on the curve (paid_cost.spend_for_entries), the price rising as
+               the spend adds up; a basket costed per unit only (an older
+               snapshot) prices flat at its cost per paid unit
+      panel    the costed panel's reference price on the curve, or, while the
+               panel is too thin to backtest, the constant per unit
+
+    A profile read with Direct spread carries cost_scale: the typed figures
+    and the panel's take it here, the basket's already have (spread_profile),
+    so the budget is the same whichever way Direct is read. Returns the
+    budget, the entries, the rate, the average cost per unit (the budget over
+    the units: what the page's paid plan and its benchmark budget read) and
+    per entry, the reference price and the marginal price of the last entry
+    where the curve priced it, the slope, and where the price came from
+    (cost_source: release, basket or panel; cost_basis: unit, entry or
+    curve)."""
+    prof = profile or {}
+    t = paid_terms(b)
+    scale = float(prof.get("cost_scale") or 1.0)
+    slope, k, s_ref = float(t["slope"]), float(t["k"]), float(t["reference_spend"])
+    e2u = float(prof.get("paid_entry_to_unit") or 0.0) or float(t.get("entry_to_unit") or 0.0) or float(e2o or 0.0)
+    units = float(units or 0.0)
+    entries = (units / e2u) if e2u > 0 else 0.0
+    own_unit, own_entry = _typed(release.get("cost_per_purchase")), _typed(release.get("cost_per_entry"))
+    basket_ref, basket_unit = float(prof.get("cost_per_entry_ref") or 0.0), float(prof.get("cost_per_purchase") or 0.0)
+    panel_ref = float(t.get("reference_price") or 0.0)
+    ref, flat_unit = None, 0.0     # the curve's reference price, or the flat price per unit
+    if own_unit > 0:
+        flat_unit, source, basis = own_unit * scale, "release", "unit"
+    elif own_entry > 0:
+        flat_unit, source, basis = (own_entry * scale / e2u) if e2u > 0 else 0.0, "release", "entry"
+    elif basket_ref > 0:
+        ref, source, basis = basket_ref, "basket", "curve"
+    elif basket_unit > 0:
+        flat_unit, source, basis = basket_unit, "basket", "unit"
+    elif panel_ref > 0:
+        ref, source, basis = panel_ref * scale, "panel", "curve"
+    else:
+        pick = release.get("cpp_pick")
+        table = b["cost_per_purchase"]
+        flat_unit, source, basis = float(table[pick] if pick in table else table["Median"]) * scale, "panel", "unit"
+    if ref is not None:
+        budget = paid_cost.spend_for_entries(entries, ref, slope, k, s_ref)
+        per_entry = (budget / entries) if entries > 0 else paid_cost.average_price(0.0, ref, slope, k, s_ref)
+        marginal = paid_cost.marginal_price(budget, ref, slope, k, s_ref)
+        per_unit = (budget / units) if units > 0 else (per_entry / e2u if e2u > 0 else 0.0)
+    else:
+        budget = units * flat_unit
+        per_unit = flat_unit
+        per_entry = flat_unit * e2u
+        marginal = per_entry
+    return {
+        "budget": budget, "entries": entries, "entry_to_unit": e2u,
+        "cost_per_purchase": per_unit, "cost_per_purchase_source": source,
+        "cost_source": source, "cost_basis": basis,
+        "cost_per_entry": per_entry, "cost_per_entry_ref": ref, "marginal_cost_per_entry": marginal,
+        "cost_slope": slope if ref is not None else None,
+    }
+
+
+def paid_cost_summary(t: dict) -> str:
+    """One line on the panel's paid cost terms for the build log: the slope
+    and where it came from, the reference price, and how the backtest's
+    estimators compare (the curve against the panel's median)."""
+    bt = (t.get("backtest") or {}).get("estimators") or {}
+    if not t.get("reference_price"):
+        return f"panel too thin to price an entry ({t.get('n', 0)} costed launches): the constant per unit stands in"
+    slope = t.get("slope")
+    curve = bt.get(f"curve_{float(slope):.2f}") or {}
+    median = bt.get("panel_median") or {}
+    return (f"EUR {t['reference_price']:.0f} an entry at EUR {t['reference_spend']:,.0f} spend, slope {slope} "
+            f"({t.get('slope_source')}), {t.get('entry_to_unit')} units an entry, {t.get('n')} launches; backtest typical miss "
+            f"x{curve.get('typical_miss', 0):.2f} on the curve against x{median.get('typical_miss', 0):.2f} on the median, "
+            f"{round(100 * float(curve.get('within_half') or 0))}% within half against {round(100 * float(median.get('within_half') or 0))}%")
 
 
 def _group_channel_split(group: str) -> dict[str, float]:
@@ -1656,8 +1782,10 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
                 "session_to_entry": conv,
             }
 
-    cpp = cost_per_purchase_for(release, b, profile)
-    budget = paid_units * cpp        # the paid units, wherever the stretch was placed
+    # the paid units, wherever the stretch was placed, asked for as entries
+    # and priced on the curve, or flat where a figure was typed (paid_pricing)
+    pricing = paid_pricing(release, b, profile, paid_units, e2o)
+    budget = pricing["budget"]
     launch_value = size * release["unit_price"]
     organic_sessions = sum(pc["sessions"] for pc in per_channel.values())
 
@@ -1669,7 +1797,7 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
         "paid": {
             "units": paid_units, "eligible_entries": paid_units / e2o,
             "sessions": sessions["paid"], "session_to_entry": profile["conv"]["paid"],
-            "cost_per_purchase": cpp, "cost_per_purchase_source": cost_per_purchase_source(release, b, profile), "budget": budget,
+            **pricing,
             "budget_pct_of_launch_value": budget / launch_value if launch_value else None,
             "sense_check_breached": (budget / launch_value) > b["budget_sense_check_max_pct_of_launch_value"] if launch_value else False,
         },
@@ -7706,6 +7834,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # tab prices the budget with it, so at the build's precision too
             "costPerPurchase": round(float(profile.get("cost_per_purchase") or 0), 6),
             "costPerPurchaseN": int(profile.get("n_costed") or 0),
+            # and what a paid entry cost them: at the reference spend on the
+            # curve (what the budget is read from), as paid, their paid entry
+            # to unit rate and the members with a reading (docs step 5)
+            "costPerEntryRef": round(float(profile.get("cost_per_entry_ref") or 0), 6),
+            "costPerEntry": round(float(profile.get("cost_per_entry") or 0), 6),
+            "paidEntryToUnit": round(float(profile.get("paid_entry_to_unit") or 0), 6),
+            "costPerEntryN": int(profile.get("n_costed_entries") or 0),
             # the people behind the basket's units, at the rate the target
             # holds. The rate is held at the benchmark, so the whole uplift
             # falls on the buyer count and benchmark x K is the target (§4.2)
@@ -8332,10 +8467,14 @@ def main(only: str | None = None):
     # is not there - a checkout without the clustering output - is not a reason
     # to fail the build; those releases get their actuals-only pages until it is.
     try:
-        # each launch's cost per paid unit from the spend feed and the orders
-        # feed's campaign codes, so a basket can price the paid budget
-        panel = baskets.attach_paid_costs(baskets.load_panel(), spend, orders_campaign_codes())
+        # each launch's cost per paid entry and unit from the spend feed and
+        # the orders feed's campaign codes, so a basket can price the paid
+        # budget; the panel's own terms (the curve's slope from the backtest,
+        # the reference price) go on the benchmarks for the pages and the tab
+        panel = baskets.attach_paid_costs(baskets.load_panel(), spend, orders_campaign_codes(), terms=paid_terms(BENCH))
+        BENCH["paid_cost"] = dict(baskets.PAID_COST)
         print(f"baskets: {len(panel)} draw launches in the panel")
+        print("paid cost: " + paid_cost_summary(BENCH["paid_cost"]))
     except (OSError, ValueError, KeyError) as e:
         panel = None
         print(f"baskets: no draw panel ({e}) - no release can be benchmarked, so none is targeted")

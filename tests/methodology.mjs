@@ -19,7 +19,10 @@ const require = createRequire(import.meta.url);
 const { render } = require("../server/methodology.js");
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 const md = read("../docs/METHODOLOGY.md");
-const bench = JSON.parse(read("../etl/benchmarks.json"));
+// the benchmarks with the panel's terms for a paid entry as a build writes
+// them (etl/build.py paid_terms): the example states its own slope
+const bench = { ...JSON.parse(read("../etl/benchmarks.json")),
+  paid_cost: { slope: 0.5, k: 100, reference_spend: 10000, reference_price: 159, entry_to_unit: 1.16 } };
 
 /* ---- the worked example: an illustration, labelled as one ---- */
 const at = md.indexOf("### Worked example");
@@ -37,10 +40,11 @@ const release = { edition_size: 300, unit_price: 1500 };
 const median = 240;
 const share = { aa_email: 0.40, aa_social: 0.05, referral_artist: 0.025, search_direct_other: 0.325, paid: 0.20 };
 const sessions = { aa_email: 8000, aa_social: 2000, referral_artist: 1000, search_direct_other: 5000, paid: 4000 };
-const costed = 6, cpp = 200;
+const costed = 6, ref = 150, e2u = 1.2;
 const profile = {
   units: median, units_by_group: Object.fromEntries(GROUPS.map((g) => [g, share[g] * median])),
-  sessions_by_group: sessions, cost_per_purchase: cpp, n_costed: costed, units_per_buyer: 1,
+  sessions_by_group: sessions, units_per_buyer: 1,
+  cost_per_entry_ref: ref, cost_per_entry: 140, paid_entry_to_unit: e2u, n_costed_entries: costed, cost_per_purchase: 120, n_costed: costed,
 };
 const t = benchmarkTargets(profile, release, bench);
 
@@ -74,20 +78,33 @@ says(`median of ${fmt(bmSessions)} becoming a target of ${fmt(bmSessions)} × ${
 assert.strictEqual(t.entry_rate, 0.8);
 says(`Entries target ${release.edition_size} ÷ 0.8 = ${fmt(t.entries_target)}, against ${median} ÷ 0.8 = ${fmt(t.benchmark.entries)} for the benchmark`, "entries at the rate");
 
-// paid: priced at the basket's median cost per paid unit, three readings needed, else the panel's
-assert.strictEqual(t.paid.cost_per_purchase_source, "basket");
+// paid: the units asked for as entries at the basket's rate and priced on the
+// curve at the basket's median reference price, three readings needed, else
+// the panel's; the constant per unit only while the panel is too thin
+assert.strictEqual(t.paid.cost_source, "basket");
+assert.strictEqual(t.paid.cost_basis, "curve");
 assert.ok(/PAID_COST_MIN_MEMBERS = 3\b/.test(read("../etl/baskets.py")), "a basket's median needs three launches with a reading");
-says(`${costed} of the 8 launches in the basket have a cost per paid unit on file`, "the readings");
-says(`the median of those six, €${fmt(cpp)}, prices a paid unit`, "the basket's median prices the unit");
-says(`${fmt(t.paid.units)} × €${fmt(cpp)} = **€${fmt(t.paid.budget)}**`, "paid units x cost per paid unit");
-says(`(benchmark ${fmt(t.benchmark.paid_units)} × €${fmt(cpp)} = €${fmt(t.benchmark.paid_budget)})`, "the benchmark's budget, unscaled");
+says(`${costed} of the 8 launches in the basket have a cost per paid entry on file`, "the readings");
+says(`the median of their reference prices, €${fmt(ref)} an entry at €${fmt(bench.paid_cost.reference_spend)} of spend, prices the paid entries on the curve (slope ${bench.paid_cost.slope} here`, "the basket's median reference price");
+says(`brought ${e2u} paid units of demand per paid entry, so the ${fmt(t.paid.units)} paid units are ${fmt(t.paid.entries)} entries`, "the units asked for as entries");
+says(`the spend that buys ${fmt(t.paid.entries)} entries on the curve is **€${fmt(t.paid.budget)}**: €${fmt(t.paid.cost_per_entry)} an entry on average, €${fmt(t.paid.cost_per_purchase)} a unit, and €${fmt(t.paid.marginal_cost_per_entry)} for the last entry bought`, "the budget, the average and the marginal price");
+assert.ok(t.paid.marginal_cost_per_entry > t.paid.cost_per_entry && t.paid.cost_per_entry > t.paid.cost_per_purchase, "the last entry costs more than the average, an entry more than a unit at 1.2 units an entry");
+assert.ok(Math.abs(t.paid.budget - t.paid.units * t.paid.cost_per_purchase) < 1e-6, "the budget is the units at the average price per unit");
 says(`${fmtPct(t.paid.budget_pct_of_launch_value, 1)} of the launch value and inside the ${fmtPct(bench.budget_sense_check_max_pct_of_launch_value)} sense check`, "the sense check");
+says(`the benchmark's ${fmt(t.benchmark.paid_units)} units at the same €${fmt(t.paid.cost_per_purchase)} are €${fmt(t.benchmark.paid_budget)}`, "the benchmark's budget, unscaled");
 assert.strictEqual(t.paid.sense_check_breached, false);
-const panel = benchmarkTargets({ ...profile, cost_per_purchase: 0, n_costed: 2 }, release, bench);
-assert.strictEqual(panel.paid.cost_per_purchase_source, "panel");
-says(`the panel's €${fmt(bench.cost_per_purchase.Median)} would have priced it: ${fmt(t.paid.units)} × €${fmt(bench.cost_per_purchase.Median)} = €${fmt(panel.paid.budget)}`, "the panel's fallback");
-const typed = benchmarkTargets(profile, { ...release, cost_per_purchase: 250 }, bench);
-assert.ok(typed.paid.cost_per_purchase === 250 && typed.paid.cost_per_purchase_source === "release", "a typed figure comes first (Step 5)");
+const thin = { ...profile, cost_per_entry_ref: 0, paid_entry_to_unit: 0, n_costed_entries: 2, cost_per_purchase: 0, n_costed: 2 };
+const panel = benchmarkTargets(thin, release, bench);
+assert.ok(panel.paid.cost_source === "panel" && panel.paid.cost_basis === "curve"
+  && Math.abs(panel.paid.entries - t.paid.units / bench.paid_cost.entry_to_unit) < 1e-9,
+  "under three readings the panel's reference price prices the entries, at the panel's rate");
+const konst = benchmarkTargets(thin, release, { ...bench, paid_cost: undefined });
+assert.ok(konst.paid.cost_source === "panel" && konst.paid.cost_basis === "unit", "a panel too thin to backtest prices flat at the constant");
+says(`the constant €${fmt(bench.cost_per_purchase.Median)} per unit: ${fmt(t.paid.units)} × €${fmt(bench.cost_per_purchase.Median)} = €${fmt(konst.paid.budget)}`, "the constant's fallback");
+const typed = benchmarkTargets(profile, { ...release, cost_per_entry: 250 }, bench);
+assert.ok(typed.paid.cost_per_entry === 250 && typed.paid.cost_source === "release" && typed.paid.cost_basis === "entry", "a typed figure comes first (Step 5)");
+const typedUnit = benchmarkTargets(profile, { ...release, cost_per_purchase: 200 }, bench);
+assert.ok(typedUnit.paid.cost_per_purchase === 200 && typedUnit.paid.budget === 200 * t.paid.units && typedUnit.paid.cost_basis === "unit", "the older cost per unit still prices flat");
 
 // the even paid plan: the day after the announce to the close
 assert.ok(/^PAID_START_DAYS = 1\b/m.test(read("../etl/build.py")), "paid starts the day after the announce");
@@ -99,8 +116,9 @@ says(`${day} days after the announce the paid plan by today is (${day} − 1) ÷
 
 /* ---- the rules the example leans on, stated as the code runs them ---- */
 const step5 = md.slice(md.indexOf("### Step 5"), md.indexOf("### Step 6"));
-assert.ok(/release's own figure[\s\S]*basket's median cost per paid unit[\s\S]*three or more[\s\S]*panel's €177/.test(step5),
-  "Step 5 prices a paid unit in the build's order: the release's, the basket's median, the panel's");
+assert.ok(/release's own figure[\s\S]*basket's median reference price[\s\S]*three or more[\s\S]*costed panel's median reference price[\s\S]*constant €177 per unit/.test(step5),
+  "Step 5 prices a paid entry in the build's order: the release's, the basket's median, the panel's, the constant");
+assert.ok(flat(step5).includes("leave-one-out backtest") && flat(step5).includes("reference spend of €10,000"), "Step 5 states the curve and its backtest");
 const step6 = md.slice(md.indexOf("### Step 6"), at);
 assert.ok(step6.includes("benchmark's pace for today") && step6.includes("less than 10% short") && step6.includes("colours nothing"),
   "Step 6 gives the colours the page draws, not the workbook's buffer");

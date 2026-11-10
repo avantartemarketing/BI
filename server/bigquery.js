@@ -287,6 +287,35 @@ async function listSchema() {
   return schema(token);
 }
 
+/* One table's columns, asked for by name. The listing above walks the
+ * datasets the account can list, and an account granted tables one by one
+ * (as the dashboard's is) can list none of them: it is shown only the hidden
+ * datasets of its own query results. A table it has been granted answers by
+ * name all the same, which is what the connector (server/mcp) reads. A name
+ * without a dataset is taken to be in BQ_DATASET. Names and types only. */
+const KNOWN_TABLES = [...new Set([EVENTS_TABLE, TL_TABLE, ORDERS_TABLE, COLLECTORS_TABLE, FUNNEL_TABLE, SPEND_TABLE, SPEND_TABLE_CAMPAIGN])];
+async function tableInfo(token, name) {
+  const parts = String(name || "").replace(/`/g, "").trim().split(".").filter(Boolean).slice(-2);
+  const [dataset, id] = parts.length === 2 ? parts : [DATASET, parts[0] || ""];
+  if (!IDENT.test(dataset) || !IDENT.test(id)) throw new Error(`"${String(name).slice(0, 80)}" is not a table name`);
+  const res = await fetch(`https://bigquery.googleapis.com/bigquery/v2/projects/${PROJECT}/datasets/${dataset}/tables/${id}`,
+    { headers: { Authorization: `Bearer ${token}` } });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 403 || res.status === 404) throw new Error(`No table ${dataset}.${id} that this service account can read`);
+    throw new Error(`BigQuery ${res.status}: ${(json.error && json.error.message) || "?"}`);
+  }
+  const columns = ((json.schema && json.schema.fields) || []).map((f) => ({ name: f.name, type: f.type + (f.mode === "REPEATED" ? "[]" : "") }));
+  return {
+    project: PROJECT, dataset, id, type: json.type || "TABLE",
+    rows: json.numRows !== undefined ? Number(json.numRows) : null,
+    modified: json.lastModifiedTime ? new Date(Number(json.lastModifiedTime)).toISOString().slice(0, 10) : null,
+    partitioned: !!(json.timePartitioning || json.rangePartitioning),
+    columns,
+    address: columns.map((c) => c.name).filter((n) => PII_COLUMN.test(n)),
+  };
+}
+
 /* The listing as text, for the terminal and for pasting into a chat: one
  * line per table with its column names, then the tables worth a look. */
 function schemaText(doc) {
@@ -321,11 +350,21 @@ function schemaText(doc) {
 /* Runs one query, streaming the result: onHeader(columnNames) once, then
  * onRows(rows) per page, where each row is an array of strings ("" for NULL -
  * values arrive as strings whatever the column type; the converters and pandas
- * both cope). Resolves to { header, rows: count, bytes, cached }.
+ * both cope). Resolves to { header, rows: count, total, truncated, bytes, cached }.
  *
  * jobs.query returns the first page inline and the rest through
- * getQueryResults. Nothing accumulates: each page is handed on and dropped. */
-async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, onRows } = {}) {
+ * getQueryResults. Nothing accumulates: each page is handed on and dropped.
+ *
+ * Three limits, all off unless asked for (the feeds ask for none; the
+ * connector's SQL tool, server/mcp, asks for all three): maxRows stops the
+ * paging once that many rows are handed on (truncated says so, total is the
+ * whole result's count), maxBytesBilled makes BigQuery refuse a query that
+ * would scan more, and maxWaitMs is how long to wait for the job before
+ * giving up (ten minutes otherwise). */
+async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, onRows, maxRows, maxBytesBilled, maxWaitMs } = {}) {
+  const rowCap = Number.isFinite(maxRows) && maxRows > 0 ? Math.floor(maxRows) : Infinity;
+  const waitCap = Number.isFinite(maxWaitMs) && maxWaitMs > 0 ? maxWaitMs : 10 * 60_000;
+  if (rowCap < pageRows) pageRows = rowCap;
   const queryParameters = Object.entries(params).map(([name, p]) => ({
     name, parameterType: { type: p.type }, parameterValue: { value: p.value },
   }));
@@ -354,10 +393,11 @@ async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, 
     query: sql,
     useLegacySql: false,
     useQueryCache: true,     // a repeat of an unchanged query is free
-    timeoutMs: 120000,
+    timeoutMs: Math.min(120000, waitCap),
     maxResults: pageRows,
     parameterMode: "NAMED",
     queryParameters,
+    ...(Number.isFinite(maxBytesBilled) && maxBytesBilled > 0 ? { maximumBytesBilled: String(Math.floor(maxBytesBilled)) } : {}),
     ...(LOCATION ? { location: LOCATION } : {}),
   });
 
@@ -374,21 +414,24 @@ async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, 
     return json;
   };
   // a query that outran timeoutMs comes back incomplete - poll the job
-  let waited = 0;
+  let waited = Math.min(120000, waitCap);
   while (!body.jobComplete) {
-    if (waited > 10 * 60_000) throw new Error("BigQuery job did not finish within 10 minutes");
-    body = await get(`maxResults=${pageRows}&timeoutMs=60000`);
-    waited += 60_000;
+    if (waited >= waitCap) throw new Error(`BigQuery job did not finish within ${waitCap >= 120000 ? Math.round(waitCap / 60000) + " minutes" : Math.round(waitCap / 1000) + " seconds"}`);
+    const step = Math.min(60_000, waitCap - waited);
+    body = await get(`maxResults=${pageRows}&timeoutMs=${step}`);
+    waited += step;
   }
 
   const header = (body.schema && body.schema.fields ? body.schema.fields : []).map((f) => f.name);
   const total = Number(body.totalRows || 0);
   piiCheckHeader(header);
-  if (onHeader) onHeader(header);
+  // the names, then the fields as BigQuery types them, for a caller that reads the cells as more than strings
+  if (onHeader) onHeader(header, (body.schema && body.schema.fields) || []);
 
   let count = 0;
   const take = (b) => {
-    const rows = (b.rows || []).map((r) => (r.f || []).map((c) => (c.v === null || c.v === undefined ? "" : c.v)));
+    let rows = (b.rows || []).map((r) => (r.f || []).map((c) => (c.v === null || c.v === undefined ? "" : c.v)));
+    if (count + rows.length > rowCap) rows = rows.slice(0, rowCap - count);
     piiCheckRows(rows);
     count += rows.length;
     if (onRows && rows.length) onRows(rows);
@@ -396,15 +439,16 @@ async function query(token, sql, params = {}, { pageRows = PAGE_ROWS, onHeader, 
   take(body);
   let pageToken = body.pageToken;
   body = null;   // the first page is done with - let it go before fetching the next
-  while (pageToken) {
-    const page = await get(`maxResults=${pageRows}&pageToken=${encodeURIComponent(pageToken)}`);
+  while (pageToken && count < rowCap) {
+    const page = await get(`maxResults=${Math.min(pageRows, rowCap - count)}&pageToken=${encodeURIComponent(pageToken)}`);
     take(page);
     pageToken = page.pageToken;
   }
-  if (count < total) {
+  const truncated = count < total && count >= rowCap;
+  if (count < total && !truncated) {
     throw new Error(`BigQuery paging stopped early: ${count} of ${total} rows`);
   }
-  return { header, rows: count, bytes, cached };
+  return { header, rows: count, total, truncated, bytes, cached };
 }
 
 const funnelSql = () =>
@@ -1860,7 +1904,7 @@ module.exports = {
   TL_SIGNUP_PRODUCTS, TL_SIGNUP_PRODUCTS_HEADER, tlSignupProductsSql,
   isoDate, eventsWriterFor, browsingWriterFor,
   PiiDetected, contactKeySql, contactKeyParams, piiCheckHeader, piiCheckRows,
-  schema, listSchema, schemaText,
+  schema, listSchema, schemaText, tableInfo, KNOWN_TABLES,
 };
 
 // ---- CLI: `node server/bigquery.js` checks the connection without writing;

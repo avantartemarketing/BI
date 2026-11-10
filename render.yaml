@@ -66,6 +66,8 @@ services:
         value: /var/data/slack.json
       - key: ANTHROPIC_API_KEY   # the Agent (README, "The Agent"); without it the chat says it is not configured
         sync: false
+      - key: MCP_TOKEN   # the connector at /mcp (README, "The connector"): a long random string, 24 characters at least; unset, the route answers 404
+        sync: false
       - key: RESEND_API_KEY   # only for the magic-link fallback, which exists only without a Google client
         sync: false
       - key: MAIL_FROM        # only for the dormant magic-link flow
