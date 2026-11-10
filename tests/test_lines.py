@@ -234,6 +234,60 @@ check(P["line"]["conversionsBasis"] == "draws" and close(cp, exp_p, 1e-3) and cl
       f"a line's converting units are its own draws': {cp} vs {exp_p}, {cb} vs {exp_b}, the release's {cr} ({P['line'].get('conversionsBasis')})")
 check(close(P["paid"]["cumRoi"], (1 - P["paid"]["cannibalisation"]) * 1000.0 / ((P["paid"]["spendToDate"] / cp) * P["paid"]["aaBudgetShare"]), 2e-3),
       f"the prints' ROI is their profit per unit over the price of their own converting unit: {P['paid']['cumRoi']}")
+# ---- each draw's paid rows by the campaign and ad set clicked (`paidBy`,
+# 10 November 2026): a line's ad sets are credited with what their own
+# clicks entered, on either line's draws. Here every paid entry on a print
+# draw clicked the prints' ad set, and so did half of those on a brick draw
+# (one spelling percent-encoded, one cut short at the ampersand a browser
+# left bare): the prints' ad set is credited with them at a brick's profit,
+# the bricks' ad set keeps the other half, and the release's total stands
+check(P["line"].get("paidBasis") == "draws", f"without the feed's utm a line's paid is its draws': {P['line'].get('paidBasis')}")
+camp = base["campaign_name"]
+relA = dict(copy.deepcopy(base), line_settings={"Lego2026": {"name": "Prints", "adsets": ["Prints & more"]}, "LegoMF": {"adsets": ["Bricks"]}})
+spendA = spend.assign(adset_name=spend["adset_name"].replace({"Prints": "Prints & more"}))
+for dd in draws:
+    brick = dd["id"] in {DRAW_OF[t] for t, _ in BRICKS}
+    dd["paidBy"] = []
+    for day, ch, a, b_, c in dd["conv"]:
+        if ch != "Paid Social":
+            continue
+        if brick:
+            dd["paidBy"] += [[day, f"{camp}_Prints", 1, a / 4, b_ / 4, c / 4], [day, f"{camp}_Prints & more", 1, a / 4, b_ / 4, c / 4],
+                             [day, f"{camp}_Bricks", 1, a / 2, b_ / 2, c / 2]]
+        else:
+            dd["paidBy"].append([day, f"{camp}_Prints & more", 2, a, b_, c])
+ads = build.with_direct_spread(build.build_release, relA, at, spendA, emails, content, curves, TODAY,
+                               build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+PA, BA = {**ads, **ads["variants"]["lines"]["Lego2026"]}, {**ads, **ads["variants"]["lines"]["LegoMF"]}
+ca, cba = conv_of(PA), conv_of(BA)
+check(PA["line"]["paidBasis"] == "ad sets" and BA["line"]["paidBasis"] == "ad sets", f"with the utm a line's paid is its ad sets': {PA['line'].get('paidBasis')}")
+check(close(ca, exp_p + exp_b / 2, 1e-3) and close(cba, exp_b / 2, 1e-3) and close(ca + cba, cp + cb, 1e-3),
+      f"an ad set is credited with what its clicks entered on either line: {ca} vs {exp_p + exp_b / 2}, {cba} vs {exp_b / 2}")
+ppu_a = (exp_p * 1000.0 + exp_b / 2 * 150.0) / (exp_p + exp_b / 2)
+check(close(PA["paid"]["profitPerUnitAA"], ppu_a, 1e-3) and BA["paid"]["profitPerUnitAA"] == 150.0 and PA["line"]["ppuBasis"] == "ad set entries",
+      f"each entry priced as the work it entered: {PA['paid']['profitPerUnitAA']} vs {ppu_a}, {BA['paid']['profitPerUnitAA']} ({PA['line']['ppuBasis']})")
+check(close(PA["paid"]["cumRoi"], (1 - PA["paid"]["cannibalisation"]) * ppu_a / ((PA["paid"]["spendToDate"] / ca) * PA["paid"]["aaBudgetShare"]), 2e-3)
+      and PA["paid"]["cumRoi"] > P["paid"]["cumRoi"] and close(BA["paid"]["cumRoi"], B["paid"]["cumRoi"] / 2, 2e-3),
+      f"the prints' ad set earns the bricks it sold, the bricks' ad set half what its draws took: {PA['paid']['cumRoi']} vs {P['paid']['cumRoi']}, {BA['paid']['cumRoi']} vs {B['paid']['cumRoi']}")
+check(close(PA["paid"]["spendToDate"], P["paid"]["spendToDate"]) and PA["paid"]["entriesToDate"] == P["paid"]["entriesToDate"] and PA["hero"] == P["hero"],
+      "the spend, the draws' entries and the works' units are as they were")
+check(close(ads["paid"]["cumRoi"], snap["paid"]["cumRoi"], 1e-6), "the combined page is not moved")
+# entries that name no line's ad set (no utm, another campaign) stay with the draw they entered
+for dd in draws:
+    dd["paidBy"] = [[r[0], "", *r[2:]] if i % 2 else [r[0], "Other_Campaign_Bricks and such", *r[2:]] for i, r in enumerate(dd["paidBy"])]
+non = build.with_direct_spread(build.build_release, relA, at, spendA, emails, content, curves, TODAY,
+                               build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+PN = {**non, **non["variants"]["lines"]["Lego2026"]}
+check(close(conv_of(PN), exp_p, 1e-3) and close(PN["paid"]["cumRoi"], P["paid"]["cumRoi"], 2e-3), f"an entry naming no line's ad set stays on its draw: {conv_of(PN)} vs {exp_p}")
+for dd in draws:
+    dd.pop("paidBy")
+A_ = build.adset_of_label
+check(A_("Camp · Enter draw_A_Followers & Lookalike - Sculptures", ["Camp · Enter draw"], ["A_Followers & Lookalike - Sculptures", "B_Followers & Lookalike - Prints"]) == "a_followers & lookalike - sculptures"
+      and A_("Camp · Enter draw_B_Followers", ["Camp · Enter draw"], ["A_Followers & Lookalike - Sculptures", "B_Followers & Lookalike - Prints"]) == "b_followers & lookalike - prints"
+      and A_("Camp · Enter draw_Followers", ["Camp · Enter draw"], ["Followers A", "Followers B"]) is None
+      and A_("", ["Camp"], ["A"]) is None and A_("Other_A_Followers", ["Camp"], ["A_Followers & more"]) is None,
+      "a campaign utm names its ad set whole, or cut short when only one ad set starts so")
+
 # a feed from before the draws carried their conversions: the release's,
 # shared out by the line's share of each channel-day's eligible entry units
 # (here half of the paid channel's six a day, on the days the draws ran)

@@ -507,7 +507,12 @@ of browsing history for no number the dashboard shows. Identifiers kept: `aa_acc
 person key), `draw_id`, `draw_entry_id`, `campaign_id`. Dropped on purpose: `user_email`,
 `user_pseudo_id`, `ga_session_id`, `customer_id`, Shopify order id and name, `subscription_id`,
 page URLs and titles, the utm strings (`utm_source` carries an address on 3 rows). Timestamps
-are written as ISO.
+are written as ISO. One utm is kept, derived in SQL (10 November 2026): `paid_campaign`, the
+split-touch campaign utm of a draw entry on the Paid Social channel and blank on every other
+row. It is the name of the Meta campaign and ad set the entrant clicked, the spend feed's own
+names, and lets a release that runs an ad set per line of work credit each ad set with its
+own entries ("A line's paid ROI is read by its ad sets", below). Like every cell it
+passes the address scan before it is written.
 
 The account id is still personal data (pseudonymised, GDPR art. 4(5)): the file stays under
 `sources/` (gitignored), is served by no endpoint, is rebuilt from BigQuery on every pull so an
@@ -776,7 +781,7 @@ production model has to serve. Everything else in a table is never selected.
 | table | read by | columns | for |
 |---|---|---|---|
 | `le_funnel_report_split_touch_export` | `server/bigquery.js` (funnel feed, incremental) | all 34 (no personal data; §2.2) | `sources/across_time.csv`: sessions, entries, units by channel × day × release, the campaign clock |
-| `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales; never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
+| `LE_Funnel_Report` | `server/bigquery.js` (events and browsing feeds) | the event columns named in `EVENT_COLUMNS`: event, date, release, pseudonymous account id, signup, draw entry, winner and purchase flags, order counts, channel groups, locales, and the campaign utm of a paid-social draw entry (`paid_campaign`, the Meta campaign and ad set clicked); never `user_email` | `sources/le_events.csv` and `sources/le_browsing.csv`: the rebuilt export, people per release, the draws and entry patterns behind the per-product sell-through |
 | `LE_Funnel_Report` | `server/bigquery.js` (pages feed, §2.6) | event_name, page_type, ga_session_id (grouped on inside BigQuery; never selected out), event_timestamp, event_date, simple_release_name, AA_session_custom_channel_group_split_touch | `sources/le_pages.csv`: sessions through the release page, a product page and the draw entry per channel × day × release, the Page funnel card |
 | `LE_Funnel_Report` | `server/bigquery.js` (draw map, §2.4) | event_name, winner, draw_id, aa_account_id, simple_release_name, event_date; the collectors table's aa_account_id and shopify_customer_id (joined on inside BigQuery; neither leaves) | `data/draw_products.csv` |
 | `LE_Funnel_Report` | `server/bigquery.js` (units feed, §2.4) | event_name, shopify_order_id, event_timestamp, AA_session_custom_channel_group_split_touch | `data/units_paid.csv`: the channel of each paid order's earliest purchase event, which sets the channel split of units sold on every card |
@@ -1401,7 +1406,32 @@ edition (`unitsBasis`). The spend is the line's ad sets' (`release_spend`: the r
 campaigns filtered on `adset_name`, case aside; a line with none named reads none). A paid
 entry's profit is its product's: `with_entry_profit` sets the line's `aa_ppu_resolved` and
 artist profit to its works' figures weighted by the paid entries on each (`ppuBasis` "paid
-entries"), else target-weighted. The sell-through block runs the allocation over every work
+entries"), else target-weighted.
+
+**A line's paid ROI is read by its ad sets (10 November 2026).** The ads of both lines land
+on one page, so an ad set's clicks enter either line's draws: on Ai Weiwei's toy-brick
+release, 25 of the 59 entrants the prints' ad set brought by 9 November entered a toy-brick
+draw and 3 of the bricks' ad set's 51 a print draw (Meta's own counts by ad set, 59 and 50,
+confirm the split). Read by its draws, a line's ROI credited its ad set's spend with what the
+other ad set's clicks had bought. The events feed now carries the campaign utm of a
+paid-social draw entry (`paid_campaign`, the ad's "<campaign>_<ad set>"; the events feed, above) and
+each draw a `paidBy` series beside `conv`: `[day, label, entry rows, claimed, pending
+pre-order, pending draw]`, the paid-social rows of `conv` by that label, one spelling per
+label (`aggregate_events.draw_paid_campaigns`, `campaign_label`). `line_paid` reads them by
+ad set (`adset_of_label`: the label ends with the ad set's name, or, cut short at a bare
+"&", starts exactly one): a line owns the rows of its own ad sets on any draw of the
+release, and the rows on its own draws that name no line's ad set. The paid model's
+converting units are then the page's paid-social figure plus the difference
+(`line_paid_delta`: what its ad sets made on the other lines' draws, less what theirs made on
+its own), and the profit per unit every work's own, weighted by those converting units
+(`with_adset_profit`, `ppuBasis` "ad set entries"), so a toy brick the prints' ad set sold
+is priced as a toy brick. `line.paidBasis` says which reading is in force ("ad sets", or
+"draws" on a feed without `paidBy` or a line with no ad set named, where everything above
+stands). Only the paid ROI's reading moves: the line's entries, units, channels card and
+sell-through stay its draws' and works', and the forward path still counts the units of the
+line's draws, handed the profit the ad sets made per converting unit on those draws
+(`aa_ppu_forward`) so the recommendation values a euro ahead as the ad sets' euros have
+returned. The combined page is not moved. The sell-through block runs the allocation over every work
 and keeps the line's rows (`restrict_products`), its headline the kept rows summed.
 
 **The spend feed.** `data/spend_daily.csv` gained `adset_name` (server/sheets.js spendWriter
@@ -2475,7 +2505,7 @@ actuals-only page omits it.
 | `waterfall.closeScale`, `closeScaleBm` | the factor the at-close `steps` (`stepsBm`) are the steps to date times; null where they are copied (a closed release) or where the rest of the gap is shared out by size (below) |
 | `waterfall.today` | `{benchmark, stretch, target, actual, steps, stepsBm}` - the same four contributors measured **to date**, against the target and against the basket |
 | `lines[]` | on the combined page of a release selling lines of work (§4b): per line `key` (the typed name's `line_key`, else the Airtable release code), `code` (the Airtable code, null on a typed line), `name`, `nameTyped`, `lineTyped` (the split is typed), `products` (names), `productKeys`, `adsets`, `basketSpec`, `stretchFrom`, and from the line's own build `hero`, `edition`, `economics`, `basket`, `k`, `kByGroup`, `benchmarkUnits`, `targets` (units, entries, paid units and budget, the cost per purchase and its source), `groupTargets`, `paid` (spend, entries and units to date, the ROIs and costs, the budget and projections, `artist`), `sellthrough` (the headline figures), `status`, `actuals` (the line's `line` block); null on every other release |
-| `line` | on a line's own page: `key`, `name`, `products`, `adsets`, `entriesBasis` (`draws`, `share`, `none`), `unitsBasis` (`orders`, `sales share`, `edition share`), `draws` (its draw ids), `sessionsShared` (always true), `ppuBasis` (`paid entries` or `target units`); null on the combined page |
+| `line` | on a line's own page: `key`, `name`, `products`, `adsets`, `entriesBasis` (`draws`, `share`, `none`), `unitsBasis` (`orders`, `sales share`, `edition share`), `draws` (its draw ids), `sessionsShared` (always true), `ppuBasis` (`ad set entries`, `paid entries` or `target units`), `paidBasis` (`ad sets` or `draws`: what the paid ROI's converting units are read by); null on the combined page |
 | `variants.lines[key]`, `variants.lines_direct[key]` | each line's page as the top-level blocks that differ from the combined page, as the funnel attributes Direct and with it spread; the Overview's Line switch lays one over the page (§4b) |
 | `benchmark.sessionsShared`, `benchmark.lines` | whether the sessions are the larger line's rather than summed (true on a release with lines), and each line's basket `{id, kind, name, n, thin, suggestedId, members, scaleMismatch}` on the combined page |
 | `targets.lines[key]`, `targets.sessions_shared` | each line's K, `k_by_group`, units, entries, paid units, budget and cost per purchase on the combined page; and that every sessions target is the shared one (§4b) |

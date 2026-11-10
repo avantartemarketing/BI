@@ -990,6 +990,10 @@ def line_actuals(rat: pd.DataFrame, release: dict, name: str, units_feed: bool =
     mine, other, titles = line_draws(feed, release, orders)
     draws = {str(d.get("id")): d for d in feed.get("draws") or []}
     info: dict = {"basis": "none", "draws": mine, "otherDraws": other, "paidByProduct": {}}
+    # the paid converting units the line's ad sets are credited with, on any
+    # draw of the release (line_paid); None on a feed without the campaign utm
+    info["paidAdsets"] = line_paid(draws, mine, titles, release)
+    info["paidBasis"] = "ad sets" if info["paidAdsets"] else "draws"
     ecols = ["Draw_Entries_Eligible_Units", "Draw_Entries_Total_Units_No_Conv"]
     out = rat.copy()
     for c in ecols:
@@ -1086,6 +1090,117 @@ def line_units(rows: pd.DataFrame | None, release: dict) -> pd.DataFrame | None:
     names = [str(n) for n in (release.get("line_products") or []) if n]
     keep = rows["product_title"].map(lambda t: any(sellthrough._names_title(n, t) for n in names))
     return rows[keep.to_numpy()].reset_index(drop=True)
+
+
+def adset_of_label(label: str, campaigns: list, adsets: list) -> str | None:
+    """The ad set a paid entry's campaign utm names, lowered, or None. The
+    ads' links carry "<campaign>_<ad set>" (aggregate_events.campaign_label),
+    so the label ends with the ad set's name; a link cut short at an "&"
+    (a browser that did not encode it) keeps the campaign and the start of
+    the ad set, which is taken when it starts exactly one of the ad sets."""
+    lab = " ".join(str(label or "").lower().split())
+    names = sorted({" ".join(str(a).lower().split()) for a in adsets if str(a).strip()}, key=len, reverse=True)
+    if not lab or not names:
+        return None
+    for a in names:
+        if lab == a or lab.endswith("_" + a):
+            return a
+    for c in sorted({" ".join(str(c).lower().split()) for c in campaigns if str(c).strip()}, key=len, reverse=True):
+        if lab.startswith(c + "_"):
+            tail = lab[len(c) + 1:]
+            hits = [a for a in names if a.startswith(tail)] if len(tail) >= 3 else []
+            if len(hits) == 1:
+                return hits[0]
+    return None
+
+
+def line_paid(draws: dict, mine: list, titles: dict, release: dict) -> dict | None:
+    """The paid-social converting units a line's ad sets are credited with
+    (docs METHODOLOGY 7b, 10 November 2026): each draw's `paidBy` rows
+    (aggregate_events.draw_paid_campaigns) read by the ad set the entry
+    clicked through from. `owned` are the rows of the line's own ad sets on
+    any draw of the release, with the rows on its own draws that name no
+    line's ad set (no utm, another campaign); `onDraws` the rows on its own
+    draws whoever's ad set brought them, which is what the line read until
+    then. None when the line names no ad set or a draw carries no `paidBy`
+    (an older feed): the line keeps to its draws."""
+    own = {" ".join(str(a).lower().split()) for a in (release.get("adsets") or []) if str(a).strip()}
+    if not own or not draws or any(not isinstance(d.get("paidBy"), list) for d in draws.values()):
+        return None
+    every = list(release.get("release_adsets") or release.get("adsets") or [])
+    camp = release.get("campaign_name")
+    camps = [c for c in (release.get("campaign_names") or ([camp] if camp else [])) if c]
+    owned, on_draws = [], []
+    for did, d in draws.items():
+        here = did in mine
+        for day, label, n, claimed, pend_pre, pend_draw in d["paidBy"]:
+            rec = {"event_date": date.fromisoformat(str(day)[:10]), "title": titles.get(did) or did, "rows": float(n),
+                   "claimed": float(claimed), "pend_pre": float(pend_pre), "pend_draw": float(pend_draw)}
+            if here:
+                on_draws.append(rec)
+            a = adset_of_label(label, camps, every)
+            if (a in own) if a is not None else here:
+                owned.append(rec)
+    return {"owned": owned, "onDraws": on_draws}
+
+
+def _paid_conv(rec: dict, release: dict) -> float:
+    """A `line_paid` row's converting units at the release's rates (docs 7)."""
+    return rec["claimed"] + rec["pend_pre"] * preorder_rate(release) + rec["pend_draw"] * entry_rate(release)
+
+
+def line_paid_delta(paid: dict | None, release: dict) -> pd.Series | None:
+    """By day, what reading a line's paid converting units by its ad sets
+    adds to reading them by its draws: the units its ad sets' clicks made on
+    the other lines' draws, less the units other lines' ad sets made on its
+    own. Added to the page's paid-social converting units, so whatever the
+    page folded into them (Untracked, the Direct switch) stays."""
+    if not paid:
+        return None
+    acc: dict = {}
+    for sign, rows in ((1.0, paid["owned"]), (-1.0, paid["onDraws"])):
+        for r in rows:
+            acc[r["event_date"]] = acc.get(r["event_date"], 0.0) + sign * _paid_conv(r, release)
+    return pd.Series(acc, dtype=float) if acc else None
+
+
+def with_adset_profit(release: dict, paid: dict | None) -> dict:
+    """The line's profit per unit read as what its ad sets' entrants entered
+    for (docs METHODOLOGY 7b): every work of the release at its own profit
+    per unit (framing uplift included), weighted by the converting units the
+    line's ad sets are credited with on it (line_paid `owned`), so an ad set
+    whose clicks enter the other line's draw is paid what that work earns.
+    The forward path still counts the units of the line's own draws, so it
+    is handed the profit the ad sets made per converting unit on those
+    draws (`aa_ppu_forward`, `artist_ppu_forward`): each euro ahead is taken
+    to return what the ad sets' euros have. Unchanged until the ad sets
+    have converted something on a work with economics."""
+    if not paid:
+        return release
+    prods = [p for p in (release.get("release_economics_products") or release.get("economics_products") or []) if p.get("edition")]
+
+    def profit(title: str):
+        for p in prods:
+            if sellthrough._names_title(p.get("name"), title):
+                return (float(p.get("aa_profit_per_unit") or 0.0) + float(p.get("frame_uplift_per_unit") or 0.0),
+                        float(p.get("artist_profit_per_unit") or 0.0))
+        return None
+    v_aa = v_artist = units = 0.0
+    for r in paid["owned"]:
+        pr, c = profit(r["title"]), _paid_conv(r, release)
+        if pr is None or c <= 0:
+            continue
+        v_aa += c * pr[0]; v_artist += c * pr[1]; units += c
+    if units <= 0:
+        return release
+    on_draws = sum(_paid_conv(r, release) for r in paid["onDraws"])
+    r = dict(release)
+    r["aa_ppu_resolved"] = round(v_aa / units, 4)
+    r["artist_profit"] = round(v_artist / units * float(release.get("edition_size") or 0.0), 2)
+    r["aa_ppu_forward"] = round(v_aa / on_draws, 4) if on_draws > 0 else None
+    r["artist_ppu_forward"] = round(v_artist / on_draws, 4) if on_draws > 0 else None
+    r["ppu_basis"] = "ad set entries"
+    return r
 
 
 def with_entry_profit(release: dict, paid_by_product: dict) -> dict:
@@ -4563,6 +4678,11 @@ def line_release(release: dict, line: dict) -> dict:
     r["benchmark_basket"] = line.get("benchmark_basket")
     r["stretch_from"] = line.get("stretch_from")
     r["adsets"] = list(line.get("adsets") or [])
+    # every line's ad sets and every work's economics, the release's: a paid
+    # entry is credited to the ad set it clicked and priced as the work it
+    # entered, whichever line either is on (line_paid, with_adset_profit)
+    r["release_adsets"] = [str(a).strip() for ln in (release.get("lines") or []) for a in (ln.get("adsets") or []) if str(a).strip()]
+    r["release_economics_products"] = list(release.get("economics_products") or [])
     r["legacy_economics"] = None
     r["closes"] = product_closes([p for p in prods if p.get("edition")])
     r["staggered"] = len(r["closes"]) > 1
@@ -5907,6 +6027,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         if line_info.get("paidByProduct"):
             # a paid entry's profit is the product it entered for
             release = with_entry_profit(release, line_info["paidByProduct"])
+        # ... and the ad set it clicked is the one credited with it
+        release = with_adset_profit(release, line_info.get("paidAdsets"))
     # a draw that ran past the typed close has its winners pay when it ends:
     # the window counts to the draw's end (sales_close), folded into the
     # close day below, while the plan keeps the typed dates
@@ -5988,6 +6110,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # what was bought where the claim has been tried and the rates (0.95
     # pre-order, 0.8 entry) on what still waits on a draw
     paid_conv_day = converting_units_day(win, "Paid Social", release)
+    # a line's ad sets are credited with what their own clicks entered, on
+    # either line's draws, and not with what the other line's ad sets
+    # brought to its own (docs 7b, 10 November 2026)
+    adset_delta = line_paid_delta((line_info or {}).get("paidAdsets"), release)
+    if adset_delta is not None:
+        paid_conv_day = paid_conv_day.add(adset_delta, fill_value=0.0).clip(lower=0.0)
     spend_day = psp.groupby("spend_date")["spend"].sum()
     # a converting entry is one that becomes an order: the release's own
     # entry -> order rate (Target setting), else the panel's, the same rate
@@ -6099,6 +6227,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     l1d_roi = party_roi(ppu_aa, aa_budget_share, l1d_conv_cpe) if l1d_conv_cpe else (0.0 if s1 > 0 else None)
     l1d_roi_artist = (party_roi(ppu_artist, artist_budget_share, l1d_conv_cpe) if l1d_conv_cpe
                       else (0.0 if s1 > 0 and artist_budget_share > 0 else None))
+
+    # the profit per unit the ROI above was read at, which the snapshot
+    # prints; on a line read by its ad sets the path below counts the units
+    # of the line's own draws and is handed the profit the ad sets made per
+    # converting unit on those (with_adset_profit)
+    ppu_aa_read, ppu_artist_read = ppu_aa, ppu_artist
+    if release.get("aa_ppu_forward") is not None:
+        ppu_aa = float(release["aa_ppu_forward"])
+    if release.get("artist_ppu_forward") is not None:
+        ppu_artist = float(release["artist_ppu_forward"])
 
     # ---- one forward cost path (docs §7), read by the paid projection, the
     # ROI chart and the recommendation alike. Cost per entry rises with the
@@ -7152,8 +7290,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "stops": paid_stops(fwd_rec),
             "sellThrough": at_rec,
         },
-        "profitPerUnitAA": round(ppu_aa, 2),
-        "profitPerUnitArtist": round(ppu_artist, 2),
+        "profitPerUnitAA": round(ppu_aa_read, 2),
+        "profitPerUnitArtist": round(ppu_artist_read, 2),
         "aaBudgetShare": aa_budget_share,
         # no deal recorded anywhere: the half is an assumption, and the card says so
         "aaBudgetShareAssumed": budget_assumed,
@@ -7180,7 +7318,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                                 "dailyFactor": daily_factor},
             "roiPath": roi_path_artist,
             "finalDayRoi": round(final_day_roi_artist, 3) if final_day_roi_artist else None,
-            "profitPerUnit": round(ppu_artist, 2),
+            "profitPerUnit": round(ppu_artist_read, 2),
             "budgetShare": round(artist_budget_share, 4),
         },
     }
@@ -7396,6 +7534,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "line": ({"key": release["line"], "name": release.get("line_name"), "products": list(release.get("line_products") or []),
                   "adsets": list(release.get("adsets") or []), "entriesBasis": (line_info or {}).get("basis"),
                   "conversionsBasis": (line_info or {}).get("conversions"),
+                  # what the paid ROI's converting units are read by: the
+                  # line's ad sets (the entries their clicks made, on any
+                  # draw of the release) or, without the feed's utm, its draws
+                  "paidBasis": (line_info or {}).get("paidBasis"),
                   "draws": (line_info or {}).get("draws") or [], "sessionsShared": True,
                   "ppuBasis": release.get("ppu_basis") or "target units"} if line is not None else None),
         # the lines the release sells, on the combined page (with_direct_spread
@@ -7440,7 +7582,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "edition": {"target": round(edition, 0), "total": round(total, 0)},
         "economics": {
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
-            "artistProfitPerUnit": round(ppu_artist, 2), "aaProfitPerUnit": round(ppu_aa, 2),
+            "artistProfitPerUnit": round(ppu_artist_read, 2), "aaProfitPerUnit": round(ppu_aa_read, 2),
             "artistProfitShare": release["artist_profit_share"],
             "aaBudgetShare": aa_budget_share,
             "aaBudgetShareAssumed": budget_assumed,

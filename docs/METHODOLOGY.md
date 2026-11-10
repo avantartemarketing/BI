@@ -807,6 +807,26 @@ ROI three times what it was (16.3 for 5.3 on one set of economics, the
 bricks' 3.1 for 2.1). The release page, which reads the whole campaign
 against all of its conversions, was right throughout.
 
+**A line's paid ROI credits its ad sets with their own entries (10 November
+2026).** Both lines' ads land on the one page, so a click on a prints ad can
+end in a toy-brick entry. By 9 November the prints' ad set on Ai Weiwei's
+release had brought 59 entrants, 25 of whom entered a toy-brick draw, and the
+bricks' ad set 51, 3 of whom entered a print (the site's count by the ad's
+campaign tag; Meta's own, 59 and 50, agrees). Read by its draws, as above, the
+bricks' page credited its ad set's spend with the 25 the prints' spend had
+bought, and the prints' page left them out. So where the feed carries the tag,
+a line's converting units are those of the entrants its own ad sets brought,
+on whichever line's draw they entered, and each is priced as the work it
+entered: a toy brick sold by the prints' ad set earns a toy brick's profit, a
+print sold by the bricks' ad set a print's. An entry that names neither line's
+ad set (no tag, another campaign) stays with the draw it entered. Only the
+paid ROI moves, its cost per converting entry and profit per unit with it; the
+line's entries, units, channels and sell-through are still its own draws' and
+works', and the spend recommendation values a euro ahead as the ad sets'
+euros have returned so far. Valuing every entry Meta attributes to the
+prints' ad set as a print, the way the Slack ROI update did, overstates it by
+the same 25 entrants.
+
 **Two things to know.** The allocator awards a flexible entrant the priciest
 work they entered first, so someone in both lines' draws is counted on the
 prints until a work fills. And the sell-through card's allocation runs over

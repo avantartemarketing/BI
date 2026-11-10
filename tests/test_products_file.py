@@ -102,5 +102,26 @@ check(alloc == {"Alpha": 23, "Beta": 5 + 2, "Gamma": 0 + 6}, f"allocation {alloc
 check(st["unattributedSold"] == 4 - 1, f"unattributed {st['unattributedSold']}")
 single, _ = products_from_draws(out[ONE]["draws"], [], 50)
 check(single[0]["edition"] == 50 and single[0]["name"] == "Draw 1", f"single product defaults {single}")
+# ---- the paid rows by the campaign and ad set clicked (`paidBy`): only on a
+# feed that carries the campaign utm, one spelling per label, summing to the
+# draw's paid-social conversions
+check(all("paidBy" not in d for d in r["draws"]), "no campaign utm on the feed, no paidBy")
+CHC = agg.CH
+labels = ["Camp · Enter draw_A_Set & more", "Camp+%C2%B7+Enter+draw_A_Set+%26+more", "Camp+·+Enter+draw_B_Set", None]
+ev2 = pd.DataFrame([dict(row(f"p{i}", "dA" if i % 2 else "dB", mq=1), **{CHC: "Paid Social" if i < 12 else "Direct",
+                                                                         "paid_campaign": labels[i % 4] if i < 12 else None})
+                    for i in range(16)])
+o2 = {d["id"]: d for d in agg.products_file(ev2)[REL]["draws"]}
+check(all(isinstance(d.get("paidBy"), list) for d in o2.values()), "with the campaign utm every draw carries paidBy")
+got = {}
+for d in o2.values():
+    for day, label, n, claimed, pend_pre, pend_draw in d["paidBy"]:
+        got[label] = got.get(label, 0) + n
+check(got == {"Camp · Enter draw_A_Set & more": 6, "Camp · Enter draw_B_Set": 3, "": 3}, f"the labels fold to one spelling, blank for none: {got}")
+for d in o2.values():
+    paid_conv = sum(c[2] + c[3] + c[4] for c in d["conv"] if c[1] == "Paid Social")
+    check(abs(sum(x[3] + x[4] + x[5] for x in d["paidBy"]) - paid_conv) < 1e-6 and paid_conv > 0, f"{d['id']}: paidBy sums to the draw's paid conversions")
+check(agg.campaign_label("A+B") == "A B" and agg.campaign_label("Already decoded + kept") == "Already decoded + kept" and agg.campaign_label(float("nan")) == "",
+      "a label is decoded once, and only when it is encoded")
 print("ok: products file" if not failed else f"{failed} failure(s)")
 sys.exit(1 if failed else 0)

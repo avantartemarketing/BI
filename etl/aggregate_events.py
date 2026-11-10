@@ -47,6 +47,7 @@ import json
 import os
 import pathlib
 import sys
+import urllib.parse
 
 import numpy as np
 import pandas as pd
@@ -127,7 +128,10 @@ EVENT_COLS = [CH, "event_date", "event_name", "aa_account_id", "simple_release_n
               "draw_entry_multiset_preference_max_quantity", "draw_id",
               # why an entry was excluded: "Payment Failed" is the one the
               # benchmark's demand counts (people_file)
-              "exclusion_reason"] + CLOCK + FLAGS
+              "exclusion_reason",
+              # the campaign and ad set a paid-social entry clicked through
+              # from (server/bigquery.js EVENT_DERIVED); absent on an older file
+              "paid_campaign"] + CLOCK + FLAGS
 LABELS = [CH, "simple_release_name", "campaign_stage", "event_name", "exclusion_reason"]
 
 
@@ -190,6 +194,51 @@ def draw_conversions(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | N
     did = rows["draw_id"].astype(str).str.strip()
     rows = rows[did.notna() & (did != "") & (did.str.lower() != "nan")].assign(draw_id=did)
     return (rows.groupby(["simple_release_name", "draw_id", "event_date", CH], observed=True)[CONV_COLUMNS]
+                .sum().reset_index())[cols]
+
+
+PAID_CHANNEL = "Paid Social"
+
+
+def campaign_label(v) -> str:
+    """A paid entry's campaign utm as one spelling: the ad's link carries the
+    campaign and ad set names, and the feed holds them as typed, with the
+    spaces as plus signs or percent-encoded, depending on the browser. Blank
+    for none."""
+    if v is None or (isinstance(v, float) and np.isnan(v)):
+        return ""
+    s = str(v).strip()
+    if not s or s.lower() in ("nan", "none", "null"):
+        return ""
+    if " " not in s and ("+" in s or "%" in s):
+        s = urllib.parse.unquote_plus(s)
+    return " ".join(s.split())
+
+
+def draw_paid_campaigns(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | None = None) -> pd.DataFrame | None:
+    """The paid-social rows of draw_conversions split by the campaign utm the
+    entry came with (campaign_label): per release, draw, day and label, the
+    eligible entry rows and their CONV_COLUMNS. A release that runs an ad set
+    per line of work credits each ad set with what its own clicks entered,
+    whichever line's draw that was (etl/build.py line_actuals, docs
+    METHODOLOGY 7b). The labels of a draw sum to its paid-social `conv`.
+    None when the feed carries no campaign utm (a file from before 10
+    November 2026, a synthetic feed), so the build keeps to the draws."""
+    cols = ["simple_release_name", "draw_id", "event_date", "label", "rows"] + CONV_COLUMNS
+    if "paid_campaign" not in de.columns or CH not in de.columns:
+        return None
+    fill = {"units_once": 1.0, **{c: np.nan for c in CLOCK}}
+    de = de.assign(**{c: v for c, v in fill.items() if c not in de.columns})
+    rows = conversion_rows(de, pu, as_of)
+    if rows is None:
+        return pd.DataFrame(columns=cols)
+    rows = rows[rows[CH].astype(str) == PAID_CHANNEL]
+    did = rows["draw_id"].astype(str).str.strip()
+    rows = rows[did.notna() & (did != "") & (did.str.lower() != "nan")].assign(draw_id=did)
+    if rows.empty:
+        return pd.DataFrame(columns=cols)
+    rows = rows.assign(label=de.loc[rows.index, "paid_campaign"].map(campaign_label), rows=1)
+    return (rows.groupby(["simple_release_name", "draw_id", "event_date", "label"], observed=True)[["rows"] + CONV_COLUMNS]
                 .sum().reset_index())[cols]
 
 
@@ -679,12 +728,23 @@ def products_file(ev: pd.DataFrame) -> dict:
     CONV_COLUMNS by day and channel (`draw_conversions`): the units its
     entrants bought once their claim was tried, and the entry units still
     waiting as pre-orders and as plain entries, so a line of work's paid ROI
-    is priced on its own draws' conversions (docs/LINES_PLAN.md).
+    is priced on its own draws' conversions (docs/LINES_PLAN.md). `paidBy`
+    is the paid-social part of `conv` by the campaign and ad set the entry
+    clicked through from (draw_paid_campaigns), so each line's ad sets are
+    credited with what their own clicks entered; a feed without the campaign
+    utm leaves the key out.
     """
     conv = draw_conversions(ev[ev["event_name"] == "draw entry intent"], ev[ev["event_name"] == "purchase"],
                             as_of=ev["event_date"].max())
     conv = conv.assign(simple_release_name=conv["simple_release_name"].astype(str), channel=conv[CH].astype(str),
                        day=conv["event_date"].dt.date.astype(str)) if len(conv) else None
+    # the paid-social share of `conv` by the campaign and ad set clicked
+    # (draw_paid_campaigns); None on a feed without the campaign utm
+    paid_by = draw_paid_campaigns(ev[ev["event_name"] == "draw entry intent"], ev[ev["event_name"] == "purchase"],
+                                  as_of=ev["event_date"].max())
+    if paid_by is not None:
+        paid_by = paid_by.assign(simple_release_name=paid_by["simple_release_name"].astype(str),
+                                 day=pd.to_datetime(paid_by["event_date"]).dt.date.astype(str))
     cols = ["simple_release_name", "aa_account_id", "draw_id", "event_date", "draw_entry_eligible", "winner",
             "draw_with_purchase", "pre_order", "draw_entry_multiset_preference_max_quantity", CH]
     de = ev[(ev["event_name"] == "draw entry intent") & ev["draw_id"].notna() & ev["aa_account_id"].notna()]
@@ -727,6 +787,7 @@ def products_file(ev: pd.DataFrame) -> dict:
         draws = []
         t = tagged[tagged["simple_release_name"] == rel].set_index("draw_id")["units"] if len(tagged) else pd.Series(dtype=float)
         cv = conv[conv["simple_release_name"] == rel] if conv is not None else None
+        pb = paid_by[paid_by["simple_release_name"] == rel] if paid_by is not None else None
         for did, d in sub.groupby("draw_id", observed=True):
             # the draw's eligible entries by the day they were made and the
             # channel they came from, with the ones still open among them: a
@@ -750,6 +811,13 @@ def products_file(ev: pd.DataFrame) -> dict:
                 "conv": ([[r.day, r.channel, round(float(r.Conv_Units_Claimed), 4), round(float(r.Conv_Units_Pending_Preorder), 4),
                            round(float(r.Conv_Units_Pending_Draw), 4)] for r in dc.itertuples(index=False)]
                          if dc is not None else []),
+                # the paid-social rows of `conv` by the campaign and ad set
+                # clicked: [day, label, entry rows, claimed, pending
+                # pre-order, pending draw]; left out on a feed without the utm
+                **({"paidBy": [[r.day, r.label, int(r.rows), round(float(r.Conv_Units_Claimed), 4),
+                                round(float(r.Conv_Units_Pending_Preorder), 4), round(float(r.Conv_Units_Pending_Draw), 4)]
+                               for r in pb[pb["draw_id"] == str(did)].sort_values(["day", "label"]).itertuples(index=False)]}
+                   if pb is not None else {}),
             })
         draws.sort(key=lambda d: (d["first"], d["id"]))
         patterns: dict[tuple, int] = {}

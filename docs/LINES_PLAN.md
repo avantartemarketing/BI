@@ -200,6 +200,12 @@ section 4b.
   on are its own draws' too (each draw's `conv` series). Until then the
   release's stood on every line, and the prints' ad set read an ROI three
   times what it was (16.3 for 5.3 on one set of economics).
+- Settled 10 November 2026: a line's paid ROI credits its ad sets with the
+  entries their own clicks made, on either line's draws, each priced as the
+  work entered (each draw's `paidBy` series, from the campaign tag the
+  events feed now carries; METHODOLOGY 7b). Read by its draws, the bricks'
+  ad set was credited with the 25 toy-brick entrants the prints' ad set had
+  brought.
 - The toy-brick target sell-through, to be entered in Airtable on the four
   records; the line's basket and K wait on it.
 - The units-per-buyer rate for this release, from the brief.

@@ -961,7 +961,12 @@ function passthroughWriter(expect, label) {
  * history for no number the dashboard shows. Identifiers kept: the account id
  * (the person key), draw and draw-entry ids, the Meta campaign id. Dropped on
  * purpose: user_email, user_pseudo_id, ga_session_id, customer_id, Shopify
- * order id and name, subscription id, page URLs and titles, utm strings.
+ * order id and name, subscription id, page URLs and titles, utm strings -
+ * all but one: the campaign utm of a paid-social draw entry (paid_campaign,
+ * derived below), which is the name of the Meta campaign and ad set the
+ * entrant clicked, the spend feed's own names and nothing about the person.
+ * A release that runs an ad set per line of work credits each ad set with
+ * the entries its own clicks made (docs/METHODOLOGY.md 7b, 10 November 2026).
  * The account id is still personal data under GDPR: the file stays under
  * sources/ (gitignored), is served by no endpoint, and is rebuilt from
  * BigQuery on every pull, so an erasure upstream propagates. */
@@ -982,7 +987,12 @@ const EVENT_COLUMNS = [
   "page_view_page_locale", "purchase_page_locale", "draw_entry_page_locale",
 ];
 // derived in SQL so the source text never leaves BigQuery
-const EVENT_DERIVED = { has_processing_error: "processing_error IS NOT NULL AND processing_error != ''" };
+const EVENT_DERIVED = {
+  has_processing_error: "processing_error IS NOT NULL AND processing_error != ''",
+  // the campaign and ad set a paid-social draw entry clicked through from, as
+  // the ad's link carries them; blank on every other row
+  paid_campaign: "IF(event_name = 'draw entry intent' AND AA_session_custom_channel_group_split_touch = 'Paid Social', utm_campaign_split_touch, NULL)",
+};
 const EVENT_HEADER = EVENT_COLUMNS.concat(Object.keys(EVENT_DERIVED));
 const FORBIDDEN_COLUMNS = ["user_email"];
 const EVENT_TIMESTAMP_COLUMNS = new Set(["event_timestamp", "launch_date"]);

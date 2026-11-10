@@ -90,7 +90,7 @@ check(/^SELECT DISTINCT simple_release_name FROM `[^`]+TL_Funnel_Report_v2`\n/.t
 check(/^SELECT DISTINCT simple_release_name FROM `[^`]+TL_Funnel_Report_v2`\n/.test(bn) && /event_date >= @since AND event_date < @before/.test(bn)
   && /event_name IN \('page_view', 'session_start'\)/.test(bn), "the browsing feed's names query likewise");
 check(bq.eventsWriter === undefined || typeof bq.eventsWriter === "function", "the LE events writer is still exported");
-check(bq.EVENT_HEADER.length === 48 && !bq.EVENT_HEADER.includes("shopify_order_id"), `the LE events feed is unchanged (${bq.EVENT_HEADER.length} columns)`);
+check(bq.EVENT_HEADER.length === 49 && bq.EVENT_HEADER.includes("paid_campaign") && /utm_campaign_split_touch, NULL\)\) AS `paid_campaign`/.test(bq.eventsSql()) && !bq.EVENT_HEADER.includes("shopify_order_id"), `the LE events feed carries the paid campaign and nothing else new (${bq.EVENT_HEADER.length} columns)`);
 check(bq.BROWSING_HEADER.length === 10 && !bq.BROWSING_HEADER.includes("event_hour"), "the LE browsing feed stays daily");
 
 // ---- the incremental merge reads a row's date in either format
