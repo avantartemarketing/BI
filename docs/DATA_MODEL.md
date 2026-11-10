@@ -1452,7 +1452,13 @@ stands). Only the paid ROI's reading moves: the line's entries, units, channels 
 sell-through stay its draws' and works', and the forward path still counts the units of the
 line's draws, handed the profit the ad sets made per converting unit on those draws
 (`aa_ppu_forward`) so the recommendation values a euro ahead as the ad sets' euros have
-returned. The combined page is not moved. The sell-through block runs the allocation over every work
+returned. The combined page of such a release is not moved by the ad sets (every paid entry
+is its campaign's), but its paid profit per unit is weighted the same way since the same day:
+every work's own by the paid-social converting units on its draw (`with_paid_profit`, from
+each draw's `conv`; `aa_ppu_paid`, `artist_ppu_paid`, and `paid.frameUpliftPerUnit` for the
+card's working), where it was the plan's target-weighted figure, which stays in the
+`economics` block. `paidPpuBasis` on the snapshot says which ("paid entries" or "target
+units"). The sell-through block runs the allocation over every work
 and keeps the line's rows (`restrict_products`), its headline the kept rows summed.
 
 **The spend feed.** `data/spend_daily.csv` gained `adset_name` (server/sheets.js spendWriter

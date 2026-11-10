@@ -271,7 +271,15 @@ check(close(PA["paid"]["cumRoi"], (1 - PA["paid"]["cannibalisation"]) * ppu_a / 
       f"the prints' ad set earns the bricks it sold, the bricks' ad set half what its draws took: {PA['paid']['cumRoi']} vs {P['paid']['cumRoi']}, {BA['paid']['cumRoi']} vs {B['paid']['cumRoi']}")
 check(close(PA["paid"]["spendToDate"], P["paid"]["spendToDate"]) and PA["paid"]["entriesToDate"] == P["paid"]["entriesToDate"] and PA["hero"] == P["hero"],
       "the spend, the draws' entries and the works' units are as they were")
-check(close(ads["paid"]["cumRoi"], snap["paid"]["cumRoi"], 1e-6), "the combined page is not moved")
+check(close(ads["paid"]["cumRoi"], snap["paid"]["cumRoi"], 1e-6), "the combined page is not moved by the ad sets")
+# the combined page prices paid's units as the works they were entered for
+# (each draw's paid conversions), not as the plan's mix of target units
+ppu_c = (exp_p * 1000.0 + exp_b * 150.0) / (exp_p + exp_b)
+ppu_plan = (300 * 1000.0 + 900 * 150.0) / 1200
+check(close(snap["paid"]["profitPerUnitAA"], ppu_c, 1e-3) and snap["paidPpuBasis"] == "paid entries" and close(snap["economics"]["aaProfitPerUnit"], ppu_plan, 1e-3),
+      f"the combined page's paid profit per unit is weighted by what paid sold, its economics by the plan: {snap['paid']['profitPerUnitAA']} vs {ppu_c}, {snap['economics']['aaProfitPerUnit']} vs {ppu_plan}")
+check(close(snap["paid"]["cumRoi"], (1 - snap["paid"]["cannibalisation"]) * ppu_c / ((snap["paid"]["spendToDate"] / cr) * snap["paid"]["aaBudgetShare"]), 2e-3),
+      f"and its ROI reads that profit: {snap['paid']['cumRoi']}")
 # entries that name no line's ad set (no utm, another campaign) stay with the draw they entered
 for dd in draws:
     dd["paidBy"] = [[r[0], "", *r[2:]] if i % 2 else [r[0], "Other_Campaign_Bricks and such", *r[2:]] for i, r in enumerate(dd["paidBy"])]

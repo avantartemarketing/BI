@@ -875,6 +875,17 @@ euros have returned so far. Valuing every entry Meta attributes to the
 prints' ad set as a print, the way the Slack ROI update did, overstates it by
 the same 25 entrants.
 
+**The combined page prices paid's units as the works they were entered for
+(10 November 2026).** Its paid ROI read every converting unit at the
+release's profit per unit weighted by target units, the plan's mix: 992 toy
+bricks to 300 prints on Ai Weiwei's release, EUR 335 a unit. Paid sells more
+of the prints than the plan's share (28% of its converting units that day
+against 23%), so the campaign read low, 2.9 for about 3.2. The profit per
+unit is now every work's own, framing uplift included, weighted by the
+paid converting units on its draw, as on a line's page. The economics shown
+elsewhere on the page stay the plan's, and a release with one line is not
+touched.
+
 **Two things to know.** The allocator awards a flexible entrant the priciest
 work they entered first, so someone in both lines' draws is counted on the
 prints until a work fills. And the sell-through card's allocation runs over

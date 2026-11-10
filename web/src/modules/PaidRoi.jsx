@@ -162,14 +162,17 @@ export default function PaidRoi({ snap }) {
     ? `what paid entrants bought once given a pre-order or drawn on launch day, and ${pct(paid.preorderRate ?? 0.95)} of pre-order and ${pct(1 - dropOff)} of other entries still waiting`
     : `${pct(1 - dropOff)} of entries`;
   const splitAssumed = roiOk && paid.aaBudgetShareAssumed === true;
-  const frameUplift = !tl && (snap.economics?.frameUpliftPerUnit ?? 0) > 0;
+  // the uplift inside the paid profit per unit: the paid block's own where it
+  // is weighted by what paid sold (a two-line release's combined page), else the plan's
+  const upliftPU = paid.frameUpliftPerUnit ?? snap.economics?.frameUpliftPerUnit ?? 0;
+  const frameUplift = !tl && upliftPU > 0;
   const working = !roiOk ? [
     `Cost per ${unitWord}: spend over ${convWords}. ROI needs ${tl ? "AA's group profit per unit on the Targets tab's products grid" : "the profit split from the Targets tab"}.`,
     `€ per ${unitWord} ${winShort}: ${fmt(cpeRecent, 2)}`, `€ per ${unitWord} total: ${fmt(cpeTotal, 2)}`,
   ] : [
     `${P.label} ROI, how it is read`,
     ...(party === "artist" ? [`Artist profit per unit €${fmt(P.ppu, 2)}`]
-      : frameUplift ? [`AA group profit per unit €${fmt(P.ppu - snap.economics.frameUpliftPerUnit, 2)}`, `+ framing uplift per unit €${fmt(snap.economics.frameUpliftPerUnit, 2)}`, `= profit per unit, framing included €${fmt(P.ppu, 2)}`]
+      : frameUplift ? [`AA group profit per unit €${fmt(P.ppu - upliftPU, 2)}`, `+ framing uplift per unit €${fmt(upliftPU, 2)}`, `= profit per unit, framing included €${fmt(P.ppu, 2)}`]
       : [`AA group profit per unit €${fmt(P.ppu, 2)}`]),
     `less cannibalisation ${pct(paid.cannibalisation ?? 0.2)}`,
     ...(tl && has(P.value) ? [`= worth of a paid ${unitWord} to ${P.label} ${fmtMoney(P.value, 2)}`] : []),

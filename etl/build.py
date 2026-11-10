@@ -1218,6 +1218,46 @@ def with_adset_profit(release: dict, paid: dict | None) -> dict:
     return r
 
 
+def with_paid_profit(release: dict, name: str) -> dict:
+    """The combined page of a release selling two lines of work (docs
+    METHODOLOGY 7b, 10 November 2026): the profit per unit its paid ROI is
+    read at, every work's own (framing uplift included) weighted by the
+    paid-social converting units on its draw (each draw's `conv`), in place
+    of the target-weighted figure. The plan is mostly the cheaper line (Ai
+    Weiwei: 992 toy bricks to 300 prints, EUR 335 a unit) while paid sells
+    more of the dearer one than that, so the target-weighted profit read
+    the campaign low. Set beside the release's economics, which stay the
+    plan's (`aa_ppu_paid`, `artist_ppu_paid`, `frame_uplift_paid`); nothing
+    is set until paid has converted a unit on a work with economics, or on
+    a feed whose draws carry no `conv`."""
+    feed = load_products_feed().get(name) or {}
+    draws = feed.get("draws") or []
+    if not draws or any(not isinstance(d.get("conv"), list) for d in draws):
+        return release
+    _, _, titles = line_draws(feed, release, load_orders_feed().get(name))
+    prods = [p for p in (release.get("economics_products") or []) if p.get("edition")]
+    v_aa = v_artist = v_frame = units = 0.0
+    for d in draws:
+        title = titles.get(str(d.get("id"))) or ""
+        p = next((p for p in prods if sellthrough._names_title(p.get("name"), title)), None)
+        if p is None:
+            continue
+        c = sum(float(claimed) + float(pend_pre) * preorder_rate(release) + float(pend_draw) * entry_rate(release)
+                for _, ch, claimed, pend_pre, pend_draw in d["conv"] if str(ch) == "Paid Social")
+        frame = float(p.get("frame_uplift_per_unit") or 0.0)
+        v_aa += c * (float(p.get("aa_profit_per_unit") or 0.0) + frame)
+        v_frame += c * frame
+        v_artist += c * float(p.get("artist_profit_per_unit") or 0.0)
+        units += c
+    if units <= 0:
+        return release
+    r = dict(release)
+    r["aa_ppu_paid"], r["artist_ppu_paid"] = round(v_aa / units, 4), round(v_artist / units, 4)
+    r["frame_uplift_paid"] = round(v_frame / units, 4)
+    r["ppu_basis"] = "paid entries"
+    return r
+
+
 def with_entry_profit(release: dict, paid_by_product: dict) -> dict:
     """The line's profit per unit read as the product each paid entry was for
     (docs/LINES_PLAN.md): the works' profits per unit (framing uplift
@@ -6157,6 +6197,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             release = with_entry_profit(release, line_info["paidByProduct"])
         # ... and the ad set it clicked is the one credited with it
         release = with_adset_profit(release, line_info.get("paidAdsets"))
+    elif lines:
+        # the combined page of the lines: paid's units priced as the works
+        # they were entered for, not as the plan's mix
+        release = with_paid_profit(release, name)
     # a draw that ran past the typed close has its winners pay when it ends:
     # the window counts to the draw's end (sales_close), folded into the
     # close day below, while the plan keeps the typed dates
@@ -6253,6 +6297,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     ppu_aa = aa_profit_per_unit(release, b)
     frame_conv, frame_profit = frame_terms(release, b)
     ppu_artist = (release["artist_profit"] / release["edition_size"]) if release["edition_size"] else 0
+    # the release's economics as planned, which the economics block prints;
+    # the paid model of a two-line release's combined page reads the profit
+    # of the works paid's units were entered for (with_paid_profit)
+    ppu_aa_plan, ppu_artist_plan = ppu_aa, ppu_artist
+    if release.get("aa_ppu_paid") is not None:
+        ppu_aa, ppu_artist = float(release["aa_ppu_paid"]), float(release["artist_ppu_paid"])
     # Who funds the ads: as the profit divides (resolve_release). Each
     # product's deal - its profit share, or all of it on a revenue share -
     # else the release's typed share or its profit split (legacy_budget_share,
@@ -7418,6 +7468,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "stops": paid_stops(fwd_rec),
             "sellThrough": at_rec,
         },
+        # the framing uplift inside profitPerUnitAA where it is not the
+        # economics block's (with_paid_profit), for the card's working
+        **({"frameUpliftPerUnit": round(float(release["frame_uplift_paid"]), 2)} if release.get("frame_uplift_paid") is not None else {}),
         "profitPerUnitAA": round(ppu_aa_read, 2),
         "profitPerUnitArtist": round(ppu_artist_read, 2),
         "aaBudgetShare": aa_budget_share,
@@ -7668,6 +7721,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   "paidBasis": (line_info or {}).get("paidBasis"),
                   "draws": (line_info or {}).get("draws") or [], "sessionsShared": True,
                   "ppuBasis": release.get("ppu_basis") or "target units"} if line is not None else None),
+        # what the paid ROI's profit per unit is weighted by on this page
+        "paidPpuBasis": release.get("ppu_basis") or "target units",
         # the lines the release sells, on the combined page (with_direct_spread
         # fills in each line's own reading)
         "lines": ([{"key": ln["key"], "code": ln.get("code"), "name": ln.get("name"), "nameTyped": bool(ln.get("nameTyped")),
@@ -7710,7 +7765,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "edition": {"target": round(edition, 0), "total": round(total, 0)},
         "economics": {
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
-            "artistProfitPerUnit": round(ppu_artist_read, 2), "aaProfitPerUnit": round(ppu_aa_read, 2),
+            "artistProfitPerUnit": round(ppu_artist_plan, 2), "aaProfitPerUnit": round(ppu_aa_plan, 2),
             "artistProfitShare": release["artist_profit_share"],
             "aaBudgetShare": aa_budget_share,
             "aaBudgetShareAssumed": budget_assumed,
