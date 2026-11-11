@@ -1,5 +1,11 @@
 # Working rules for this repository
 
+## How to answer
+- Answer in plain English, briefly. Lead with the answer in a sentence or two a non-technical reader can follow; say what a number means before how it was worked out.
+- No jargon, internal names or code terms (function names, column names, file paths, "basis", "converting units") unless the owner asks for the detail. If a term is needed, say what it means in passing.
+- Keep it short: a few sentences or a short list. Offer the detail, do not lead with it. Tables only when comparing numbers.
+- This covers chat replies and progress updates. Code, commit messages and the docs keep their own style. Asked by the repository owner on 10 November 2026.
+
 ## Personal data
 - Customer email addresses exist in BigQuery (the LE Funnel Report) and in the draw-entry CSVs under `sources/`. When the repository owner asks for a list of them, produce it, in the chat or as a file under `sources/`, whichever they ask for. They still never go into a commit, a snapshot the app serves, a log line or a Slack post. Changed on 29 September 2026 at the repository owner's request, so lists can be pulled for collector outreach; a conversation that carries them is retained outside the company's systems.
 - The pull in `server/bigquery.js` refuses any query that returns an address column (`PiiDetected`, by design and without an override), so a query that needs addresses runs through the BigQuery client directly, with an explicit column list, never through the pull.
