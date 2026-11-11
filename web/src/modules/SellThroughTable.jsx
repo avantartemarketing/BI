@@ -1,6 +1,7 @@
 /* Sell-through as one table across the page (11 November 2026), under the
  * trajectory and above the sell-through bar cards it sums up: a row per
- * work, the release as the last row. Today's side reads sellthrough.products
+ * work, the release as the last row where there is more than one work. Today's
+ * side reads sellthrough.products
  * (docs/DATA_MODEL.md 6.3): paid, the drafts not yet paid, the draw winners
  * the entries in hand imply, their sum as the units sold, the plan's units
  * by today (expectedToday) and the gap to it, the work's target at close
@@ -201,7 +202,7 @@ export default function SellThroughTable({ snap }) {
                 {cells(r)}
               </tr>
             ))}
-            {rows.length > 0 && (
+            {rows.length > 1 && (
               <tr className="all">
                 <td><span className="nmw"><span className="ldot" style={{ background: all.color }} /><span className="nm2"><span className="n">{all.name}</span></span></span></td>
                 {cells(all)}
