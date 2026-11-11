@@ -1,8 +1,8 @@
 /* The Overview's cards, in the order the page shows them (11 November 2026),
  * two to a row with the sell-through table and the trajectory across both,
- * in three sections: the outcome (the sell-through table, a row per work
- * today and at the close; the trajectory; framing and where the orders
- * ship; a timed launch keeps the sell-through card), the channels and the funnel (channels against
+ * in three sections: the outcome (the trajectory; the sell-through table, a
+ * row per work today and at the close; the sell-through bars by product and
+ * at close; framing and where the orders ship), the channels and the funnel (channels against
  * targets and the gap; the funnel by channel and the email funnel) and paid
  * (ROI and the spend levels; on a release selling lines of work, the All
  * lines view shows the pair once per line, each on its line's ad set and
@@ -16,6 +16,7 @@ import SpendLevels from "./modules/SpendLevels.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
+import SellThroughClose from "./modules/SellThroughClose.jsx";
 import SellThrough from "./modules/SellThrough.jsx";
 import SellThroughTable from "./modules/SellThroughTable.jsx";
 import Framing from "./modules/Framing.jsx";
@@ -46,11 +47,12 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
   return (
     <div className="body">
       <div className="grid2">
-        {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
+        {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
         {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
-        {isTL && !preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
+        {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
+        {!isTL && snap.closeForecast && <SellThroughClose snap={snap} vs={vs} />}
         {!preWindow && framingOn && <Framing snap={snap} horizon={horizon} />}
         {geoOn && <Geo snap={snap} />}
         {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}

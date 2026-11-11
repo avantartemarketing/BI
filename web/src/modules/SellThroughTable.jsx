@@ -1,5 +1,5 @@
-/* Sell-through as one table across the page (11 November 2026), in place
- * of the Sell-through by product and Sell-through at close cards: a row per
+/* Sell-through as one table across the page (11 November 2026), under the
+ * trajectory and above the sell-through bar cards it sums up: a row per
  * work, the release as the last row. Today's side reads sellthrough.products
  * (docs/DATA_MODEL.md 6.3): paid, the drafts not yet paid, the draw winners
  * the entries in hand imply, their sum as the units sold, the plan's units
@@ -14,7 +14,7 @@
  * dropdown. Rows that are variants of one work show the variant with the
  * shared name under it; on a release selling lines of work the line sits
  * under the work. The Incomplete data and editions lozenges, and the Post
- * to Slack menu, carry over from the card this replaces. */
+ * to Slack menu, are the Sell-through by product card's too. */
 import React, { useState } from "react";
 import { Card, Loz, Menu, MenuItem, Note, useMenu } from "../ui.jsx";
 import { fmt, fmtPct, fmtMoney } from "../format.mjs";
