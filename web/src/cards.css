@@ -72,3 +72,22 @@
 .prow.st .fig.good b { color: var(--green); }
 .cnote { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .cnote b { font-weight: 500; }
+
+/* ---------- Sell-through as a table (web/src/modules/SellThroughTable.jsx) ---------- */
+.stt-card { padding: 18px 24px 8px; gap: 14px; }
+.stt-card .ch { height: 32px; }
+.stt-wrap { overflow-x: auto; min-width: 0; }
+.stt { width: 100%; min-width: 960px; table-layout: fixed; border-collapse: collapse; font-size: 13.5px; }
+.stt th, .stt td { text-align: left; padding: 0 8px 0 0; }
+.stt th { height: 46px; font-size: 12px; line-height: 1.2; font-weight: 400; color: var(--muted); border-bottom: 1px solid #ececef; vertical-align: middle; white-space: normal; }
+.stt td { height: 54px; border-bottom: 1px solid #f1f1f3; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stt td.b { font-weight: 500; }
+.stt td.dim { color: #b4b4b8; }
+.stt td.good { color: var(--green); }
+.stt .nmw { display: flex; align-items: center; min-width: 0; }
+.stt .nm2 { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.stt .n { overflow: hidden; text-overflow: ellipsis; }
+.stt .code { color: #a0a0a4; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; }
+.stt .ldot { display: inline-block; width: 9px; height: 9px; border-radius: 5px; margin-right: 10px; flex: 0 0 9px; }
+.stt tr.all td { border-top: 1px solid #e2e2e6; border-bottom: 0; font-weight: 500; }
+.stt .sorted { display: inline-flex; align-items: center; gap: 4px; background: #f1f1f3; color: var(--ink); border-radius: 6px; padding: 3px 7px; margin-left: -7px; white-space: nowrap; }

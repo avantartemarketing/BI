@@ -998,7 +998,8 @@ and its own options behind a ⋯ menu:
   beside the headline.
 - **Paid spend**: the spend to date "in total" against the budget's pace, the recommended
   daily budget as light bars after today, Capped by in the head.
-- **Sell-through by product**: a row per work, paid, drafts and the draw's forecast
+- **Sell-through**: one table across the page, a row per work and the release last: paid, drafts, likely winners, total sold, the target to date and the gap to it, the target at close, the edition, sell-through, framing, and the forecast units and share at the close under the paid assumption a dropdown picks (recommended, today's spend held, none). On a timed launch, the sell-through card as before
+- **Sell-through by product** (timed launches): a row per work, paid, drafts and the draw's forecast
   conversions on the edition (docs §6.3; the allocation rule and the Incomplete data stamp are
   as before); ⋯ holds Post to Slack.
 - **Framing** (docs §6.4): the share of prints framed, buyers and entrants as bars with the
