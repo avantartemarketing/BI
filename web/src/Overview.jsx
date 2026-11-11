@@ -31,6 +31,10 @@ import "./cards.css";
 
 /* a section's heading, across both columns */
 const Sect = ({ children }) => <div className="wide sect">{children}</div>;
+// the paid section's heading on a line of work: what is read is the line's ad
+// set, spend and return (docs 7b), so the heading says so; a line with no ad
+// set named keeps its name alone
+const paidHead = (name, adsets) => `Paid · ${name}${(adsets || []).length > 1 ? " ad sets" : (adsets || []).length ? " ad set" : ""}`;
 
 export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lineViews }) {
   const isTL = snap.type === "TL";
@@ -63,13 +67,13 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
         {snap.email && <EmailFunnel snap={snap} vs={vs} />}
         {paidLines.length > 0 ? paidLines.map((l) => (
           <React.Fragment key={`paid:${l.key}`}>
-            <Sect>Paid · {l.name}</Sect>
+            <Sect>{paidHead(l.name, (l.snap.line || {}).adsets || l.adsets)}</Sect>
             <PaidRoi snap={l.snap} horizon={horizon} />
             {l.snap.paid.levels && <SpendLevels snap={l.snap} />}
           </React.Fragment>
         )) : paidOn && (
           <>
-            <Sect>Paid</Sect>
+            <Sect>{snap.line && snap.line.name ? paidHead(snap.line.name, snap.line.adsets) : "Paid"}</Sect>
             <PaidRoi snap={snap} horizon={horizon} />
             {levelsOn && <SpendLevels snap={snap} />}
           </>
