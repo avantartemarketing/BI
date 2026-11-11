@@ -2238,7 +2238,14 @@ sells out, null when none can), `daysLeft`, `ppu` (AA's profit on a paid unit ne
 cannibalisation), `cannibalisation`, `elasticity` and `elasticityBand`, `rows[]` (`key` none /
 half / recommended / double, `daily`, `unitsAtClose`, `pct`, `spendToCome`, `roi`, `marginal`) and
 `curve[]` (`daily`, `profit`, `lo`, `hi`: the profit from the spend still to come at a flat daily
-spend, and the same with the elasticity at the ends of its band). `daily[]` runs over the full days the rules read;
+spend, and the same with the elasticity at the ends of its band). Since 11 November 2026 the level
+is the cautious peak (METHODOLOGY 7, `PathDraws`) and the block also carries `tomorrow` (the
+first paced step, `budget.recommended`), `lossAtRecommended` and `profitAtRecommended` (`median`,
+`p10`, `p90`) at the level, `pointLevel` and `lossAtPoint` (the point estimate's peak and its
+chance of a loss), `unitsAtRecommended`, `spendToCome`, `edition`, `biggestDay` (the campaign's
+biggest full day so far), `entriesWindow`, `wearout` and `draws`; each `curve[]` point adds
+`median`, `p10`, `p25`, `p75`, `p90` and `lossP` across the runs, with `lo` and `hi` now the
+`p10` and `p90` and `profit` still the point estimate's. `daily[]` runs over the full days the rules read;
 on a live day the as-of day so far rides at the end as one more row marked `partial: true`
 (its spend and entries, no ROI point), so the Paid ROI chart's bars sum to `spendToDate` and
 the day's spend so far is drawn. `campaign_cost_terms` and the rolling ROI skip that row.

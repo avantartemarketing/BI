@@ -2254,6 +2254,90 @@ class CostPath:
 PROJECTION_BACKTEST = ROOT / "etl" / "projection_backtest.json"
 
 
+
+class PathDraws:
+    """The cost path with its uncertainty (docs 7, 11 November 2026): the
+    same path run many times, each run with the window's price, the
+    elasticity, the wear-out and the close's lift drawn from what is known
+    of them, so a daily spend has a range of profits and a chance of a loss
+    and not one figure.
+
+      price    the window's price is its spend over a handful of entries, so
+               the rate behind it is Gamma(entries + 1/2) around what was seen
+      eps      Normal around the path's elasticity, sd cpe_spend_elasticity_sd
+      wear     Normal around the path's wear-out, sd cpe_wearout_sd
+      lift     the close's lift, log-normal around the path's own (the 95%
+               ranges on file: cpe_close_lift_log_sd), and smaller on a day
+               bigger than the campaign's usual one (cpe_close_lift_shrink, an
+               exponent on the day's spend over the window's; an assumption,
+               not a fit)
+
+    The draws are the same on every build (a fixed seed), so a level does
+    not move between refreshes for the draws' sake."""
+    N = 2000
+
+    def __init__(self, cost: "CostPath", entries_window: float, b: dict = BENCH):
+        rng = np.random.default_rng(7)
+        n = self.N
+        self.cost = cost
+        self.eps = np.clip(rng.normal(cost.eps or 0.0, float(b.get("cpe_spend_elasticity_sd", 0.1) or 0.1), n), 0.0, 0.9)
+        self.wear = np.clip(rng.normal(cost.wear or 0.0, float(b.get("cpe_wearout_sd", 0.13) or 0.13), n), 0.0, 0.8)
+        e = max(float(entries_window or 0.0), 0.0)
+        rate = np.maximum(rng.gamma(e + 0.5, 1.0, n), 1e-9)
+        self.cpe = cost.cpe_now * max(e, 0.5) / rate
+        sds = list(b.get("cpe_close_lift_log_sd") or [0.10, 0.135])
+        self.lift = [np.exp(rng.normal(math.log(v), sds[k] if k < len(sds) else sds[-1], n)) if v > 0 else np.ones(n)
+                     for k, v in enumerate(cost.lift)]
+        sh = b.get("cpe_close_lift_shrink") or [-0.089, 0.089]
+        self.shrink = rng.normal(float(sh[0]), float(sh[1]), n)
+
+    def units(self, s: float) -> np.ndarray:
+        """Converting units a flat daily spend s buys to the close, per draw."""
+        c = self.cost
+        if s <= 0 or c.n <= 0:
+            return np.zeros(self.N)
+        lvl = (s / c.spend_ref) ** self.eps if c.spend_ref else np.ones(self.N)
+        small = (s / c.spend_ref) ** self.shrink if (c.spend_ref and s > c.spend_ref) else 1.0
+        base = c.k + c.clock_ref
+        tot = np.zeros(self.N)
+        for i in range(c.n):
+            m = lvl * ((c.k + c.spent + s * i) / base) ** self.wear * c.anchor_lift
+            to_close = c.n - 1 - i
+            if to_close < len(self.lift):
+                m = m / np.maximum(self.lift[to_close] * small, 1.0)
+            tot += s / (self.cpe * m)
+        return tot
+
+    def profit(self, s: float, gain: float, cost_share: float, room: float = math.inf) -> np.ndarray:
+        """CostPath.profit per draw."""
+        return gain * np.minimum(self.units(s), room) - cost_share * s * self.cost.n
+
+    def cautious_level(self, gain: float, cost_share: float, room: float, top: float, cap: float = math.inf) -> float:
+        """The daily spend that earns the most if the campaign turns out
+        dear: the peak of the profit's 25th percentile, on a grid to `top`
+        and then a finer one around the grid's peak; 0 when no spend pays in
+        that case. Never past `cap` (the spend that sells out)."""
+        hi = min(top, cap)
+        if hi <= 0 or gain <= 0 or cost_share <= 0 or self.cost.n <= 0:
+            return 0.0
+        q = lambda v: float(np.percentile(self.profit(v, gain, cost_share, room), 25))   # noqa: E731
+        grid = [hi * i / 40 for i in range(41)]
+        vals = [0.0] + [q(v) for v in grid[1:]]
+        k = int(np.argmax(vals))
+        lo_f, hi_f = grid[max(k - 1, 0)], grid[min(k + 1, 40)]
+        fine = [lo_f + (hi_f - lo_f) * i / 20 for i in range(21)]
+        fv = [q(v) if v > 0 else 0.0 for v in fine]
+        best = fine[int(np.argmax(fv))]
+        return best if max(fv) > 0 else 0.0
+
+    def point(self, s: float, gain: float, cost_share: float, room: float = math.inf) -> dict:
+        """A daily spend's profit across the draws: the median, the range
+        eight in ten runs land in, the quartiles and the chance of a loss."""
+        d = self.profit(s, gain, cost_share, room)
+        pc = lambda x: round(float(np.percentile(d, x)), 2)   # noqa: E731
+        return {"median": pc(50), "p10": pc(10), "p25": pc(25), "p75": pc(75), "p90": pc(90),
+                "lossP": round(float((d < 0).mean()), 3) if s > 0 else 0.0}
+
 def load_projection_backtest() -> dict | None:
     """Where completed launches landed around the projection of what was
     still to come, by the share of the campaign run (the quantiles
@@ -6675,6 +6759,19 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     if cost and days_left:
         profit_spend = cost.spend_for_profit(gain, aa_budget_share, cap=supply_spend if supply_spend is not None else math.inf,
                                              room=room_left)
+    # ... read under uncertainty (11 November 2026): the level is the cautious
+    # peak, the daily spend that earns the most if the campaign turns out dear
+    # (the 25th percentile of the profit across the path's draws, PathDraws),
+    # not the point estimate's, which a window of three entries can put at
+    # ten times today's spend. Where no spend pays in the dear case while the
+    # point estimate still does, paid is not stopped on the doubt alone: the
+    # level is the point estimate's held to today's spend, never a raise.
+    point_spend, draws = profit_spend, None
+    if cost and days_left and profit_spend and profit_spend > 0:
+        draws = PathDraws(cost, e3, b)
+        sell = supply_spend if supply_spend not in (None, math.inf) else math.inf
+        cautious = draws.cautious_level(gain, aa_budget_share, room_left, max(profit_spend * 2.5, s0 * 1.2, 1.0), cap=sell)
+        profit_spend = cautious if cautious > 0 else (min(profit_spend, s0) if s0 > 0 else profit_spend)
     # the workbook's cumulative-ROI band and the forced decrease are read for
     # the card's working but no longer set the spend (27 October 2026)
     band = "hold"
@@ -6743,9 +6840,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 first_full = False
             elif prev > 0:
                 lo_s, hi_s = prev * (1 - rules["max_daily_change"]), prev * (1 + rules["max_daily_change"])
+                # never more than 30% in a day, the last step to the level
+                # included (until 11 November 2026 a step within a tenth of
+                # the level jumped to it, up to 43% in a day)
                 step = min(max(level, lo_s), hi_s)
-                if abs(step - level) < rules["ignore_change_below"] * max(level, 1e-9):
-                    step = level
             else:
                 step = level if cap not in ("zero_conversion_pause",) else 0.0
             schedule.append(step)
@@ -7181,7 +7279,20 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                 rows_out.append(level_row(key, level * mult, f))
         sd = float(b.get("cpe_spend_elasticity_sd", 0.1) or 0.1)
         curve = []
-        if not stop:
+        if not stop and draws is not None:
+            # the profit at each flat daily spend across the path's draws
+            # (PathDraws): the median, the range eight in ten runs land in
+            # and the chance of a loss, to two and a half times the level or
+            # a little past the point estimate's peak, whichever is further.
+            # `profit`, `lo` and `hi` are the point estimate's and the range's
+            # ends, for a reader of the block as it was
+            top = max(level * 2.5, (point_spend or 0.0) * 1.2, s0 * 1.2, 1.0)
+            for i in range(41):
+                s_pt = top * i / 40
+                pt = draws.point(s_pt, gain, aa_budget_share, room_left)
+                curve.append({"daily": round(s_pt, 2), "profit": round(cost.profit(s_pt, gain, aa_budget_share, room_left), 2),
+                              "lo": pt["p10"], "hi": pt["p90"], **pt})
+        elif not stop:
             alts = [CostPath(cost.cpe_now, cost.spend_ref, cost.clock_ref, cost.spent, cost.n, e_alt, wear, wear_k,
                              lift=cost.lift, anchor_lift=cost.anchor_lift)
                     for e_alt in (max(eps - sd, 0.0), min(eps + sd, 0.9))]
@@ -7201,6 +7312,26 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                       "daysLeft": days_left, "ppu": round(gain, 2), "cannibalisation": cann,
                       "elasticity": eps, "elasticityBand": [round(max(eps - sd, 0.0), 3), round(min(eps + sd, 0.9), 3)],
                       "rows": rows_out, "curve": curve}
+        if not stop and draws is not None:
+            at_level = draws.point(level, gain, aa_budget_share, room_left)
+            rec_row = next((r for r in rows_out if r["key"] == "recommended"), {})
+            past_spend_days = [float(v) for d_, v in spend_day.items() if d_ <= full_through]
+            levels_out.update({
+                # tomorrow's daily budget, the first step toward the level
+                "tomorrow": round(recommended, 2) if recommended not in (None, math.inf) else None,
+                "lossAtRecommended": at_level["lossP"],
+                "profitAtRecommended": {k_: at_level[k_] for k_ in ("median", "p10", "p90")},
+                # the point estimate's peak, where the next euro returns 1.0, and its own chance of a loss
+                "pointLevel": round(point_spend, 2) if point_spend not in (None, math.inf) else None,
+                "lossAtPoint": (draws.point(point_spend, gain, aa_budget_share, room_left)["lossP"]
+                                if point_spend not in (None, math.inf) and point_spend > 0 else None),
+                "unitsAtRecommended": rec_row.get("unitsAtClose"), "spendToCome": rec_row.get("spendToCome"),
+                "edition": round(edition_all, 0) if edition_all else None,
+                # the campaign's biggest day so far: past it the price is an extrapolation
+                "biggestDay": round(max(past_spend_days), 2) if past_spend_days else None,
+                # the entries the window's price rests on, and the wear-out beside the elasticity
+                "entriesWindow": round(e3, 1), "wearout": wear, "draws": PathDraws.N,
+            })
 
     # ---- the sell-through at close (27 October 2026): the projection with
     # its likely range and a word on how sure it is, the release and each

@@ -714,7 +714,35 @@ the supply figure does. A next euro that does not pay even on the smallest
 day puts the level at nothing, a cut like any other, held to 30% a day; only
 a gap already filled stops paid at once.
 
-**The spend levels** (the Spend levels card, `paid.levels`). Four levels, none,
+**The level is read under uncertainty (11 November 2026).** The peak above is
+the point estimate's, and it rests on little: the window's price is three
+days' spend over a handful of entries, and the elasticity, the wear-out and
+the close's lift are each known only within a range. On a window of three or
+four entries the peak could sit at ten times today's spend (a release at
+EUR 363 a day was told EUR 4,282, a 1,080% raise). So the path is run 2,000
+times, each run drawing the price (the entry rate behind the window's count,
+Gamma(entries + 1/2)), the elasticity (sd 0.10), the wear-out (sd 0.13) and
+the close's lift (its 95% ranges, shrinking a little on a day bigger than the
+campaign's usual one, an assumption), and the level is the **cautious peak**:
+the daily spend that earns the most if the campaign turns out dear, the peak
+of the profit's 25th percentile across the runs (`PathDraws.cautious_level`).
+It is never above the point estimate's peak or the spend that sells out. Where
+no spend pays in the dear case while the point estimate still does, paid is
+not stopped on the doubt alone: the level is the point estimate's held to
+today's spend, never a raise. The 30% a day pacing, the zero-conversion rules
+and the stop when the edition is spoken for are as they were, and the
+projection, the Paid ROI chart's line and the sell-through at close all run
+at this level. Every step toward the level is held to 30%, the last included
+(until then a step within a tenth of the level jumped to it).
+
+**The spend levels** (the Spend levels card, `paid.levels`). The card leads with
+tomorrow's daily budget (the first paced step), the level it is heading for and
+the chance that level loses money (the share of runs in which the spend still to
+come earns less than AA's share of it); its chart is the profit from the spend
+still to come at each flat daily spend, the median run with the range eight in
+ten runs land in, and a dotted mark at the campaign's biggest day so far, past
+which the price is an extrapolation. The table went with the redesign; the
+block still carries it. As it was before: four levels, none,
 half the level, the level and double, each the schedule scaled and run through
 the same placement, with the units at close, the spend to come, the ROI on it
 and the return on the next euro; and the profit from the spend still to come

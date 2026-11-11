@@ -208,5 +208,36 @@ check(close(paid["roiDeclineModel"]["dailyFactor"], (1 / bud["wearToClose"]) ** 
       "the fallback factor is the path's average fall a day")
 check("driftPerDay" not in bud and "driftToClose" not in bud, "the drift a day is gone from the block")
 
+# ---- the level read under uncertainty (11 November 2026): the cautious
+# peak, with the chance of a loss and the range on the card's curve
+lv = paid["levels"]
+check(close(lv["recommended"], bud["target"], 0.001) and close(lv["tomorrow"], bud["recommended"], 0.001),
+      f"the card's aim is the level and its tomorrow the recommendation: {lv['recommended']} / {lv['tomorrow']} vs {bud['target']} / {bud['recommended']}")
+check(0 < lv["recommended"] <= lv["pointLevel"] and 0 <= lv["lossAtRecommended"] <= lv["lossAtPoint"] <= 1,
+      f"the cautious level is no higher than the point estimate's peak and no likelier to lose: {lv['recommended']} vs {lv['pointLevel']}, {lv['lossAtRecommended']} vs {lv['lossAtPoint']}")
+cv = lv["curve"]
+check(len(cv) == 41 and cv[0]["daily"] == 0 and cv[0]["lossP"] == 0 and all(c["p10"] <= c["p25"] <= c["median"] <= c["p75"] <= c["p90"] for c in cv)
+      and all(c["lo"] == c["p10"] and c["hi"] == c["p90"] for c in cv),
+      "the curve carries the median, the quartiles and the range eight in ten runs land in")
+check(max(cv, key=lambda c: c["p25"])["daily"] > 0 and abs(max(cv, key=lambda c: c["p25"])["daily"] - lv["recommended"]) <= cv[1]["daily"] * 1.01,
+      f"the level sits where the profit's 25th percentile peaks: {lv['recommended']} vs {max(cv, key=lambda c: c['p25'])['daily']}")
+check(lv["biggestDay"] == max(d["spend"] for d in paid["daily"] if not d.get("partial")) and lv["draws"] == build.PathDraws.N,
+      f"the biggest day so far is carried: {lv['biggestDay']}")
+
+# the draws themselves: the same on every build, wider on a window of few
+# entries, and a path nobody profits from has no level
+cp = build.CostPath(100.0, 500.0, 5000.0, 6000.0, 10, 0.3, 0.2, 100.0, lift=[1.53, 1.4])
+d1, d2 = build.PathDraws(cp, 12.0, B), build.PathDraws(cp, 12.0, B)
+check(bool((d1.profit(800.0, 400.0, 0.5) == d2.profit(800.0, 400.0, 0.5)).all()), "the draws are the same on every build")
+few, many = build.PathDraws(cp, 2.0, B).point(800.0, 400.0, 0.5), build.PathDraws(cp, 200.0, B).point(800.0, 400.0, 0.5)
+check(few["p90"] - few["p10"] > many["p90"] - many["p10"] and few["lossP"] >= many["lossP"],
+      f"a price resting on two entries is less sure than one on two hundred: {few} vs {many}")
+pt_peak = cp.spend_for_profit(400.0, 0.5)
+lvl = d1.cautious_level(400.0, 0.5, math.inf, pt_peak * 2.5)
+check(0 < lvl <= pt_peak, f"the cautious level is under the point estimate's peak: {lvl} vs {pt_peak}")
+check(d1.cautious_level(400.0, 0.5, math.inf, pt_peak * 2.5, cap=lvl / 2) <= lvl / 2 + 1e-9, "and never past the spend that sells out")
+check(d1.cautious_level(1.0, 1.0, math.inf, 1000.0) == 0.0, "a unit worth less than it costs on every draw has no level")
+check(abs(float(d1.units(800.0).mean()) / cp.units(800.0) - 1) < 0.5, "the draws sit around the path they are drawn from")
+
 print("ok: paid wear-out" if not failed else f"{failed} failed")
 sys.exit(1 if failed else 0)
