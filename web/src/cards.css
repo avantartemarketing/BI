@@ -92,6 +92,3 @@
 .stt tr.all td { border-top: 1px solid #e2e2e6; border-bottom: 0; font-weight: 500; }
 .stt .sorted { display: inline-flex; align-items: center; gap: 4px; background: #f1f1f3; color: var(--ink); border-radius: 6px; padding: 3px 7px; margin-left: -7px; white-space: nowrap; }
 
-/* a key in rows, each led by what its marks are (Paid ROI: the lines, the bars) */
-.keyrows { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: baseline; }
-.keyrows .kg { font-size: 11.5px; color: var(--faint); white-space: nowrap; }

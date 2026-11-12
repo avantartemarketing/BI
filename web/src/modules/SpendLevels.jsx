@@ -7,8 +7,8 @@
  * the cautious peak: the daily spend that earns the most if the campaign
  * turns out dear (the 25th percentile of the profit), not the point
  * estimate's. A dotted mark shows the campaign's biggest day so far:
- * beyond it the price is an extrapolation. No table. The working is on the
- * aside's hover.
+ * beyond it the price is an extrapolation. No table and no key. The working
+ * is on the aside's hover.
  *
  * When paid stops there is no curve: the stop, its reason and two rows.
  * A snapshot built before the range was carried draws the card as it was
@@ -39,6 +39,10 @@ const STOP = {
   zero_conversion_pause: ["No entries for 3 days", "Paid pauses: three days of spend have bought no entries."],
 };
 const H = 190, L = 40, R = 10, T = 14, B = 26;
+// the card read under uncertainty draws its plot as tall as the Paid ROI
+// card's beside it, both set on the foot of their cards, and carries no key
+// (12 November 2026): the marks are labelled on the plot and the hover names the rest
+const HC = 250;
 
 /* a daily spend's place on the curve, as a fractional index between the
  * points either side of it, and the profit there; null off the curve */
@@ -207,11 +211,11 @@ function CautiousMarks({ W, x, y, band, zero, drop, dot, ring, tested, labels, l
   if (!(W > 0)) return null;
   const style = { position: "absolute", left: 0, top: 0, width: "100%", height: "auto", display: "block", overflow: "visible", pointerEvents: "none" };
   if (layer === "under") {
-    return <svg viewBox={`0 0 ${W} ${H}`} style={style} aria-hidden="true">{band && <path d={band} fill={COL.PALE} stroke={BAND_BORDER} strokeWidth="1" />}</svg>;
+    return <svg viewBox={`0 0 ${W} ${HC}`} style={style} aria-hidden="true">{band && <path d={band} fill={COL.PALE} stroke={BAND_BORDER} strokeWidth="1" />}</svg>;
   }
   return (
     <>
-      <svg viewBox={`0 0 ${W} ${H}`} style={style} aria-hidden="true">
+      <svg viewBox={`0 0 ${W} ${HC}`} style={style} aria-hidden="true">
         {zero && <path d={zero} stroke="#d9d9de" strokeWidth="1" fill="none" />}
         {tested && <path d={tested} stroke={COL.GREY} strokeWidth="1" strokeDasharray="2 3" fill="none" />}
         {drop && <path d={drop} stroke={COL.IND} strokeWidth="1" strokeDasharray="3 3" fill="none" />}
@@ -228,7 +232,7 @@ function CautiousMarks({ W, x, y, band, zero, drop, dot, ring, tested, labels, l
  * heading for, the chance that level loses money, and the profit to come
  * with its likely range. */
 function Cautious({ lv, curve, title, boxRef, W }) {
-  const TT = 18;
+  const TT = 18, H = HC;
   const rec = lv.recommended, today = has(lv.today) ? lv.today : null, tomorrow = has(lv.tomorrow) ? lv.tomorrow : rec;
   const lossP = lv.lossAtRecommended;
   const pr = lv.profitAtRecommended || {};
@@ -302,18 +306,13 @@ function Cautious({ lv, curve, title, boxRef, W }) {
     tested = `M${x(testedPt.i).toFixed(1)} ${TT + 2}V${H - B}`;
     labels.push({ t: `Untested above ${money(lv.biggestDay)}`, s: { left: P(x(testedPt.i) + (leftSide ? -7 : 7), W), top: P(TT + 2, H), transform: leftSide ? "translate(-100%,0)" : "none", color: COL.MUTED } });
   }
-  const legend = [
-    { n: "Profit from the spend to come", k: lk(COL.IND), tip: "The likely profit (the median run): AA's profit on the units a flat daily spend buys to the close, less its share of that spend" },
-    ...(banded ? [{ n: "Likely range", k: { ...sw(COL.PALE), width: 10, height: 10, flex: "0 0 10px", border: `1px solid ${BAND_BORDER}` }, tip: "Where eight in ten runs land, once the window's price, the elasticity, the wear-out and the close's lift are each allowed their uncertainty" }] : []),
-    ...(ring ? [{ n: "Today", k: { width: 8, height: 8, flex: "0 0 8px", borderRadius: "50%", border: `2px solid ${COL.INK}` } }] : []),
-  ];
   const rowAt = (i) => curve[i];
   return (
     <Card title={title} aria={title}>
       <Head v={money(tomorrow)} u="a day tomorrow" aside={`${chgWord}${aimWord}`} asideTip={working}>
         {has(lossP) && <Loz kind={riskKind} tip={`At ${money(rec)} a day the spend still to come loses money in ${oneIn(lossP)} runs${has(lv.lossAtPoint) && has(lv.pointLevel) ? `; at the point estimate's peak, ${money(lv.pointLevel)}, in ${oneIn(lv.lossAtPoint)}` : ""}`}><span className="dot" />{oneIn(lossP)} chance of a loss</Loz>}
       </Head>
-      <div ref={boxRef} style={{ position: "relative" }}>
+      <div ref={boxRef} style={{ position: "relative", marginTop: "auto" }}>
         <CautiousMarks W={W} layer="under" band={bandPath} x={x} y={y} labels={[]} />
         <div style={{ position: "relative" }}>
           <LineChart H={H} L={L} R={R} T={TT} B={B} n={n} ymin={ymin} ymax={ymaxV} yticks={yticks} yfmt={yl} xticks={xticks} noLegend
@@ -329,7 +328,6 @@ function Cautious({ lv, curve, title, boxRef, W }) {
           <CautiousMarks W={W} layer="over" x={x} y={y} zero={zero} tested={tested} drop={recPt ? `M${x(recPt.i).toFixed(1)} ${y(recPt.v).toFixed(1)}V${y(Math.max(0, ymin)).toFixed(1)}` : null} dot={recPt} ring={ring} labels={labels} />
         </div>
       </div>
-      <Keys legend={legend} />
     </Card>
   );
 }
