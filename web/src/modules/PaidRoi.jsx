@@ -199,13 +199,10 @@ export default function PaidRoi({ snap }) {
   const lineVals = roiOk ? roiVals : Array.from({ length: n }, (_, i) => { const p = byStep.get(i); return p && !p.partial && has(p.cost) ? p.cost : null; });
   const hasLine = lineVals.some(has);
   const aheadWords = aheadLevel !== null ? `${fmtMoney(aheadLevel, 0)} a ${hours ? "hour" : "day"}` : null;
-  const legend = [
-    ...(hasLine ? [{ n: lineName, k: lk(COL.IND), tip: `${P.label} ROI ${winWords} ${fmt(P.recent, 2)}${has(P.target) ? ` · target ${fmt(P.target, 2)}` : ""}` }] : []),
-    ...(showModel && has(declineEnd) ? [{ n: `ROI ahead, at the ${V.closeWord}`, v: fmt(declineEnd, 2), k: lk(COL.IND, "dashed"),
-      tip: `${P.label} ROI projected day by day at the recommended spend${aheadWords ? ` (${aheadWords})` : ""}, ending at ${fmt(declineEnd, 2)} at the ${V.closeWord}${short ? "; the cost path from the last full day's price" : ""}` }] : []),
-    ...(has(P.target) && roiOk ? [{ n: "Target", v: fmt(P.target, 2), k: lk(COL.DARK, "dashed") }] : []),
-    { n: "Spend", k: sw(COL.TRACK), tip: `Spend by day on its own scale, up to ${fmtMoney(spendTop)}` },
-    ...(aheadBars.length ? [{ n: "Spend ahead", v: aheadWords, k: aheadKey, tip: `The recommended spend the projection runs at, from tomorrow to the ${V.closeWord}: today's spend stepping to ${aheadWords} by at most 30% a day` }] : []),
+  // no key under the chart (12 November 2026): the hover names each line and
+  // bar with its figure, and the Spend levels card beside it carries the
+  // spend ahead. Only a state the chart cannot show by itself is said in words
+  const notes = [
     ...(stopsAhead ? [{ n: "Paid stops: no spend ahead", k: { width: 0 }, tip: "The recommendation is to spend nothing more, so there is no ROI to project" }] : []),
     ...(paidOff ? [{ n: `Paid off since ${V.stepWord} ${lastSpendStep}`, k: { width: 0 }, tip: `No paid spend since ${V.stepWord} ${lastSpendStep}: the line ends where the spend did` }] : []),
   ];
@@ -221,11 +218,11 @@ export default function PaidRoi({ snap }) {
       <Head v={roiOk ? fmt(leadVal, 2) : fmtMoney(leadVal, 2)} u={roiOk ? (complete ? "overall" : winShort) : `per ${unitWord}${complete ? " overall" : ""}`}
         aside={complete ? (has(P.recent) && roiOk ? `${fmt(P.recent, 2)} ${winShort} at the close` : "") : roiOk ? `${fmt(P.cum, 2)} overall` : `${fmtMoney(cpeTotal, 2)} overall`}
         asideTip={working.join("\n")} />
-      <div ref={ref} style={{ position: "relative" }}>
+      <div ref={ref} style={{ position: "relative", marginTop: "auto" }}>
         <SpendBars W={boxW} bars={[...pts.filter((p) => p.spend > 0).map((p) => ({ i: p.s, v: p.spend, partial: p.partial })), ...aheadBars]} n={n} top={spendTop} />
         <div style={{ position: "relative" }}>
           <LineChart H={H} L={L} R={R} T={T} B={B} n={n} ymax={ax.ymax} yticks={ax.ticks} yfmt={(t) => (roiOk ? `${tick(t)}×` : `€${tick(t)}`)} xticks={stepTicks(snap, of)}
-            marks={complete ? [] : [today]} legend={legend}
+            marks={complete ? [] : [today]} noLegend
             series={[
               ...(has(P.target) && roiOk ? [{ name: "Target", color: COL.DARK, w: 1.5, da: "4 4", vals: Array.from({ length: n }, () => P.target) }] : []),
               ...(showModel ? [{ name: "ROI ahead", color: COL.IND, w: 1.5, da: "4 4", vals: projVals }] : []),
@@ -248,6 +245,7 @@ export default function PaidRoi({ snap }) {
             aria={`Paid ROI: ${fmt(leadVal, 2)} ${winShort}, ${fmt(P.cum, 2)} overall`} />
         </div>
       </div>
+      {notes.length > 0 && <Keys legend={notes} />}
       {lineKeys.length > 0 && <Keys legend={lineKeys} />}
     </Card>
   );

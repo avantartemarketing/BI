@@ -13,6 +13,7 @@
 import React from "react";
 import Trajectory from "./modules/Trajectory.jsx";
 import SpendLevels from "./modules/SpendLevels.jsx";
+import AdsetEntries from "./modules/AdsetEntries.jsx";
 import ChannelsVsTargets from "./modules/ChannelsVsTargets.jsx";
 import Waterfall from "./modules/Waterfall.jsx";
 import PaidRoi from "./modules/PaidRoi.jsx";
@@ -70,12 +71,14 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
             <Sect>{paidHead(l.name, (l.snap.line || {}).adsets || l.adsets)}</Sect>
             <PaidRoi snap={l.snap} horizon={horizon} />
             {l.snap.paid.levels && <SpendLevels snap={l.snap} />}
+            {l.snap.paid.adsetEntries && <AdsetEntries snap={l.snap} />}
           </React.Fragment>
         )) : paidOn && (
           <>
             <Sect>{snap.line && snap.line.name ? paidHead(snap.line.name, snap.line.adsets) : "Paid"}</Sect>
             <PaidRoi snap={snap} horizon={horizon} />
             {levelsOn && <SpendLevels snap={snap} />}
+            {snap.paid.adsetEntries && <AdsetEntries snap={snap} />}
           </>
         )}
       </div>
