@@ -97,6 +97,7 @@ WINDOWS = APP / "release_windows.csv"
 EA_LEAD_DAYS = 45        # rows earlier than this before an inferred announce are outside the campaign window
 MIN_INFER_ENTRANTS = 10  # a release needs this many entrants to get an inferred clock
 SETTLED_DAYS = 7         # a close inferred from the last entry needs the campaign over for this long
+PAY_GRACE_DAYS = 2       # a win not paid for this long after launch day is a win that did not pay (conversion_rows)
 SPIKE_FRAC, SPIKE_FLOOR, SPIKE_JUMP = 0.25, 30, 3.0   # the traffic-spike rule, see infer_windows
 SPIKE_LEAD, SPIKE_MAX_LEAD = 6, 30                     # a spike counts when it is 6..30 days before the draw opens
 
@@ -253,7 +254,8 @@ def conversion_rows(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | No
     bought, or the release's launch day has passed (`as_of`, the feed's last
     day, is after it), which settles a losing entry too - so what they paid
     for is the answer: the pieces they bought in the release, 0 for a loser
-    or a winner who did not pay. The launch day is the feed's launch_date,
+    or a winner who did not pay (a win still inside its grace waits, below).
+    The launch day is the feed's launch_date,
     its latest value per release (a postponed launch keeps its final day); a
     release the feed carries no launch day for settles a draw once it has a
     winner and has taken no entries (eligible or not) for SETTLED_DAYS. Until
@@ -290,11 +292,22 @@ def conversion_rows(de: pd.DataFrame, pu: pd.DataFrame, as_of: pd.Timestamp | No
     else:
         last["launch"] = pd.NaT
     last["done"] = np.where(last["launch"].notna(), as_of.normalize() > last["launch"], last["quiet"])
-    per_draw = per_draw.merge(last[["simple_release_name", "draw", "done"]], on=["simple_release_name", "draw"], how="left")
+    # a win still to be paid for (12 November 2026): a pre-order given, or a
+    # draw won, whose order has not landed yet is still waiting, not lost.
+    # The card is authorised on a pre-order and a winner pays within days,
+    # so it counts at its rate until it is paid, or until PAY_GRACE_DAYS
+    # after launch day have gone by without an order (with no launch day on
+    # the feed, until the draw has been quiet for SETTLED_DAYS). Until then
+    # a pre-order read 0 from the hour it was given to the hour its order
+    # landed, and a day's ROI fell to nothing on entries that were sold.
+    last["late"] = np.where(last["launch"].notna(),
+                            as_of.normalize() > last["launch"] + pd.Timedelta(days=PAY_GRACE_DAYS), last["quiet"])
+    per_draw = per_draw.merge(last[["simple_release_name", "draw", "done", "late"]], on=["simple_release_name", "draw"], how="left")
     won = per_draw.groupby(["simple_release_name", "draw"], observed=True)["w"].transform("any")
     per_draw["ran"] = won & per_draw["done"].fillna(False).astype(bool)
     ran = per_draw["ran"]
-    per_draw["open"] = ~per_draw["w"] & ~per_draw["b"] & ~ran
+    unpaid_win = per_draw["w"] & ~per_draw["b"] & ~per_draw["late"].fillna(False).astype(bool)
+    per_draw["open"] = (~per_draw["w"] & ~per_draw["b"] & ~ran) | unpaid_win
     per_draw["open_pre"] = per_draw["open"] & per_draw["p"]
     per_draw["tried"] = per_draw["w"] | per_draw["b"] | ran
     ent = per_draw.groupby(k, observed=True).agg(claimed=("tried", "any"),

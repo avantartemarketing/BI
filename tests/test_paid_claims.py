@@ -39,7 +39,7 @@ def row(acct, draw, ch="Paid Social", winner=False, bought=False, pre=False, uni
 rows = [
     # draw dA: pre-orders given through the window, and entries waiting
     row("w1", "dA", winner=True, bought=True, pre=True),       # given and charged: 1
-    row("w2", "dA", winner=True, pre=True),                    # given, never charged: 0
+    row("w2", "dA", winner=True, pre=True),                    # given, not charged yet: waiting at 0.95 until the grace after launch day runs out
     row("l1", "dA"),                                           # a plain entry, waiting for launch day: 0.8
     # draw dB: one pre-order given so far
     row("p0", "dB", winner=True, bought=True, pre=True),       # given and charged: 1
@@ -84,8 +84,8 @@ def check(label, got, want):
 
 # in the window (15 August): the given pre-orders count, everything else waits
 frame, by = totals(pd.Timestamp("2026-08-15"))
-check("paid claimed (w1 and p0 charged 1 each, w2 nothing)", by.loc["Paid Social", "Conv_Units_Claimed"], 2.0)
-check("paid pending pre-order (p1)", by.loc["Paid Social", "Conv_Units_Pending_Preorder"], 1.0)
+check("paid claimed (w1 and p0 charged 1 each)", by.loc["Paid Social", "Conv_Units_Claimed"], 2.0)
+check("paid pending pre-order (p1 not given yet, w2 given and not yet paid)", by.loc["Paid Social", "Conv_Units_Pending_Preorder"], 2.0)
 check("paid pending plain (l1, d1, x1)", by.loc["Paid Social", "Conv_Units_Pending_Draw"], 3.0)
 check("direct pending capped at its open entries", by.loc["Direct", "Conv_Units_Pending_Draw"], 1.0)
 # on launch day itself the draw is still to be held
@@ -94,8 +94,12 @@ check("launch day: still waiting", on_day.loc["Paid Social", "Conv_Units_Pending
 # the day after launch day: the draw has been held, the open entries of dA
 # and dB have lost; dD, with no winner flagged yet, keeps waiting
 _, after = totals(LAUNCH + pd.Timedelta(days=1))
-check("after launch day: losers count nothing", after.loc["Paid Social", "Conv_Units_Pending_Preorder"]
-      + after.loc["Direct", "Conv_Units_Pending_Draw"], 0.0)
+check("after launch day: losers count nothing, the win not yet paid still waits", after.loc["Paid Social", "Conv_Units_Pending_Preorder"]
+      + after.loc["Direct", "Conv_Units_Pending_Draw"], 1.0)
+# a win not paid PAY_GRACE_DAYS after launch day did not pay
+_, late = totals(LAUNCH + pd.Timedelta(days=agg.PAY_GRACE_DAYS + 1))
+check("past the grace: a win never paid counts nothing", late.loc["Paid Social", "Conv_Units_Pending_Preorder"], 0.0)
+check("past the grace: the claims stand", late.loc["Paid Social", "Conv_Units_Claimed"], 2.0)
 check("after launch day: a draw with no winner flagged yet waits", after.loc["Paid Social", "Conv_Units_Pending_Draw"], 1.0)
 check("after launch day: the claims stand", after.loc["Paid Social", "Conv_Units_Claimed"], 2.0)
 # no launch day on the feed: a draw with a winner settles a week after its last entry
@@ -116,9 +120,9 @@ import build  # noqa: E402
 win = frame[frame["simple_release_name"] == REL].rename(columns={CH: "channel"})
 win["Draw_Entries_Eligible_Units"] = 1.0
 conv = build.converting_units_day(win, "Paid Social", {})
-check("paid converting units", conv.sum(), 2.0 + 0.95 + 3 * 0.8)
+check("paid converting units", conv.sum(), 2.0 + 2 * 0.95 + 3 * 0.8)
 typed = build.converting_units_day(win, "Paid Social", {"entry_conversion_rate": 0.5, "preorder_conversion_rate": 0.9})
-check("typed rates", typed.sum(), 2.0 + 0.9 + 3 * 0.5)
+check("typed rates", typed.sum(), 2.0 + 2 * 0.9 + 3 * 0.5)
 # without the claim columns (the upstream export): every entry at the entry rate
 old = build.converting_units_day(win.drop(columns=agg.CONV_COLUMNS), "Paid Social", {})
 check("export fallback", old.sum(), float(win[win["channel"] == "Paid Social"]["Draw_Entries_Eligible_Units"].sum()) * 0.8)

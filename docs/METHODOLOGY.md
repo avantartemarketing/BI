@@ -883,6 +883,16 @@ ROI three times what it was (16.3 for 5.3 on one set of economics, the
 bricks' 3.1 for 2.1). The release page, which reads the whole campaign
 against all of its conversions, was right throughout.
 
+**A win waits until it is paid (12 November 2026).** A pre-order that has been
+given, or a draw won, whose order has not landed yet counted as nothing from
+the hour it was given to the hour it was paid, so a day's ROI fell to 0 on an
+entry that was in fact sold (the bricks' ad set read 0.00 on 9 November on one
+entry and EUR 560). It now keeps waiting at its rate, 0.95 for a pre-order and
+the entry rate for a plain entry, until the order lands, or until two days
+after launch day have gone by without one (`PAY_GRACE_DAYS`; with no launch
+day on the feed, until the draw has been quiet for seven days), when it is a
+win that did not pay.
+
 **A line's paid ROI credits its ad sets with their own entries (10 November
 2026).** Both lines' ads land on the one page, so a click on a prints ad can
 end in a toy-brick entry. By 9 November the prints' ad set on Ai Weiwei's
@@ -895,7 +905,9 @@ a line's converting units are those of the entrants its own ad sets brought,
 on whichever line's draw they entered, and each is priced as the work it
 entered: a toy brick sold by the prints' ad set earns a toy brick's profit, a
 print sold by the bricks' ad set a print's. An entry that names neither line's
-ad set (no tag, another campaign) stays with the draw it entered. Only the
+ad set (no tag, another campaign) stays with the draw it entered. The entries
+the paid cards print are counted the same way since 12 November 2026: the ad
+set's own, whatever work each was for. Only the
 paid ROI moves, its cost per converting entry and profit per unit with it; the
 line's entries, units, channels and sell-through are still its own draws' and
 works', and the spend recommendation values a euro ahead as the ad sets'

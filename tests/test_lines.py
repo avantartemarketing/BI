@@ -252,8 +252,9 @@ for dd in draws:
         if ch != "Paid Social":
             continue
         if brick:
-            dd["paidBy"] += [[day, f"{camp}_Prints", 1, a / 4, b_ / 4, c / 4], [day, f"{camp}_Prints & more", 1, a / 4, b_ / 4, c / 4],
-                             [day, f"{camp}_Bricks", 1, a / 2, b_ / 2, c / 2]]
+            # the rows are the draw's paid entries that day, one, shared out as the conversions are
+            dd["paidBy"] += [[day, f"{camp}_Prints", 0.25, a / 4, b_ / 4, c / 4], [day, f"{camp}_Prints & more", 0.25, a / 4, b_ / 4, c / 4],
+                             [day, f"{camp}_Bricks", 0.5, a / 2, b_ / 2, c / 2]]
         else:
             dd["paidBy"].append([day, f"{camp}_Prints & more", 2, a, b_, c])
 ads = build.with_direct_spread(build.build_release, relA, at, spendA, emails, content, curves, TODAY,
@@ -269,8 +270,14 @@ check(close(PA["paid"]["profitPerUnitAA"], ppu_a, 1e-3) and BA["paid"]["profitPe
 check(close(PA["paid"]["cumRoi"], (1 - PA["paid"]["cannibalisation"]) * ppu_a / ((PA["paid"]["spendToDate"] / ca) * PA["paid"]["aaBudgetShare"]), 2e-3)
       and PA["paid"]["cumRoi"] > P["paid"]["cumRoi"] and close(BA["paid"]["cumRoi"], B["paid"]["cumRoi"] / 2, 2e-3),
       f"the prints' ad set earns the bricks it sold, the bricks' ad set half what its draws took: {PA['paid']['cumRoi']} vs {P['paid']['cumRoi']}, {BA['paid']['cumRoi']} vs {B['paid']['cumRoi']}")
-check(close(PA["paid"]["spendToDate"], P["paid"]["spendToDate"]) and PA["paid"]["entriesToDate"] == P["paid"]["entriesToDate"] and PA["hero"] == P["hero"],
-      "the spend, the draws' entries and the works' units are as they were")
+# the entries the paid cards print are the ad set's too, whatever work each
+# was for: here half of each brick draw's paid entry a day came from the prints' ad set
+moved = sum(r[2] for dd in draws if dd["id"] in {DRAW_OF[t] for t, _ in BRICKS} for r in dd["paidBy"] if not r[1].endswith("Bricks"))
+check(close(PA["paid"]["entriesToDate"], P["paid"]["entriesToDate"] + moved, 1e-6) and close(BA["paid"]["entriesToDate"], B["paid"]["entriesToDate"] - moved, 1e-6) and moved > 0,
+      f"an ad set's entries are those its clicks made, on either line: {PA['paid']['entriesToDate']} vs {P['paid']['entriesToDate']} + {moved}")
+check(close(PA["paid"]["spendToDate"], P["paid"]["spendToDate"]) and PA["hero"] == P["hero"]
+      and PA["funnelByGroup"].get("paid") == P["funnelByGroup"].get("paid") and [c["now"] for c in PA["channels"]] == [c["now"] for c in P["channels"]],
+      "the spend, the works' units and the channels card's paid entries are as they were")
 check(close(ads["paid"]["cumRoi"], snap["paid"]["cumRoi"], 1e-6), "the combined page is not moved by the ad sets")
 # the combined page prices paid's units as the works they were entered for
 # (each draw's paid conversions), not as the plan's mix of target units

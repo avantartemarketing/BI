@@ -564,7 +564,7 @@ lost another appears on both sides of the winner split.
 | `Preorder_App`, `Preorder_App_Eligable`, `Preorder_Winner` | the same three counts on intents with `pre_order` | within 0.3% |
 | `Total_Product_Units` | `order_pieces` summed over `purchase` events | +0.04% |
 | `Unique_Customers` | people with a purchase | −0.2% |
-| `Conv_Units_Claimed`, `Conv_Units_Pending_Preorder`, `Conv_Units_Pending_Draw` | rebuilt file only, after the export's columns: what eligible entry units turned into, for the paid ROI (METHODOLOGY §7). Per entrant: the pieces bought once a claim was tried (won - a pre-order given through the window, or drawn on launch day - bought, or the release's launch day has passed, the feed's `launch_date`; a release without one settles a draw with a winner `SETTLED_DAYS`, seven days, after its last entry), and the open entries still waiting, pre-order or not, capped at their eligible units less what they bought; on the eligible rows in proportion to their units | not in the export |
+| `Conv_Units_Claimed`, `Conv_Units_Pending_Preorder`, `Conv_Units_Pending_Draw` | rebuilt file only, after the export's columns: what eligible entry units turned into, for the paid ROI (METHODOLOGY §7). Per entrant: the pieces bought once a claim was tried (won - a pre-order given through the window, or drawn on launch day - bought, or the release's launch day has passed, the feed's `launch_date`; a release without one settles a draw with a winner `SETTLED_DAYS`, seven days, after its last entry), and the open entries still waiting, pre-order or not, capped at their eligible units less what they bought; on the eligible rows in proportion to their units A win not yet paid for keeps waiting at its rate until its order lands or `PAY_GRACE_DAYS` (two) after launch day pass (12 November 2026) | not in the export |
 | `Product_Units_<route>`, `Customer_<route>` | pieces and people by route; route of a purchase is the first match of `purchase_with_preorder_app` → Preorder App, `purchase_with_presale` → Presale Offered, `pr_order` → Private Room, `purchase_with_draw_entry` → Draw, else Other | within 1.3% per route; 1-3% of channel-days differ, so the precedence is close, not proven |
 
 The sub-percent residuals on the people counts are rows without an account id and the export's
@@ -1452,7 +1452,10 @@ stands). Only the paid ROI's reading moves: the line's entries, units, channels 
 sell-through stay its draws' and works', and the forward path still counts the units of the
 line's draws, handed the profit the ad sets made per converting unit on those draws
 (`aa_ppu_forward`) so the recommendation values a euro ahead as the ad sets' euros have
-returned. The combined page of such a release is not moved by the ad sets (every paid entry
+returned. The entries the paid block prints (`paid.daily[].entries`, `entriesToDate`,
+`entriesProjected`) are the ad sets' too since 12 November 2026 (`line_paid_entries_delta`:
+each `paidBy` row's entry count); the rules, the cost fit and the path still read the
+entries of the line's own draws. The combined page of such a release is not moved by the ad sets (every paid entry
 is its campaign's), but its paid profit per unit is weighted the same way since the same day:
 every work's own by the paid-social converting units on its draw (`with_paid_profit`, from
 each draw's `conv`; `aa_ppu_paid`, `artist_ppu_paid`, and `paid.frameUpliftPerUnit` for the

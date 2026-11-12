@@ -1179,6 +1179,21 @@ def line_paid_delta(paid: dict | None, release: dict) -> pd.Series | None:
     return pd.Series(acc, dtype=float) if acc else None
 
 
+def line_paid_entries_delta(paid: dict | None) -> pd.Series | None:
+    """The same difference in entries (12 November 2026): the entries a
+    line's ad sets brought on the other lines' draws, less those other
+    lines' ad sets brought on its own, by day. The paid cards' entries are
+    then the ad set's, whatever work each was for, as its ROI is; the
+    line's channels card keeps the entries of its own draws."""
+    if not paid:
+        return None
+    acc: dict = {}
+    for sign, rows in ((1.0, paid["owned"]), (-1.0, paid["onDraws"])):
+        for r in rows:
+            acc[r["event_date"]] = acc.get(r["event_date"], 0.0) + sign * r["rows"]
+    return pd.Series(acc, dtype=float) if acc else None
+
+
 def with_adset_profit(release: dict, paid: dict | None) -> dict:
     """The line's profit per unit read as what its ad sets' entrants entered
     for (docs METHODOLOGY 7b): every work of the release at its own profit
@@ -6372,6 +6387,12 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     adset_delta = line_paid_delta((line_info or {}).get("paidAdsets"), release)
     if adset_delta is not None:
         paid_conv_day = paid_conv_day.add(adset_delta, fill_value=0.0).clip(lower=0.0)
+    # the entries the paid cards print are the ad sets' too (12 November
+    # 2026); the forward path keeps to the entries of the line's own draws,
+    # the works it places its units on (paid_entries_day)
+    entries_delta = line_paid_entries_delta((line_info or {}).get("paidAdsets"))
+    paid_entries_shown = (paid_entries_day.add(entries_delta, fill_value=0.0).clip(lower=0.0)
+                          if entries_delta is not None else paid_entries_day)
     spend_day = psp.groupby("spend_date")["spend"].sum()
     # a converting entry is one that becomes an order: the release's own
     # entry -> order rate (Target setting), else the panel's, the same rate
@@ -6414,6 +6435,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # 1d switch): one day's spend over that day's entries.
     paid_daily = []
     cum_spend = cum_pentries = cum_conv = 0.0
+    cum_shown = 0.0      # the entries the cards print: the ad sets' on a line read by its ad sets
     win3: list[tuple[float, float]] = []
     conv3: list[float] = []
     # the clock the cost path runs on (docs §7): what the release's campaigns
@@ -6437,7 +6459,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         to_close = (launch_end - d).days
         clock3.append((s, spent_before_window + cum_spend,
                        close_lift[to_close] if 0 <= to_close < len(close_lift) else 1.0))
-        cum_spend += s; cum_pentries += e; cum_conv += c
+        e_shown = float(paid_entries_shown.get(d, 0.0))
+        cum_spend += s; cum_pentries += e; cum_conv += c; cum_shown += e_shown
         win3.append((s, e))
         conv3.append(c)
         if len(win3) > 3:
@@ -6453,16 +6476,17 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         roi1 = None if s <= 0 else 0.0 if c <= 0 else party_roi(ppu_aa, aa_budget_share, adj1)
         roi1_artist = (None if s <= 0 or artist_budget_share <= 0 else 0.0 if c <= 0
                        else party_roi(ppu_artist, artist_budget_share, adj1))
-        paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e, "converting": round(c, 3),
+        paid_daily.append({"date": d.isoformat(), "spend": round(s, 2), "entries": e, "entriesShown": e_shown, "converting": round(c, 3),
                            "roi": round(roi3, 3) if roi3 is not None else None,
                            "roiArtist": round(roi3_artist, 3) if roi3_artist is not None else None,
                            "roi1": round(roi1, 3) if roi1 is not None else None,
                            "roiArtist1": round(roi1_artist, 3) if roi1_artist is not None else None})
     # the part day so far: in the to-date figures, never in the rules
-    part_spend = part_entries = 0.0
+    part_spend = part_entries = part_shown = 0.0
     if full_through < as_of <= launch_end:
         part_spend = float(spend_day.get(as_of, 0.0))
         part_entries = float(paid_entries_day.get(as_of, 0.0))
+        part_shown = float(paid_entries_shown.get(as_of, 0.0))
     # trailing 3-calendar-day CPE (adjusted = per expected-converting unit);
     # CPE stays unknown when the window bought no entries - the ROI reads 0
     s3 = sum(x for x, _ in win3); e3 = sum(y for _, y in win3); c3 = sum(conv3)
@@ -7466,8 +7490,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # chart's bars sum to the spend to date the paid card reads; the rules,
     # the cost fit and the rolling ROI above read the full days only
     if full_through < as_of <= launch_end:
-        paid_daily.append({"date": as_of.isoformat(), "spend": round(part_spend, 2), "entries": part_entries,
+        paid_daily.append({"date": as_of.isoformat(), "spend": round(part_spend, 2), "entries": part_entries, "entriesShown": part_shown,
                            "roi": None, "roiArtist": None, "roi1": None, "roiArtist1": None, "partial": True})
+    # the series is printed with the entries the cards show: the ad sets' on
+    # a line read by its ad sets, whatever work each was for (12 November
+    # 2026). The rules, the cost fit and the path above read the entries of
+    # the line's own draws, the works the path places its units on
+    for x in paid_daily:
+        x["entries"] = x.pop("entriesShown", x["entries"])
     # the paid group's own column on the channels card: secured units (units
     # sold + 0.8 x unconverted entries, every paid channel), so the paid card's
     # units bar and that column cannot disagree
@@ -7485,7 +7515,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     paid_out = {
         "daily": paid_daily,
         "spendToDate": round(cum_spend + part_spend, 2),
-        "entriesToDate": cum_pentries + part_entries,
+        "entriesToDate": cum_shown + part_shown,
         # secured units to date, the same currency as unitTarget, unitProjected
         # and benchmarkUnits: the channels card's paid figure, not the paid
         # entries one drop-off later, which counted a sale as 0.8 of a unit
@@ -7564,7 +7594,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # the entries in hand, today's so far included, and those still to come
         # (future_cum counts only the rest of today), so the projection at close
         # cannot read below the entries already in
-        "entriesProjected": round(cum_pentries + part_entries + future_cum, 1),
+        "entriesProjected": round(cum_shown + part_shown + future_cum, 1),
         "unitProjected": unit_proj,
         "spendBudget": round(targets["paid"]["budget"], 2),
         # the spend to date plus the run rate over the days paid runs on, to
@@ -7577,7 +7607,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         "stops": paid_stops(fwd),
         "ifContinued": None if (complete or fwd_flat is None) else {
             "spend": round(s0, 2),
-            "entriesProjected": round(cum_pentries + part_entries + fwd_flat["flatEntries"], 1),
+            "entriesProjected": round(cum_shown + part_shown + fwd_flat["flatEntries"], 1),
             "unitProjected": round(unit_proj + (fwd_flat["flatEntries"] - future_cum) * e2o, 1),
             "spendProjectedTotal": round(cum_spend + part_spend + fwd_flat["flatSpend"], 2),
             # the same run with its stops, and the sell-through at close it
@@ -7593,7 +7623,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # paid lever)
         "atRecommended": None if (fwd_rec is None or complete) else {
             "spend": round(fwd_rec["spend"], 2),
-            "entriesProjected": round(cum_pentries + part_entries + fwd_rec["entries"], 1),
+            "entriesProjected": round(cum_shown + part_shown + fwd_rec["entries"], 1),
             "unitProjected": round(unit_proj + (fwd_rec["units"] - fwd["units"]), 1),
             "spendProjectedTotal": round(cum_spend + part_spend + fwd_rec["spendFuture"], 2),
             "stops": paid_stops(fwd_rec),
