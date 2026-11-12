@@ -7,7 +7,9 @@
  * pass its sellout; the per-day values are the ETL's (docs 5.4). The head
  * reads today's units against the target and the benchmark by today (exp,
  * bmExp: the hero's expectedToday and benchmarkToday, summed the same way),
- * and the projection at the close sits in the legend and the hover. */
+ * and the projection at the close sits in the legend and the hover; the
+ * hover also reads each step's figure as a share of the target's (or the
+ * benchmark's) at that step. */
 import React, { useMemo } from "react";
 import { Card, Head, vsDelta } from "../ui.jsx";
 import { LineChart, niceAxis, kfmt, COL, lk } from "../charts.jsx";
@@ -131,10 +133,14 @@ export default function Trajectory({ snap, vs = "target" }) {
         rows={(i) => {
           const p = pts[i];
           const ahead = !has(actual[i]) && proj && has(proj[i]);
+          // the step's figure as a share of the line it is compared to at that step
+          const val = has(actual[i]) ? actual[i] : ahead ? proj[i] : null;
+          const ref = bm ? p.bm : target ? p.plan : null;
           return [
             { n: ahead ? "Projected" : W.secured, v: has(actual[i]) ? fmt(actual[i]) : ahead ? fmt(proj[i]) : "–", k: lk(COL.IND, ahead ? "dashed" : "solid") },
             ...(target && has(p.plan) ? [{ n: "Target", v: fmt(p.plan), k: lk(COL.LIGHT) }] : []),
             ...(bm && has(p.bm) ? [{ n: "Benchmark", v: fmt(p.bm), k: lk(COL.INK, "dotted") }] : []),
+            ...(has(val) && has(ref) && ref > 0 ? [{ n: `% of ${bm ? "benchmark" : "target"}`, v: `${Math.round((val / ref) * 100)}%`, k: { width: 12, flex: "0 0 12px" } }] : []),
           ];
         }}
         aria={`${W.trajTitle}: ${fmt(nowVal)} ${W.unit} by ${W.stepWord} ${day}${targeted ? ` against ${fmt(planToday)} target` : hasBm ? ` against ${fmt(bmToday)} benchmark` : ""}`} />
