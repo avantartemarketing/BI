@@ -833,6 +833,9 @@ app.post("/api/decisions", (req, res) => {
   res.json(entry);
 });
 
+// ---- the Plan changes card's ticks and dismissals, and who sees the card (server/planChanges.js) ----
+require("./planChanges").install(app, { sessionFrom: auth.sessionFrom, userOf: (email) => users.get(email) });
+
 // ---- sell-through updates to Slack (server/slack.js) ----
 /* The release's channel, and the project manager who confirms its unit
  * economics ({channel, pm}: a Slack member ID, @handle or email; pm left

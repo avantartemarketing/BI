@@ -2450,6 +2450,77 @@ Notion log is read live and carries neither (`postsThrough` null).
 
 ---
 
+## 8a. Plan changes (the card at the top of a live draw launch)
+
+`etl/plan_changes.py`, called from `write_page` for every page (`plan_changes.attach`) with a
+context read once per build (`plan_context`): the record, the plan and the draw panel's names.
+A failure there costs a page its card and is printed, never the page.
+
+**Who gets the block.** A targeted draw launch (LE, with a benchmark) between its announce and
+its close, on the release's own page (not a line's). Everything else has no `planChanges` key.
+
+**The plan** is `data/notion_plan.csv`, written by `server/notion.js` beside the posts and
+dates files: `campaign_code, release_name, date, channel, title`, one line per matched Notion
+row. `channel` is `email` when the row's channel value or title names an email
+(`planChannel`), else the account bucket the posts file uses (`brand`, `artist`, `partner`,
+`other`). A release's rows are those with its campaign code or its name. `planVisible` is
+whether it has any; "the plan logs its emails" is whether any of them is an email.
+
+**The record** is `launch_history`: for every configured and discovered launch with a code and
+dates, its customer sends (the email card's filter) from where its email window opens to its
+close, read on its own clock by `read_sends`:
+
+| Reading | Sends counted |
+|---|---|
+| `last` | 0 to `LAST_CHANCE_DAYS` (2) days before the close, after the announce, not named early access |
+| `last_wide` | any of those to at least `WIDE_SHARE` (0.5) of the campaign's biggest send |
+| `mid` | `MID_AFTER_ANNOUNCE` (3) or more days after the announce, `MID_BEFORE_CLOSE` (3) or more before the close, to at least `MID_SHARE` (0.25) of the biggest send |
+| `two_out` | 2 to 3 days before the close |
+| `resend` | named re-send, mop up or non-openers, and not a last chance send |
+
+`units_per_click` is the panel's `units_aa_email` over the launch's clicks, from 300 clicks.
+
+**The cohort** (`cohort_for`): the basket's members with sends on file, closed before the
+page's day; under `MIN_COHORT` (4) of them, every panel launch closed in the last
+`RECENT_MONTHS` (24). `backing` then answers, per lever, who did it: the cohort when
+`MIN_BACKING` (2) of them did, else the recent launches, where it takes `MIN_RECENT_SHARE`
+(0.1) of them. Sizes are read off the cohort's own doers when the cohort is the basket and two
+or more did it, else off the recent doers whose biggest send was within `LIST_BAND` (0.5 to 2)
+of the release's own.
+
+**Short.** `hero.projected < hero.target x (1 - SHORT_TOLERANCE)` (0.03). Not short: status
+`on_course`, no changes, no cohort.
+
+**Reach or conversion** on AA Email, from `funnelByGroup.aa_email`: reach when sessions are
+under the expected and the traffic contribution is at least the conversion one; conversion
+when the conversion contribution is the larger and the rate is under 0.9 of the expected.
+
+**Units.** `clicks x units per click`, low and high from `spread` (the quartiles; the two
+readings themselves when there are two; none with fewer), capped at `target - projected`. The
+release's own units per click (AA Email's `now` over its clicks) from 300 clicks and 3 units,
+else the cohort's median. The wide last chance send is sized over what a targeted one brings
+(the cohort's targeted median, or what this launch's own has already brought). The artist
+rules size at half to all of what the benchmark's artist units still expect.
+
+**The block** (`planChanges`): `asOf`, `daysLeft`, `status`, `planVisible`, `planDone`,
+`planToCome[] {date, channel, title}`, `cohort {n, kind}`, `changes[]` (at most `MAX_SHOWN`,
+3, largest first) and `more[]`, each `{key, kind, title, to | note, channel, date, units
+{low, high} | null, reason, lever}`. `key` is stable per rule (`email.last_chance.widen`,
+`email.last_chance.add`, `email.reminder_48h.add`, `email.announce.resend`, `email.mid.add`,
+`artist.post.unseen`, `artist.last_chance.add`), which is what a tick is saved against.
+`lever` is the id in the marketing team's lever playbook.
+
+**Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed, by,
+at}}}` in `plan_changes.json` beside the decision log; `by` is the signed-in address's part
+before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` and the card
+draws nothing unless `visible` (`PLAN_CHANGES_AUDIENCE`: `admins` by default, `everyone`,
+`off`).
+
+**Not in it yet:** paid (the Spend levels card answers it), AA Social, uneven works,
+WhatsApp and SMS (no feed), and timed launches.
+
+---
+
 ## 9. Dashboard metric map (module → formula)
 
 Per the design handoff (README + artboards; the mock's reconciliation rules are requirements):

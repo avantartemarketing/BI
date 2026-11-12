@@ -1,4 +1,5 @@
-/* The Overview's cards, in the order the page shows them (11 November 2026),
+/* The Overview's cards, in the order the page shows them (11 November 2026;
+ * the Plan changes card above them all on a live draw launch, 12 November),
  * two to a row with the sell-through table and the trajectory across both,
  * in three sections: the outcome (the trajectory; the sell-through table, a
  * row per work today and at the close; the sell-through bars by product and
@@ -27,6 +28,7 @@ import SellForecast from "./modules/SellForecast.jsx";
 import FramingForecast from "./modules/FramingForecast.jsx";
 import { TLSignupsOutcome } from "./TLPage.jsx";
 import Upcoming from "./modules/Upcoming.jsx";
+import PlanChanges from "./modules/PlanChanges.jsx";
 import "./cards.css";
 
 /* a section's heading, across both columns */
@@ -51,6 +53,7 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
   return (
     <div className="body">
       <div className="grid2">
+        {!isTL && !snap.line && snap.planChanges && <PlanChanges snap={snap} />}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}

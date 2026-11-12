@@ -67,6 +67,7 @@ import pandas as pd
 # execs it), so etl/ is on the path.
 import baskets
 import paid_cost   # the price of a paid entry as the plan reads it: the curve and its backtest (docs step 5)
+import plan_changes   # the Plan changes card: what to add to or change in a live launch's comms plan (docs/METHODOLOGY.md)
 import pricing
 import tl   # timed launches: the release model, the panel and the pages (docs/TL_SPEC.md)
 # The per-product sell-through rule (docs §6.3): the entries in hand allocated
@@ -8579,10 +8580,66 @@ def build_upcoming_pages() -> int:
     return n
 
 
+def load_plan() -> list[dict]:
+    """The comms plan row by row, from the Notion log (server/notion.js writes
+    data/notion_plan.csv on every refresh): campaign_code, release_name, date,
+    channel (email, brand, artist, partner, other) and title. Optional: with
+    no file the Plan changes card proposes only what it can see without one."""
+    p = DATA / "notion_plan.csv"
+    if not p.exists():
+        return []
+    try:
+        with p.open(newline="", encoding="utf-8") as f:
+            return [dict(r) for r in csv.DictReader(f)]
+    except (OSError, csv.Error, UnicodeDecodeError) as e:
+        print(f"warning: the plan file could not be read ({e}) - plan changes run without it")
+        return []
+
+
+# What the Plan changes card reads, gathered once per build (plan_context):
+# every closed launch's sends on its own clock, the plan's rows and the draw
+# panel's names. Empty until main() fills it, so a page written by a test or a
+# script carries no card.
+PLAN_CTX: dict = {}
+
+
+def plan_context(emails: pd.DataFrame, launches: list[dict], panel: pd.DataFrame | None) -> dict:
+    """The record and the plan for plan_changes.attach. `launches` are the
+    configured and discovered releases; each one's sends are read from where
+    its email window opens (email_window_start), as the email card reads them."""
+    rows = []
+    for r in launches or []:
+        code, name = r.get("campaign_code"), r.get("release_name")
+        try:
+            ann, end = date.fromisoformat(str(r.get("announce_date"))[:10]), date.fromisoformat(str(r.get("launch_end"))[:10])
+        except (TypeError, ValueError):
+            continue
+        if not code or not name:
+            continue
+        try:
+            start = date.fromisoformat(str(r.get("private_room_open"))[:10])
+        except (TypeError, ValueError):
+            start = ann - timedelta(days=PR_LEAD_DAYS)
+        rows.append({"name": name, "code": code, "announce": ann, "close": end, "start": email_window_start(r, start)})
+    units, pool = {}, None
+    if panel is not None and len(panel) and "release_name" in panel.columns:
+        pool = {str(n) for n in panel["release_name"]}
+        if "units_aa_email" in panel.columns:
+            units = {str(n): float(u) for n, u in zip(panel["release_name"], panel["units_aa_email"]) if pd.notna(u)}
+    return {"history": plan_changes.launch_history(emails, rows, units), "plan_rows": load_plan(), "pool": pool}
+
+
 def write_page(path: pathlib.Path, snap: dict) -> None:
     """A page to disk, stamped with when it was built: the header reads
     `builtAt` beside the data's last day, so a page's age is its own and not
-    the refresh's."""
+    the refresh's. A live draw launch's page takes its plan changes here
+    (plan_changes.attach), and a failure there costs the page its card, never
+    the page."""
+    try:
+        plan_changes.attach(snap, PLAN_CTX)
+    except Exception as e:  # noqa: BLE001 - the card never stops a page
+        snap.pop("planChanges", None)
+        print(f"plan changes: {snap.get('id')}: not built ({type(e).__name__}: {str(e)[:200]})")
     snap["builtAt"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     path.write_text(json.dumps(snap, indent=1))
 
@@ -8738,6 +8795,14 @@ def main(only: str | None = None):
 
     # every launch's artist and close, for the email windows' same-artist clip
     note_launches(list(INPUTS["releases"]) + list(discovered))
+    # the Plan changes card's record and plan, read once for every page
+    try:
+        PLAN_CTX.clear()
+        PLAN_CTX.update(plan_context(emails, list(INPUTS["releases"]) + list(discovered), panel))
+        print(f"plan changes: {len(PLAN_CTX['history'])} launches with sends on file, {len(PLAN_CTX['plan_rows'])} plan rows")
+    except Exception as e:  # noqa: BLE001 - the card never stops the build
+        PLAN_CTX.clear()
+        print(f"plan changes: off for this build ({type(e).__name__}: {str(e)[:200]})")
     email_bench = email_delivered_benchmark(emails, as_of, discovered, spend, at)
     if email_bench and email_bench["open_rate"] is not None:
         c = email_bench["cohort"]

@@ -940,6 +940,68 @@ line read only its share of them, and its paid ROI ahead started that share
 below the ROI just measured (Ai Weiwei's prints a third of it, with a spend
 plan sized to match).
 
+## 7d. Plan changes
+
+A live draw launch that is heading short of its target gets a card at the top
+of its Overview: **Plan changes**. Each row is one change to the comms plan as
+it stands, never a fresh to-do list:
+
+- **Add**: something the plan does not hold (a mid-campaign email, a 48-hour
+  reminder, an artist post that was planned and brought nobody).
+- **Change**: a planned item done differently (the last chance email sent to
+  the full list).
+- **Drop**: reserved; no rule proposes one yet.
+
+A launch on course for its target gets no changes: the extra sends are better
+kept for a launch that needs them.
+
+**What it reads.** Three things: the launch's own page (where it is heading,
+and whether AA Email is short on visits or on visits turning into entries),
+the plan (the rows the team logs in Notion, read every refresh) and the
+record (what comparable launches sent, and what it brought, from the HubSpot
+sends on file). Comparable launches are the benchmark basket's members; with
+fewer than four of them on file, every draw launch that closed in the last
+two years stands in, and the row says "recent launches".
+
+**The order of questions** is the marketing team's lever playbook's: is the
+launch short at all; where is the gap, reach or conversion; then which lever.
+A reach gap gets a reach lever (the wide last chance send, the bundle email);
+a conversion gap gets a conversion lever (the 48-hour reminder, the deep-dive
+email). A change is proposed only when at least two comparable launches did
+the same thing, or at least one recent launch in ten.
+
+**The rules today** (email and the artist's channels; paid has the Spend
+levels card):
+
+| Change | Proposed when |
+|---|---|
+| Change: last chance email to the full list | The last week, AA Email short on visits, and no last chance email has gone to at least half the launch's biggest send |
+| Add: last chance email | The last five days, the plan logs its emails and holds none in the last two days |
+| Add: 48-hour reminder email | Two to five days left, AA Email short on conversion, none planned or sent two days out |
+| Add: re-send to non-openers | The biggest send is two to ten days old, was opened less than the lowest quarter of comparable launches' biggest sends, and nothing has followed it |
+| Add: mid-campaign email (bundle for reach, deep-dive for conversion) | Day five or later, five or more days left, none sent or planned |
+| Add: artist post | An artist post was in the plan in the last week and their channels have brought almost no visits |
+| Add: artist last chance story | Three days or fewer left, nothing of the artist's still in the plan, and their channels at under half the visits expected |
+
+The artist rules and "Not in the plan" need the plan on file; without it the
+card proposes only what it can see from the sends.
+
+**The size** on a row is rough, and is a range for that reason: the clicks a
+send of that kind brought on comparable launches (their lower and upper
+quartiles, or the two readings when only two launches did it) times the units
+this launch has had per email click so far, and never more than the launch
+has left to sell against its target. Clicks follow the list a send goes to,
+so when the recent launches stand in, only those whose biggest send was
+between half and twice this launch's are read. A change with too little
+behind it says "No estimate" rather than guess.
+
+**Accept and Dismiss** are a record on the dashboard (who, and when), undone
+from the card's menu. Nothing is written to the plan in Notion. A change
+stops being proposed by itself once the send appears in HubSpot or the row
+appears in the plan. **Ask** hands the question to the Agent.
+
+The card is shown to admins only while the rules are new.
+
 ## 8. Where the numbers come from
 
 - **Units sold** come from the Shopify orders table in BigQuery, per product, day

@@ -117,8 +117,17 @@ assert.strictEqual(out.leadsFor, 2);
 assert.strictEqual(out.pagesUnread, 1);
 assert.ok(out.leadNote.startsWith('marketing lead for 2 releases (from "Marketing Lead (campaigns database)", "Release → Marketing Lead")'), out.leadNote);
 assert.ok(out.leadNote.includes("1 linked page could not be read (share the database it is in with the integration)"), out.leadNote);
+// the plan file: every matched row on its own line, an "AA Email" row as an email, the rest by whose account
+const plan = rows(out.planCsv);
+assert.strictEqual(plan.length, 4, out.planCsv);
+assert.deepStrictEqual(plan.find((r) => r.title === "Early/Exclusive access (LE)"),
+  { campaign_code: "BisaButler_TL_26", release_name: "Bisa Butler · Multiple · 2026 Q4", date: "2026-10-03", channel: "email", title: "Early/Exclusive access (LE)" });
+assert.strictEqual(plan.find((r) => r.title === "Announce post").channel, "brand");
+assert.strictEqual(plan.find((r) => r.title === "Announce story").channel, "artist");
+assert.strictEqual(plan.find((r) => r.title === "Announce story").campaign_code, "", "a launch without a code yet is found by its name");
+assert.deepStrictEqual([out.planRows, out.planEmails], [4, 1]);
 // no email left the people or team pages
-assert.ok(!out.datesCsv.includes("@") && !out.leadNote.includes("@"));
+assert.ok(!out.datesCsv.includes("@") && !out.leadNote.includes("@") && !out.planCsv.includes("@"));
 // each linked page was fetched once for the whole pull
 assert.strictEqual(calls.filter((u) => u.endsWith("/pages/t_maria")).length, 1, "the team page is read once");
 assert.strictEqual(calls.filter((u) => u.endsWith("/pages/r_bisa")).length, 1, "the release page is read once");

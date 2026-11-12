@@ -43,6 +43,8 @@ data/
   content_posts.csv       extracted content facts (manual Emplifi export; see below)
   notion_posts.csv        posts by release, date and channel, from the Notion log (live)
   notion_campaigns.csv    the campaign dates and the marketing lead per release, from the same log (live)
+  notion_plan.csv         the comms plan row by row (date, channel, title), from the same log (live);
+                          what the Plan changes card proposes changes against
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
@@ -584,6 +586,25 @@ anonymised numbers reach `data/`.
 Longer term this should be pointed at BigQuery
 (`avantarte-data-production.AA_company_tables.*`) instead of the sheet - the sheet
 pipeline's accumulators are already silently truncating history (docs §11).
+
+## Plan changes
+
+A live draw launch heading short of its target gets a **Plan changes** card at the top of its
+Overview: changes to the comms plan as it stands (add, change, drop), each with a rough size
+in units, proposed by `etl/plan_changes.py` from the launch's page, the plan's rows in Notion
+(`data/notion_plan.csv`, written by `server/notion.js` on every refresh) and what comparable
+launches sent (the HubSpot sends). The rules and how a size is worked out are in
+`docs/METHODOLOGY.md` 7d and `docs/DATA_MODEL.md` 8a; `python3 tests/test_plan_changes.py`
+holds each rule to a hand-built launch.
+
+Accepting or dismissing a change is kept by `server/planChanges.js` in `plan_changes.json`
+beside the decision log (so on the persistent disk with it; `PLAN_CHANGES_PATH` names another
+place). Nothing is written to Notion. `node tests/plan_changes_route.mjs` runs the routes.
+
+**Who sees it:** `PLAN_CHANGES_AUDIENCE` is `admins` (the default while the rules are new),
+`everyone` or `off`. The refresh status line's Notion part says how many plan rows it read
+and how many of them are emails ("plan N rows (M email)"): a plan with no email rows
+means the "Not in the plan" email rule stays quiet, by design.
 
 ## Signing in
 

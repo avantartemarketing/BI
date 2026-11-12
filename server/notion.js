@@ -42,6 +42,13 @@ const OUT = path.join(ROOT, "data", "notion_posts.csv");
  * never an email (DATA_MODEL 1.6). The ETL reads them first, before anything
  * typed (etl/build.py resolve_release). */
 const DATES_OUT = path.join(ROOT, "data", "notion_campaigns.csv");
+/* The plan itself (data/notion_plan.csv): every matched row as it stands, one
+ * line each, with its day, whose channel it is (email, brand, artist, partner,
+ * other) and its title. The counts above say how much was posted; this says
+ * what is still to come, which is what the Plan changes card reads
+ * (etl/plan_changes.py): a change is proposed against the plan, so the plan
+ * has to be on file row by row. */
+const PLAN_OUT = path.join(ROOT, "data", "notion_plan.csv");
 const CAMPAIGNS_DB_ID = process.env.NOTION_CAMPAIGNS_DB || "";
 const DB_ID = process.env.NOTION_ARTIST_POSTS_DB || "1b6e65265ca280a898d1e74c0661344c";
 const NOTION_VERSION = "2022-06-28";
@@ -202,6 +209,24 @@ const STAGE_RE = {
 const EMAIL_RE = /\bemail\b|\be-?mail\b|newsletter/;
 function isEmailRow(texts) {
   return EMAIL_RE.test(norm(texts.join(" | ")));
+}
+
+/* A row's place in the plan file: an email row is "email" whatever account
+ * its channel names (an "AA Email" is Avant Arte's, and still an email), read
+ * off the channel value and the row's own title only, so a release whose page
+ * title mentions an email does not make every one of its rows one. */
+function planChannel(channel, value, title) {
+  return isEmailRow([value || "", title || ""]) ? "email" : channel;
+}
+
+const PLAN_TITLE_MAX = 120;
+function planCsv(rows) {
+  const lines = ["campaign_code,release_name,date,channel,title"];
+  const sorted = rows.slice().sort((a, b) => (a.name + a.date + a.channel + a.title).localeCompare(b.name + b.date + b.channel + b.title));
+  for (const r of sorted) {
+    lines.push([csvField(r.code || ""), csvField(r.name || ""), r.date, r.channel, csvField(String(r.title || "").replace(/\s+/g, " ").trim().slice(0, PLAN_TITLE_MAX))].join(","));
+  }
+  return lines.join("\n") + "\n";
 }
 
 function stageOf(texts) {
@@ -465,6 +490,7 @@ async function fetchPostsCsv() {
   const stageDates = new Map();  // code -> {early_access: [dates], announce: [...], launch: [...]}
   const leadCounts = new Map();  // release key -> Map(name -> rows naming it), off the rows' lead column or their release page's
   const leadCols = new Set();    // the lead columns read, for the status line
+  const planRows = [];           // every matched row, for the plan file
   let matched = 0, unmatched = 0, cursor = undefined, propNames = null, chanProp = null;
   // a page that could not be read last time is tried again: sharing it with the integration is the usual fix
   for (const [id, page] of pageCache) if (page === null) pageCache.delete(id);
@@ -492,6 +518,8 @@ async function fetchPostsCsv() {
       const { channel, value } = rowChannel(props, chanProp || null);
       if (channel === "other" && value) unnamed.set(value, (unnamed.get(value) || 0) + 1);
       byChannel.set(channel, (byChannel.get(channel) || 0) + 1);
+      const rowTitle = propText(Object.values(props).find((q) => q && q.type === "title")).join(" ").trim();
+      planRows.push({ code: rel.code, name: rel.name, date, channel: planChannel(channel, value, rowTitle), title: rowTitle });
       // the posts file is by campaign code: a launch without one yet has no
       // posts row, and its dates below still find it by name
       if (rel.code) {
@@ -584,6 +612,7 @@ async function fetchPostsCsv() {
   return {
     csv: lines.join("\n") + "\n", matched, unmatched,
     schema: summariseSchema(schema), split, strays, chanProp,
+    planCsv: planCsv(planRows), planRows: planRows.length, planEmails: planRows.filter((r) => r.channel === "email").length,
     datesCsv: datesCsv(dates), datesFor: dated.filter((d) => d.private_room_open || d.announce_date || d.launch_end).length, fromDb,
     datesSplit: `private room ${dated.filter((d) => d.private_room_open).length}, announce ${dated.filter((d) => d.announce_date).length}, launch ${dated.filter((d) => d.launch_end).length}`,
     leadsFor, leadFrom, leadNote, pagesUnread,
@@ -600,9 +629,12 @@ async function refreshArtistPosts() {
   fs.renameSync(tmp, OUT);
   fs.writeFileSync(DATES_OUT + ".tmp", out.datesCsv);
   fs.renameSync(DATES_OUT + ".tmp", DATES_OUT);
+  fs.writeFileSync(PLAN_OUT + ".tmp", out.planCsv);
+  fs.renameSync(PLAN_OUT + ".tmp", PLAN_OUT);
   return `notion ${out.matched} posts` + (out.unmatched ? ` (${out.unmatched} unmatched)` : "")
     + `; campaign dates for ${out.datesFor} releases (${out.datesSplit}` + (CAMPAIGNS_DB_ID ? `; ${out.fromDb} from the campaigns database` : "") + ")"
     + `; ${out.leadNote}`
+    + `; plan ${out.planRows} rows (${out.planEmails} email)`
     + `; by channel: ${out.split || "none"}`
     + (out.chanProp ? ` (from "${out.chanProp}")` : " (no channel column found)")
     + (out.strays ? `; unrecognised channels: ${out.strays}` : "")
@@ -610,4 +642,4 @@ async function refreshArtistPosts() {
 }
 
 module.exports = { refreshArtistPosts, fetchPostsCsv, matchRelease, propText, propDate, noteSchema, summariseSchema, channelOf, channelProp, rowChannel,
-  stageOf, isEmailRow, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, leadNamesAsync, leadOf, campaignLeads, personName, datesCsv, inWindow, knownReleases };
+  stageOf, isEmailRow, planChannel, planCsv, campaignDates, campaignRowDates, leadProp, leadRank, leadNames, leadNamesAsync, leadOf, campaignLeads, personName, datesCsv, inWindow, knownReleases };

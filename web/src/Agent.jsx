@@ -115,6 +115,14 @@ export default function AgentDock({ snap, context }) {
     }
   };
   const stop = () => { if (abort.current) abort.current.abort(); };
+  // a card hands a question over (the Plan changes card's Ask): it is asked here, in the open chat
+  const askRef = useRef(null);
+  askRef.current = ask;
+  useEffect(() => {
+    const on = (e) => { const q = e && e.detail && e.detail.text; if (q && askRef.current) askRef.current(q); };
+    window.addEventListener("agent:ask", on);
+    return () => window.removeEventListener("agent:ask", on);
+  }, []);
   const clear = () => { stop(); setThread([]); setText(""); };
 
   const firstQ = thread.find((m) => m.role === "user");
