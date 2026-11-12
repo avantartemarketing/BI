@@ -2,16 +2,18 @@
  * the Suggested actions card above them all on a live draw launch, 12 November),
  * two to a row with the sell-through table and the trajectory across both,
  * in three sections: the outcome (the trajectory; the sell-through table, a
- * row per work today and at the close; the sell-through bars by product and
+ * row per work today and at the close, on a timed launch before its window
+ * the forecast table in its place; the sell-through bars by product and
  * at close; framing and where the orders ship), the channels and the funnel (channels against
  * targets and the gap; the funnel by channel and the email funnel) and paid
  * (ROI and the spend levels; on a release selling lines of work, the All
  * lines view shows the pair once per line, each on its line's ad set and
  * with its own recommendation). The Paid spend card is gone: its spend by day
- * is on the Paid ROI chart, its recommendation on the Spend levels card. A
- * card a release has nothing for is left out, but for two that keep their
- * place and say so: Framing ("No framing") and, on a draw launch in flight,
- * Suggested actions ("No suggested actions"); before a release has numbers
+ * is on the Paid ROI chart, its recommendation on the Spend levels card,
+ * which stays on a draw launch with no level to give and says why. Two more
+ * keep their place and say so: Framing ("No framing") and, on a draw launch
+ * in flight, Suggested actions ("No suggested actions"). Any other card a
+ * release has nothing for is left out; before a release has numbers
  * the page shows what it knows instead (Upcoming, no targets, catalogue). */
 import React from "react";
 import Trajectory from "./modules/Trajectory.jsx";
@@ -28,6 +30,7 @@ import EmailFunnel from "./modules/EmailFunnel.jsx";
 import FunnelTable from "./modules/FunnelTable.jsx";
 import Geo from "./modules/Geo.jsx";
 import SellForecast from "./modules/SellForecast.jsx";
+import TLForecastTable from "./modules/TLForecastTable.jsx";
 import FramingForecast from "./modules/FramingForecast.jsx";
 import { TLSignupsOutcome } from "./TLPage.jsx";
 import Upcoming from "./modules/Upcoming.jsx";
@@ -52,7 +55,9 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
   const actionsOn = !isTL && !snap.line && (!!snap.planChanges || (!snap.complete && !snap.catalogue));
   const geoOn = !isTL && !!(snap.geo && (Array.isArray(snap.geo) ? snap.geo.length : (snap.geo.rows || []).length));
   const paidOn = !!snap.paid;
-  const levelsOn = !isTL && paidOn && !!snap.paid.levels;
+  // the Spend levels card is on every draw launch with a paid block: without
+  // a level from the build it says why there is none (12 November 2026)
+  const levelsOn = !isTL && paidOn;
   // a release selling lines of work, on the All lines view: paid per line, each its own ad set
   const paidLines = !isTL && Array.isArray(lineViews) && lineViews.length > 1 ? lineViews.filter((l) => l.snap.paid) : [];
   return (
@@ -61,6 +66,7 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
         {actionsOn && <PlanChanges snap={snap} />}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
+        {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
         {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
         {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
@@ -77,7 +83,7 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
           <React.Fragment key={`paid:${l.key}`}>
             <Sect>{paidHead(l.name, (l.snap.line || {}).adsets || l.adsets)}</Sect>
             <PaidRoi snap={l.snap} horizon={horizon} />
-            {l.snap.paid.levels && <SpendLevels snap={l.snap} />}
+            <SpendLevels snap={l.snap} />
             {l.snap.paid.adsetEntries && <AdsetEntries snap={l.snap} />}
           </React.Fragment>
         )) : paidOn && (
