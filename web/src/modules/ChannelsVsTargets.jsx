@@ -7,7 +7,8 @@
  * by today (c.bmExp); at close the projection (c.proj) with the full target
  * and benchmark (docs 5.4, 9). The card's menu swaps the units scale for
  * every channel against its own target on one 100% line. A release with no
- * targets shows the units alone. */
+ * targets shows the units alone. The columns take 0.4 of their slot, so six
+ * groups stand a little wider than five did at the chart's 0.32 (12 November 2026). */
 import React, { useState } from "react";
 import { Card, Head, vsDelta } from "../ui.jsx";
 import { ColChart, niceAxis, kfmt, COL, sw, ol } from "../charts.jsx";
@@ -52,7 +53,7 @@ export default function ChannelsVsTargets({ snap, vs = "target", horizon = "toda
       <Head v={fmt(total)} u={W.unit}
         deltas={[targeted ? vsDelta(total, totalT, refWord, `${fmt(total)} ${W.unit} ${today ? "to date" : "projected"} against the ${fmt(totalT)} ${refWord} ${when}`) : null]}
         aside={targeted ? "" : "no targets"} asideTip={targeted ? undefined : "No targets set, so the columns are the units alone"} />
-      <ColChart H={250} L={pct ? 36 : 30} ymax={ax.ymax} yticks={ax.ticks} yfmt={pct ? (t) => `${t}%` : kfmt}
+      <ColChart H={250} L={pct ? 36 : 30} gw={0.4} ymax={ax.ymax} yticks={ax.ticks} yfmt={pct ? (t) => `${t}%` : kfmt}
         cats={base.map((r) => SHORT[r.key] || r.name)} rows={data} refName={RefName}
         title={(i) => `${base[i].name}, ${when}`}
         tipRows={(i) => {
