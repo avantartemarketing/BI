@@ -8,7 +8,9 @@
  * buyers' prints, and the prints the people still in the draw have
  * pre-authorised (on a timed launch the window's orders awaiting payment),
  * the basket's take-up a dotted mark. No plan and no target: the card reads
- * what is. Off the page when nothing on the release was offered a frame. */
+ * what is. With nothing on the release offered a frame the card stays on
+ * the page and says so: "No framing", or "No framing yet" while a frame is
+ * on offer and nothing has sold. */
 import React from "react";
 import { Card, Head } from "../ui.jsx";
 import { HBarChart, COL, sw, lk } from "../charts.jsx";
@@ -18,7 +20,11 @@ const has = (v) => v !== null && v !== undefined;
 
 export default function Framing({ snap, horizon = "today" }) {
   const f = snap.framing;
-  if (!f || (!(f.prints > 0) && !f.entrants)) return null;
+  if (!f || (!(f.prints > 0) && !f.entrants)) {
+    const offered = !(snap.economics && snap.economics.framingAvailable === false);
+    const sold = (snap.sellthrough && snap.sellthrough.sold) || (snap.sales && snap.sales.units) || 0;
+    return <Card title="Framing" aria="Framing: none"><div className="empty-state">{offered && !(sold > 0) ? "No framing yet" : "No framing"}</div></Card>;
+  }
   const tl = !!f.tl;
   const close = horizon === "close";
   const rate = f.rate ?? null;

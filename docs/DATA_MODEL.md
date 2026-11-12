@@ -2193,7 +2193,8 @@ the same prints and frames by kind of unit - `paid` (with the sales no work is n
 working for the headline; and
 `products[]`, per sell-through row with a frame on offer, `key` (the row's draw), `name`,
 `today` and `close` as `prints`, `frames`, `rate`; null without the sell-through); `asOf`.
-Null when nothing on the release has been offered a frame, and the card stays off the page.
+Null when nothing on the release has been offered a frame: the card keeps its place and reads
+"No framing" ("No framing yet" while a frame is on offer and nothing has sold; since 12 November 2026).
 A feed pulled before the framing columns existed reads as no framing. The forecast differs
 between the Direct views at close (the entries still to come do), so it rides in
 `variants.direct_spread` like the sell-through. The sell-through update posted to Slack
@@ -2538,7 +2539,8 @@ ones with no estimate. `key` is stable per rule (`email.last_chance.widen`,
 at}}}` in `plan_changes.json` beside the decision log; `by` is the signed-in address's part
 before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` and the card
 draws nothing unless `visible` (`PLAN_CHANGES_AUDIENCE`: `admins` by default, `everyone`,
-`off`).
+`off`). On a draw launch in flight the card keeps its place when the build has nothing for it
+(no `planChanges`, or an empty list) and reads "No suggested actions".
 
 **Not in it yet:** AA Social, uneven works, paid creative and audiences, WhatsApp and SMS
 (no feed), and timed launches.

@@ -9,7 +9,9 @@
  * lines view shows the pair once per line, each on its line's ad set and
  * with its own recommendation). The Paid spend card is gone: its spend by day
  * is on the Paid ROI chart, its recommendation on the Spend levels card. A
- * card a release has nothing for is left out; before a release has numbers
+ * card a release has nothing for is left out, but for two that keep their
+ * place and say so: Framing ("No framing") and, on a draw launch in flight,
+ * Suggested actions ("No suggested actions"); before a release has numbers
  * the page shows what it knows instead (Upcoming, no targets, catalogue). */
 import React from "react";
 import Trajectory from "./modules/Trajectory.jsx";
@@ -46,6 +48,8 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
   if (snap.upcoming || (isTL && snap.tlState === "upcoming")) return <div className="body plain"><Upcoming snap={snap} onSetup={onSetup} /></div>;
   const preWindow = isTL && (snap.tlState === "signups" || snap.tlState === "upcoming");
   const framingOn = !!(snap.framing && (snap.framing.prints > 0 || (snap.framing.works || []).length));
+  // the Suggested actions card stays on a draw launch in flight with nothing to suggest, and says so
+  const actionsOn = !isTL && !snap.line && (!!snap.planChanges || (!snap.complete && !snap.catalogue));
   const geoOn = !isTL && !!(snap.geo && (Array.isArray(snap.geo) ? snap.geo.length : (snap.geo.rows || []).length));
   const paidOn = !!snap.paid;
   const levelsOn = !isTL && paidOn && !!snap.paid.levels;
@@ -54,14 +58,14 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
   return (
     <div className="body">
       <div className="grid2">
-        {!isTL && !snap.line && snap.planChanges && <PlanChanges snap={snap} />}
+        {actionsOn && <PlanChanges snap={snap} />}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
         {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
         {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
         {!isTL && snap.closeForecast && <SellThroughClose snap={snap} vs={vs} />}
-        {!preWindow && framingOn && <Framing snap={snap} horizon={horizon} />}
+        {!preWindow && <Framing snap={snap} horizon={horizon} />}
         {geoOn && <Geo snap={snap} />}
         {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}
         <Sect>Channels and funnel</Sect>

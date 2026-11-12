@@ -11,6 +11,7 @@
  * handled change leaves the list until it is undone (the ⋯ menu shows them).
  * Nothing is written to the plan in Notion. The server also says whether
  * this account sees the card at all; without that the card draws nothing.
+ * With nothing to suggest the card stays and reads "No suggested actions".
  *
  * Ask hands the question to the Agent, bottom right, with the change named
  * in it (an "agent:ask" event; Agent.jsx listens), so the card has no chat
@@ -90,7 +91,7 @@ function Row({ c, asOf, open, onOpen, onSet, artist }) {
 }
 
 export default function PlanChanges({ snap }) {
-  const pc = snap && snap.planChanges;
+  const pc = (snap && snap.planChanges) || {};   // nothing from the build: an empty list, and the card says so
   const id = snap && snap.id;
   const [st, setSt] = useState(null);       // { visible, states } from the server
   const [open, setOpen] = useState(null);   // the open row's key
@@ -100,12 +101,12 @@ export default function PlanChanges({ snap }) {
   const [note, setNote] = useState(null);
   useEffect(() => {
     setSt(null); setOpen(null); setMore(false); setHandled(false); setPlan(false); setNote(null);
-    if (!id || !pc) return undefined;
+    if (!id) return undefined;
     let live = true;
     fetch(`/api/releases/${id}/plan-changes`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (live) setSt(d); }).catch(() => {});
     return () => { live = false; };
-  }, [id, !!pc]);
-  if (!pc || !st || !st.visible) return null;
+  }, [id]);
+  if (!st || !st.visible) return null;
 
   const states = st.states || {};
   const all = [...(pc.changes || []), ...(pc.more || [])];
@@ -113,7 +114,6 @@ export default function PlanChanges({ snap }) {
   const done = all.filter((c) => states[c.key]);
   const shown = more ? todo : todo.slice(0, 3);
   const toCome = pc.planToCome || [];
-  if (!todo.length && !done.length && !toCome.length) return null;
 
   const save = (c, state, quiet) => {
     const before = states[c.key] || null;
@@ -128,12 +128,12 @@ export default function PlanChanges({ snap }) {
 
   return (
     <Card wide className="pcard" aria="Suggested actions"
-      title={<>Suggested actions<span className="pc-n">{todo.length}</span></>}
+      title={<>Suggested actions{todo.length > 0 && <span className="pc-n">{todo.length}</span>}</>}
       right={<button className="sbtn" onClick={() => ask(`What actions do you suggest for ${artist}, and why?`)}><AgentIcon w={13} />Ask</button>}
       menu={done.length ? [{ label: handled ? "Hide accepted and dismissed" : "Show accepted and dismissed", onClick: () => setHandled(!handled) }] : null}>
       <div className="pc">
         {shown.map((c) => <Row key={c.key} c={c} asOf={pc.asOf} artist={artist} open={open === c.key} onOpen={() => setOpen(open === c.key ? null : c.key)} onSet={save} />)}
-        {!todo.length && <div className="pc-none">{pc.status === "on_course" ? "On course. No actions suggested." : "No actions suggested."}</div>}
+        {!todo.length && <div className="pc-none">{pc.status === "on_course" ? "On course. No suggested actions." : "No suggested actions"}</div>}
         {todo.length > 3 && <button className="pc-fold" onClick={() => setMore(!more)}><Chev />{more ? "Fewer" : `${todo.length - 3} more`}</button>}
         {handled && done.map((c) => {
           const s = states[c.key];

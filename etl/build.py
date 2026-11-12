@@ -2961,7 +2961,7 @@ def load_orders_feed() -> dict:
                 # and the frames bought with them, the same on the app's entry
                 # drafts, and on the orders awaiting payment (the drafts the
                 # sell-through counts); a feed pulled before the columns
-                # existed reads as no framing, and the card stays off the page,
+                # existed reads as no framing, and the card says "No framing",
                 # and one pulled before the drafts' pair reads them as None,
                 # so the forecast takes the buyers' rate for them instead
                 offered, frames = num(getattr(r, "prints_offered_paid", "")), num(getattr(r, "frames_paid", ""))
@@ -3834,7 +3834,7 @@ def framing_block(release: dict, of: dict | None, basket: dict | None, b: dict =
     default) and the basket's median. Per work, for the hover, with the
     works a frame was never on offer for named apart so their absence from
     the rate is explained. None when nothing has been offered a frame, and
-    the card stays off the page."""
+    the card says "No framing"."""
     f = (of or {}).get("framing") or {}
     prints, frames = float(f.get("prints") or 0), float(f.get("frames") or 0)
     e_prints, e_frames = float(f.get("entrantPrints") or 0), float(f.get("entrantFrames") or 0)
