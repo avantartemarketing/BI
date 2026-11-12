@@ -20,7 +20,31 @@
  * fields hold the full medians). */
 import { RATES_TO_EUR, frameBandRate } from "./economics.mjs";
 
-export const GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
+export const GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "direct_other", "paid"];
+
+/* Until 12 November 2026 Organic Search and Other were one group. A saved
+ * input that still names it is read as both (etl/baskets.py legacy_groups,
+ * legacy_shares): off means both off, and a stretch share is split between
+ * the two in proportion to their benchmark units, evenly when neither has any. */
+export const LEGACY_GROUP = "search_direct_other";
+export const LEGACY_PARTS = ["organic_search", "direct_other"];
+export function legacyGroups(raw) {
+  const out = [];
+  for (const g0 of raw || []) { const g = String(g0).trim(); if (g === LEGACY_GROUP) out.push(...LEGACY_PARTS); else out.push(g); }
+  return out;
+}
+export function legacyShares(raw, bm) {
+  if (!raw || !(LEGACY_GROUP in raw)) return raw;
+  const { [LEGACY_GROUP]: legacy, ...out } = raw;
+  const v = Math.max(Number(legacy) || 0, 0);
+  const parts = LEGACY_PARTS.filter((g) => out[g] === undefined || out[g] === null || out[g] === "");
+  if (v > 0 && parts.length) {
+    const size = Object.fromEntries(parts.map((g) => [g, Math.max(Number((bm || {})[g]) || 0, 0)]));
+    const tot = parts.reduce((s, g) => s + size[g], 0);
+    for (const g of parts) out[g] = v * (tot > 0 ? size[g] / tot : 1 / parts.length);
+  }
+  return out;
+}
 export const TL_CANNIBALISATION = 0.1;
 export const TL_PAID_SPLIT_PRE = 0.7;
 
@@ -30,7 +54,7 @@ const byGroup = (src, f) => Object.fromEntries(GROUPS.map((g) => [g, f(g, num((s
 export function channelsOffOf(inp) {
   let raw = (inp && inp.channels_off) || [];
   if (typeof raw === "string") raw = [raw];
-  const wanted = new Set(raw.map((g) => String(g).trim()));
+  const wanted = new Set(legacyGroups(raw));
   return GROUPS.filter((g) => wanted.has(g));
 }
 
@@ -96,8 +120,9 @@ export function stretchWeights(inp, bmByGroup) {
   const bm = byGroup(bmByGroup, (_g, v) => v);
   const total = GROUPS.reduce((s, g) => s + (bm[g] > 0 ? bm[g] : 0), 0);
   const even = byGroup(bm, (_g, v) => (total > 0 && v > 0 ? v / total : 0));
-  const raw = inp && inp.stretch_from;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return even;
+  const typed = inp && inp.stretch_from;
+  if (!typed || typeof typed !== "object" || Array.isArray(typed)) return even;
+  const raw = legacyShares(typed, bm);
   const w = byGroup(bm, (g, v) => (v > 0 ? Math.max(num(raw[g]), 0) : 0));
   const s = GROUPS.reduce((t, g) => t + w[g], 0);
   return s > 0 ? byGroup(w, (_g, v) => v / s) : even;

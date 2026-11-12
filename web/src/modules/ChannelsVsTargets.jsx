@@ -1,4 +1,4 @@
-/* Units by channel: the five channel groups as columns, each the reference as
+/* Units by channel: the six channel groups as columns, each the reference as
  * a dotted outline on a faint tint, a little wider than the indigo actual
  * inside it, which rises past the outline when over (5 November 2026). The
  * reference is the target or the benchmark, whichever the
@@ -14,7 +14,7 @@ import { ColChart, niceAxis, kfmt, COL, sw, ol } from "../charts.jsx";
 import { fmt } from "../format.mjs";
 import { wordsOf } from "../vocab.mjs";
 
-const SHORT = { aa_email: "Email", aa_social: "Meta", referral_artist: "Artist", search_direct_other: "Direct", paid: "Paid" };
+const SHORT = { aa_email: "Email", aa_social: "Social", referral_artist: "Artist", organic_search: "Search", direct_other: "Other", paid: "Paid" };
 const has = (v) => v !== null && v !== undefined;
 const unit = (v) => fmt(v, v < 10 && v > 0 ? 1 : 0);
 const diff = (a, b) => { if (!(b > 0)) return ""; const p = Math.round((a / b - 1) * 100); return `  ${p >= 0 ? "+" : "−"}${Math.abs(p)}%`; };

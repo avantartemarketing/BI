@@ -143,19 +143,25 @@ ORGANIC_CHANNELS = [
 ]
 INPUTS_CODES = [r["campaign_code"] for r in INPUTS["releases"] if r.get("campaign_code")]
 
-# Display grouping (docs §1.3). AA Other goes to search/direct/other (the sheet dropped it).
+# Display grouping (docs §1.3). Organic Search stands alone; Other is Direct and
+# every organic channel without a group of its own (AA Other among them, which
+# the sheet dropped). Until 12 November 2026 the two were one group,
+# search_direct_other (LEGACY_GROUP): a saved input that still names it is read
+# as both.
 DISPLAY_GROUPS = {
     "aa_email": {"name": "AA Email", "channels": ["AA Email Auto", "AA Email Man"]},
-    "aa_social": {"name": "AA Meta", "channels": ["AA Meta", "AA X"]},
+    "aa_social": {"name": "AA Social", "channels": ["AA Meta", "AA X"]},
     "referral_artist": {"name": "Artist", "channels": ["Referral Artist"]},
-    "search_direct_other": {
-        "name": "Search etc.",
-        "channels": ["Direct", "Organic Search", "Other", "AA Other",
+    "organic_search": {"name": "Organic Search", "channels": ["Organic Search"]},
+    "direct_other": {
+        "name": "Other",
+        "channels": ["Direct", "Other", "AA Other",
                      "Referral Meta", "Referral Other", "Referral X"],
     },
     "paid": {"name": "Paid", "channels": ["Paid Social", "Paid Search"]},
 }
 GROUP_OF = {c: g for g, spec in DISPLAY_GROUPS.items() for c in spec["channels"]}
+DIRECT_GROUP = GROUP_OF["Direct"]   # the group Direct sits in, which the Direct switch spreads it out of
 
 CURVE_GRID = [round(-0.6 + 0.05 * i, 2) for i in range(int((1.15 + 0.6) / 0.05) + 1)]
 
@@ -617,7 +623,7 @@ def channel_share(frame: pd.DataFrame, channel: str, within_group: bool = False)
 
 
 def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date) -> dict | None:
-    """What share of the Search/direct/other group Direct normally is: the
+    """What share of its group (Other) Direct normally is: the
     median over the draw panel's launches closed in the last RECENT_MONTHS,
     each over its own window (the cohort untracked_norms reads). The Direct
     switch reads the benchmark's channel split with this much of the group
@@ -672,7 +678,7 @@ def direct_share_norm(at: pd.DataFrame, panel: pd.DataFrame | None, as_of: date)
 
 def spread_profile(profile: dict, norm: dict | None) -> dict:
     """The basket's medians read with Direct spread: Direct's share of the
-    Search/direct/other group (the panel's median, direct_share_norm) leaves
+    Other group (the panel's median, direct_share_norm) leaves
     the group and lands on every group in proportion to what remains, units
     and sessions alike. The headline medians do not move, so K does not
     either; conversion stays at the benchmark like every other rate.
@@ -693,15 +699,15 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
         grp = {g: float(v or 0.0) for g, v in (out.get(key) or {}).items()}
         if share is None or not grp:
             continue
-        d = grp.get("search_direct_other", 0.0) * float(share)
+        d = grp.get(DIRECT_GROUP, 0.0) * float(share)
         if d <= 0:
             continue
-        grp["search_direct_other"] -= d
+        grp[DIRECT_GROUP] -= d
         tot = sum(grp.values())
         if tot > 0:
             grp = {g: v + d * v / tot for g, v in grp.items()}
         else:
-            grp["search_direct_other"] += d
+            grp[DIRECT_GROUP] += d
         out[key] = {g: round(v, 6) for g, v in grp.items()}
         total = float(out.get(metric) or 0.0)
         if total > 0:
@@ -1727,6 +1733,7 @@ def stretch_weights(release: dict, profile: dict) -> dict[str, float]:
     raw = release.get("stretch_from")
     if not isinstance(raw, dict):
         return even
+    raw = baskets.legacy_shares(raw, bm)
     w = {}
     for g in baskets.GROUPS:
         try:
@@ -1745,6 +1752,7 @@ def stretch_typed(release: dict, profile: dict) -> bool:
     if not isinstance(raw, dict):
         return False
     bm = profile.get("units_by_group") or {}
+    raw = baskets.legacy_shares(raw, bm)
     return any(float(bm.get(g) or 0.0) > 0 and float(raw.get(g) or 0.0) > 0 for g in baskets.GROUPS)
 
 
@@ -1876,7 +1884,7 @@ def benchmark_targets(release: dict, profile: dict, upb_slope: float = UNITS_PER
         "stretch_typed": stretch_typed(release, profile),
         "stretch_units": size - profile["units"],
     }
-    # the partition the whole page rests on: what the five groups are asked to
+    # the partition the whole page rests on: what the six groups are asked to
     # sell is the edition, no more and no less (§4)
     rolled = sum(g["units"] for g in group_targets(out).values())
     assert abs(rolled - size) <= 0.5, (
@@ -3248,7 +3256,7 @@ _PAGES_FEED: dict | None = None
 def parse_pages(df: pd.DataFrame) -> dict:
     """The pages feed as the build reads it: {"by": {release: frame}, "through":
     the feed's newest day}. Each frame carries the row's day as a date and its
-    side, paid for the paid channels and organic for the four organic groups;
+    side, paid for the paid channels and organic for the five organic groups;
     Untracked is on neither side and is left out."""
     df = df.rename(columns={"AA_session_custom_channel_group_split_touch": "channel"})
     df = df[df["simple_release_name"].notna()].copy()
@@ -4194,8 +4202,8 @@ def adopt_sellthrough(st: dict, channels_out: list, funnel_by_group: dict, hero_
     and conversion steps still sum to its now minus its expected.
     With nothing on the channels to scale (no units paid and no entries
     yet, but drafts out or the draw's patterns counted), the count is added
-    instead, on the channels' sessions to date, or on Search / direct /
-    other when there are none.
+    instead, on the channels' sessions to date, or on Other (Direct's
+    group) when there are none.
     Returns the hero's (now, projected) before the sellout cap."""
     sell_today = spoken_for(st)
     future_funnel = max(hero_proj - hero_now, 0.0)
@@ -4209,7 +4217,7 @@ def adopt_sellthrough(st: dict, channels_out: list, funnel_by_group: dict, hero_
         sess = {c.get("key"): float((funnel_by_group.get(c.get("key")) or {}).get("sessions_actual") or 0.0)
                 for c in channels_out}
         if sum(sess.values()) <= 0:
-            sess = {k: (1.0 if k == "search_direct_other" else 0.0) for k in sess}
+            sess = {k: (1.0 if k == DIRECT_GROUP else 0.0) for k in sess}
             if sum(sess.values()) <= 0:
                 sess = {k: 1.0 for k in sess}
         tot = sum(sess.values())

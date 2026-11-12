@@ -104,7 +104,8 @@ METRICS = ["Page_Views_Total", "Sessions_Total", "Draw_Entries", "Preorder_App",
            "Draw_Entries_Total_Units_No_Conv", "Draw_Entries_Eligible_Units"]
 CLOCK = ["days_since_announcement", "days_until_launch", "pct_days_since_announcement", "pct_days_until_launch"]
 LABELS = ["AA_session_custom_channel_group_split_touch", "simple_release_name", "campaign_stage"]
-GROUPS = list(DISPLAY_GROUPS)   # aa_email, aa_social, referral_artist, search_direct_other, paid
+SEARCH_DIRECT_SHARE = "sess_share_search_direct"   # organic_search + direct_other, the clustering's mix feature (derived)
+GROUPS = list(DISPLAY_GROUPS)   # aa_email, aa_social, referral_artist, organic_search, direct_other, paid
 
 
 # ---------------------------------------------------------------- load
@@ -345,7 +346,7 @@ def flag_units(panel: pd.DataFrame) -> pd.DataFrame:
 FEATURE_BLOCKS = {
     "scale": ["log_sessions", "log_units", "log_entries"],
     "mix": ["sess_share_aa_email", "sess_share_aa_social", "sess_share_referral_artist",
-            "sess_share_search_direct_other", "sess_share_paid"],
+            SEARCH_DIRECT_SHARE, "sess_share_paid"],
     "demand": ["log_oversub", "private_room_share", "log_entries_per_session", "log_units_per_session"],
     "timing": ["campaign_days", "ea_share_sessions", "burst_share", "cliff_share", "half_point"],
 }
@@ -365,6 +366,9 @@ def derived(panel: pd.DataFrame) -> pd.DataFrame:
     p["log_oversub"] = np.log(p["oversubscription"].clip(lower=0.05))
     p["log_entries_per_session"] = np.log(p["entries_per_session"].clip(lower=1e-4))
     p["log_units_per_session"] = np.log(p["units_per_session"].clip(lower=1e-4))
+    # Organic Search and Other were one display group until 12 November 2026;
+    # the clustering still reads their sessions as one share, as it was fitted
+    p[SEARCH_DIRECT_SHARE] = p["sess_share_organic_search"] + p["sess_share_direct_other"]
     return p
 
 
@@ -501,7 +505,7 @@ def gap_choice(d: pd.DataFrame) -> int | None:
 
 PROFILE_COLS = ["tot_sessions_total", "tot_total_product_units", "tot_draw_entries_eligible_units", "oversubscription",
                 "private_room_share", "preorder_share", "sess_share_aa_email", "sess_share_aa_social",
-                "sess_share_referral_artist", "sess_share_search_direct_other", "sess_share_paid",
+                "sess_share_referral_artist", SEARCH_DIRECT_SHARE, "sess_share_paid",
                 "entries_per_session", "units_per_session", "entry_to_unit", "campaign_days", "ea_share_sessions",
                 "burst_share", "cliff_share", "half_point", "peak_day_share"]
 BASKET_COLS = PROFILE_COLS + ["tot_page_views_total", "tot_unique_customers", "ea_share_units", "entries_burst_share",

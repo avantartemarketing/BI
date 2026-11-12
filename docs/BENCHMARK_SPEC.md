@@ -245,8 +245,8 @@ profile = {
 }
 ```
 
-Groups are the five display groups: `aa_email`, `aa_social`, `referral_artist`,
-`search_direct_other`, `paid`.
+Groups are the six display groups: `aa_email`, `aa_social`, `referral_artist`,
+`organic_search`, `direct_other`, `paid`.
 
 **Units are demand, not sales** (DATA_MODEL §4a.2, `baskets.demand_columns`): each launch's
 units sold plus what the eligible entrants left without a unit, and the entrants whose payment

@@ -94,14 +94,50 @@ LIVE_STATUS = ("paid", "awaiting")      # the lines a window's units count: paid
 OUT_STATUS = ("cancelled", "refunded")
 BENCH = json.loads((ROOT / "etl" / "benchmarks.json").read_text())
 
-GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"]
+GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "direct_other", "paid"]
+
+# As in etl/baskets.py (tests/test_tl_model.py holds the two together): until 12 November 2026 Organic Search and Other were one group. A saved input
+# that still names it (channels_off, stretch_from) is read as both: off means
+# both off, and a stretch share is split between the two in proportion to
+# their benchmark units (evenly when neither has any).
+LEGACY_GROUP = "search_direct_other"
+LEGACY_PARTS = ["organic_search", "direct_other"]
+
+
+def legacy_groups(raw) -> list:
+    """A list of group keys with the retired group read as its two parts."""
+    out = []
+    for g in raw or []:
+        g = str(g).strip()
+        out.extend(LEGACY_PARTS if g == LEGACY_GROUP else [g])
+    return out
+
+
+def legacy_shares(raw: dict, bm: dict) -> dict:
+    """A share per group with the retired group's share handed to its two
+    parts; a part that already carries a share of its own keeps it."""
+    if LEGACY_GROUP not in raw:
+        return raw
+    out = {k: v for k, v in raw.items() if k != LEGACY_GROUP}
+    try:
+        v = max(float(raw.get(LEGACY_GROUP) or 0.0), 0.0)
+    except (TypeError, ValueError):
+        v = 0.0
+    parts = [g for g in LEGACY_PARTS if out.get(g) in (None, "")]
+    if v > 0 and parts:
+        size = {g: max(float(bm.get(g) or 0.0), 0.0) for g in parts}
+        tot = sum(size.values())
+        for g in parts:
+            out[g] = v * (size[g] / tot if tot > 0 else 1.0 / len(parts))
+    return out
 # the display groups as etl/build.py DISPLAY_GROUPS has them (tests/test_tl_model.py holds the two together)
 DISPLAY_GROUPS = {
     "aa_email": {"name": "AA Email", "channels": ["AA Email Auto", "AA Email Man"]},
-    "aa_social": {"name": "AA Meta", "channels": ["AA Meta", "AA X"]},
+    "aa_social": {"name": "AA Social", "channels": ["AA Meta", "AA X"]},
     "referral_artist": {"name": "Artist", "channels": ["Referral Artist"]},
-    "search_direct_other": {"name": "Search etc.",
-                            "channels": ["Direct", "Organic Search", "Other", "AA Other", "Referral Meta", "Referral Other", "Referral X"]},
+    "organic_search": {"name": "Organic Search", "channels": ["Organic Search"]},
+    "direct_other": {"name": "Other",
+                     "channels": ["Direct", "Other", "AA Other", "Referral Meta", "Referral Other", "Referral X"]},
     "paid": {"name": "Paid", "channels": ["Paid Social", "Paid Search"]},
 }
 GROUP_OF = {c: g for g, spec in DISPLAY_GROUPS.items() for c in spec["channels"]}
@@ -901,7 +937,7 @@ def direct_norm(series: dict | None, panel: pd.DataFrame) -> dict | None:
         for frame, cols in ((pre, ("signups", "sessions")), (settled, ("units",))):
             if not len(frame):
                 continue
-            grp = frame[frame["group"].eq("search_direct_other")]
+            grp = frame[frame["group"].eq(GROUP_OF[DIRECT_CHANNEL])]
             for c in cols:
                 tot = float(grp[c].sum()) if c in grp.columns else 0.0
                 if tot > 0:
@@ -1198,7 +1234,7 @@ def channels_off_of(inputs: dict | None) -> list[str]:
     raw = (inputs or {}).get("channels_off") or []
     if isinstance(raw, str):
         raw = [raw]
-    wanted = {str(g).strip() for g in raw}
+    wanted = set(legacy_groups(raw))
     return [g for g in GROUPS if g in wanted]
 
 
@@ -1523,6 +1559,7 @@ def stretch_weights(inputs: dict | None, bm_by_group: dict) -> dict:
     raw = (inputs or {}).get("stretch_from")
     if not isinstance(raw, dict):
         return even
+    raw = legacy_shares(raw, bm_by_group)
     w = {g: (max(_num(raw.get(g), 0.0) or 0.0, 0.0) if bm_by_group.get(g, 0.0) > 0 else 0.0) for g in GROUPS}
     s = sum(w.values())
     return {g: w[g] / s for g in GROUPS} if s > 0 else even

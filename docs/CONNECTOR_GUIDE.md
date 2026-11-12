@@ -94,23 +94,25 @@ The channel of an event is `AA_session_custom_channel_group_split_touch`: the sp
 attribution of the session it happened in. Fifteen values. The feeds spell the last one
 `untracked`, in lower case, and leave it empty on some rows.
 
-The dashboard reads them in five groups (DATA_MODEL 1.3). In SQL:
+The dashboard reads them in six groups (DATA_MODEL 1.3). In SQL:
 
 ```sql
 CASE
   WHEN ch IN ('AA Email Man', 'AA Email Auto') THEN 'AA Email'
-  WHEN ch IN ('AA Meta', 'AA X') THEN 'AA Meta'
+  WHEN ch IN ('AA Meta', 'AA X') THEN 'AA Social'
   WHEN ch = 'Referral Artist' THEN 'Referral artist'
+  WHEN ch = 'Organic Search' THEN 'Organic Search'
   WHEN ch IN ('Paid Social', 'Paid Search') THEN 'Paid'
   WHEN ch = 'Untracked' THEN 'Untracked'
-  ELSE 'Search / direct / other'   -- Direct, Organic Search, Other, AA Other, Referral Meta, Referral Other, Referral X
+  ELSE 'Other'   -- Direct, Other, AA Other, Referral Meta, Referral Other, Referral X
 END
 ```
 
 with `ch` as `IF(LOWER(COALESCE(NULLIF(AA_session_custom_channel_group_split_touch, ''), 'untracked')) = 'untracked', 'Untracked', AA_session_custom_channel_group_split_touch)`.
 
 - **AA Email** is Avant Arte's own email: manual sends (Man) and automated flows (Auto).
-- **AA Meta** is the brand's own organic social: Instagram (AA Meta) and X (AA X).
+- **AA Social** is the brand's own organic social: Instagram (AA Meta) and X (AA X). It was labelled AA Meta until 12 November 2026.
+- **Organic Search** and **Other** were one group, Search / direct / other, until the same day.
 - **Referral artist** is the artist's own channels.
 - **Paid** is in practice Paid Social, Meta ads.
 
@@ -185,11 +187,12 @@ WITH buys AS (
 )
 SELECT year,
   CASE WHEN ch IN ('AA Email Man', 'AA Email Auto') THEN 'AA Email'
-       WHEN ch IN ('AA Meta', 'AA X') THEN 'AA Meta'
+       WHEN ch IN ('AA Meta', 'AA X') THEN 'AA Social'
        WHEN ch = 'Referral Artist' THEN 'Referral artist'
+       WHEN ch = 'Organic Search' THEN 'Organic Search'
        WHEN ch IN ('Paid Social', 'Paid Search') THEN 'Paid'
        WHEN ch = 'Untracked' THEN 'Untracked'
-       ELSE 'Search / direct / other' END AS channel_group,
+       ELSE 'Other' END AS channel_group,
   SUM(order_pieces) AS units, COUNT(*) AS orders
 FROM named GROUP BY year, channel_group ORDER BY year, units DESC
 ```

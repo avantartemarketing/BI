@@ -32,7 +32,7 @@ def check(cond, msg):
 
 # ---- a curve panel whose units book the draw's winners on the close day
 GROUP_CH = {"aa_email": "AA Email Man", "aa_social": "AA Meta", "referral_artist": "Referral Artist",
-            "search_direct_other": "Direct", "paid": "Paid Social"}
+            "organic_search": "Organic Search", "direct_other": "Direct", "paid": "Paid Social"}
 
 def panel_frame(n=6):
     rows = []

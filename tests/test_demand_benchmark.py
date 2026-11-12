@@ -46,14 +46,14 @@ def frame() -> pd.DataFrame:
     not sell out, and has no people-file row (NaN) and no entry shares."""
     a = {"release_name": "A · One · 2026 Q1", "tot_total_product_units": 200.0, "tot_draw_entries_total_units_no_conv": 100.0,
          "payment_failed_units": 20.0, "tot_sessions_total": 20000.0}
-    a.update({f"unit_share_{g}": s for g, s in zip(G, (0.4, 0.1, 0.1, 0.2, 0.2))})
-    a.update({f"ent_share_{g}": s for g, s in zip(G, (0.2, 0.1, 0.1, 0.2, 0.4))})
-    a.update({f"sess_share_{g}": s for g, s in zip(G, (0.2, 0.1, 0.1, 0.2, 0.4))})
+    a.update({f"unit_share_{g}": s for g, s in zip(G, (0.4, 0.1, 0.1, 0.05, 0.15, 0.2))})
+    a.update({f"ent_share_{g}": s for g, s in zip(G, (0.2, 0.1, 0.1, 0.05, 0.15, 0.4))})
+    a.update({f"sess_share_{g}": s for g, s in zip(G, (0.2, 0.1, 0.1, 0.05, 0.15, 0.4))})
     b = {"release_name": "B · Two · 2026 Q1", "tot_total_product_units": 150.0, "tot_draw_entries_total_units_no_conv": 0.0,
          "payment_failed_units": float("nan"), "tot_sessions_total": 10000.0}
-    b.update({f"unit_share_{g}": s for g, s in zip(G, (0.5, 0.0, 0.0, 0.3, 0.2))})
+    b.update({f"unit_share_{g}": s for g, s in zip(G, (0.5, 0.0, 0.0, 0.1, 0.2, 0.2))})
     b.update({f"ent_share_{g}": float("nan") for g in G})
-    b.update({f"sess_share_{g}": s for g, s in zip(G, (0.3, 0.1, 0.1, 0.2, 0.3))})
+    b.update({f"sess_share_{g}": s for g, s in zip(G, (0.3, 0.1, 0.1, 0.05, 0.15, 0.3))})
     return pd.DataFrame([a, b])
 
 

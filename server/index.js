@@ -176,7 +176,22 @@ require("./agent").install(app, {
 
 // the display groups a release can set aside - "not running paid", "the
 // artist has no channels of their own" (BENCHMARK_SPEC 4.3; etl/baskets.py GROUPS)
-const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"];
+const CHANNEL_GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "direct_other", "paid"];
+// Organic Search and Other were one group until 12 November 2026. A save from a
+// page loaded before then may still name it: off is read as both off, and a
+// stretch share as half on each (the build's reader, etl/baskets.py
+// legacy_shares, splits a stored one by the benchmark; a save has none to hand).
+const LEGACY_GROUP = "search_direct_other";
+const LEGACY_PARTS = ["organic_search", "direct_other"];
+const legacyGroupList = (raw) => raw.flatMap((g) => (g === LEGACY_GROUP ? LEGACY_PARTS : [g]));
+const legacyGroupShares = (raw) => {
+  if (!(LEGACY_GROUP in raw)) return raw;
+  const { [LEGACY_GROUP]: legacy, ...out } = raw;
+  const v = Number(legacy);
+  const parts = LEGACY_PARTS.filter((g) => out[g] === undefined || out[g] === null || out[g] === "");
+  if (Number.isFinite(v) && v > 0) for (const g of parts) out[g] = v / parts.length;
+  return out;
+};
 // the inputs of the quartile-lever model, retired 2026-09-23 (docs/DATA_MODEL.md
 // §3), and the artist posting tier, retired 2026-10-07 (the artist-posts
 // benchmark reads every completed campaign): a save drops them from a release
@@ -399,7 +414,8 @@ app.post("/api/inputs/:id", route(async (req, res) => {
    * kept to the known ones and in their fixed order. Every group off would
    * leave nothing to benchmark or target, so that is refused. */
   if (body.channels_off !== undefined) {
-    const raw = body.channels_off === null ? [] : body.channels_off;
+    const raw0 = body.channels_off === null ? [] : body.channels_off;
+    const raw = Array.isArray(raw0) && raw0.every((g) => typeof g === "string") ? legacyGroupList(raw0) : raw0;
     if (!Array.isArray(raw) || raw.some((g) => typeof g !== "string")) errors.push("channels_off must be a list of channel groups");
     else {
       const unknown = raw.filter((g) => !CHANNEL_GROUPS.includes(g));
@@ -436,7 +452,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
           else cur.adsets = [...new Set(cfg.adsets.map((a) => String(a).slice(0, 200).trim()).filter(Boolean))];
         }
         if (cfg.stretch_from !== undefined) {
-          const sf = cfg.stretch_from;
+          const sf = cfg.stretch_from && typeof cfg.stretch_from === "object" && !Array.isArray(cfg.stretch_from) ? legacyGroupShares(cfg.stretch_from) : cfg.stretch_from;
           if (sf === null) cur.stretch_from = null;
           else if (typeof sf !== "object" || Array.isArray(sf)) errors.push(`line_settings.${key}.stretch_from must be an object of channel group shares, or null`);
           else {
@@ -466,7 +482,7 @@ app.post("/api/inputs/:id", route(async (req, res) => {
     }
   }
   if (body.stretch_from !== undefined) {
-    const raw = body.stretch_from;
+    const raw = body.stretch_from && typeof body.stretch_from === "object" && !Array.isArray(body.stretch_from) ? legacyGroupShares(body.stretch_from) : body.stretch_from;
     if (raw === null) next.stretch_from = null;
     else if (typeof raw !== "object" || Array.isArray(raw)) errors.push("stretch_from must be an object of channel group shares, or null");
     else {

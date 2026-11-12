@@ -61,7 +61,7 @@ check(near(d2["AA Email Man"], 40.0) and len(d2) == 1, f"day 2's Direct lands on
 d3 = out[out["day"] == date(2026, 9, 3)].set_index("channel")["signups"]
 check(near(d3["Paid Social"], 20 * 300 / 470) and near(d3["AA Email Man"], 20 * 110 / 470) and near(d3["Organic Search"], 20 * 60 / 470),
       f"day 3's Direct, with nothing else that day, stays on its day split on the launch's mix: {d3.to_dict()}")
-check(set(out["group"]) == {"aa_email", "paid", "search_direct_other", "untracked"}, "the groups follow the channels")
+check(set(out["group"]) == {"aa_email", "paid", "organic_search", "untracked"}, "the groups follow the channels")
 check(tl.spread_direct(f[f["channel"] != "Direct"], ["day", "date"]).equals(f[f["channel"] != "Direct"]), "a frame without Direct comes back as it is")
 sh = tl.direct_share(f, ("signups", "sessions", "units"))
 check(near(sh["signups"], 90 / 580, 1e-3) and near(sh["units"], 90 / 580, 1e-3), f"Direct's share of the frame's figures: {sh}")
@@ -85,13 +85,13 @@ check(near(so.groupby("product_title")["units"].sum()["B"], 9.0), "work B keeps 
 # ---- the basket's medians with the money held, and the plan re-split
 base = {"signups_by_group": {g: 100.0 for g in tl.GROUPS}, "units_by_group": {g: 10.0 for g in tl.GROUPS},
         "cost_per_signup": 8.0, "cost_per_sale": 60.0, "n_cost_per_signup": 5, "n_cost_per_sale": 4}
-spread = {"signups_by_group": {**{g: 110.0 for g in tl.GROUPS}, "search_direct_other": 60.0}, "units_by_group": {**{g: 12.0 for g in tl.GROUPS}, "search_direct_other": 2.0},
+spread = {"signups_by_group": {**{g: 110.0 for g in tl.GROUPS}, "direct_other": 60.0}, "units_by_group": {**{g: 12.0 for g in tl.GROUPS}, "direct_other": 2.0},
           "cost_per_signup": 7.0, "cost_per_sale": 50.0}
 sp = tl.spread_profile(spread, base, {"signups": 0.4, "n": 10})
 check(near(sp["cost_per_signup"], 8.0 * 100 / 110) and near(sp["cost_per_sale"], 60.0 * 10 / 12), f"the costs are the Channel view's rescaled by paid's change: {sp['cost_per_signup']}, {sp['cost_per_sale']}")
 check(near(sp["signups_by_group"]["paid"] * sp["cost_per_signup"], 100.0 * 8.0), "the benchmark's budget does not move")
 check(sp["direct_spread"] == {"signups": 0.4, "n": 10} and sp["n_cost_per_signup"] == 5, "the norm and the counts ride along")
-prof = {"signups_by_group": {"aa_email": 300.0, "aa_social": 100.0, "referral_artist": 100.0, "search_direct_other": 100.0, "paid": 400.0},
+prof = {"signups_by_group": {"aa_email": 300.0, "aa_social": 100.0, "referral_artist": 100.0, "organic_search": 0.0, "direct_other": 100.0, "paid": 400.0},
         "conv": {g: 0.05 for g in tl.GROUPS}, "share_units": {g: 0.2 for g in tl.GROUPS}, "channels_off": []}
 t = {"signup_target": 2000.0, "units_target": 500.0, "budget_pre": 8000.0, "budget_window": 6000.0, "cost_per_signup": 10.0, "cost_per_sale": 60.0,
      "signups_by_group": {}, "sessions_by_group": {}, "paid_signups": 800.0, "paid_units": 90.0, "benchmark": {"signups": 1000.0}}
@@ -130,8 +130,8 @@ else:
         view_by = {c["key"]: c["now"] for c in view["channels"]}
         share = (s["directShare"] or {}).get("units" if s["tlState"] in ("window", "settling", "closed") else "signups") or 0.0
         if share > 0.002:
-            check(view_by["search_direct_other"] <= base_by["search_direct_other"] + 0.06, f"{label}: Search etc. gives Direct up ({base_by['search_direct_other']} -> {view_by['search_direct_other']})")
-            check(all(view_by[g] >= base_by[g] - 0.06 for g in tl.GROUPS if g != "search_direct_other"), f"{label}: the other groups take it ({base_by} -> {view_by})")
+            check(view_by["direct_other"] <= base_by["direct_other"] + 0.06, f"{label}: Other gives Direct up ({base_by['direct_other']} -> {view_by['direct_other']})")
+            check(all(view_by[g] >= base_by[g] - 0.06 for g in tl.GROUPS if g != "direct_other"), f"{label}: the other groups take it ({base_by} -> {view_by})")
         if s.get("targets"):
             t0, t1 = s["targets"], view["targets"]
             for k in ("signup_target", "units_target", "budget_pre", "budget_window", "budget_total", "signup_order_rate", "purchases_per_order"):

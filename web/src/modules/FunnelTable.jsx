@@ -11,7 +11,7 @@ import { fmt, fmtPct } from "../format.mjs";
 import { wordsOf } from "../vocab.mjs";
 import { Bars, Frame } from "../icons.jsx";
 
-const GROUPS = [["aa_email", "AA Email"], ["aa_social", "AA Meta"], ["referral_artist", "Artist"], ["search_direct_other", "Direct etc."], ["paid", "Paid"]];
+const GROUPS = [["aa_email", "AA Email"], ["aa_social", "AA Social"], ["referral_artist", "Artist"], ["organic_search", "Organic Search"], ["direct_other", "Other"], ["paid", "Paid"]];
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const signed = (p) => (p === null ? "–" : `${p >= 0 ? "+" : "−"}${Math.abs(Math.round(p * 100))}%`);
 const rel = (a, b) => (finite(a) && finite(b) && b > 0 ? a / b - 1 : null);

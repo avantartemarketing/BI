@@ -149,7 +149,7 @@ Normalisation rules:
   is read: `redistribute_channel(win, "Direct")` spreads Direct's sessions, entries and units
   over the other channels in proportion to what they did that day (the rule above with Direct
   in Untracked's place), and the benchmark's channel split is read the same way, with the
-  panel's median Direct share of the Search/direct/other group (`direct_share_norm`, the
+  panel's median Direct share of the Other group (`direct_share_norm`, the
   cohort of the untracked norm) leaving the group and landing on every group pro rata
   (`spread_profile`; the headline medians and K do not move). The share is the panel's own
   (`direct_in_group_<metric>`, written by `release_clusters.py` from the same pull as the split
@@ -170,18 +170,44 @@ Normalisation rules:
   every "Total Paid" benchmark is an alias of Paid Social. Model paid = Paid Social; keep Paid
   Search only as a raw actuals bucket.
 
-**Display grouping** (dashboard modules use 4–5 groups):
+**Display grouping** (six groups; keys in `etl/build.py DISPLAY_GROUPS`):
 
-| Display group | Raw channels |
-|---|---|
-| AA Email | AA Email Auto + AA Email Man |
-| AA Meta (organic social) | AA Meta (+ AA X where the sheet groups "AA Socials") |
-| Referral artist | Referral Artist |
-| Search / direct / other | Direct + Organic Search + Other + AA Other + Referral Meta + Referral Other + Referral X |
-| Paid | Paid Social (+ Paid Search actuals) |
+| Display group | Key | Raw channels |
+|---|---|---|
+| AA Email | `aa_email` | AA Email Auto + AA Email Man |
+| AA Social (the brand's own organic social) | `aa_social` | AA Meta + AA X |
+| Referral artist | `referral_artist` | Referral Artist |
+| Organic Search | `organic_search` | Organic Search |
+| Other | `direct_other` | Direct + Other + AA Other + Referral Meta + Referral Other + Referral X |
+| Paid | `paid` | Paid Social (+ Paid Search actuals) |
+
+Until 12 November 2026 there were five: the social group was labelled AA Meta (it has held
+AA X all along, so the name was short of what it counts), and Organic Search and Other were one
+group, Search / direct / other (`search_direct_other`). The split is the owner's: search is
+people looking for the work, and it was hidden behind Direct. What it changed:
+
+- **The panel** (`data/release_clusters.csv`) carries the two groups' sessions, entries, units,
+  shares and conversions in place of the old group's. They were not re-read from the export:
+  `etl/analysis/split_search_group.py` split each launch's stored figures by Organic Search's
+  share of the old group's channels over the launch's own window on the export of 12 November
+  2026, so the two add up to the old group on every row and nothing else on the panel moved
+  (the old group's totals on that export were within a few per cent of the stored ones: median
+  ratio 0.99 on sessions, 0.93 on entries, 1.00 on units). A full re-run of
+  `release_clusters.py` replaces the split with a direct read. Over the 108 draw launches the
+  median launch has 1% of its tracked sessions and 7% of its units on Organic Search, 14% and
+  28% on Other.
+- **Benchmarks and targets** are read per group, and a median of two parts is not the median
+  of their sum, so the other groups' shares move a little on every page.
+- **The Direct switch** spreads Direct out of Other, the group it now sits in.
+- **Saved inputs** that name the old group are read as both: `channels_off` sets both aside,
+  and a `stretch_from` share is split between the two in proportion to their benchmark units
+  (`etl/baskets.py legacy_groups`, `legacy_shares`, mirrored in `shared/benchmarkModel.mjs`
+  and `shared/tlModel.mjs`).
+- **The clustering** (`release_clusters.py`) still reads the two as one session share
+  (`sess_share_search_direct`), as it was fitted.
 
 ⚠ The sheet's own chart grouping drops **AA Other** entirely (targets short by its share);
-include it in Search/direct/other in the rebuild and note the delta vs the sheet.
+include it in Other in the rebuild and note the delta vs the sheet.
 
 ### 1.4 Product (per-release, for multi-work releases)
 From draw entry exports and the sell-through module: `{ product_name, edition, sold, … }`.
@@ -829,7 +855,7 @@ page's window (`pageFunnel.from` to `through`, the sales window to today):
 | side | channels |
 |---|---|
 | paid | Paid Social, Paid Search |
-| organic | the four organic display groups (§1.3), Direct among them whichever way the Overview's Direct switch is set |
+| organic | the five organic display groups (§1.3), Direct among them whichever way the Overview's Direct switch is set |
 
 Untracked is on neither side. **Release page → product page** is `release_product_sessions /
 release_sessions`; **product page → draw entry** is `product_entry_sessions / product_sessions`.
@@ -1098,7 +1124,7 @@ over the `n_priced` members Airtable priced) with `price_p25` / `price_p75`, and
 its sessions and at no more than 0.25 entries or units per session, and `baskets.load_panel`
 empties the rest, as the panel script does from its next run); and the two products
 `units_by_group` = `share_units[g] × units` and `sessions_by_group` = `share_sessions[g] ×
-sessions`. Groups are the five display groups of §1.3. The volumes are the panel window's,
+sessions`. Groups are the six display groups of §1.3. The volumes are the panel window's,
 45 days before the announce to three days after the allocation, where the page counts from
 the private room to two days after the close, so a session benchmark carries some traffic
 from before the private room that the page never counts: a few per cent of sessions on most
@@ -1767,7 +1793,7 @@ table (§2.4), cut to one window of days.
   the release yet, and no order had a purchase event) or Direct with the Direct switch on,
   the fold has no channel to spread over; the window's rows come back as they were, Untracked
   as Other (`keep_units`), so no unit is lost. With drafts out and nothing yet on any channel,
-  the count is added on the channels' sessions (Search / direct / other when there are none)
+  the count is added on the channels' sessions (Other when there are none)
   as a part named Not yet paid.
 - **One sum at close.** The card's Paid is what its rows add up to (the page's units sold,
   or the products' own paid units where those are more, which only a page on the funnel's

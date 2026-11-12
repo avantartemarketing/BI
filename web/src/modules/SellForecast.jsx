@@ -16,7 +16,7 @@ import { HBarChart, COL, sw, lk } from "../charts.jsx";
 import { fmt, fmtPct } from "../format.mjs";
 
 const finite = (v) => v !== null && v !== undefined && Number.isFinite(v);
-const GROUP_NAMES = { aa_email: "AA Email", aa_social: "AA Meta", referral_artist: "Artist", search_direct_other: "Direct etc.", paid: "Paid" };
+const GROUP_NAMES = { aa_email: "AA Email", aa_social: "AA Social", referral_artist: "Artist", organic_search: "Organic Search", direct_other: "Other", paid: "Paid" };
 const short = (s) => (s && s.length > 18 ? s.slice(0, 17) + "…" : s || "");
 
 export default function SellForecast({ snap, horizon = "today" }) {

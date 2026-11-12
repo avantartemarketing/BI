@@ -76,9 +76,44 @@ SAVED_PATH = APP / "baskets.json"
 # it has units (BENCHMARK_SPEC §4.2).
 PEOPLE_PATH = APP / "release_people.csv"
 
-# The five display groups (docs/DATA_MODEL.md §1.3). Order matters: it is the
+# The six display groups (docs/DATA_MODEL.md §1.3). Order matters: it is the
 # order the profile dicts and the per-channel table are written in.
-GROUPS = ["aa_email", "aa_social", "referral_artist", "search_direct_other", "paid"]
+GROUPS = ["aa_email", "aa_social", "referral_artist", "organic_search", "direct_other", "paid"]
+
+# Until 12 November 2026 Organic Search and Other were one group. A saved input
+# that still names it (channels_off, stretch_from) is read as both: off means
+# both off, and a stretch share is split between the two in proportion to
+# their benchmark units (evenly when neither has any).
+LEGACY_GROUP = "search_direct_other"
+LEGACY_PARTS = ["organic_search", "direct_other"]
+
+
+def legacy_groups(raw) -> list:
+    """A list of group keys with the retired group read as its two parts."""
+    out = []
+    for g in raw or []:
+        g = str(g).strip()
+        out.extend(LEGACY_PARTS if g == LEGACY_GROUP else [g])
+    return out
+
+
+def legacy_shares(raw: dict, bm: dict) -> dict:
+    """A share per group with the retired group's share handed to its two
+    parts; a part that already carries a share of its own keeps it."""
+    if LEGACY_GROUP not in raw:
+        return raw
+    out = {k: v for k, v in raw.items() if k != LEGACY_GROUP}
+    try:
+        v = max(float(raw.get(LEGACY_GROUP) or 0.0), 0.0)
+    except (TypeError, ValueError):
+        v = 0.0
+    parts = [g for g in LEGACY_PARTS if out.get(g) in (None, "")]
+    if v > 0 and parts:
+        size = {g: max(float(bm.get(g) or 0.0), 0.0) for g in parts}
+        tot = sum(size.values())
+        for g in parts:
+            out[g] = v * (size[g] / tot if tot > 0 else 1.0 / len(parts))
+    return out
 
 READY_WINDOW_DAYS = 365   # "last 12 months" for the all_12m basket
 MIN_MEMBERS = 1           # an empty basket cannot be used; one launch can (§3.2) - its own
@@ -918,7 +953,7 @@ def channels_off_of(release: dict | None) -> list[str]:
     raw = (release or {}).get("channels_off") or []
     if isinstance(raw, str):
         raw = [raw]
-    wanted = {str(g).strip() for g in raw}
+    wanted = set(legacy_groups(raw))
     return [g for g in GROUPS if g in wanted]
 
 

@@ -102,7 +102,7 @@ is what the funnel export attributes to it. Spread, its sessions, entries and
 units are shared out over the other channels in proportion to what each did
 that day, the way the untracked rows always are, and the benchmark's channel
 split is read the same way (the panel's typical Direct share of the
-Search/direct/other group, spread over every group pro rata). Totals, what has
+Other group, spread over every group pro rata). Totals, what has
 been sold and the paid budget do not move - paid's cost per unit falls by the
 share of Direct it takes on - while the channel cards, the funnel and paid's
 units do, and the plan's pace shifts a little with the channel mix. The Target
@@ -225,13 +225,13 @@ is placed the same way, never taking a channel below zero.
 ### Step 2 - channel groups
 
 ```
-target_units(g)    = benchmark_units(g) + stretch × share(g)    for each of the five groups
+target_units(g)    = benchmark_units(g) + stretch × share(g)    for each of the six groups
                    = benchmark_units(g) × K when the shares are the basket's own
 target_sessions(g) = benchmark_sessions(g) × target_units(g) / benchmark_units(g)
 ```
 
-The five groups are AA Email, AA Meta (the brand's own social), the artist's own
-channels, search / direct / other, and paid. A group switched off under
+The six groups are AA Email, AA Social (the brand's own social: Instagram and X), the
+artist's own channels, organic search, other (direct and the remaining referrals), and paid. A group switched off under
 **Channels in plan** leaves the benchmark first: its medians go to zero, the
 benchmark units drop to what the other groups add up to, and K is the target
 over that smaller number - so the channels in plan carry the whole sellout
@@ -350,11 +350,12 @@ units times those 240, and its target is that times K:
 | Group | Median share of units | Benchmark | Target (× 1.25) |
 | --- | --- | --- | --- |
 | AA Email | 40% | 96 | 120 |
-| AA Meta | 5% | 12 | 15 |
+| AA Social | 5% | 12 | 15 |
 | Artist's own channels | 2.5% | 6 | 7.5 |
-| Search / direct / other | 32.5% | 78 | 97.5 |
+| Organic Search | 7.5% | 18 | 22.5 |
+| Other | 25% | 60 | 75 |
 | Paid | 20% | 48 | 60 |
-| All five | 100% | 240 | 300 |
+| All six | 100% | 240 | 300 |
 
 Inside a group the target is placed on its channels by the order-split
 medians: AA Email's 120 go about 93% to the manual sends and 7% to the

@@ -24,7 +24,7 @@ def close(a, b, tol=1e-6):
 # ---- the redistribution on a small frame
 d0 = date(2026, 9, 1)
 rows = []
-for day, per in ((d0, {"AA Email Man": 100, "Paid Social": 300, "Direct": 40, "Organic Search": 60}),
+for day, per in ((d0, {"AA Email Man": 100, "Paid Social": 300, "Direct": 40, "Referral Other": 60}),
                  (d0 + timedelta(days=1), {"AA Email Man": 10, "Direct": 30}),          # Direct spread over one other channel
                  (d0 + timedelta(days=2), {"Direct": 20})):                              # nothing else that day: pooled
     for ch, ent in per.items():
@@ -41,7 +41,7 @@ day1 = out[out["event_date"] == d0].set_index("channel")["Draw_Entries_Eligible_
 # day 1's Direct lands in proportion to that day's mix; day 3's, with nothing
 # else that day, is pooled and shared on the release's mix (470 entries in all)
 check(close(day1["Paid Social"], 300 + 40 * 300 / 460 + 20 * 300 / 470) and close(day1["AA Email Man"], 100 + 40 * 100 / 460 + 20 * 100 / 470)
-      and close(day1["Organic Search"], 60 + 40 * 60 / 460 + 20 * 60 / 470), f"day 1 shares out Direct in proportion: {day1.to_dict()}")
+      and close(day1["Referral Other"], 60 + 40 * 60 / 460 + 20 * 60 / 470), f"day 1 shares out Direct in proportion: {day1.to_dict()}")
 day2 = out[out["event_date"] == d0 + timedelta(days=1)].set_index("channel")["Draw_Entries_Eligible_Units"]
 check(close(day2["AA Email Man"], 40.0 + 20 * 10 / 470), f"day 2's Direct lands on the one other channel, plus day 3's pooled share: {day2.to_dict()}")
 check(build.redistribute_untracked(df).equals(build.redistribute_channel(df, "Untracked")), "the untracked fold is the same rule")
@@ -52,15 +52,15 @@ check(close(shg["entries"], 90 / 150, 1e-3), f"and of its own group: {shg}")
 
 # ---- the benchmark's split, spread the same way
 profile = {"units": 800.0, "sessions": 40000.0, "entries": 1000.0,
-           "units_by_group": {"aa_email": 300.0, "aa_social": 50.0, "referral_artist": 30.0, "search_direct_other": 220.0, "paid": 200.0},
-           "sessions_by_group": {"aa_email": 10000.0, "aa_social": 2000.0, "referral_artist": 500.0, "search_direct_other": 7500.0, "paid": 20000.0},
+           "units_by_group": {"aa_email": 300.0, "aa_social": 50.0, "referral_artist": 30.0, "organic_search": 0.0, "direct_other": 220.0, "paid": 200.0},
+           "sessions_by_group": {"aa_email": 10000.0, "aa_social": 2000.0, "referral_artist": 500.0, "organic_search": 0.0, "direct_other": 7500.0, "paid": 20000.0},
            "share_units": {}, "share_sessions": {}, "conv": {g: 0.03 for g in baskets.GROUPS}}
 norm = {"units": 0.5, "sessions": 0.6, "entries": 0.55, "n": 20, "recentMonths": 18}
 sp = build.spread_profile(profile, norm)
 ug = sp["units_by_group"]
 check(close(sum(ug.values()), 800.0), f"the median units do not move: {sum(ug.values())}")
 rest = 800.0 - 110.0
-check(close(ug["search_direct_other"], 110.0 + 110.0 * 110.0 / rest) and close(ug["paid"], 200.0 + 110.0 * 200.0 / rest), f"Direct's half of the group lands pro rata: {ug}")
+check(close(ug["direct_other"], 110.0 + 110.0 * 110.0 / rest) and close(ug["paid"], 200.0 + 110.0 * 200.0 / rest), f"Direct's half of the group lands pro rata: {ug}")
 check(close(sum(sp["sessions_by_group"].values()), 40000.0) and sp["conv"] == profile["conv"], "sessions kept, conversion held")
 check(build.spread_profile(profile, None) is profile, "no norm, no change")
 
@@ -142,12 +142,12 @@ check("channels" in var and "funnelByGroup" in var and "paid" in var and "target
       f"the differing blocks ride under the variant: {sorted(var)}")
 check("hero" not in var or abs(var["hero"]["now"] - snap["hero"]["now"]) <= 1, f"the hero's secured units do not move: {var.get('hero', {}).get('now')} vs {snap['hero']['now']}")
 check(all(k not in var for k in ("economics", "untracked", "directShare", "email", "social", "draw", "edition", "id")), "what Direct cannot touch is not in the variant")
-sdo_t = var["groupTargets"]["search_direct_other"]["units"]
-check(sdo_t < snap["groupTargets"]["search_direct_other"]["units"] and close(sum(g["units"] for g in var["groupTargets"].values()), sum(g["units"] for g in snap["groupTargets"].values()), 1e-6),
-      f"the target split moves the same way and still adds up: {sdo_t} vs {snap['groupTargets']['search_direct_other']['units']}")
-sdo = lambda chans: next(c for c in chans if c["key"] == "search_direct_other")
+sdo_t = var["groupTargets"]["direct_other"]["units"]
+check(sdo_t < snap["groupTargets"]["direct_other"]["units"] and close(sum(g["units"] for g in var["groupTargets"].values()), sum(g["units"] for g in snap["groupTargets"].values()), 1e-6),
+      f"the target split moves the same way and still adds up: {sdo_t} vs {snap['groupTargets']['direct_other']['units']}")
+sdo = lambda chans: next(c for c in chans if c["key"] == "direct_other")
 paid = lambda chans: next(c for c in chans if c["key"] == "paid")
-check(sdo(var["channels"])["now"] < sdo(snap["channels"])["now"], f"Search/direct/other loses Direct: {sdo(var['channels'])['now']} < {sdo(snap['channels'])['now']}")
+check(sdo(var["channels"])["now"] < sdo(snap["channels"])["now"], f"Other loses Direct: {sdo(var['channels'])['now']} < {sdo(snap['channels'])['now']}")
 check(paid(var["channels"])["now"] > paid(snap["channels"])["now"], f"paid gains its share: {paid(var['channels'])['now']} > {paid(snap['channels'])['now']}")
 check(var["paid"]["entriesToDate"] > snap["paid"]["entriesToDate"] and var["paid"]["cumRoi"] > snap["paid"]["cumRoi"], "paid ROI reads the entries it is given")
 # each channel is published to a tenth of a unit, so two builds of the same

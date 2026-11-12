@@ -41,10 +41,10 @@ def close(a, b, tol=1e-6):
 
 PROFILE = {
     "units": 400.0, "units_sold": 360.0, "n_short": 2, "sessions": 50000.0, "entries": 380.0, "units_p25": 300.0, "units_p75": 600.0,
-    "units_by_group": {"aa_email": 150.0, "aa_social": 20.0, "referral_artist": 30.0, "search_direct_other": 100.0, "paid": 100.0},
-    "sessions_by_group": {"aa_email": 5000.0, "aa_social": 2000.0, "referral_artist": 3000.0, "search_direct_other": 10000.0, "paid": 30000.0},
-    "share_units": {"aa_email": 0.375, "aa_social": 0.05, "referral_artist": 0.075, "search_direct_other": 0.25, "paid": 0.25},
-    "share_sessions": {"aa_email": 0.1, "aa_social": 0.04, "referral_artist": 0.06, "search_direct_other": 0.2, "paid": 0.6},
+    "units_by_group": {"aa_email": 150.0, "aa_social": 20.0, "referral_artist": 30.0, "organic_search": 20.0, "direct_other": 80.0, "paid": 100.0},
+    "sessions_by_group": {"aa_email": 5000.0, "aa_social": 2000.0, "referral_artist": 3000.0, "organic_search": 2000.0, "direct_other": 8000.0, "paid": 30000.0},
+    "share_units": {"aa_email": 0.375, "aa_social": 0.05, "referral_artist": 0.075, "organic_search": 0.05, "direct_other": 0.2, "paid": 0.25},
+    "share_sessions": {"aa_email": 0.1, "aa_social": 0.04, "referral_artist": 0.06, "organic_search": 0.04, "direct_other": 0.16, "paid": 0.6},
     "conv": {g: 0.01 for g in G}, "private_room_share": 0.2, "units_per_buyer": 1.0, "cost_per_purchase": 150.0, "n_costed": 4,
 }
 REL = {"edition_size": 600.0, "unit_price": 1000.0, "units_per_buyer": 1.0}
@@ -54,9 +54,15 @@ even = build.stretch_weights(REL, PROFILE)
 check(all(close(even[g], PROFILE["units_by_group"][g] / 400.0) for g in G), f"blank: the basket's own shares: {even}")
 check(not build.stretch_typed(REL, PROFILE), "blank is not a placed stretch")
 w = build.stretch_weights(dict(REL, stretch_from={"paid": 80, "aa_email": 20}), PROFILE)
-check(close(w["paid"], 0.8) and close(w["aa_email"], 0.2) and all(w[g] == 0.0 for g in ("aa_social", "referral_artist", "search_direct_other")),
+check(close(w["paid"], 0.8) and close(w["aa_email"], 0.2) and all(w[g] == 0.0 for g in ("aa_social", "referral_artist", "organic_search", "direct_other")),
       f"typed shares are read over the groups and renormalised: {w}")
 check(build.stretch_typed(dict(REL, stretch_from={"paid": 80, "aa_email": 20}), PROFILE), "a share on a group with a benchmark is a placed stretch")
+# a share saved on the group Organic Search and Other were until 12 November 2026
+# is split between them by their benchmark units; off on it is off on both
+wl = build.stretch_weights(dict(REL, stretch_from={"search_direct_other": 50, "paid": 50}), PROFILE)
+check(close(wl["paid"], 0.5) and close(wl["organic_search"], 0.1) and close(wl["direct_other"], 0.4), f"the retired group's share goes to its two parts: {wl}")
+check(build.stretch_typed(dict(REL, stretch_from={"search_direct_other": 1}), PROFILE), "and still counts as a placed stretch")
+check(baskets.channels_off_of({"channels_off": ["search_direct_other", "paid"]}) == ["organic_search", "direct_other", "paid"], "the retired group off is both parts off")
 w1 = build.stretch_weights(dict(REL, stretch_from={"paid": 1}), PROFILE)
 check(close(w1["paid"], 1.0) and sum(w1.values()) == 1.0, f"all from paid: {w1}")
 noneb = dict(PROFILE, units_by_group=dict(PROFILE["units_by_group"], paid=0.0))

@@ -282,8 +282,8 @@ def test_pricing() -> None:
     # flat case)
     norm = {"units": 0.5, "sessions": 0.6, "entries": 0.55, "n": 20, "recentMonths": 18}
     base = dict(three, units=800.0, sessions=40000.0, entries=700.0,
-                units_by_group={"aa_email": 300.0, "aa_social": 50.0, "referral_artist": 30.0, "search_direct_other": 220.0, "paid": 200.0},
-                sessions_by_group={"aa_email": 10000.0, "aa_social": 2000.0, "referral_artist": 500.0, "search_direct_other": 7500.0, "paid": 20000.0},
+                units_by_group={"aa_email": 300.0, "aa_social": 50.0, "referral_artist": 30.0, "organic_search": 0.0, "direct_other": 220.0, "paid": 200.0},
+                sessions_by_group={"aa_email": 10000.0, "aa_social": 2000.0, "referral_artist": 500.0, "organic_search": 0.0, "direct_other": 7500.0, "paid": 20000.0},
                 share_units={}, share_sessions={})
     rel = {"edition_size": 1600.0, "unit_price": 1000.0, "units_per_buyer": 1.0}
     for name, r, prof in (("the basket's curve", rel, base), ("a typed cost per entry", dict(rel, cost_per_entry=120), base),

@@ -256,7 +256,9 @@ check(pt["ifContinued"]["stops"]["rule"] == "sellout" and close(T["hero"]["proje
 # the yield reads that share, the entries needed close the gap over it, the
 # ROI line ahead falls by it, and the schedule's run wastes the rest
 nameY = cfg0["release_name"]
-E1i = int(round(E1))
+# the works together hold at least the release's edition (rounded down, the
+# room on the works stops a fraction short of the release's and no demand fills it)
+E1i = int(-(-E1 // 1))
 feedY = {"draws": [{"id": "dA", "first": announce.isoformat(), "last": None, "entrants": 100, "eligible": 100, "winners": 0, "sold": 0, "open": 100, "wonUnpaid": 0, "purchaseUnits": 0.0},
                    {"id": "dB", "first": announce.isoformat(), "last": None, "entrants": 40, "eligible": 40, "winners": 0, "sold": 0, "open": 40, "wonUnpaid": 0, "purchaseUnits": 0.0}],
          "entrants": 140, "eligible": 140, "allocated": False,

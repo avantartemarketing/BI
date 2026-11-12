@@ -25,9 +25,10 @@ import { GROUPS } from "../../shared/benchmarkModel.mjs";
 /* ---------- words and formats ---------- */
 export const CH = [
   { key: "aa_email", name: "AA Email", color: "#d9a400" },
-  { key: "aa_social", name: "AA Meta", color: "#1877f2" },
+  { key: "aa_social", name: "AA Social", color: "#1877f2" },
   { key: "referral_artist", name: "Artist", color: "#0f7052" },
-  { key: "search_direct_other", name: "Direct etc.", color: "#8a8a8e" },
+  { key: "organic_search", name: "Organic Search", color: "#c2569b" },
+  { key: "direct_other", name: "Other", color: "#8a8a8e" },
   { key: "paid", name: "Paid", color: "#5e6ad2" },
 ];
 export const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
