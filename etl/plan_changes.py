@@ -1,8 +1,10 @@
-"""Plan changes: what to add to, or change in, a live launch's comms plan.
+"""Suggested actions: what to add to, or change in, a live launch's plan.
 
 The card at the top of a live draw launch's Overview (docs/METHODOLOGY.md,
-"Plan changes"). It reads three things the build already has and proposes at
-most a handful of changes, each one a change to the plan as it stands:
+"Suggested actions"; the card was named Plan changes for its first hours, and
+the module, the snapshot's `planChanges` and the route keep that name). It
+reads three things the build already has and proposes at most a handful of
+changes, each one a change to the plan as it stands:
 
   the page    the launch's own snapshot: where it is heading against its
               target, which of traffic and conversion is short on AA Email and
@@ -22,10 +24,16 @@ Sizes are rough and say so: clicks a send of that kind brought on comparable
 launches (the quartiles) times the units this launch has had per email click.
 A change with no record behind it carries no estimate rather than a guess.
 
+The paid budget's change sits in the same list (paid_change): tomorrow's step
+toward the level the Spend levels card recommends, read off that card's own
+block (`paid.levels`) and never worked out a second time here. A raise is
+sized in the units the level adds by the close, a cut or a stop in the spend
+it saves. It stands whether or not the launch is short.
+
 The rules follow the marketing team's lever playbook (the `lever` on each
 change is the playbook's id) and its order of questions: is the launch short
-at all, then where is the gap (reach or conversion), then which lever. Email
-and the artist's channels only: paid has the Spend levels card.
+at all, then where is the gap (reach or conversion), then which lever. Email,
+the artist's channels and the paid budget so far.
 
 Pure functions over plain values, so tests/test_plan_changes.py can hold each
 rule to a hand-built case. build.py calls `attach` as a page is written and
@@ -57,6 +65,7 @@ RESEND_MIN_AGE, RESEND_MAX_AGE = 2, 10   # days since the biggest send for a re-
 RESEND_MIN_DAYS_LEFT = 3
 ARTIST_MIN_EXPECTED = 20   # the artist rules need at least this many expected sessions to judge by
 MAX_SHOWN = 3              # changes shown before the rest fold under "more"
+PAID_HOLD = 0.05           # tomorrow's paid budget within this of today's spend is a hold, and no change
 
 _OPERATIONAL = {"TRNS", "AUT", "FREQ", "TEST"}
 _EARLY = re.compile(r"early\s*access|exclusive\s*access|skip\s*the\s*draw|private\s*room", re.I)
@@ -235,6 +244,105 @@ def _pct(x: float) -> str:
     return f"{round(x * 100)}%"
 
 
+# ---------------------------------------------------------------- paid
+PAID_STOP = {
+    "supply": ("Edition spoken for", "The edition is spoken for without paid, so a further entry buys nothing."),
+    "marginal": ("Next euro under 1.0", "Even the smallest day's next euro returns less than it costs."),
+    "zero_conversion_pause": ("No entries for 3 days", "Three days of spend have bought no entries."),
+}
+
+
+def _money(v: float) -> str:
+    return f"\u20ac{int(round(v)):,}"
+
+
+def _units_at(rows: list[dict], daily: float) -> float | None:
+    """The units at the close at a flat daily spend, read between the Spend
+    levels card's rows (none, half, recommended, double); held at the ends."""
+    pts = sorted((_f(r.get("daily")), _f(r.get("unitsAtClose"))) for r in rows or []
+                 if r.get("daily") is not None and r.get("unitsAtClose") is not None)
+    if len(pts) < 2:
+        return None
+    if daily <= pts[0][0]:
+        return pts[0][1]
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        if daily <= x1:
+            return y0 + (y1 - y0) * ((daily - x0) / (x1 - x0) if x1 > x0 else 0.0)
+    return pts[-1][1]
+
+
+def paid_change(levels: dict | None, as_of: date, close: date, line: dict | None = None) -> dict | None:
+    """The paid budget's change for tomorrow, from the Spend levels card's own
+    reading (`paid.levels`, docs 7): raise or cut the daily budget to
+    tomorrow's step toward the recommended level, start it, or stop. Nothing
+    when the step is within PAID_HOLD of today's spend. A raise is sized in
+    the units it adds by the close at the level it is heading for; a cut or a
+    stop in the spend it saves, with the units it gives up in the reason.
+    `line` names the line of work on a release that runs an ad set per line."""
+    lv = levels or {}
+    if lv.get("recommended") is None or as_of >= close:
+        return None
+    today, level = _f(lv.get("today")), _f(lv.get("recommended"))
+    step = _f(lv.get("tomorrow"), level) if lv.get("tomorrow") is not None else level
+    days_left = max(int(_f(lv.get("daysLeft"), (close - as_of).days)), 0)
+    tag = re.sub(r"[^a-z0-9]+", "_", str(line.get("key") or "").lower()).strip("_") if line else ""
+    key = "paid." + (tag + "." if tag else "")
+    what = (" \u00b7 " + str(line.get("name"))) if line and line.get("name") else ""
+    base = {"channel": "Paid", "lever": "le_paid_sustain_monitor_scale", "date": (as_of + timedelta(days=1)).isoformat(), "units": None}
+    marg = lv.get("marginalToday")
+    if level <= 0:
+        if today <= 0:
+            return None
+        word, why = PAID_STOP.get(lv.get("stop") or "marginal", PAID_STOP["marginal"])
+        return dict(base, key=key + "stop", kind="drop", title="Paid spend" + what, note=word, **{"from": _money(today)},
+                    saves=int(round(today * days_left)), reason=why)
+    if today > 0 and abs(step - today) / today < PAID_HOLD:
+        return None
+    u_to, u_now = _units_at(lv.get("rows"), level), _units_at(lv.get("rows"), today)
+    delta = (u_to - u_now) if u_to is not None and u_now is not None else None
+    heading = f" {_money(level)} a day is the level it is heading for." if abs(level - step) >= 1 else ""
+    if today <= 0:
+        return dict(base, key=f"{key}budget.{int(round(step))}", kind="add", title="Paid spend" + what, to=f"{_money(step)} a day",
+                    units=({"low": int(round(delta)), "high": int(round(delta))} if delta is not None and round(delta) >= 1 else None),
+                    reason=f"Nothing is being spent, and the first euros return more than they cost.{heading}")
+    change = dict(base, key=f"{key}budget.{int(round(step))}", kind="change", title="Paid daily budget" + what, to=_money(step), **{"from": _money(today)})
+    lead = f"The next euro returns {_f(marg):.1f} at today's {_money(today)}" if marg is not None else f"Today's spend is {_money(today)} a day"
+    if step > today:
+        change["units"] = {"low": int(round(delta)), "high": int(round(delta))} if delta is not None and round(delta) >= 1 else None
+        change["reason"] = f"{lead}.{heading}"
+    else:
+        change["saves"] = int(round((today - step) * days_left))
+        lost = f" About {int(round(-delta))} fewer units by the close." if delta is not None and round(-delta) >= 1 else ""
+        change["reason"] = f"{lead}, under the 1.0 it costs.{heading}{lost}"
+    return change
+
+
+def paid_changes(snap: dict, as_of: date, close: date) -> list[dict]:
+    """The page's paid changes: one for the campaign, or one per line of work
+    on a release that runs an ad set per line (each line's own Spend levels,
+    under variants.lines)."""
+    lines = snap.get("lines") or []
+    per_line = (snap.get("variants") or {}).get("lines") or {}
+    out = []
+    if lines and per_line:
+        for ln in lines:
+            lv = ((per_line.get(ln.get("key")) or {}).get("paid") or {}).get("levels")
+            c = paid_change(lv, as_of, close, ln)
+            if c:
+                out.append(c)
+    else:
+        c = paid_change((snap.get("paid") or {}).get("levels"), as_of, close)
+        if c:
+            out.append(c)
+    return out
+
+
+def _ranked(found: list[dict]) -> list[dict]:
+    """Largest first: the changes sized in units, then those that save spend,
+    then the ones with no estimate."""
+    return sorted(found, key=lambda c: (-(c["units"]["high"] if c.get("units") else -1), -(c.get("saves") or 0), c["key"]))
+
+
 # ---------------------------------------------------------------- the rules
 def changes_for(snap: dict, history: dict, plan_rows: list[dict] | None, pool: set | None = None) -> dict | None:
     """The plan changes for one page, or None when the page is not a live,
@@ -265,7 +373,12 @@ def changes_for(snap: dict, history: dict, plan_rows: list[dict] | None, pool: s
         "planToCome": [{"date": r["date"].isoformat(), "channel": CHANNEL_WORD.get(r["channel"], "Other"), "title": r["title"]} for r in to_come],
         "cohort": None, "changes": [], "more": [],
     }
+    # the paid budget's change stands whether or not the launch is short: a
+    # euro that does not pay is cut on a launch that is on course too
+    paid = paid_changes(snap, as_of, close)
     if not short:
+        ranked = _ranked(paid)
+        out["changes"], out["more"] = ranked[:MAX_SHOWN], ranked[MAX_SHOWN:]
         return out
 
     members = [m.get("name") if isinstance(m, dict) else m for m in ((snap.get("benchmark") or {}).get("members") or [])]
@@ -416,8 +529,8 @@ def changes_for(snap: dict, history: dict, plan_rows: list[dict] | None, pool: s
                 "reason": f"{int(round(actual))} visits from the artist's channels so far, about {int(round(expected))} expected by now.",
             })
 
-    found.sort(key=lambda c: (-(c["units"]["high"] if c.get("units") else -1), c["key"]))
-    out["changes"], out["more"] = found[:MAX_SHOWN], found[MAX_SHOWN:]
+    ranked = _ranked(paid + found)
+    out["changes"], out["more"] = ranked[:MAX_SHOWN], ranked[MAX_SHOWN:]
     return out
 
 

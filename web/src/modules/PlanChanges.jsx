@@ -1,8 +1,10 @@
-/* Plan changes: the card at the top of a live draw launch's Overview. Each
- * row is a change to the comms plan as it stands (the build's
- * `planChanges`, etl/plan_changes.py): what kind (add, change, drop), what,
- * the change itself, whose channel, the day and a rough size in units. A row
- * opens to its one-line reason and three presses: Accept, Dismiss, Ask.
+/* Suggested actions: the card at the top of a live draw launch's Overview.
+ * Each row is a change to the plan as it stands (the build's `planChanges`,
+ * etl/plan_changes.py): what kind (add, change, drop), what, the change
+ * itself, whose channel, the day and a rough size - the units it adds, or
+ * for a paid cut the spend it saves. The comms plan's changes and the paid
+ * budget's sit in one list. A row opens to its one-line reason and three
+ * presses: Accept, Dismiss, Ask.
  *
  * Accepting or dismissing is the reader's, kept by the server by release and
  * key (server/planChanges.js) and laid over the build's list here, so a
@@ -45,11 +47,20 @@ export function unitsWord(u) {
 /* the arrow before what a planned item changes to */
 const To = () => <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>;
 
+/* a paid cut's size: the spend it saves to the close, in thousands past one */
+export function savesWord(v) {
+  if (!(v >= 1)) return null;
+  return `Saves €${v >= 1000 ? `${(v / 1000).toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k` : Math.round(v).toLocaleString("en-GB")}`;
+}
+
 const ask = (text) => window.dispatchEvent(new CustomEvent("agent:ask", { detail: { text } }));
-const named = (c) => `${KIND[c.kind] || "Change"} "${c.title}"${c.to ? ` to ${String(c.to).toLowerCase()}` : ""}`;
+const named = (c) => `${KIND[c.kind] || "Change"} "${c.title}"${c.from ? ` from ${c.from}` : ""}${c.to ? ` to ${String(c.to).toLowerCase()}` : ""}`;
+/* what a row changes: the planned item's old value struck through, then what it becomes, or a word on why */
+const Detail = ({ c }) => (c.to ? <>{c.from ? <s>{c.from}</s> : null}<To />{c.to}</> : c.from && c.note ? <><s>{c.from}</s>{c.note}</> : c.note || "");
 
 function Row({ c, asOf, open, onOpen, onSet, artist }) {
-  const size = unitsWord(c.units);
+  const units = unitsWord(c.units);
+  const size = units || savesWord(c.saves);
   return (
     <div className={`pc-row${open ? " open" : ""}`}>
       <div className="pc-line">
@@ -57,20 +68,20 @@ function Row({ c, asOf, open, onOpen, onSet, artist }) {
         <button className="pc-hit" aria-expanded={open} onClick={onOpen}>
           <span className={`pc-kind ${c.kind}`}>{KIND[c.kind] || "Change"}</span>
           <span className="pc-t">{c.title}</span>
-          <span className={`pc-d${c.to ? " to" : ""}`}>{c.to ? <><To />{c.to}</> : c.note || ""}</span>
+          <span className={`pc-d${c.to ? " to" : ""}`}><Detail c={c} /></span>
           <span className="pc-ch">{c.channel}</span>
           <span className="pc-day">{dayWord(c.date, asOf)}</span>
-          <span className={`pc-u${size ? "" : " none"}`}>{size || "No estimate"}</span>
+          <span className={`pc-u${units ? "" : size ? " save" : " none"}`}>{size || "No estimate"}</span>
         </button>
       </div>
       {open && (
         <div className="pc-open">
-          <div className="pc-dd">{[c.to ? `To ${String(c.to).toLowerCase()}` : c.note, c.channel, dayWord(c.date, asOf)].filter(Boolean).join(" · ")}</div>
+          <div className="pc-dd">{[c.to ? `${c.from ? `${c.from} to` : "To"} ${String(c.to).toLowerCase()}` : c.note, c.channel, dayWord(c.date, asOf)].filter(Boolean).join(" · ")}</div>
           <div className="pc-why">{c.reason}</div>
           <div className="pc-acts">
             <button className="sbtn prim" onClick={() => onSet(c, "accepted")}>Accept</button>
             <button className="sbtn" onClick={() => onSet(c, "dismissed")}>Dismiss</button>
-            <button className="sbtn" onClick={() => ask(`Plan change on ${artist}: ${named(c)}. Why, and what is it based on?`)}><AgentIcon w={13} />Ask</button>
+            <button className="sbtn" onClick={() => ask(`Suggested action on ${artist}: ${named(c)}. Why, and what is it based on?`)}><AgentIcon w={13} />Ask</button>
           </div>
         </div>
       )}
@@ -116,13 +127,13 @@ export default function PlanChanges({ snap }) {
   const artist = snap.artist || "this launch";
 
   return (
-    <Card wide className="pcard" aria="Plan changes"
-      title={<>Plan changes<span className="pc-n">{todo.length}</span></>}
-      right={<button className="sbtn" onClick={() => ask(`What changes to the plan do you suggest for ${artist}, and why?`)}><AgentIcon w={13} />Ask</button>}
+    <Card wide className="pcard" aria="Suggested actions"
+      title={<>Suggested actions<span className="pc-n">{todo.length}</span></>}
+      right={<button className="sbtn" onClick={() => ask(`What actions do you suggest for ${artist}, and why?`)}><AgentIcon w={13} />Ask</button>}
       menu={done.length ? [{ label: handled ? "Hide accepted and dismissed" : "Show accepted and dismissed", onClick: () => setHandled(!handled) }] : null}>
       <div className="pc">
         {shown.map((c) => <Row key={c.key} c={c} asOf={pc.asOf} artist={artist} open={open === c.key} onOpen={() => setOpen(open === c.key ? null : c.key)} onSet={save} />)}
-        {!todo.length && <div className="pc-none">{pc.status === "on_course" ? "On course. No changes suggested." : "No changes suggested."}</div>}
+        {!todo.length && <div className="pc-none">{pc.status === "on_course" ? "On course. No actions suggested." : "No actions suggested."}</div>}
         {todo.length > 3 && <button className="pc-fold" onClick={() => setMore(!more)}><Chev />{more ? "Fewer" : `${todo.length - 3} more`}</button>}
         {handled && done.map((c) => {
           const s = states[c.key];

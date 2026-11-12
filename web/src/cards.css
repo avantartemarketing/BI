@@ -92,7 +92,7 @@
 .stt tr.all td { border-top: 1px solid #e2e2e6; border-bottom: 0; font-weight: 500; }
 .stt .sorted { display: inline-flex; align-items: center; gap: 4px; background: #f1f1f3; color: var(--ink); border-radius: 6px; padding: 3px 7px; margin-left: -7px; white-space: nowrap; }
 
-/* the Plan changes card (modules/PlanChanges.jsx): a row per change - the
+/* the Suggested actions card (modules/PlanChanges.jsx): a row per change - the
  * ring that accepts it, its kind, what, the change, whose channel, the day
  * and a size - opening to a reason and its presses; then the handled ones
  * and the plan's own rows, folded */
@@ -115,9 +115,11 @@
 .pc-d { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .pc-d svg { flex: 0 0 auto; color: var(--muted); }
 .pc-d.to { color: var(--ink); }
+.pc-d s { color: var(--muted); text-decoration-color: #b4b4b8; }
 .pc-ch, .pc-day { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .pc-u { font-size: 12px; color: var(--green); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pc-u.none { color: var(--muted); }
+.pc-u.save { color: var(--ink); }
 .pc-open { padding-left: 28px; display: flex; flex-direction: column; gap: 10px; }
 .pc-dd { display: none; font-size: 12px; color: var(--muted); }
 .pc-why { font-size: 12.5px; line-height: 1.5; color: var(--text); }

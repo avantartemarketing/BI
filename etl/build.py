@@ -67,7 +67,7 @@ import pandas as pd
 # execs it), so etl/ is on the path.
 import baskets
 import paid_cost   # the price of a paid entry as the plan reads it: the curve and its backtest (docs step 5)
-import plan_changes   # the Plan changes card: what to add to or change in a live launch's comms plan (docs/METHODOLOGY.md)
+import plan_changes   # the Suggested actions card: what to add to or change in a live launch's comms plan (docs/METHODOLOGY.md)
 import pricing
 import tl   # timed launches: the release model, the panel and the pages (docs/TL_SPEC.md)
 # The per-product sell-through rule (docs §6.3): the entries in hand allocated
@@ -8618,7 +8618,7 @@ def load_plan() -> list[dict]:
     """The comms plan row by row, from the Notion log (server/notion.js writes
     data/notion_plan.csv on every refresh): campaign_code, release_name, date,
     channel (email, brand, artist, partner, other) and title. Optional: with
-    no file the Plan changes card proposes only what it can see without one."""
+    no file the Suggested actions card proposes only what it can see without one."""
     p = DATA / "notion_plan.csv"
     if not p.exists():
         return []
@@ -8630,7 +8630,7 @@ def load_plan() -> list[dict]:
         return []
 
 
-# What the Plan changes card reads, gathered once per build (plan_context):
+# What the Suggested actions card reads, gathered once per build (plan_context):
 # every closed launch's sends on its own clock, the plan's rows and the draw
 # panel's names. Empty until main() fills it, so a page written by a test or a
 # script carries no card.
@@ -8829,7 +8829,7 @@ def main(only: str | None = None):
 
     # every launch's artist and close, for the email windows' same-artist clip
     note_launches(list(INPUTS["releases"]) + list(discovered))
-    # the Plan changes card's record and plan, read once for every page
+    # the Suggested actions card's record and plan, read once for every page
     try:
         PLAN_CTX.clear()
         PLAN_CTX.update(plan_context(emails, list(INPUTS["releases"]) + list(discovered), panel))

@@ -115,7 +115,7 @@ export default function AgentDock({ snap, context }) {
     }
   };
   const stop = () => { if (abort.current) abort.current.abort(); };
-  // a card hands a question over (the Plan changes card's Ask): it is asked here, in the open chat
+  // a card hands a question over (the Suggested actions card's Ask): it is asked here, in the open chat
   const askRef = useRef(null);
   askRef.current = ask;
   useEffect(() => {

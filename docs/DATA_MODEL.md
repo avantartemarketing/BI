@@ -2454,7 +2454,10 @@ Notion log is read live and carries neither (`postsThrough` null).
 
 ---
 
-## 8a. Plan changes (the card at the top of a live draw launch)
+## 8a. Suggested actions (the card at the top of a live draw launch)
+
+The card was named Plan changes for its first hours (12 November 2026); the module, the
+snapshot's `planChanges`, the route and the setting keep that name.
 
 `etl/plan_changes.py`, called from `write_page` for every page (`plan_changes.attach`) with a
 context read once per build (`plan_context`): the record, the plan and the draw panel's names.
@@ -2493,7 +2496,23 @@ or more did it, else off the recent doers whose biggest send was within `LIST_BA
 of the release's own.
 
 **Short.** `hero.projected < hero.target x (1 - SHORT_TOLERANCE)` (0.03). Not short: status
-`on_course`, no changes, no cohort.
+`on_course`, no comms changes, no cohort; the paid change still stands.
+
+**Paid** (`paid_change`, read off `paid.levels`, §7, and never worked out again here): with
+`today` the spend and `step` the block's `tomorrow` (else `recommended`),
+
+| Case | Row |
+|---|---|
+| `recommended <= 0` and `today > 0` | drop, "Paid spend", the stop's word (`PAID_STOP`), `saves = today x daysLeft` |
+| `today <= 0` and a level | add, "Paid spend", to `step` a day |
+| `step` within `PAID_HOLD` (0.05) of `today` | none |
+| `step > today` | change, "Paid daily budget", `from` today `to` step, units = units at the close at `recommended` less at `today`, read between the block's rows (`_units_at`) |
+| `step < today` | change, the same, `saves = (today - step) x daysLeft`, the units given up in the reason |
+
+A release with an ad set per line of work takes one row per line, off
+`variants.lines[key].paid.levels`, keyed and titled with the line. The key carries the step
+(`paid.budget.1500`, `paid.prints.budget.1500`, `paid.stop`), so a tick on one day's change
+does not hide the next day's.
 
 **Reach or conversion** on AA Email, from `funnelByGroup.aa_email`: reach when sessions are
 under the expected and the traffic contribution is at least the conversion one; conversion
@@ -2508,8 +2527,9 @@ rules size at half to all of what the benchmark's artist units still expect.
 
 **The block** (`planChanges`): `asOf`, `daysLeft`, `status`, `planVisible`, `planDone`,
 `planToCome[] {date, channel, title}`, `cohort {n, kind}`, `changes[]` (at most `MAX_SHOWN`,
-3, largest first) and `more[]`, each `{key, kind, title, to | note, channel, date, units
-{low, high} | null, reason, lever}`. `key` is stable per rule (`email.last_chance.widen`,
+3, largest first) and `more[]`, each `{key, kind, title, from, to | note, channel, date, units
+{low, high} | null, saves, reason, lever}`, ranked by units, then by spend saved, then the
+ones with no estimate. `key` is stable per rule (`email.last_chance.widen`,
 `email.last_chance.add`, `email.reminder_48h.add`, `email.announce.resend`, `email.mid.add`,
 `artist.post.unseen`, `artist.last_chance.add`), which is what a tick is saved against.
 `lever` is the id in the marketing team's lever playbook.
@@ -2520,8 +2540,8 @@ before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` a
 draws nothing unless `visible` (`PLAN_CHANGES_AUDIENCE`: `admins` by default, `everyone`,
 `off`).
 
-**Not in it yet:** paid (the Spend levels card answers it), AA Social, uneven works,
-WhatsApp and SMS (no feed), and timed launches.
+**Not in it yet:** AA Social, uneven works, paid creative and audiences, WhatsApp and SMS
+(no feed), and timed launches.
 
 ---
 

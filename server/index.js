@@ -833,7 +833,7 @@ app.post("/api/decisions", (req, res) => {
   res.json(entry);
 });
 
-// ---- the Plan changes card's ticks and dismissals, and who sees the card (server/planChanges.js) ----
+// ---- the Suggested actions card's ticks and dismissals, and who sees the card (server/planChanges.js) ----
 require("./planChanges").install(app, { sessionFrom: auth.sessionFrom, userOf: (email) => users.get(email) });
 
 // ---- sell-through updates to Slack (server/slack.js) ----

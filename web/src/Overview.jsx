@@ -1,5 +1,5 @@
 /* The Overview's cards, in the order the page shows them (11 November 2026;
- * the Plan changes card above them all on a live draw launch, 12 November),
+ * the Suggested actions card above them all on a live draw launch, 12 November),
  * two to a row with the sell-through table and the trajectory across both,
  * in three sections: the outcome (the trajectory; the sell-through table, a
  * row per work today and at the close; the sell-through bars by product and

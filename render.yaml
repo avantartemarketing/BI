@@ -42,7 +42,7 @@ services:
         value: /var/data/decisions.log.jsonl
       - key: LAYOUT_PATH
         value: /var/data/layout.json
-      # The Plan changes card: who sees it (admins while the rules are new; everyone; off).
+      # The Suggested actions card: who sees it (admins while the rules are new; everyone; off).
       # Its ticks are kept beside the decision log, so they need no path of their own.
       - key: PLAN_CHANGES_AUDIENCE
         value: admins

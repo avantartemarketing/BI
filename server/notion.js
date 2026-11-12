@@ -45,7 +45,7 @@ const DATES_OUT = path.join(ROOT, "data", "notion_campaigns.csv");
 /* The plan itself (data/notion_plan.csv): every matched row as it stands, one
  * line each, with its day, whose channel it is (email, brand, artist, partner,
  * other) and its title. The counts above say how much was posted; this says
- * what is still to come, which is what the Plan changes card reads
+ * what is still to come, which is what the Suggested actions card reads
  * (etl/plan_changes.py): a change is proposed against the plan, so the plan
  * has to be on file row by row. */
 const PLAN_OUT = path.join(ROOT, "data", "notion_plan.csv");

@@ -1,4 +1,6 @@
-/* The Plan changes card's ticks and dismissals (web/src/modules/PlanChanges.jsx).
+/* The Suggested actions card's ticks and dismissals (web/src/modules/PlanChanges.jsx;
+ * the card was named Plan changes for its first hours, and the files, the
+ * route and the setting keep that name).
  *
  * The build proposes changes to a live launch's comms plan on its page
  * (etl/plan_changes.py, `planChanges` on the snapshot). What a person does
@@ -83,7 +85,7 @@ function install(app, { sessionFrom, userOf }) {
   });
   app.post("/api/releases/:id/plan-changes", (req, res) => {
     const { session, user } = who(req);
-    if (!visibleTo(user)) return res.status(403).json({ error: "The Plan changes card is not open to this account." });
+    if (!visibleTo(user)) return res.status(403).json({ error: "The Suggested actions card is not open to this account." });
     const { key, state } = req.body || {};
     try {
       res.json({ states: setState(req.params.id, key, state === undefined ? null : state, session && session.email) });

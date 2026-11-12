@@ -16,7 +16,7 @@ data/artist_posts.csv
 data/notion_posts.csv
 # the campaign dates and marketing lead the same pull writes (server/notion.js), rebuilt on every refresh
 data/notion_campaigns.csv
-# the plan row by row, from the same pull, and the ticks and dismissals on the Plan changes card (server/planChanges.js)
+# the plan row by row, from the same pull, and the ticks and dismissals on the Suggested actions card (server/planChanges.js)
 data/notion_plan.csv
 data/plan_changes.json
 data/app/derived/

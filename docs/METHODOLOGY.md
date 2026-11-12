@@ -940,20 +940,20 @@ line read only its share of them, and its paid ROI ahead started that share
 below the ROI just measured (Ai Weiwei's prints a third of it, with a spend
 plan sized to match).
 
-## 7d. Plan changes
+## 7d. Suggested actions
 
-A live draw launch that is heading short of its target gets a card at the top
-of its Overview: **Plan changes**. Each row is one change to the comms plan as
-it stands, never a fresh to-do list:
+A live draw launch gets a card at the top of its Overview: **Suggested
+actions**. Each row is one change to the plan as it stands, comms and paid in
+one list, never a fresh to-do list:
 
 - **Add**: something the plan does not hold (a mid-campaign email, a 48-hour
   reminder, an artist post that was planned and brought nobody).
 - **Change**: a planned item done differently (the last chance email sent to
-  the full list).
-- **Drop**: reserved; no rule proposes one yet.
+  the full list, the paid daily budget raised or cut).
+- **Drop**: something stopped (paid, when the next euro no longer pays).
 
-A launch on course for its target gets no changes: the extra sends are better
-kept for a launch that needs them.
+A launch on course for its target gets no comms changes: the extra sends are
+better kept for a launch that needs them. Its paid change still shows.
 
 **What it reads.** Three things: the launch's own page (where it is heading,
 and whether AA Email is short on visits or on visits turning into entries),
@@ -970,8 +970,16 @@ a conversion gap gets a conversion lever (the 48-hour reminder, the deep-dive
 email). A change is proposed only when at least two comparable launches did
 the same thing, or at least one recent launch in ten.
 
-**The rules today** (email and the artist's channels; paid has the Spend
-levels card):
+**Paid.** The paid row is the Spend levels card's own recommendation, said as
+an action: tomorrow's daily budget against today's spend (a step toward the
+level the card recommends), paid started where nothing is being spent, or
+paid stopped with the card's reason. Within 5% of today's spend is a hold and
+shows no row. A raise is sized in the units the recommended level adds by the
+close; a cut or a stop shows the spend it saves to the close, with the units
+it gives up in the reason. A release that runs an ad set per line of work
+gets one paid row per line.
+
+**The comms rules today** (email and the artist's channels):
 
 | Change | Proposed when |
 |---|---|
@@ -990,15 +998,17 @@ card proposes only what it can see from the sends.
 send of that kind brought on comparable launches (their lower and upper
 quartiles, or the two readings when only two launches did it) times the units
 this launch has had per email click so far, and never more than the launch
-has left to sell against its target. Clicks follow the list a send goes to,
+has left to sell against its target (a paid raise's size is one figure, the
+Spend levels card's own). Clicks follow the list a send goes to,
 so when the recent launches stand in, only those whose biggest send was
 between half and twice this launch's are read. A change with too little
 behind it says "No estimate" rather than guess.
 
 **Accept and Dismiss** are a record on the dashboard (who, and when), undone
-from the card's menu. Nothing is written to the plan in Notion. A change
-stops being proposed by itself once the send appears in HubSpot or the row
-appears in the plan. **Ask** hands the question to the Agent.
+from the card's menu. Nothing is written to the plan in Notion or to Meta. A
+change stops being proposed by itself once the send appears in HubSpot, the
+row appears in the plan, or the spend moves. **Ask** hands the question to
+the Agent.
 
 The card is shown to admins only while the rules are new.
 

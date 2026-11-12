@@ -1,4 +1,4 @@
-/* The Plan changes card's server side end to end (server/planChanges.js): an
+/* The Suggested actions card's server side end to end (server/planChanges.js): an
  * admin sees the card and a change they accept, dismiss or undo is kept by
  * release and key with who and when (the name before the @, never the
  * address); a body that is not a change is refused; and while the audience is

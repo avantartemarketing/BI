@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The Plan changes card's rules, each held to a hand-built launch.
+"""The Suggested actions card's rules, each held to a hand-built launch.
 
 etl/plan_changes.py reads a live draw launch's page, the plan's rows and what
 comparable launches sent, and proposes changes to the plan (docs/METHODOLOGY.md,
@@ -8,7 +8,8 @@ course getting no changes, the last chance email going wide on a reach gap
 with its size worked by hand, a plan that logs its emails and holds no last
 chance one, an email already planned not being proposed again, the artist's
 post that was planned and brought nobody, a thin record standing down, and
-the sends read on a campaign's own clock. Run:
+the sends read on a campaign's own clock, and the paid budget's change read
+off the Spend levels card's own figures. Run:
   python3 tests/test_plan_changes.py
 """
 from __future__ import annotations
@@ -230,6 +231,57 @@ def test_sends_on_the_clock() -> None:
     print("sends on the clock: ok")
 
 
+def levels(today, recommended, tomorrow=None, stop=None, marginal=None, days=5):
+    """The Spend levels card's block: what each flat daily spend ends on."""
+    return {"today": today, "recommended": recommended, "tomorrow": tomorrow, "stop": stop, "marginalToday": marginal, "daysLeft": days,
+            "rows": [{"key": "none", "daily": 0.0, "unitsAtClose": 100.0}, {"key": "half", "daily": 1000.0, "unitsAtClose": 130.0},
+                     {"key": "recommended", "daily": 2000.0, "unitsAtClose": 150.0}, {"key": "double", "daily": 4000.0, "unitsAtClose": 170.0}]}
+
+
+def test_paid() -> None:
+    day, close = D(2026, 9, 20), CLOSE
+    # a raise: tomorrow's step toward the level, sized in the units the level adds by the close
+    c = P.paid_change(levels(1000.0, 2000.0, 1500.0, marginal=1.6), day, close)
+    assert (c["key"], c["kind"], c["title"], c["from"], c["to"], c["channel"], c["date"]) == \
+        ("paid.budget.1500", "change", "Paid daily budget", "\u20ac1,000", "\u20ac1,500", "Paid", "2026-09-21"), c
+    assert c["units"] == {"low": 20, "high": 20} and "saves" not in c, c
+    assert c["reason"] == "The next euro returns 1.6 at today's \u20ac1,000. \u20ac2,000 a day is the level it is heading for.", c["reason"]
+    # within five per cent of today's spend is a hold, and no change
+    assert P.paid_change(levels(1000.0, 2000.0, 1040.0), day, close) is None
+    # a cut: sized in the spend it saves to the close, the units it gives up said in the reason
+    c = P.paid_change(levels(2000.0, 1000.0, 1500.0, marginal=0.7), day, close)
+    assert (c["kind"], c["from"], c["to"], c["units"], c["saves"]) == ("change", "\u20ac2,000", "\u20ac1,500", None, 2500), c
+    assert c["reason"] == ("The next euro returns 0.7 at today's \u20ac2,000, under the 1.0 it costs. "
+                           "\u20ac1,000 a day is the level it is heading for. About 20 fewer units by the close."), c["reason"]
+    # a stop is the one drop: the reason the Spend levels card gives, and what it saves
+    c = P.paid_change(levels(900.0, 0.0, stop="supply", days=4), day, close)
+    assert (c["key"], c["kind"], c["title"], c["note"], c["from"], c["saves"]) == ("paid.stop", "drop", "Paid spend", "Edition spoken for", "\u20ac900", 3600), c
+    assert P.paid_change(levels(0.0, 0.0, stop="marginal"), day, close) is None, "nothing to stop when nothing is spent"
+    # nothing spent and a level worth spending at: paid is added
+    c = P.paid_change(levels(0.0, 800.0, 400.0), day, close)
+    assert (c["key"], c["kind"], c["title"], c["to"]) == ("paid.budget.400", "add", "Paid spend", "\u20ac400 a day"), c
+    # no reading, or the close itself: nothing
+    assert P.paid_change(None, day, close) is None and P.paid_change(levels(1000.0, 2000.0, 1500.0), close, close) is None
+    # a launch on course still takes its paid change; a short one takes it beside the email's, largest first
+    on = page(projected=590.0, as_of=day)
+    on["paid"] = {"levels": levels(2000.0, 1000.0, 1500.0, marginal=0.7)}
+    block = P.changes_for(on, history(), [])
+    assert block["status"] == "on_course" and keys(block) == ["paid.budget.1500"], block
+    short = page(as_of=D(2026, 9, 23))
+    short["paid"] = {"levels": levels(1000.0, 2000.0, 1500.0, marginal=1.6, days=2)}
+    assert keys(P.changes_for(short, history(), [])) == ["email.last_chance.widen", "paid.budget.1500"]
+    # an ad set per line of work: one change per line, off the line's own levels
+    two = page(projected=590.0, as_of=day)
+    two["lines"] = [{"key": "Prints", "name": "Prints"}, {"key": "toy-bricks", "name": "Toy bricks"}]
+    two["variants"] = {"lines": {"Prints": {"paid": {"levels": levels(1000.0, 2000.0, 1500.0)}},
+                                 "toy-bricks": {"paid": {"levels": levels(900.0, 0.0, stop="marginal")}}}}
+    two["paid"] = {"levels": levels(1900.0, 2000.0, 3000.0)}
+    got = P.changes_for(two, history(), [])["changes"]
+    assert [(c["key"], c["title"]) for c in got] == [("paid.prints.budget.1500", "Paid daily budget \u00b7 Prints"),
+                                                     ("paid.toy_bricks.stop", "Paid spend \u00b7 Toy bricks")], got
+    print("paid: ok")
+
+
 def test_attach() -> None:
     snap = page()
     P.attach(snap, None)
@@ -252,4 +304,5 @@ if __name__ == "__main__":
     test_artist()
     test_a_thin_record_stands_down()
     test_sends_on_the_clock()
+    test_paid()
     test_attach()
