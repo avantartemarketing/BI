@@ -736,7 +736,12 @@ projection, the Paid ROI chart's line and the sell-through at close all run
 at this level. Every step toward the level is held to 30%, the last included
 (until then a step within a tenth of the level jumped to it).
 
-**The spend levels** (the Spend levels card, `paid.levels`). The card leads with
+**The spend levels** (the Spend levels card, `paid.levels`). The card is on every
+draw launch with a paid block (12 November 2026): where the build has no level to
+give (the last three full days bought no entries, so there is no price of an
+entry to set one from; the release has closed or is on its last day; no targets)
+it stays and says why, read from the snapshot's own days. Until then it was left
+out of the page. With a level, the card leads with
 tomorrow's daily budget (the first paced step), the level it is heading for and
 the chance that level loses money (the share of runs in which the spend still to
 come earns less than AA's share of it); its chart is the profit from the spend

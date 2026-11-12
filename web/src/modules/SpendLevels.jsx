@@ -11,12 +11,16 @@
  * is on the aside's hover.
  *
  * When paid stops there is no curve: the stop, its reason and two rows.
+ * When the build has no level to give (no entries in the last three days,
+ * a closed release, no targets) the card stays and says why (noLevels.mjs,
+ * 12 November 2026); until then it was left out of the page.
  * A snapshot built before the range was carried draws the card as it was
  * (the point estimate's peak, the elasticity's band, the four-row table). */
 import React from "react";
 import { Card, Head, Loz, useBoxSize } from "../ui.jsx";
 import { LineChart, Keys, niceAxis, kfmt, COL, lk, sw } from "../charts.jsx";
 import { fmt, fmtPct, fmtMoney, MINUS } from "../format.mjs";
+import { noLevels } from "./noLevels.mjs";
 import "../cards.css";
 
 const has = (v) => v !== null && v !== undefined && Number.isFinite(v);
@@ -89,7 +93,18 @@ export default function SpendLevels({ snap }) {
   const curve = lv && Array.isArray(lv.curve) ? lv.curve.filter((p) => p && has(p.daily) && has(p.profit)) : [];
   // paid stops (the level is nothing): no curve to draw, the stop and its reason instead
   const stop = !!lv && has(lv.recommended) && lv.recommended <= 0;
-  if (!lv || !has(lv.recommended) || (!stop && curve.length < 2)) return <Card title={title}><div className="empty-state">No spend levels yet: they need a paid campaign with spend and a profit split</div></Card>;
+  // no level from the build: the card stays, and says why there is none
+  if (!lv || !has(lv.recommended) || (!stop && curve.length < 2)) {
+    const none = noLevels(snap);
+    return (
+      <Card title={title} aria={title}>
+        <Head v={none.v} u={none.u} aside={none.aside}>
+          {none.loz && <Loz kind={none.kind} tip={none.why}>{none.loz}</Loz>}
+        </Head>
+        <div className="nbox">{none.why}</div>
+      </Card>
+    );
+  }
   const W = Math.max(240, Math.round(boxW || 520));
   const rows = Array.isArray(lv.rows) ? lv.rows.filter((r) => r && has(r.daily)) : [];
   const rec = lv.recommended, today = has(lv.today) ? lv.today : null;
