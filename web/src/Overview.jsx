@@ -51,6 +51,7 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
   return (
     <div className="body">
       <div className="grid2">
+        <Sect>Sales</Sect>
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
