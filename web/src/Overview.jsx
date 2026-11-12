@@ -2,7 +2,8 @@
  * the Plan changes card above them all on a live draw launch, 12 November),
  * two to a row with the sell-through table and the trajectory across both,
  * in three sections: the outcome (the trajectory; the sell-through table, a
- * row per work today and at the close; the sell-through bars by product and
+ * row per work today and at the close, on a timed launch before its window
+ * the forecast table in its place; the sell-through bars by product and
  * at close; framing and where the orders ship), the channels and the funnel (channels against
  * targets and the gap; the funnel by channel and the email funnel) and paid
  * (ROI and the spend levels; on a release selling lines of work, the All
@@ -26,6 +27,7 @@ import EmailFunnel from "./modules/EmailFunnel.jsx";
 import FunnelTable from "./modules/FunnelTable.jsx";
 import Geo from "./modules/Geo.jsx";
 import SellForecast from "./modules/SellForecast.jsx";
+import TLForecastTable from "./modules/TLForecastTable.jsx";
 import FramingForecast from "./modules/FramingForecast.jsx";
 import { TLSignupsOutcome } from "./TLPage.jsx";
 import Upcoming from "./modules/Upcoming.jsx";
@@ -57,6 +59,7 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
         {!isTL && !snap.line && snap.planChanges && <PlanChanges snap={snap} />}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
+        {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
         {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
         {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}

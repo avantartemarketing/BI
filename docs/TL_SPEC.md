@@ -245,6 +245,28 @@ page's horizon with the band's ends beside it, and the foot says how the works w
 on 4 October 2026: a fifth of the signup effect on the non-signup half, works split by signup
 interest, the page's horizon, a point with its range.
 
+## 4c. The forecast as a table (pre-window)
+
+Under the signup trajectory and above the forecast card, across the page: the LE page's
+sell-through table in a timed launch's terms (12 November 2026, `web/src/modules/TLForecastTable.jsx`,
+rows from `web/src/tlForecastRows.mjs`). A row per work and the release as the last row where
+there is more than one work. It adds no model: every figure is one the page already carries.
+
+| Column | Reads |
+|---|---|
+| Signups | the hero's signups to date |
+| Signup target to date, vs target | the target's pace by today (`hero.expectedToday`) and the gap to it |
+| Forecast signups | the signups projected to the open (`sellForecast.open.signups`) |
+| Forecast sales from signups | the signup-led units at the open (§4b) |
+| Forecast non-signup sales | the non-signup units at the open (§4b) |
+| Forecast total sales | their sum, the band's ends on hover |
+| Target | the units target |
+| Forecast | total sales over the units target: a timed launch has no edition to sell through, so its target is the measure |
+
+A work's signups are the ones keyed to it by product page plus its share of the rest; under the
+keyed minimum, its share of the units target. Its target to date is the release's on its share of
+the units target. The works add up to the release's row (`tests/tl_forecast_rows.mjs`).
+
 ## 5. In-window state: sales
 
 An entirely separate page state, not a toggle on the pre-window one. **Headline: units sold
