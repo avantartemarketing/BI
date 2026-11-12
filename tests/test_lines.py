@@ -256,7 +256,7 @@ for dd in draws:
             dd["paidBy"] += [[day, f"{camp}_Prints", 0.25, a / 4, b_ / 4, c / 4], [day, f"{camp}_Prints & more", 0.25, a / 4, b_ / 4, c / 4],
                              [day, f"{camp}_Bricks", 0.5, a / 2, b_ / 2, c / 2]]
         else:
-            dd["paidBy"].append([day, f"{camp}_Prints & more", 2, a, b_, c])
+            dd["paidBy"].append([day, f"{camp}_Prints & more", 1, a, b_, c])
 ads = build.with_direct_spread(build.build_release, relA, at, spendA, emails, content, curves, TODAY,
                                build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
 PA, BA = {**ads, **ads["variants"]["lines"]["Lego2026"]}, {**ads, **ads["variants"]["lines"]["LegoMF"]}
@@ -279,6 +279,16 @@ check(close(PA["paid"]["spendToDate"], P["paid"]["spendToDate"]) and PA["hero"] 
       and PA["funnelByGroup"].get("paid") == P["funnelByGroup"].get("paid") and [c["now"] for c in PA["channels"]] == [c["now"] for c in P["channels"]],
       "the spend, the works' units and the channels card's paid entries are as they were")
 check(close(ads["paid"]["cumRoi"], snap["paid"]["cumRoi"], 1e-6), "the combined page is not moved by the ad sets")
+# the table under a line's paid cards: what its ad sets drove on each line, by day
+ae = PA["paid"]["adsetEntries"]
+tot = lambda key, col: sum(x[col] for x in ae["daily"] if x["line"] == key)
+check([l["key"] for l in ae["lines"]] == ["Lego2026", "LegoMF"] and ae["lines"][0]["own"] and ae["lines"][0]["name"] == "Prints",
+      f"the table lists the lines the ad set drove, its own first: {ae['lines']}")
+check(close(tot("LegoMF", "entries"), moved, 1e-6) and close(tot("Lego2026", "entries") + tot("LegoMF", "entries"), PA["paid"]["entriesToDate"], 1e-6),
+      f"its entries by line add up to the ad set's: {tot('Lego2026', 'entries')} + {tot('LegoMF', 'entries')} vs {PA['paid']['entriesToDate']}")
+units = sum(x["paid"] + x["preorders"] * pre_rate + x["draws"] * ent_rate for x in ae["daily"])
+check(close(units, ca, 1e-3), f"and its assumed units are the units the ROI is read on: {units} vs {ca}")
+check("adsetEntries" not in snap["paid"] and "adsetEntries" not in P["paid"], "no table on the combined page or without the feed's utm")
 # the combined page prices paid's units as the works they were entered for
 # (each draw's paid conversions), not as the plan's mix of target units
 ppu_c = (exp_p * 1000.0 + exp_b * 150.0) / (exp_p + exp_b)

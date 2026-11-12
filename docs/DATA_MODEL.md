@@ -1481,7 +1481,11 @@ line's draws, handed the profit the ad sets made per converting unit on those dr
 returned. The entries the paid block prints (`paid.daily[].entries`, `entriesToDate`,
 `entriesProjected`) are the ad sets' too since 12 November 2026 (`line_paid_entries_delta`:
 each `paidBy` row's entry count); the rules, the cost fit and the path still read the
-entries of the line's own draws. The combined page of such a release is not moved by the ad sets (every paid entry
+entries of the line's own draws. `paid.adsetEntries` (`adset_entries`) is the Entries by line
+table under the line's paid cards: `lines[]` (`key`, `name`, `own`) and `daily[]` (`date`,
+`line`, `entries`, `paid`, `preorders`, `draws`), what the line's ad sets drove on each line
+of the release; the card adds the waiting units at `preorderRate` and the entry rate and
+sums the days its switch picks (all, or the last seven, three or one full days). The combined page of such a release is not moved by the ad sets (every paid entry
 is its campaign's), but its paid profit per unit is weighted the same way since the same day:
 every work's own by the paid-social converting units on its draw (`with_paid_profit`, from
 each draw's `conv`; `aa_ppu_paid`, `artist_ppu_paid`, and `paid.frameUpliftPerUnit` for the

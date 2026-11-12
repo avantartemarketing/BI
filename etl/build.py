@@ -1153,10 +1153,17 @@ def line_paid(draws: dict, mine: list, titles: dict, release: dict) -> dict | No
     camp = release.get("campaign_name")
     camps = [c for c in (release.get("campaign_names") or ([camp] if camp else [])) if c]
     owned, on_draws = [], []
+    # the line each draw's work is on, for the card that says what an ad set
+    # drives on each line (adset_entries)
+    line_names = [(ln.get("key"), [str(n) for n in (ln.get("productNames") or []) if n]) for ln in (release.get("lines") or [])]
+
+    def line_of(title: str):
+        return next((k for k, names in line_names if any(sellthrough._names_title(n, title) for n in names)), None)
     for did, d in draws.items():
         here = did in mine
+        on_line = line_of(titles.get(did) or "") or (release.get("line") if here else None)
         for day, label, n, claimed, pend_pre, pend_draw in d["paidBy"]:
-            rec = {"event_date": date.fromisoformat(str(day)[:10]), "title": titles.get(did) or did, "rows": float(n),
+            rec = {"event_date": date.fromisoformat(str(day)[:10]), "title": titles.get(did) or did, "rows": float(n), "line": on_line,
                    "claimed": float(claimed), "pend_pre": float(pend_pre), "pend_draw": float(pend_draw)}
             if here:
                 on_draws.append(rec)
@@ -1184,6 +1191,30 @@ def line_paid_delta(paid: dict | None, release: dict) -> pd.Series | None:
         for r in rows:
             acc[r["event_date"]] = acc.get(r["event_date"], 0.0) + sign * _paid_conv(r, release)
     return pd.Series(acc, dtype=float) if acc else None
+
+
+def adset_entries(paid: dict | None, release: dict) -> dict | None:
+    """What a line's ad sets drive on each line of the release, day by day
+    (12 November 2026): the entries their clicks made, the units those
+    entrants have paid for, and the entry units still waiting as pre-orders
+    and as plain draw entries (line_paid `owned`), for the table under the
+    line's paid cards. The reader adds the waiting units at the rates the
+    paid block carries. None when the line is not read by its ad sets."""
+    if not paid:
+        return None
+    names = {ln.get("key"): ln.get("name") or ln.get("key") for ln in (release.get("lines") or [])}
+    acc: dict = {}
+    for r in paid["owned"]:
+        k = (r["event_date"].isoformat(), r.get("line") or "_other")
+        a = acc.setdefault(k, [0.0, 0.0, 0.0, 0.0])
+        a[0] += r["rows"]; a[1] += r["claimed"]; a[2] += r["pend_pre"]; a[3] += r["pend_draw"]
+    keys = [k for k in names if any(kk[1] == k for kk in acc)] + (["_other"] if any(kk[1] == "_other" for kk in acc) else [])
+    # the line's own first
+    keys.sort(key=lambda k: k != release.get("line"))
+    return {"lines": [{"key": k, "name": names.get(k) or "Other works", "own": k == release.get("line")} for k in keys],
+            "daily": [{"date": d, "line": ln, "entries": round(v[0], 2), "paid": round(v[1], 2),
+                       "preorders": round(v[2], 2), "draws": round(v[3], 2)}
+                      for (d, ln), v in sorted(acc.items())]}
 
 
 def line_paid_entries_delta(paid: dict | None) -> pd.Series | None:
@@ -7641,6 +7672,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         # the framing uplift inside profitPerUnitAA where it is not the
         # economics block's (with_paid_profit), for the card's working
         **({"frameUpliftPerUnit": round(float(release["frame_uplift_paid"]), 2)} if release.get("frame_uplift_paid") is not None else {}),
+        # what the line's ad sets drive on each line of the release, by day
+        # (adset_entries); only on a line read by its ad sets
+        **({"adsetEntries": adset_entries(line_info.get("paidAdsets"), release)} if (line_info or {}).get("paidAdsets") else {}),
         "profitPerUnitAA": round(ppu_aa_read, 2),
         "profitPerUnitArtist": round(ppu_artist_read, 2),
         "aaBudgetShare": aa_budget_share,
