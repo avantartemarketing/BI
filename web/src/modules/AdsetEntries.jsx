@@ -15,7 +15,12 @@ const has = (v) => v !== null && v !== undefined && Number.isFinite(v);
 const PERIODS = [["all", "All", "The whole campaign so far, today included"], ["7d", "7d", "The last seven full days"],
   ["3d", "3d", "The last three full days"], ["1d", "1d", "The last full day"]];
 const DAYS = { "7d": 7, "3d": 3, "1d": 1 };
-const num = (v) => (has(v) && Math.abs(v) > 1e-9 ? fmt(v, Math.abs(v - Math.round(v)) < 0.05 ? 0 : 1) : "–");
+// whole numbers (13 November 2026): a buyer's pieces are shared over the works
+// they entered and Direct's entries over the channels, so a cell is rarely a
+// whole number underneath; the hover gives the figure as counted
+const num = (v) => (has(v) && Math.abs(v) >= 0.5 ? fmt(v, 0) : "–");
+const exact = (v) => (has(v) && Math.abs(v - Math.round(v)) >= 0.05 ? fmt(v, 1) : undefined);
+const Cell = ({ v }) => <td title={exact(v)}>{num(v)}</td>;
 
 export default function AdsetEntries({ snap }) {
   const [period, setPeriod] = useState("all");
@@ -53,7 +58,7 @@ export default function AdsetEntries({ snap }) {
         <table>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", paddingLeft: 0 }} title={adset ? `What the clicks on ${adset} went on to enter` : undefined}>Entered for</th>
+              <th style={{ textAlign: "left", paddingLeft: 0 }} title={adset ? `What the clicks on ${adset} went on to enter${ae.direct ? ", with the share of Direct's entries the Direct switch gives them" : ""}` : undefined}>Entered for</th>
               <th title="Draw entries made, one for each work entered">Entries</th>
               <th title="Units those entrants have paid for">Paid</th>
               <th title={`Pre-order entries still waiting, counted at ${fmtPct(pre, 0)}`}>Pre-orders</th>
@@ -65,13 +70,13 @@ export default function AdsetEntries({ snap }) {
             {rows.map((r) => (
               <tr key={r.key}>
                 <td style={{ textAlign: "left" }}>{r.name}</td>
-                <td>{num(r.entries)}</td><td>{num(r.paid)}</td><td>{num(r.preorders)}</td><td>{num(r.draws)}</td><td>{num(r.units)}</td>
+                <Cell v={r.entries} /><Cell v={r.paid} /><Cell v={r.preorders} /><Cell v={r.draws} /><Cell v={r.units} />
               </tr>
             ))}
             {rows.length > 1 && (
               <tr className="recrow">
                 <td style={{ textAlign: "left" }}>Total</td>
-                <td>{num(tot.entries)}</td><td>{num(tot.paid)}</td><td>{num(tot.preorders)}</td><td>{num(tot.draws)}</td><td>{num(tot.units)}</td>
+                <Cell v={tot.entries} /><Cell v={tot.paid} /><Cell v={tot.preorders} /><Cell v={tot.draws} /><Cell v={tot.units} />
               </tr>
             )}
           </tbody>
