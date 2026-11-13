@@ -12,7 +12,7 @@
  * are. Hover is a row of invisible hit boxes over the plot; the readout is a
  * small panel inside the plot, to the right of the hover line, or to its left
  * past the middle. */
-import React, { useState } from "react";
+import React, { useId, useState } from "react";
 import { useBoxSize } from "./ui.jsx";
 
 export const COL = {
@@ -31,7 +31,7 @@ const dashStyle = (da) => (da === "1 4" ? "dotted" : da && da !== "none" ? "dash
 
 const P2 = (v, t) => ((v / t) * 100).toFixed(3) + "%";
 const pathStyle = (p) => ({
-  d: p.d || "M0 0", stroke: p.st || "none", fill: p.fl || "none", fillOpacity: p.fo == null ? 1 : p.fo,
+  d: p.d || "M0 0", stroke: p.st || "none", fill: p.grad ? `url(#${p.grad.id})` : p.fl || "none", fillOpacity: p.fo == null ? 1 : p.fo,
   strokeWidth: p.sw || 0, strokeDasharray: p.da || "none",
 });
 const box = (o, x, y, w, h) => ({ position: "absolute", left: P2(x, o.W), top: P2(y, o.H), width: P2(w, o.W), height: P2(h, o.H) });
@@ -50,6 +50,33 @@ const line = (pts) => {
     d += (on ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
     on = true;
   });
+  return d;
+};
+/* the runs of points between gaps */
+const runs = (pts) => {
+  const out = [];
+  let cur = null;
+  pts.forEach((p) => { if (p == null) { cur = null; return; } if (!cur) { cur = []; out.push(cur); } cur.push(p); });
+  return out;
+};
+/* a smooth curve through every point of a run that never rises above or dips
+ * below the points either side of it (a monotone cubic), so the curve shows
+ * no value the data does not hold */
+const smoothRun = (r) => {
+  const n = r.length;
+  if (n < 3) return r.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("");
+  const dx = [], sl = [];
+  for (let i = 0; i < n - 1; i++) { dx.push(r[i + 1][0] - r[i][0]); sl.push((r[i + 1][1] - r[i][1]) / (dx[i] || 1)); }
+  const m = [sl[0]];
+  for (let i = 1; i < n - 1; i++) {
+    m.push(sl[i - 1] * sl[i] <= 0 ? 0 : (3 * (dx[i - 1] + dx[i])) / ((2 * dx[i] + dx[i - 1]) / sl[i - 1] + (dx[i] + 2 * dx[i - 1]) / sl[i]));
+  }
+  m.push(sl[n - 2]);
+  let d = `M${r[0][0].toFixed(1)} ${r[0][1].toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const h = dx[i] / 3;
+    d += `C${(r[i][0] + h).toFixed(1)} ${(r[i][1] + m[i] * h).toFixed(1)} ${(r[i + 1][0] - h).toFixed(1)} ${(r[i + 1][1] - m[i + 1] * h).toFixed(1)} ${r[i + 1][0].toFixed(1)} ${r[i + 1][1].toFixed(1)}`;
+  }
   return d;
 };
 const rr = (x, y, w, h, r) => {
@@ -75,6 +102,14 @@ function Frame({ o, paths, labs, hits, tip, legend, dot, aria, setHover, plotRef
     <>
       <div className="plot" ref={plotRef}>
         <svg viewBox={`0 0 ${o.W} ${o.H}`} className="svg" role="img" aria-label={aria}>
+          <defs>
+            {paths.filter((p) => p && p.grad).map((p) => (
+              <linearGradient key={p.grad.id} id={p.grad.id} gradientUnits="userSpaceOnUse" x1="0" x2="0" y1={p.grad.y1} y2={p.grad.y2}>
+                <stop offset="0" stopColor={p.grad.color} stopOpacity={p.grad.from} />
+                <stop offset="1" stopColor={p.grad.color} stopOpacity={p.grad.to} />
+              </linearGradient>
+            ))}
+          </defs>
           {paths.filter((p) => p && p.d).map((p, i) => <path key={i} {...pathStyle(p)} />)}
           {dot && dot.r > 0 && <circle cx={dot.x} cy={dot.y} r={dot.r} fill={COL.IND} stroke="#fff" strokeWidth="2" />}
           {children}
@@ -84,10 +119,12 @@ function Frame({ o, paths, labs, hits, tip, legend, dot, aria, setHover, plotRef
           {hits.map((z, i) => <div key={i} style={z.s} onMouseEnter={z.e} onTouchStart={z.e} />)}
         </div>
         {tip.on && (
+          tip.node ? <div className={`tip ${tip.cls || ""}`} style={tip.s}>{tip.node}</div> : (
           <div className="tip" style={tip.s}>
             <div className="tt">{tip.title}</div>
             {tip.rows.map((r, i) => <div className="tr" key={i}><span style={r.k && typeof r.k === "object" ? r.k : undefined} />{r.n}<b>{r.v}</b></div>)}
           </div>
+          )
         )}
       </div>
       {legend && legend.length > 0 && <Keys legend={legend} />}
@@ -117,8 +154,9 @@ function useW(fallback = 520) {
  * vertical at (today). dotAt(i): the value the hover dot sits on. title(i),
  * rows(i): the readout; rows are [{ n, v, k }], k a swatch style (sw, lk). */
 export function LineChart({ H = 250, L = 36, R = 8, T = 10, B = 26, n, ymax, ymin = 0, yticks = [], yfmt = String, xticks = [],
-  marks = [], series = [], dotAt, title, rows, aria = "", legend: legendIn, noLegend = false, fallbackW }) {
+  marks = [], series = [], dotAt, title, rows, readout, tipClass, aria = "", legend: legendIn, noLegend = false, fallbackW }) {
   const [ref, W] = useW(fallbackW);
+  const gid = useId().replace(/[^a-zA-Z0-9]/g, "");
   const [hover, setHover] = useState(null);
   const o = { W, H, L, R, T, B };
   const N = Math.max(1, n - 1);
@@ -130,10 +168,19 @@ export function LineChart({ H = 250, L = 36, R = 8, T = 10, B = 26, n, ymax, ymi
   paths.push({ d: g, st: COL.GRID, sw: 1 });
   xticks.forEach((t) => labs.push(labX(o, t[1], x(t[0]), H - B + 9)));
   marks.forEach((m) => paths.push({ d: `M${x(m)} ${T}V${H - B}`, st: COL.SOFT, sw: 1, da: "2 3" }));
-  series.forEach((s) => {
+  series.forEach((s, si) => {
     const pts = s.vals.map((v, i) => (v == null ? null : [x(i), y(v)]));
-    const d = line(pts);
-    if (s.area) {
+    const rs = s.smooth ? runs(pts) : null;
+    const d = s.smooth ? rs.map(smoothRun).join("") : line(pts);
+    if (s.area && s.smooth) {
+      // the shade under each run of the curve, down to the baseline: a flat
+      // wash, or one that fades out towards the baseline (area: "fade")
+      const a = rs.filter((r) => r.length > 1).map((r) => smoothRun(r) + `L${r[r.length - 1][0].toFixed(1)} ${y(ymin)}L${r[0][0].toFixed(1)} ${y(ymin)}Z`).join("");
+      const top = Math.min(...pts.filter(Boolean).map((p) => p[1]));
+      if (a) paths.push(s.area === "fade"
+        ? { d: a, grad: { id: `${gid}g${si}`, color: s.color, y1: top, y2: y(ymin), from: s.areaFrom ?? 0.22, to: s.areaTo ?? 0 } }
+        : { d: a, fl: s.color, fo: s.areaFrom ?? 0.08 });
+    } else if (s.area) {
       const f = pts.filter(Boolean);
       if (f.length > 1) paths.push({ d: d + `L${f[f.length - 1][0].toFixed(1)} ${y(ymin)}L${f[0][0].toFixed(1)} ${y(ymin)}Z`, fl: s.color, fo: 0.07 });
     }
@@ -145,6 +192,7 @@ export function LineChart({ H = 250, L = 36, R = 8, T = 10, B = 26, n, ymax, ymi
     const pv = dotAt ? dotAt(hover) : null;
     if (pv != null) dot = { x: x(hover), y: y(pv), r: 4 };
     tip = tipAt(o, x(hover), title ? title(hover) : "", rows ? rows(hover) : []);
+    if (readout) { tip.node = readout(hover); tip.cls = tipClass; }
   }
   const step = (W - L - R) / N;
   for (let i = 0; i < n; i++) hits.push({ s: box(o, x(i) - step / 2, 0, step, H - B), e: () => setHover(i) });

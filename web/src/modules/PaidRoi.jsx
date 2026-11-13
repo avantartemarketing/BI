@@ -52,7 +52,44 @@ function SpendBars({ W, bars, n, top }) {
 }
 const aheadKey = { width: 10, height: 10, flex: "0 0 10px", borderRadius: 2, background: "#f6f7fd", border: `1px dashed ${AHEAD_STROKE}`, boxSizing: "border-box" };
 
-export default function PaidRoi({ snap }) {
+/* MOCKUP ONLY: three routes for the line's shade and the hover readout */
+const LOOKS = {
+  a: { line: { area: "fade", areaFrom: 0.34, areaTo: 0.05 } },
+  b: { line: { area: "flat", areaFrom: 0.13 }, ahead: { area: "flat", areaFrom: 0.06 } },
+  c: { line: { area: "fade", areaFrom: 0.34, areaTo: 0.05 }, ahead: { area: "flat", areaFrom: 0.05 } },
+};
+const dayAxisLabelW = (snap, i) => dayLabel(snap, i, true).split(" · ")[0];
+function Readout({ look, title, rows }) {
+  const lead = rows.find((r) => r.lead), rest = rows.filter((r) => !r.lead);
+  if (look === "a") {
+    return (
+      <>
+        <div className="rd-date">{title}</div>
+        {lead && <div className="rd-lead"><b>{lead.v}</b><span><i style={lead.k} />{lead.n} · {lead.sub}</span></div>}
+        {rest.length > 0 && <div className="rd-rule" />}
+        {rest.map((r, i) => <div className="rd-row" key={i}>{r.n}<b>{r.v}</b></div>)}
+      </>
+    );
+  }
+  if (look === "c") {
+    return (
+      <>
+        <div className="rd-date">{title}</div>
+        <div className="rd-grid">
+          {rows.map((r, i) => <div className="rd-cell" key={i}><span>{r.n}</span><b>{r.v}</b></div>)}
+        </div>
+      </>
+    );
+  }
+  return (
+    <>
+      <div className="rd-title">{title}</div>
+      {rows.map((r, i) => <div className="rd-row keyed" key={i}><i style={r.k || { width: 12, flex: "0 0 12px" }} />{r.n}<b>{r.v}</b></div>)}
+    </>
+  );
+}
+
+export default function PaidRoi({ snap, look = "" }) {
   const [partyPref, setPartyPref] = useState(() => readPref(PARTY_PREF, ["aa", "artist"], "aa"));
   const [windowPref, setWindowPref] = useState(() => readPref(WINDOW_PREF, ["3d", "1d"], "3d"));
   const [ref, boxW] = useBoxSize();
@@ -106,7 +143,7 @@ export default function PaidRoi({ snap }) {
   const pts = daily.map((d, i) => {
     let s = stepOf(snap, d.date);
     if (s === null) s = (snap.day ?? 0) - (daily.length - 1 - i);
-    return { s: Math.round(s), spend: d.spend ?? 0, entries: d.entries ?? null, roi: roiOk ? d[P.key] ?? null : null, roi3: roiOk ? d[P.key3] ?? null : null,
+    return { s: Math.round(s), spend: d.spend ?? 0, entries: d.entries ?? null, converting: d.converting ?? null, roi: roiOk ? d[P.key] ?? null : null, roi3: roiOk ? d[P.key3] ?? null : null,
       cost: short ? d.cost1 ?? null : d.cost3 ?? null, partial: !!d.partial, full: Array.isArray(d.full) ? d.full : null };
   }).filter((p) => p.s >= 0 && p.s <= of);
   const byStep = new Map(pts.map((p) => [p.s, p]));
@@ -213,6 +250,21 @@ export default function PaidRoi({ snap }) {
     return { n: l.name, v: `${fmtMoney(l.paid.spendToDate, 0)} · ROI ${has(roi) ? fmt(roi, 2) : "–"}`, k: { width: 0 },
       tip: `${l.name}: ${(l.adsets || []).join(", ") || "no ad set named"}. Spend ${fmtMoney(l.paid.spendToDate, 0)}, ${fmt(l.paid.entriesToDate ?? 0)} entries, cost per converting entry ${l.paid.cumCpe ? fmtMoney(l.paid.cumCpe) : "–"}, ROI to date ${has(roi) ? fmt(roi, 2) : "–"}` };
   });
+  // the hover readout: the date alone, then the return, the spend, the entries
+  // and the conversions on that day; no target, no multiplication sign
+  const tipTitle = (i) => dayAxisLabelW(snap, i) + (!complete && i === today ? " · today so far" : "");
+  const tipRows = (i) => {
+    const p = byStep.get(i);
+    const out = [];
+    if (has(lineVals[i])) out.push({ n: roiOk ? `${P.label} ROI` : `€ per ${unitWord}`, sub: winWords, v: roiOk ? fmt(lineVals[i], 2) : fmtMoney(lineVals[i], 2), k: lk(COL.IND), lead: true });
+    else if (has(projVals[i])) out.push({ n: `${P.label} ROI ahead`, sub: "projected", v: fmt(projVals[i], 2), k: lk(COL.IND, "dashed"), lead: true });
+    if (p) out.push({ n: "Spend", v: fmtMoney(p.spend, 0), k: sw(COL.SOFT) });
+    else if (i > today && schedByStep.has(i)) out.push({ n: "Spend ahead", v: schedByStep.get(i) > 0 ? fmtMoney(schedByStep.get(i), 0) : "none", k: aheadKey });
+    if (p && has(p.entries)) out.push({ n: tl ? `Paid ${V.unit}` : "Entries", v: fmt(p.entries) });
+    if (p && has(p.converting)) out.push({ n: "Conversions", v: fmt(p.converting) });
+    if (fullByStep.has(i)) out.push({ n: "Full from this day", v: fullByStep.get(i).join(", ") });
+    return out;
+  };
   return (
     <Card title="Paid ROI" seg={seg} aria="Paid ROI by day against target">
       <Head v={roiOk ? fmt(leadVal, 2) : fmtMoney(leadVal, 2)} u={roiOk ? (complete ? "overall" : winShort) : `per ${unitWord}${complete ? " overall" : ""}`}
@@ -225,9 +277,10 @@ export default function PaidRoi({ snap }) {
             marks={complete ? [] : [today]} noLegend
             series={[
               ...(has(P.target) && roiOk ? [{ name: "Target", color: COL.DARK, w: 1.5, da: "4 4", vals: Array.from({ length: n }, () => P.target) }] : []),
-              ...(showModel ? [{ name: "ROI ahead", color: COL.IND, w: 1.5, da: "4 4", vals: projVals }] : []),
-              ...(hasLine ? [{ name: lineName, color: COL.IND, w: 2, vals: lineVals }] : []),
+              ...(showModel ? [{ name: "ROI ahead", color: COL.IND, w: 1.5, da: "4 4", vals: projVals, smooth: !!look, ...(LOOKS[look]?.ahead || {}) }] : []),
+              ...(hasLine ? [{ name: lineName, color: COL.IND, w: 2, vals: lineVals, smooth: !!look, ...(LOOKS[look]?.line || {}) }] : []),
             ]}
+            readout={look ? (i) => <Readout look={look} title={tipTitle(i)} rows={tipRows(i)} /> : undefined} tipClass={`roomy ${look}`}
             dotAt={(i) => (has(lineVals[i]) ? lineVals[i] : has(projVals[i]) ? projVals[i] : null)}
             title={(i) => dayLabel(snap, i, true) + (!complete && i === today ? ", today" : "") + (byStep.get(i) && byStep.get(i).partial ? " · so far today" : "")}
             rows={(i) => {
