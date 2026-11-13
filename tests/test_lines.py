@@ -289,6 +289,44 @@ check(close(tot("LegoMF", "entries"), moved, 1e-6) and close(tot("Lego2026", "en
 units = sum(x["paid"] + x["preorders"] * pre_rate + x["draws"] * ent_rate for x in ae["daily"])
 check(close(units, ca, 1e-3), f"and its assumed units are the units the ROI is read on: {units} vs {ca}")
 check("adsetEntries" not in snap["paid"] and "adsetEntries" not in P["paid"], "no table on the combined page or without the feed's utm")
+# the Direct switch moves the table with the cards (13 November 2026): spread,
+# both carry Direct's share of each line's works, shared between the ad sets
+# as their own entries there that day; as a channel, neither does
+PAd, BAd = {**ads, **ads["variants"]["lines_direct"]["Lego2026"]}, {**ads, **ads["variants"]["lines_direct"]["LegoMF"]}
+Pd, Bd = {**snap, **snap["variants"]["lines_direct"]["Lego2026"]}, {**snap, **snap["variants"]["lines_direct"]["LegoMF"]}
+check(ae.get("direct") is False and PAd["paid"]["adsetEntries"].get("direct") is True, "the table says which way the switch is set")
+for nm, page in (("prints", PAd), ("bricks", BAd)):
+    t = page["paid"]["adsetEntries"]
+    ent = sum(x["entries"] for x in t["daily"])
+    un = sum(x["paid"] + x["preorders"] * pre_rate + x["draws"] * ent_rate for x in t["daily"])
+    check(close(ent, page["paid"]["entriesToDate"], 1e-3) and close(un, conv_of(page), 1e-3),
+          f"{nm}, Direct spread: the table adds up to the cards: {ent} vs {page['paid']['entriesToDate']}, {un} vs {conv_of(page)}")
+check(PAd["paid"]["entriesToDate"] > PA["paid"]["entriesToDate"] * 1.2 and BAd["paid"]["entriesToDate"] > BA["paid"]["entriesToDate"] * 1.2,
+      f"spread, each ad set carries Direct's share: {PAd['paid']['entriesToDate']} vs {PA['paid']['entriesToDate']}")
+check(close(PAd["paid"]["entriesToDate"] + BAd["paid"]["entriesToDate"], Pd["paid"]["entriesToDate"] + Bd["paid"]["entriesToDate"], 1e-6)
+      and close(conv_of(PAd) + conv_of(BAd), conv_of(Pd) + conv_of(Bd), 1e-3),
+      f"and the two ad sets still add up to the release's paid, Direct included: {PAd['paid']['entriesToDate']} + {BAd['paid']['entriesToDate']}")
+# a day the bricks' ad set brought nothing, every paid entry on a brick draw
+# having clicked the prints' ad set: the Direct those entries draw is the
+# prints' ad set's, and the bricks' ad set reads none on the card or the table
+QUIET = (TODAY - timedelta(days=2)).isoformat()
+kept = {dd["id"]: list(dd["paidBy"]) for dd in draws}
+for dd in draws:
+    if dd["id"] in {DRAW_OF[t] for t, _ in BRICKS}:
+        dd["paidBy"] = [r for r in dd["paidBy"] if r[0] != QUIET or not r[1].endswith("Bricks")]
+        dd["paidBy"] = [[r[0], r[1], r[2] * 2, r[3] * 2, r[4] * 2, r[5] * 2] if r[0] == QUIET else r for r in dd["paidBy"]]
+quiet = build.with_direct_spread(build.build_release, relA, at, spendA, emails, content, curves, TODAY,
+                                 build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+for way in ("lines", "lines_direct"):
+    BQ, PQ = {**quiet, **quiet["variants"][way]["LegoMF"]}, {**quiet, **quiet["variants"][way]["Lego2026"]}
+    on_card = next(x["entries"] for x in BQ["paid"]["daily"] if x["date"] == QUIET)
+    on_table = sum(x["entries"] for x in BQ["paid"]["adsetEntries"]["daily"] if x["date"] == QUIET)
+    theirs = next(x["entries"] for x in PQ["paid"]["daily"] if x["date"] == QUIET)
+    both = sum(next(x["entries"] for x in {**snap, **snap["variants"][way][k]}["paid"]["daily"] if x["date"] == QUIET) for k in ("Lego2026", "LegoMF"))
+    check(on_card == 0 and on_table == 0 and close(theirs, both, 1e-6),
+          f"{way}: an ad set that brought nothing reads nothing, Direct or not: card {on_card}, table {on_table}, the other's {theirs} of {both}")
+for dd in draws:
+    dd["paidBy"] = kept[dd["id"]]
 # the combined page prices paid's units as the works they were entered for
 # (each draw's paid conversions), not as the plan's mix of target units
 ppu_c = (exp_p * 1000.0 + exp_b * 150.0) / (exp_p + exp_b)
