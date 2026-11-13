@@ -984,8 +984,13 @@ The app is laid out as Linear lays out a workspace (the redesign of 23 October 2
 
 **The sidebar** (`web/src/Sidebar.jsx`) carries the workspace menu top left (Methodology,
 Permissions for admins, Sign out), a search button, Releases and Targets, then the releases in
-three groups - In flight, Upcoming and Recent - each row a dot in the release's state colour
-and the artist's name, nothing else; hovering a row shows a card with its state, its gap to
+three groups - In flight, Upcoming and Recent - each row the release's type as a small tag in
+its state colour (LE or TL, tinted green, amber or red; a grey outline without targets), the
+artist's name, and on the right the days to launch: to the close of a draw, to the sale
+opening on a timed launch ("Open" inside its window), darker within a week, and under Recent
+the day it launched (`launchWords` in `rows.mjs`; 13 November 2026 - before, a row was a dot
+and the name alone, and the type and the dates were only on the hover card). A section lists
+its rows in the order of that count. Hovering a row shows a card with its state, its gap to
 target and when it closes or opens. Cmd+K (Ctrl+K) opens a command bar over every release,
 catalogue included (`CommandBar.jsx`). The groups come from `rows.mjs` off the index.
 

@@ -85,6 +85,37 @@ export function whenWords(r, asOf) {
   return { text: `Closes ${onDay(c.launch, asOf)}`, count: Math.max(c.daysLeft, 0), unit: "d" };
 }
 
+/* The days to launch, as the sidebar's row prints them: to the close of a
+ * draw and to the sale opening on a timed launch, in whole calendar days from
+ * the as-of day ("17d", "Today"); "Open" inside a timed launch's window; the
+ * day it launched once it has ("30 Oct"). soon marks a launch within a week,
+ * which the row prints darker. Empty without a date on file. */
+export const TYPE_WORD = { LE: "Limited edition", TL: "Timed launch" };
+export const typeOf = (r) => (String((r && r.type) || "LE").toUpperCase() === "TL" ? "TL" : "LE");
+/* the day a release launches: a timed launch's sale opening, a draw's close */
+export function launchDay(r) {
+  if (typeOf(r) === "TL" && r.salesOpen) return day(new Date(r.salesOpen).toISOString());
+  return r.windowEnd ? day(r.windowEnd) : null;
+}
+export function launchWords(r, asOf) {
+  const none = { text: "", days: null, soon: false };
+  const g = groupOf(r, asOf);
+  if (g === "catalogue") return none;
+  const today = asOf ? day(asOf) : day(new Date().toISOString());
+  const inDays = (n) => ({ text: n <= 0 ? "Today" : `${n}d`, days: Math.max(n, 0), soon: n <= 7 });
+  const on = (d) => ({ text: onDay(d, asOf), days: null, soon: false });
+  if (typeOf(r) === "TL" && r.salesOpen) {
+    const open = launchDay(r);
+    if (r.tlState === "window") return { text: "Open", days: 0, soon: true };
+    if (r.tlState === "settling" || r.tlState === "closed" || g === "closed") return on(open);
+    return inDays(Math.round((open - today) / 86400000));
+  }
+  const c = releaseClock(r, asOf);
+  if (!c) return none;
+  if (g === "closed") return on(c.launch);
+  return inDays(c.daysLeft);
+}
+
 /* the artist and the work, from the row's name ("Artist · Title · 2026 Q4") */
 const QUARTER_RE = /^\d{4} Q\d$/;
 export function nameOf(r) {
@@ -107,6 +138,21 @@ export function sidebarGroups(rows, asOf, { recentDays = 90, recentMax = 8 } = {
   const recent = closed.filter((r) => today - day(r.windowEnd).getTime() <= recentDays * 86400000).slice(0, recentMax);
   const catalogue = all.filter((r) => r.group === "catalogue");
   return { all, live, upcoming, recent, closed, catalogue };
+}
+
+/* A sidebar section in the order of the count its rows print: fewest days to
+ * launch first (a timed launch by its sale opening, as launchWords counts it;
+ * the close breaks a tie), and Recent by the day it launched, newest first.
+ * The releases list keeps sidebarGroups' order, by the date its own column shows. */
+export function byLaunch(rows, asOf) {
+  const toLaunch = (r) => { const d = launchWords(r, asOf).days; return d === null ? Infinity : d; };
+  const toClose = (r) => { const c = releaseClock(r, asOf); return c ? c.daysLeft : Infinity; };
+  const cmp = (a, b) => (a === b ? 0 : a - b);
+  return [...rows].sort((a, b) => cmp(toLaunch(a), toLaunch(b)) || cmp(toClose(a), toClose(b)));
+}
+export function byLaunched(rows) {
+  const at = (r) => { const d = launchDay(r); return d ? d.getTime() : -Infinity; };
+  return [...rows].sort((a, b) => (at(a) === at(b) ? 0 : at(b) - at(a)));
 }
 
 /* search across every release: artist, title, quarter, code or id */

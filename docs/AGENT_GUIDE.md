@@ -63,8 +63,9 @@ over five **channel groups** and spread over the campaign days by pace curves, w
   flight / Upcoming / Recent / Closed, LE and TL filters, and columns Launch, Type, Against
   target (bar to the target), Status (the gap, or the state), Lead, Closes or opens. Data:
   the index (`releases` table, or `list_releases`).
-- **Sidebar**: releases in In flight, Upcoming and Recent, each with a dot in its state
-  colour. Same index.
+- **Sidebar**: releases in In flight, Upcoming and Recent, each with its type (LE or TL) as
+  a tag in its state colour and the days to launch (the day it launched under Recent). Same
+  index.
 - **A release's page**, Overview tab: header, chips (state and days left, dates, lead,
   horizon, lines), a warning strip when the data is stale or partial, then the cards (below).
   Targets tab: the target-setting form (inputs, basket picker, the target per channel) -
