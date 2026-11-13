@@ -1485,7 +1485,11 @@ entries of the line's own draws. `paid.adsetEntries` (`adset_entries`) is the En
 table under the line's paid cards: `lines[]` (`key`, `name`, `own`) and `daily[]` (`date`,
 `line`, `entries`, `paid`, `preorders`, `draws`), what the line's ad sets drove on each line
 of the release; the card adds the waiting units at `preorderRate` and the entry rate and
-sums the days its switch picks (all, or the last seven, three or one full days). The combined page of such a release is not moved by the ad sets (every paid entry
+sums the days its switch picks (all, or the last seven, three or one full days). Its rows carry
+the page's folds since 13 November 2026 (`fold_line_paid`): Untracked always, and Direct in the
+page's Direct view (`direct` true, under `variants.lines_direct`), each shared between the ad
+sets as their own entries on that line's works that day, so the table adds up to the paid
+cards' entries and converting units either way the Direct switch is set. The combined page of such a release is not moved by the ad sets (every paid entry
 is its campaign's), but its paid profit per unit is weighted the same way since the same day:
 every work's own by the paid-social converting units on its draw (`with_paid_profit`, from
 each draw's `conv`; `aa_ppu_paid`, `artist_ppu_paid`, and `paid.frameUpliftPerUnit` for the

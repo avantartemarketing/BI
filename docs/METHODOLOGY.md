@@ -921,6 +921,21 @@ euros have returned so far. Valuing every entry Meta attributes to the
 prints' ad set as a print, the way the Slack ROI update did, overstates it by
 the same 25 entrants.
 
+**Direct goes to the ad set that brought the day's paid entries (13 November
+2026).** The page folds Untracked into the tracked channels, and Direct too
+when the Direct switch spreads it (1.3), over the channels of a line's works
+day by day. Paid's share of that fold is now the ad sets' in proportion to
+the entries each brought on those works that day, and the Entries by line
+table carries it with the paid cards: Direct is in both when the switch
+spreads it and in neither when it does not. Until then the fold landed on
+the paid entries of the line's own draws whoever's ad set had brought them,
+and the other ad set's entries were taken off without the Direct they had
+drawn, while the table counted the ad sets' entries as they came. On 12
+November the toy bricks took 8 Direct entries, 2 from AA's own Meta posts and
+1 paid one, which had clicked the prints' ad set: with Direct spread, the
+bricks' ad set, which had brought no entry for four days, read 3 entries on
+its ROI card and an ROI of 0.33, and none in its table.
+
 **The combined page prices paid's units as the works they were entered for
 (10 November 2026).** Its paid ROI read every converting unit at the
 release's profit per unit weighted by target units, the plan's mix: 992 toy
