@@ -742,9 +742,11 @@ give (the last three full days bought no entries, so there is no price of an
 entry to set one from; the release has closed or is on its last day; no targets)
 it stays and says why, read from the snapshot's own days. Until then it was left
 out of the page. With a level, the card leads with
-tomorrow's daily budget (the first paced step), the level it is heading for and
-the chance that level loses money (the share of runs in which the spend still to
-come earns less than AA's share of it); its chart is the profit from the spend
+tomorrow's daily budget (the first paced step) and
+the chance the level it is heading for loses money (the share of runs in which the spend still to
+come earns less than AA's share of it); since 13 November 2026 the head is that
+figure alone, "a day", with today's level and the level it is heading for marked
+on the chart and the working on the figure's hover; its chart is the profit from the spend
 still to come at each flat daily spend, the median run with the range eight in
 ten runs land in, and a dotted mark at the campaign's biggest day so far, past
 which the price is an extrapolation. The table went with the redesign; the

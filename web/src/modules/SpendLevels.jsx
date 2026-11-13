@@ -7,8 +7,9 @@
  * the cautious peak: the daily spend that earns the most if the campaign
  * turns out dear (the 25th percentile of the profit), not the point
  * estimate's. A dotted mark shows the campaign's biggest day so far:
- * beyond it the price is an extrapolation. No table and no key. The working
- * is on the aside's hover.
+ * beyond it the price is an extrapolation. No table and no key. The head is
+ * the figure alone, "a day": today's level and the aim are marked on the
+ * plot, and the working is on the figure's hover (13 November 2026).
  *
  * When paid stops there is no curve: the stop, its reason and two rows.
  * When the build has no level to give (no entries in the last three days,
@@ -252,11 +253,8 @@ function Cautious({ lv, curve, title, boxRef, W }) {
   const lossP = lv.lossAtRecommended;
   const pr = lv.profitAtRecommended || {};
 
-  // ----- the head: tomorrow's budget, then where it is heading -----
-  const change = today !== null && today > 0 ? (tomorrow - today) / today : null;
-  const dir = today === null || today === 0 ? "start" : change !== null && Math.abs(change) < 0.005 ? "hold" : change < 0 ? "down" : "up";
-  const chgWord = dir === "hold" ? `held at ${money(today)}` : dir === "start" ? "from nothing" : `${dir} ${Math.round(Math.abs(change) * 100)}% from ${money(today)}`;
-  const aimWord = Math.abs(rec - tomorrow) < 0.5 ? "" : ` · aiming for ${money(rec)}`;
+  // ----- the head: tomorrow's budget alone (13 November 2026); today's level
+  // and the aim are marked on the plot, the working is on the figure's hover -----
   const riskKind = !has(lossP) ? undefined : lossP <= 0.1 ? "good" : lossP <= 0.25 ? "amber" : "warm";
   const working = [
     `${title}, how they are read`,
@@ -324,7 +322,7 @@ function Cautious({ lv, curve, title, boxRef, W }) {
   const rowAt = (i) => curve[i];
   return (
     <Card title={title} aria={title}>
-      <Head v={money(tomorrow)} u="a day tomorrow" aside={`${chgWord}${aimWord}`} asideTip={working}>
+      <Head v={money(tomorrow)} u="a day" tip={working}>
         {has(lossP) && <Loz kind={riskKind} tip={`At ${money(rec)} a day the spend still to come loses money in ${oneIn(lossP)} runs${has(lv.lossAtPoint) && has(lv.pointLevel) ? `; at the point estimate's peak, ${money(lv.pointLevel)}, in ${oneIn(lv.lossAtPoint)}` : ""}`}><span className="dot" />{oneIn(lossP)} chance of a loss</Loz>}
       </Head>
       <div ref={boxRef} style={{ position: "relative", marginTop: "auto" }}>
