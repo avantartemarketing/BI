@@ -14,7 +14,9 @@
  * When paid stops there is no curve: the stop, its reason and two rows.
  * When the build has no level to give (no entries in the last three days,
  * a closed release, no targets) the card stays and says why (noLevels.mjs,
- * 12 November 2026); until then it was left out of the page.
+ * 12 November 2026); until then it was left out of the page. The reason is
+ * the pill's word, the sentence behind it on the pill's hover; the sentence
+ * is printed only where there is no pill (13 November 2026).
  * A snapshot built before the range was carried draws the card as it was
  * (the point estimate's peak, the elasticity's band, the four-row table). */
 import React from "react";
@@ -102,7 +104,7 @@ export default function SpendLevels({ snap }) {
         <Head v={none.v} u={none.u} aside={none.aside}>
           {none.loz && <Loz kind={none.kind} tip={none.why}>{none.loz}</Loz>}
         </Head>
-        <div className="nbox">{none.why}</div>
+        {!none.loz && <div className="nbox">{none.why}</div>}
       </Card>
     );
   }

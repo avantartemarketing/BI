@@ -31,8 +31,8 @@ export default function FramingForecast({ snap, horizon = "today" }) {
   const ticks = [0, top / 2, top].map((t) => Math.round(t));
   return (
     <Card title="Framing forecast by work">
-      <Head v={fmt(total)} u="frames forecast" aside={`${fmt(total * band[0])}–${fmt(total * band[1])} · ${Math.round(rate * 100)}% take-up`}
-        asideTip={`Forecast prints times the frame take-up: ${src === "Airtable" ? "Airtable's where set" : src === "Basket" ? "the basket's frames per print" : "the default take-up"}`} />
+      <Head v={fmt(total)} u="frames forecast"
+        tip={`${fmt(total * band[0])}–${fmt(total * band[1])} · ${Math.round(rate * 100)}% take-up\nForecast prints times the frame take-up: ${src === "Airtable" ? "Airtable's where set" : src === "Basket" ? "the basket's frames per print" : "the default take-up"}`} />
       <HBarChart H={34 + works.length * 34} L={150} bh={14} xmin={0} xmax={top} xticks={ticks} xfmt={(t) => fmt(t)}
         rows={works.map((w) => short(w.name))}
         series={[{ color: COL.IND, vals: works.map((w) => w.frames) }, { color: COL.TRACK, vals: works.map((w) => w.units - w.frames) }]}
