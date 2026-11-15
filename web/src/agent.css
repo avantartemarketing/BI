@@ -33,7 +33,7 @@
 
 /* ---------- the home page: the chat as a page (AgentHome.jsx) ---------- */
 /* the page fades from the panel's grey at the head to the frame's at the foot, as Linear's Agent page does */
-.ahome { display: flex; flex-direction: column; height: calc(100vh - 16px); background: linear-gradient(var(--panel) 48px, var(--bg)); }
+.page.ahome { display: flex; flex-direction: column; height: calc(100vh - 16px); background: linear-gradient(var(--panel) 48px, var(--bg)); }
 .ah-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; height: 28px; margin-left: -8px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; font: inherit; font-size: 13px; font-weight: 500; color: var(--ink); cursor: pointer; }
 .ah-name:hover { background: rgba(0,0,0,.055); }
 .ah-name > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -66,7 +66,7 @@
 .ah-foot { flex: 0 0 auto; padding: 0 24px 20px; }
 .ahome .ah-foot .ah-box { padding-top: 12px; }
 @media (max-width: 900px) {
-  .ahome { height: calc(100dvh - 12px); }
+  .page.ahome { height: calc(100dvh - 12px); }
   .ah-mid, .ah-scroll, .ah-foot { padding-left: 14px; padding-right: 14px; }
   .ah-start { padding-top: 12vh; }
   .ah-foot { padding-bottom: 14px; }
