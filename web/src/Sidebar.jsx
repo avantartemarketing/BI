@@ -1,12 +1,13 @@
-/* The sidebar: the workspace menu (all releases, methodology, sign out) and
- * the search at the top, then In flight, Upcoming and Recent. A row is the
+/* The sidebar: the workspace menu (methodology, sign out) and the search at
+ * the top, the two pages every reader has (the Agent's chat, which is the
+ * home page, and the full releases list), then In flight, Upcoming and Recent. A row is the
  * release's type as a tag in its state colour (LE or TL; grey outline without
  * targets), the artist, and the days to launch on the right (the day it
  * launched under Recent); a slim hover card says the status, the pace against
  * target and when the release closes or opens. On a phone it is a drawer the
  * page's menu button opens. */
 import React, { useState } from "react";
-import { Caret, Caret8, Search, Releases as ReleasesIcon, Book, Key, SignOut } from "./icons.jsx";
+import { Agent as AgentIcon, Caret, Caret8, Search, Releases as ReleasesIcon, Book, Key, SignOut } from "./icons.jsx";
 import { Badge, Menu, MenuItem, useMenu } from "./ui.jsx";
 import { byLaunch, byLaunched, launchWords, nameOf, rowState, stateColor, statusWord, typeOf, TYPE_WORD, vsTarget, whenWords } from "./rows.mjs";
 
@@ -29,7 +30,7 @@ function Row({ r, asOf, on, onPick, onHover, onLeave }) {
   );
 }
 
-export default function Sidebar({ groups, asOf, currentId, view, me, open, onClose, onPick, onReleases, onPermissions, onSearch }) {
+export default function Sidebar({ groups, asOf, currentId, view, me, open, onClose, onPick, onHome, onReleases, onPermissions, onSearch }) {
   const ws = useMenu();
   const [hov, setHov] = useState(null);   // { r, top }
   const onHover = (r, top) => setHov({ r, top });
@@ -47,12 +48,15 @@ export default function Sidebar({ groups, asOf, currentId, view, me, open, onClo
           </button>
           <button className="nv-ib" aria-label="Search releases" title="Search releases  ⌘K" onClick={onSearch}><Search /></button>
           <Menu open={ws.open} onClose={ws.close} style={{ top: 32, left: 0, width: 220 }}>
-            <MenuItem icon={<ReleasesIcon />} onClick={() => { ws.close(); onReleases(); }}>All releases</MenuItem>
             <MenuItem icon={<Book />} onClick={() => { ws.close(); window.open("/methodology", "_blank", "noreferrer"); }}>Methodology</MenuItem>
             {me && me.admin && <MenuItem icon={<Key />} onClick={() => { ws.close(); onPermissions(); }}>Permissions</MenuItem>}
             <div className="msep" />
             <MenuItem icon={<SignOut />} right={me && me.email ? me.email.split("@")[0] : ""} onClick={() => { window.location.href = "/auth/logout"; }}>Sign out</MenuItem>
           </Menu>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <button className={`nv-row${view === "home" ? " on" : ""}`} aria-current={view === "home" ? "page" : undefined} onClick={onHome}><AgentIcon />Agent</button>
+          <button className={`nv-row${view === "releases" ? " on" : ""}`} aria-current={view === "releases" ? "page" : undefined} onClick={onReleases}><ReleasesIcon />Releases</button>
         </div>
         {sections.map(([name, rows], i) => (
           <div key={name} style={{ display: "flex", flexDirection: "column", gap: 1 }}>

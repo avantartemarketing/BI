@@ -59,7 +59,9 @@ over five **channel groups** and spread over the campaign days by pace curves, w
 
 ## 3. The pages
 
-- **Releases** (the page the app opens on): every launch in a list with views All / In
+- **Home** (the page the app opens on): a chat with the Agent, with three example questions
+  and the reader's last few chats. The same chat opens from the Agent press on other pages.
+- **Releases** (in the sidebar, under Agent): every launch in a list with views All / In
   flight / Upcoming / Recent / Closed, LE and TL filters, and columns Launch, Type, Against
   target (bar to the target), Status (the gap, or the state), Lead, Closes or opens. Data:
   the index (`releases` table, or `list_releases`).

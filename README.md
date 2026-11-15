@@ -983,8 +983,8 @@ The app is laid out as Linear lays out a workspace (the redesign of 23 October 2
 "BI dashboard: every screen" design canvas): a sidebar on the left, one page on the right.
 
 **The sidebar** (`web/src/Sidebar.jsx`) carries the workspace menu top left (Methodology,
-Permissions for admins, Sign out), a search button, Releases and Targets, then the releases in
-three groups - In flight, Upcoming and Recent - each row the release's type as a small tag in
+Permissions for admins, Sign out), a search button, Agent (the home page) and Releases (the
+full list), then the releases in three groups - In flight, Upcoming and Recent - each row the release's type as a small tag in
 its state colour (LE or TL, tinted green, amber or red; a grey outline without targets), the
 artist's name, and on the right the days to launch: to the close of a draw, to the sale
 opening on a timed launch ("Open" inside its window), darker within a week, and under Recent
@@ -994,7 +994,15 @@ its rows in the order of that count. Hovering a row shows a card with its state,
 target and when it closes or opens. Cmd+K (Ctrl+K) opens a command bar over every release,
 catalogue included (`CommandBar.jsx`). The groups come from `rows.mjs` off the index.
 
-**Releases** (`Releases.jsx`), the page the app opens on, lists every launch as Linear lists
+**The home page** (`AgentHome.jsx`; 15 November 2026 - before, the app opened on the releases
+list, which repeated the sidebar) is a chat with the Agent, laid out as Linear's Agent page:
+one box in the middle, three examples under it (what needs attention, a chart, and the live
+release furthest behind its target) and the last few chats under those; once a question is
+asked the conversation runs down the page with the box at its foot. The header's name opens
+the list of chats and New chat. It is the same conversation the Agent's press shows on the
+other pages (`agentChat.js` holds it for both).
+
+**Releases** (`Releases.jsx`), under Releases in the sidebar (`?view=releases`), lists every launch as Linear lists
 issues: views All / In flight / Upcoming / Recent / Closed with their counts, LE and TL pills
 to filter by type, and a header row over the columns - Launch, Type, Against target (a bar
 to the target with a tick at 100%), Status (the gap to target, or the state in words), Lead
@@ -1043,7 +1051,8 @@ and its own options behind a ⋯ menu:
 An upcoming release shows what is known instead (Not live yet, the milestones, the works and
 their edition and price, Set targets); a release without targets shows its actuals alone.
 
-**The Agent**, bottom right of every page but Permissions (`Agent.jsx`), answers questions
+**The Agent**, the home page and the press bottom right of every other page but Permissions
+(`Agent.jsx`), answers questions
 about the data: how a release is doing, what a figure means and how it is worked out, and
 questions across launches that no card shows. It reads the release snapshots (with the
 reader's Direct display, so its figures match the screen), the tables under `data/` (units
@@ -1053,7 +1062,9 @@ card) and `docs/METHODOLOGY.md` are always in front of it, the rest it reads by 
 can draw line, bar, stacked, horizontal-bar and scatter charts in the chat, with the
 dashboard's chart components (`AgentChart.jsx`). It cannot change anything: its six tools
 (`server/agent/tools.js`) only read, and a chart lives only in the chat. On a release page
-the chat's scope switch picks This release or All launches; the thread is kept for the tab.
+the chat's scope switch picks This release or All launches; the open chat is kept for the tab,
+and the last twelve chats are kept in the reader's browser (never on the server) for the home
+page's list.
 
 The server (`server/agent/`) runs the tool loop through the Claude API with the key in
 `ANTHROPIC_API_KEY` and streams status lines, the answer and its charts back as server-sent

@@ -73,7 +73,7 @@ button, input, select { font-family: inherit; }
 .nv-row.on .nv-when { color: #4a4a4d; }
 .nv-row.on .nv-when.soon { color: var(--ink); }
 .ws-mark { width: 18px; height: 18px; border-radius: 5px; background: var(--ink); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
-.menub { display: none; }
+.menub, .ib.menub { display: none; }
 .navscrim { position: fixed; inset: 0; border: 0; background: rgba(0,0,0,.12); z-index: 29; cursor: default; }
 .hovcard { position: fixed; left: 316px; z-index: 60; width: 248px; background: var(--card); border: 1px solid #e6e6e8; border-radius: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.12); padding: 10px 12px 11px; font-size: 12.5px; pointer-events: none; }
 .help-ring { border: 1px solid #e3e3e6; border-radius: 50%; width: 24px; height: 24px; font: inherit; font-size: 11px; margin-left: 4px; }
@@ -373,7 +373,7 @@ tbody tr:hover td { background: #fafafa; }
   .app { padding: 6px; }
   .sidenav { display: none; }
   .sidenav.open { display: flex; position: fixed; left: 0; top: 0; bottom: 0; z-index: 30; height: 100vh; background: var(--bg); padding: 12px 8px; box-shadow: 0 0 32px rgba(0,0,0,.12); }
-  .menub { display: inline-flex; }
+  .menub, .ib.menub { display: inline-flex; }
   .note { left: 16px; max-width: calc(100vw - 32px); }
   .hovcard { display: none; }
   .phead { padding: 0 12px; }
