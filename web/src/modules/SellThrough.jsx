@@ -213,7 +213,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
   })();
   return (
     <Card title={W.sellThroughTitle} menu={menu} right={right} aria={W.sellThroughTitle}>
-      <Head v={fmt(headUnits)} u={edition ? `of ${fmt(edition)}${st.editionWord ? ` ${st.editionWord}` : ""}` : "units, no edition size set"}
+      <Head v={fmt(headUnits)} u={edition ? `of ${fmt(edition)}${st.editionWord ? ` ${st.editionWord}` : ""}` : "units"}
         aside={headPct !== null ? `${Math.round(headPct * 100)}%` : null}
         asideTip={method} />
       <div style={{ "--nmw": `${Math.min(Math.max(longest, 8), 30)}ch` }}>{body}</div>

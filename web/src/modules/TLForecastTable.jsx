@@ -9,7 +9,7 @@
  * timed launch has no edition to sell through, so its target is the
  * measure). The rows are tlForecastRows'. */
 import React from "react";
-import { Card, Loz } from "../ui.jsx";
+import { Card } from "../ui.jsx";
 import { fmt, fmtPct } from "../format.mjs";
 import { tlForecastRows } from "../tlForecastRows.mjs";
 import "../cards.css";
@@ -25,12 +25,6 @@ export default function TLForecastTable({ snap }) {
   const { rows, all, byPage } = tlForecastRows(snap);
   if (!f || !all) return <Card title={title} wide><div className="empty-state">No forecast yet: it needs the works from Airtable or a units target</div></Card>;
   const ranged = (r) => has(r.lo) && has(r.hi) && r.hi > r.lo;
-  const right = (
-    <>
-      {ranged(all) && <Loz tip="Where past timed launches landed around a forecast like this one: the middle half of them">Likely {fmt(all.lo)} to {fmt(all.hi)} units</Loz>}
-      {has(f.basketN) && <Loz tip="The past timed launches the rates are read from: how often a signup goes on to order, and what buyers who never signed up bought">{fmt(f.basketN)} launches in the basket</Loz>}
-    </>
-  );
   const cells = (r) => {
     const vs = has(r.signups) && has(r.targetToDate) && r.targetToDate > 0 ? r.signups / r.targetToDate - 1 : null;
     const pct = has(r.units) && has(r.target) ? r.units / r.target : null;
@@ -53,7 +47,7 @@ export default function TLForecastTable({ snap }) {
     byPage ? "Signups: the ones made from this work's page, plus its share of the signups that name no work" : "Signups: the release's, shared out by each work's units target (too few name a work so far)",
   ].join("\n");
   return (
-    <Card title={title} wide className="stt-card" right={right} aria="Sell-through forecast by work">
+    <Card title={title} wide className="stt-card" aria="Sell-through forecast by work">
       <div className="stt-wrap">
         <table className="stt">
           <colgroup>{[19, 8, 9, 8, 9, 10, 10, 9, 8, 10].map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>

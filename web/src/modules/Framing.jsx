@@ -11,7 +11,8 @@
  * dotted mark on every bar. The two readings the head is made of, the
  * buyers' prints and the prints the people still in the draw have
  * pre-authorised (on a timed launch the window's orders awaiting payment),
- * are in the head's hover. No plan and no target: the card reads what is.
+ * are in the head's hover, with the count behind the rate (the head is the
+ * rate alone since 13 November 2026). No plan and no target: the card reads what is.
  * With nothing on the release offered a frame the card stays on the page
  * and says so: "No framing", or "No framing yet" while a frame is on offer
  * and nothing has sold. */
@@ -81,8 +82,7 @@ export default function Framing({ snap, horizon = "today" }) {
   return (
     <Card title="Framing" aria="Framing: frames per print, by work">
       <Head v={headRate !== null ? fmtPct(headRate) : "–"} u="framed"
-        aside={head ? `${fmt(head.frames)} of ${fmt(head.prints)} prints${close ? " at close" : ""}` : rate !== null ? `${fmt(f.frames)} of ${fmt(f.prints)} paid prints` : "no prints sold yet"}
-        asideTip={headTip} />
+        tip={[head ? `${fmt(head.frames)} of ${fmt(head.prints)} prints${close ? " at close" : ""}` : rate !== null ? `${fmt(f.frames)} of ${fmt(f.prints)} paid prints` : "No prints sold yet", headTip].join("\n")} />
       {rows.length > 0 && (
         <HBarChart H={34 + rows.length * 34} L={150} bh={12} xmin={0} xmax={100} xticks={[0, 25, 50, 75, 100]} xfmt={(t) => `${t}%`}
           rows={rows.map((r) => r.label)}

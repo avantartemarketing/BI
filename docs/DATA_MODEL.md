@@ -2178,7 +2178,18 @@ frames and prints, and its paid prints so far where the two differ. Works that a
 one work show the variant alone ("White Portrait"), as on the sell-through cards. A snapshot
 whose forecast has no rows by work draws each work's paid prints (`works[]`), and a release
 read as one row draws one bar, "All works". The buyers' and the entrants' readings moved to
-the headline's hover.
+the headline's hover, and with them the count behind the rate ("770 of 1,123 prints"): the
+head is the rate alone.
+
+**Less copy on the cards (13 November 2026).** The grey words beside a card's headline figure
+went where the chart or a table already says them, and are on the figure's hover instead:
+Orders by country's share in the top countries and its orders, the Email funnel's sends (and
+the line under its chart, the sessions against the reference, which Funnel by channel shows),
+the range and the units on Sell-through forecast by work and the range and take-up on Framing
+forecast by work, and the two pills over the timed launch's forecast table. Sell-through by
+product reads "units" without an edition, Units by channel no longer says "no targets" (the
+strip under the header does), and the Spend levels card without a level keeps its pill, with
+the sentence behind it on the pill's hover.
 
 **References, kept off the card.** The plan is the release's frame conversion (`frame_terms`:
 the product's Airtable figure or the typed one, weighted over the products that frame, else the

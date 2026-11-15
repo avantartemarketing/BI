@@ -240,7 +240,7 @@ export default function ReleasePage({ snap, snapError, row, asOf, st, route, set
         </div>
         <span style={{ flex: 1 }} />
         {tab === "targets" && <span id="phead-status" style={{ display: "inline-flex", alignItems: "center", gap: 8 }} />}
-        {f && f.label && tab === "overview" && <span className="fresh" title={[f.head, f.body].filter(Boolean).join(" · ")}>{f.warn ? "⚠ " : ""}{f.label}</span>}
+        {f && f.label && tab === "overview" && <span className="fresh" title={[f.detail, f.head, f.body].filter(Boolean).join(" · ")}>{f.warn ? "⚠ " : ""}{f.label}</span>}
         {tab === "overview" && onRefresh && <RefreshButton st={st} onRefresh={onRefresh} />}
         {tab === "overview" && <DisplayMenu directSpread={directSpread} setDirectSpread={setDirectSpread} snap={snap} />}
       </header>

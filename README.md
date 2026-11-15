@@ -210,8 +210,11 @@ are set (the launches ahead of the funnel appear in the sidebar as Upcoming, doc
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
 freshness line, which shows the same thing. That line answers two questions apart
-(`shared/freshness.mjs`): the page's own age first, "Data through 30 Sep (today so far) · built
-08:46", from the page's `asOf` and `builtAt`, red only when the data is two or more days behind;
+(`shared/freshness.mjs`): the page's own age first, "Updated 08:46" from the page's `builtAt`
+since 13 November 2026 (the longer "Data through 30 Sep (today so far) · built 08:46", from
+`asOf` and `builtAt`, is in its hover with the muted notes, a refresh in progress and the feeds
+that are off; a page two or more days behind leads with "Data through" and its day), red only
+when the data is two or more days behind;
 then the pipeline's health, in amber and never red, since none of it says the figures on screen
 are wrong: "refresh failing since 22:08 yesterday" (`failingSince`, the first failed attempt of
 the current run), "1 page not built" (`etlPagesFailed`, `etlFailedPages`), a side feed that

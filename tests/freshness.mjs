@@ -18,7 +18,8 @@ const page = { asOf: "2026-09-30", partial: true, builtAt: iso(2026, 8, 30, 8, 4
 let f = freshness({ ...page, st: ok });
 assert.strictEqual(f.tone, "neutral");
 assert.strictEqual(f.warn, false);
-assert.ok(f.label.startsWith("Data through 2026-09-30 (today so far) · built "), f.label);
+assert.ok(/^Updated \S+/.test(f.label) && !f.label.includes("·"), f.label);
+assert.ok(f.detail.startsWith("Data through 2026-09-30 (today so far) · built "), f.detail);
 assert.ok(!/stale|failing|not built/.test(f.label), f.label);
 assert.strictEqual(f.head, "This page is current");
 
@@ -39,6 +40,7 @@ assert.strictEqual(f.tone, "red");
 assert.strictEqual(f.warn, true);
 assert.strictEqual(f.ageDays, 3);
 assert.strictEqual(f.head, "This page is 3 days behind");
+assert.strictEqual(f.label, "Data through 2026-09-27", "a page behind leads with the day its data runs to");
 // through yesterday is normal until the first refresh of the day
 f = freshness({ ...page, asOf: "2026-09-29", partial: false, st: ok });
 assert.strictEqual(f.tone, "neutral");
@@ -70,7 +72,7 @@ assert.strictEqual(f.head, "This page is current, email failed");
 // a feed with no token is named, muted, never amber
 f = freshness({ ...page, st: { ...ok, notion: "notion off (no NOTION_TOKEN)" } });
 assert.strictEqual(f.tone, "neutral");
-assert.ok(f.label.endsWith("· notion off"), f.label);
+assert.ok(!f.label.includes("notion off") && f.detail.endsWith("· notion off"), f.label);
 
 // the email feed a week or more behind the build
 f = freshness({ ...page, emailThrough: "2026-09-20", st: ok });
@@ -80,17 +82,17 @@ assert.ok(f.label.includes("emails through 2026-09-20"), f.label);
 // before the status has loaded, after a deploy, and when it cannot be read
 f = freshness({ ...page, st: undefined });
 assert.strictEqual(f.tone, "neutral");
-assert.ok(f.label.endsWith("· checking the refresh"), f.label);
+assert.ok(!f.label.includes("checking") && f.detail.endsWith("· checking the refresh"), f.label);
 f = freshness({ ...page, st: { running: true, runningSince: iso(2026, 8, 30, 9, 29) } });
 assert.strictEqual(f.tone, "neutral");
-assert.ok(f.label.endsWith("· refreshing"), f.label);
+assert.ok(!f.label.includes("refreshing") && f.detail.endsWith("· refreshing"), f.label);
 f = freshness({ ...page, st: null });
 assert.strictEqual(f.tone, "amber");
 assert.ok(f.label.endsWith("· refresh status unknown"), f.label);
 
 // a page built before builtAt existed: no build time, nothing else changes
 f = freshness({ ...page, builtAt: undefined, st: ok });
-assert.ok(!f.label.includes("built"), f.label);
+assert.ok(!f.label.includes("built") && f.label.startsWith("Data through 2026-09-30"), f.label);
 assert.strictEqual(f.tone, "neutral");
 
 // the moment words: a time today, "yesterday", else the day

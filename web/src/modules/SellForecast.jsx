@@ -56,8 +56,7 @@ export default function SellForecast({ snap, horizon = "today" }) {
   return (
     <Card title="Sell-through forecast by work" aria="Sell-through forecast by work">
       <Head v={pctWord} u="forecast"
-        aside={finite(H.edition) && H.edition > 0 ? `${Math.round(((H.lo ?? 0) / H.edition) * 100)}–${Math.round(((H.hi ?? 0) / H.edition) * 100)}% · ${fmt(H.units)} of ${fmt(H.edition)}` : `${fmt(H.lo)}–${fmt(H.hi)} · ${fmt(H.units)} units`}
-        asideTip={working} />
+        tip={[finite(H.edition) && H.edition > 0 ? `${Math.round(((H.lo ?? 0) / H.edition) * 100)}–${Math.round(((H.hi ?? 0) / H.edition) * 100)}% · ${fmt(H.units)} of ${fmt(H.edition)}` : `${fmt(H.lo)}–${fmt(H.hi)} · ${fmt(H.units)} units`, working].join("\n")} />
       <HBarChart H={34 + works.length * 34} L={150} bh={14} xmin={0} xmax={xmax} xticks={xticks} xfmt={(t) => (byEd ? `${t}%` : fmt(t))}
         rows={works.map((w) => short(w.name))}
         ranges={works.map((w) => (finite(w.lo) && finite(w.hi) ? [val(w, w.lo), Math.min(xmax, val(w, w.hi))] : null))}
