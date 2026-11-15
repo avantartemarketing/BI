@@ -152,7 +152,7 @@ const LOGIN_HTML = `<!doctype html>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { min-height: 100%; }
-  body { background: #f4f4f4; color: #1b1b1c; font-family: Inter, -apple-system, "Segoe UI", sans-serif;
+  body { background: #efefef; color: #1b1b1c; font-family: Inter, -apple-system, "Segoe UI", sans-serif;
          -webkit-font-smoothing: antialiased; font-size: 13px; min-height: 100vh;
          display: flex; align-items: center; justify-content: center; padding: 24px; }
   .card { width: min(360px, 100%); background: #fff; border: 1px solid #e8e8e8; border-radius: 14px;

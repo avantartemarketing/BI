@@ -997,6 +997,12 @@ its rows in the order of that count. Hovering a row shows a card with its state,
 target and when it closes or opens. Cmd+K (Ctrl+K) opens a command bar over every release,
 catalogue included (`CommandBar.jsx`). The groups come from `rows.mjs` off the index.
 
+**The greys** are Linear's, measured off its light theme (15 November 2026): the sidebar and
+the frame `#efefef` (`--bg`), a page `#f9f9f9` (`--panel`), and white (`--card`) only for what
+is raised off the page - a card, a menu, the chat's box. Hovers, bands and rules drawn on a
+page are a wash of black, so they read the same on the panel as on a card. The home page
+fades from the panel's grey at its head to the frame's at its foot, as Linear's Agent page does.
+
 **The home page** (`AgentHome.jsx`; 15 November 2026 - before, the app opened on the releases
 list, which repeated the sidebar) is a chat with the Agent, laid out as Linear's Agent page:
 one box in the middle, three examples under it (what needs attention, a chart, and the live
