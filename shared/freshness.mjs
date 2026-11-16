@@ -76,7 +76,13 @@ export function freshness({ asOf, partial, builtAt, st, emailThrough, funnelNote
     if (running) notes.push({ text: "refreshing", tone: "muted" });
   }
   const tone = behind ? "red" : notes.some((n) => n.tone === "amber") ? "amber" : "neutral";
-  const label = [data, built, ...notes.map((n) => n.text)].filter(Boolean).join(" · ");
+  // the header's words: when the page was last built, and only what is wrong
+  // after it (13 November 2026). A page two or more days behind leads with the
+  // day its data runs to instead. The day, "today so far", a refresh in
+  // progress and the feeds that are off are in the popup (`detail`).
+  const detail = [data, built, ...notes.map((n) => n.text)].filter(Boolean).join(" · ");
+  const lead = builtAt && !behind ? `Updated ${whenWords(builtAt, now)}` : data;
+  const label = [lead, ...notes.filter((n) => n.tone === "amber").map((n) => n.text)].join(" · ");
 
   // the popup: the page first, the pipeline second, then the feed lines
   const clock = (iso) => new Date(iso).toLocaleString();
@@ -103,7 +109,7 @@ export function freshness({ asOf, partial, builtAt, st, emailThrough, funnelNote
     ...(emailThrough ? [{ label: "Emails through", value: emailThrough, color: emailBehind ? "#8a5f00" : undefined }] : []),
     ...feeds.map(([k, v]) => ({ label: k, value: String(v) })),
   ];
-  return { label, tone, warn: behind, head, body, rows, ageDays, notes };
+  return { label, detail, tone, warn: behind, head, body, rows, ageDays, notes };
 }
 
 export const TONE_COLOR = { red: "#b8461d", amber: "#8a5f00", neutral: "#6c6b68" };

@@ -267,7 +267,7 @@ function model(snap, { horizon = "today", today, direct = false } = {}) {
   ].filter(Boolean).join(", ") + ".";
 
   // framing in words: the two readings the table's framing figure is made
-  // of, the Framing card's two bars (docs 6.4) - the frames bought with the
+  // of, the readings in the Framing card's headline hover (docs 6.4) - the frames bought with the
   // paid prints, and the frames the entrants still in the draw ask for on
   // their pre-authorisations; either alone where only one has anything to
   // say; nothing on a snapshot without the block, or where no print has a

@@ -10,8 +10,11 @@
  * key (server/planChanges.js) and laid over the build's list here, so a
  * handled change leaves the list until it is undone (the ⋯ menu shows them).
  * Nothing is written to the plan in Notion. The server also says whether
- * this account sees the card at all; without that the card draws nothing.
- * With nothing to suggest the card stays and reads "No suggested actions".
+ * this account sees the card at all. Its answer and the ticks are asked for
+ * beside the page and handed in (`state`, App.jsx), so the card is drawn
+ * with the page rather than a moment after it; when that read failed the
+ * card is drawn with no ticks. With nothing to suggest the card stays and
+ * reads "No suggested actions".
  *
  * Ask hands the question to the Agent, bottom right, with the change named
  * in it (an "agent:ask" event; Agent.jsx listens), so the card has no chat
@@ -90,23 +93,22 @@ function Row({ c, asOf, open, onOpen, onSet, artist }) {
   );
 }
 
-export default function PlanChanges({ snap }) {
+/* what the card reads when the server's answer did not arrive: shown, nothing ticked */
+const OPEN = { visible: true, states: {} };
+
+export default function PlanChanges({ snap, state }) {
   const pc = (snap && snap.planChanges) || {};   // nothing from the build: an empty list, and the card says so
   const id = snap && snap.id;
-  const [st, setSt] = useState(null);       // { visible, states } from the server
+  const [st, setSt] = useState(state || OPEN);   // { visible, states } from the server, loaded with the page
   const [open, setOpen] = useState(null);   // the open row's key
   const [more, setMore] = useState(false);
   const [handled, setHandled] = useState(false);
   const [plan, setPlan] = useState(false);
   const [note, setNote] = useState(null);
   useEffect(() => {
-    setSt(null); setOpen(null); setMore(false); setHandled(false); setPlan(false); setNote(null);
-    if (!id) return undefined;
-    let live = true;
-    fetch(`/api/releases/${id}/plan-changes`).then((r) => (r.ok ? r.json() : null)).then((d) => { if (live) setSt(d); }).catch(() => {});
-    return () => { live = false; };
-  }, [id]);
-  if (!st || !st.visible) return null;
+    setSt(state || OPEN); setOpen(null); setMore(false); setHandled(false); setPlan(false); setNote(null);
+  }, [id, state]);
+  if (!st.visible) return null;
 
   const states = st.states || {};
   const all = [...(pc.changes || []), ...(pc.more || [])];

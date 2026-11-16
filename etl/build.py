@@ -1156,12 +1156,21 @@ def line_paid(draws: dict, mine: list, titles: dict, release: dict) -> dict | No
     # the line each draw's work is on, for the card that says what an ad set
     # drives on each line (adset_entries)
     line_names = [(ln.get("key"), [str(n) for n in (ln.get("productNames") or []) if n]) for ln in (release.get("lines") or [])]
+    # each line's entries and conversions by day and channel, off its draws:
+    # what the page folds Untracked and Direct over (fold_line_paid)
+    series: dict = {}
 
     def line_of(title: str):
         return next((k for k, names in line_names if any(sellthrough._names_title(n, title) for n in names)), None)
     for did, d in draws.items():
         here = did in mine
         on_line = line_of(titles.get(did) or "") or (release.get("line") if here else None)
+        rows = series.setdefault(on_line, [])
+        for day, ch, elig, _open in (d.get("daily") if isinstance(d.get("daily"), list) else []):
+            rows.append({"channel": str(ch), "event_date": date.fromisoformat(str(day)[:10]), "rows": float(elig)})
+        for day, ch, claimed, pend_pre, pend_draw in (d.get("conv") if isinstance(d.get("conv"), list) else []):
+            rows.append({"channel": str(ch), "event_date": date.fromisoformat(str(day)[:10]), "claimed": float(claimed),
+                         "pend_pre": float(pend_pre), "pend_draw": float(pend_draw)})
         for day, label, n, claimed, pend_pre, pend_draw in d["paidBy"]:
             rec = {"event_date": date.fromisoformat(str(day)[:10]), "title": titles.get(did) or did, "rows": float(n), "line": on_line,
                    "claimed": float(claimed), "pend_pre": float(pend_pre), "pend_draw": float(pend_draw)}
@@ -1170,7 +1179,53 @@ def line_paid(draws: dict, mine: list, titles: dict, release: dict) -> dict | No
             a = adset_of_label(label, camps, every)
             if (a in own) if a is not None else here:
                 owned.append(rec)
-    return {"owned": owned, "onDraws": on_draws}
+    return {"owned": owned, "onDraws": on_draws, "series": series}
+
+
+_PAID_FOLD_COLS = ("rows", "claimed", "pend_pre", "pend_draw")
+
+
+def fold_line_paid(paid: dict | None, window_start: date, window_end: date, direct_spread: bool) -> dict | None:
+    """A line's ad set rows (line_paid) with the page's folds on them (13
+    November 2026): Untracked always, and Direct when the Direct switch
+    spreads it (docs 1.3), each shared out as the page shares it, over the
+    channels of the same line's works on the same day in proportion to what
+    they did. Paid's share of a line's works is then the ad sets' in
+    proportion to the entries each brought there that day, so every row is
+    scaled by what the fold made of paid social on its line's works that day,
+    entries and each conversion column by its own. Until then the page folded
+    Direct onto the paid entries of the line's own draws whoever's ad set had
+    brought them, and took the other ad set's entries off without the Direct
+    they had drawn: Ai Weiwei's toy-brick ad set, which brought no entry on
+    10 to 12 November, read 3 entries and an ROI of 0.33 with Direct spread,
+    on one entry of the prints' ad set, while the table under it, which
+    counted the ad sets' rows as they came, read none."""
+    if not paid:
+        return paid
+    factors: dict = {}
+    for key, rows in (paid.get("series") or {}).items():
+        if not rows:
+            continue
+        f = pd.DataFrame(rows)
+        for c in _PAID_FOLD_COLS:
+            f[c] = f[c].fillna(0.0) if c in f.columns else 0.0
+        f = f[(f["event_date"] >= window_start) & (f["event_date"] <= window_end)]
+        f = f.groupby(["channel", "event_date"], as_index=False)[list(_PAID_FOLD_COLS)].sum()
+        raw = f[f["channel"] == "Paid Social"].set_index("event_date")
+        if raw.empty:
+            continue
+        g = redistribute_untracked(f)
+        if direct_spread:
+            g = redistribute_channel(g, "Direct")
+        got = g[g["channel"] == "Paid Social"].set_index("event_date")
+        for c in _PAID_FOLD_COLS:
+            for day, v in raw[c].items():
+                if v > 0:
+                    factors[(key, day, c)] = float(got[c].get(day, v)) / float(v)
+
+    def folded(r: dict) -> dict:
+        return {**r, **{c: r[c] * factors.get((r.get("line"), r["event_date"], c), 1.0) for c in _PAID_FOLD_COLS}}
+    return {**paid, "owned": [folded(r) for r in paid["owned"]], "onDraws": [folded(r) for r in paid["onDraws"]]}
 
 
 def _paid_conv(rec: dict, release: dict) -> float:
@@ -6334,8 +6389,6 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         if line_info.get("paidByProduct"):
             # a paid entry's profit is the product it entered for
             release = with_entry_profit(release, line_info["paidByProduct"])
-        # ... and the ad set it clicked is the one credited with it
-        release = with_adset_profit(release, line_info.get("paidAdsets"))
     elif lines:
         # the combined page of the lines: paid's units priced as the works
         # they were entered for, not as the plan's mix
@@ -6366,6 +6419,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     direct_share = channel_share(win, "Direct")
     if direct_spread:
         win = redistribute_channel(win, "Direct")
+    # the line's ad set rows on the same footing as the page: Untracked folded
+    # in, and Direct when the switch spreads it (fold_line_paid), so the paid
+    # cards and the table under them include Direct together or not at all
+    paid_adsets = fold_line_paid((line_info or {}).get("paidAdsets"), window_start, window_end, direct_spread)
+    if line is not None:
+        # ... and the ad set a paid entry clicked is the one credited with it
+        release = with_adset_profit(release, paid_adsets)
     if uinfo["source"] == "orders":
         win = keep_units(win, uinfo["total"], pre)
     # once the window has shut, nothing in hand counts (docs 6.3): the
@@ -6424,13 +6484,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # a line's ad sets are credited with what their own clicks entered, on
     # either line's draws, and not with what the other line's ad sets
     # brought to its own (docs 7b, 10 November 2026)
-    adset_delta = line_paid_delta((line_info or {}).get("paidAdsets"), release)
+    adset_delta = line_paid_delta(paid_adsets, release)
     if adset_delta is not None:
         paid_conv_day = paid_conv_day.add(adset_delta, fill_value=0.0).clip(lower=0.0)
     # the entries the paid cards print are the ad sets' too (12 November
     # 2026); the forward path keeps to the entries of the line's own draws,
     # the works it places its units on (paid_entries_day)
-    entries_delta = line_paid_entries_delta((line_info or {}).get("paidAdsets"))
+    entries_delta = line_paid_entries_delta(paid_adsets)
     paid_entries_shown = (paid_entries_day.add(entries_delta, fill_value=0.0).clip(lower=0.0)
                           if entries_delta is not None else paid_entries_day)
     spend_day = psp.groupby("spend_date")["spend"].sum()
@@ -7674,7 +7734,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         **({"frameUpliftPerUnit": round(float(release["frame_uplift_paid"]), 2)} if release.get("frame_uplift_paid") is not None else {}),
         # what the line's ad sets drive on each line of the release, by day
         # (adset_entries); only on a line read by its ad sets
-        **({"adsetEntries": adset_entries(line_info.get("paidAdsets"), release)} if (line_info or {}).get("paidAdsets") else {}),
+        **({"adsetEntries": {**adset_entries(paid_adsets, release), "direct": bool(direct_spread)}} if paid_adsets else {}),
         "profitPerUnitAA": round(ppu_aa_read, 2),
         "profitPerUnitArtist": round(ppu_artist_read, 2),
         "aaBudgetShare": aa_budget_share,

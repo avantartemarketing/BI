@@ -44,7 +44,7 @@ const Sect = ({ children }) => <div className="wide sect">{children}</div>;
 // set named keeps its name alone
 const paidHead = (name, adsets) => `Paid · ${name}${(adsets || []).length > 1 ? " ad sets" : (adsets || []).length ? " ad set" : ""}`;
 
-export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lineViews }) {
+export default function Overview({ snap, base, actions, vs, horizon, onSetup, onOpen, lineViews }) {
   const isTL = snap.type === "TL";
   const targeted = snap.targeted !== false;
   // before the announce (a timed launch before its signups open too) the page shows what it knows
@@ -63,7 +63,7 @@ export default function Overview({ snap, base, vs, horizon, onSetup, onOpen, lin
   return (
     <div className="body">
       <div className="grid2">
-        {actionsOn && <PlanChanges snap={snap} />}
+        {actionsOn && <PlanChanges snap={snap} state={actions} />}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}

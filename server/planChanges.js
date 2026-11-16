@@ -12,10 +12,11 @@
  *   GET  /api/releases/:id/plan-changes   -> { visible, states: { key: { state, by, at } } }
  *   POST /api/releases/:id/plan-changes   { key, state: "accepted" | "dismissed" | null }
  *
- * Who sees the card is decided here too. PLAN_CHANGES_AUDIENCE is "admins"
- * (the default while the rules are new: the people on the Permissions tab
- * marked admin), "everyone" or "off"; `visible` carries the answer and the
- * card draws nothing without it.
+ * Who sees the card is decided here too. PLAN_CHANGES_AUDIENCE is "everyone"
+ * (the default since 16 November 2026), "admins" (the people on the
+ * Permissions tab marked admin; the default while the rules were new) or
+ * "off"; `visible` carries the answer and the card draws nothing when it is
+ * false.
  *
  * The file sits beside the decision log (PLAN_CHANGES_PATH, else the folder
  * DECISIONS_PATH names, else data/), so on the persistent disk it survives a
@@ -28,7 +29,7 @@ const ROOT = path.resolve(__dirname, "..");
 const FILE = process.env.PLAN_CHANGES_PATH
   || path.join(process.env.DECISIONS_PATH ? path.dirname(process.env.DECISIONS_PATH) : path.join(ROOT, "data"), "plan_changes.json");
 const AUDIENCES = new Set(["admins", "everyone", "off"]);
-const audience = () => (AUDIENCES.has(process.env.PLAN_CHANGES_AUDIENCE) ? process.env.PLAN_CHANGES_AUDIENCE : "admins");
+const audience = () => (AUDIENCES.has(process.env.PLAN_CHANGES_AUDIENCE) ? process.env.PLAN_CHANGES_AUDIENCE : "everyone");
 
 const ID = /^[a-z0-9_]{1,120}$/;
 const KEY = /^[a-z0-9_.]{1,64}$/;

@@ -210,8 +210,11 @@ are set (the launches ahead of the funnel appear in the sidebar as Upcoming, doc
 (signed-in session required): both **start** the refresh and return at once with
 `running: true`; poll `GET /api/refresh/status` for the outcome, or hover the header's
 freshness line, which shows the same thing. That line answers two questions apart
-(`shared/freshness.mjs`): the page's own age first, "Data through 30 Sep (today so far) · built
-08:46", from the page's `asOf` and `builtAt`, red only when the data is two or more days behind;
+(`shared/freshness.mjs`): the page's own age first, "Updated 08:46" from the page's `builtAt`
+since 13 November 2026 (the longer "Data through 30 Sep (today so far) · built 08:46", from
+`asOf` and `builtAt`, is in its hover with the muted notes, a refresh in progress and the feeds
+that are off; a page two or more days behind leads with "Data through" and its day), red only
+when the data is two or more days behind;
 then the pipeline's health, in amber and never red, since none of it says the figures on screen
 are wrong: "refresh failing since 22:08 yesterday" (`failingSince`, the first failed attempt of
 the current run), "1 page not built" (`etlPagesFailed`, `etlFailedPages`), a side feed that
@@ -604,8 +607,10 @@ Accepting or dismissing a change is kept by `server/planChanges.js` in `plan_cha
 beside the decision log (so on the persistent disk with it; `PLAN_CHANGES_PATH` names another
 place). Nothing is written to Notion or Meta. `node tests/plan_changes_route.mjs` runs the routes.
 
-**Who sees it:** `PLAN_CHANGES_AUDIENCE` is `admins` (the default while the rules are new),
-`everyone` or `off`. The refresh status line's Notion part says how many plan rows it read
+**Who sees it:** `PLAN_CHANGES_AUDIENCE` is `everyone` (the default since 16 November 2026),
+`admins` (the default while the rules were new) or `off`. A value set by hand under
+Environment on Render wins over the default, so one left at `admins` has to be changed or
+removed there. The refresh status line's Notion part says how many plan rows it read
 and how many of them are emails ("plan N rows (M email)"): a plan with no email rows
 means the "Not in the plan" email rule stays quiet, by design.
 
@@ -983,13 +988,32 @@ The app is laid out as Linear lays out a workspace (the redesign of 23 October 2
 "BI dashboard: every screen" design canvas): a sidebar on the left, one page on the right.
 
 **The sidebar** (`web/src/Sidebar.jsx`) carries the workspace menu top left (Methodology,
-Permissions for admins, Sign out), a search button, Releases and Targets, then the releases in
-three groups - In flight, Upcoming and Recent - each row a dot in the release's state colour
-and the artist's name, nothing else; hovering a row shows a card with its state, its gap to
+Permissions for admins, Sign out), a search button, Agent (the home page) and Releases (the
+full list), then the releases in three groups - In flight, Upcoming and Recent - each row the release's type as a small tag in
+its state colour (LE or TL, tinted green, amber or red; a grey outline without targets), the
+artist's name, and on the right the days to launch: to the close of a draw, to the sale
+opening on a timed launch ("Open" inside its window), darker within a week, and under Recent
+the day it launched (`launchWords` in `rows.mjs`; 13 November 2026 - before, a row was a dot
+and the name alone, and the type and the dates were only on the hover card). A section lists
+its rows in the order of that count. Hovering a row shows a card with its state, its gap to
 target and when it closes or opens. Cmd+K (Ctrl+K) opens a command bar over every release,
 catalogue included (`CommandBar.jsx`). The groups come from `rows.mjs` off the index.
 
-**Releases** (`Releases.jsx`), the page the app opens on, lists every launch as Linear lists
+**The greys** are Linear's, measured off its light theme (15 November 2026): the sidebar and
+the frame `#efefef` (`--bg`), a page `#f9f9f9` (`--panel`), and white (`--card`) only for what
+is raised off the page - a card, a menu, the chat's box. Hovers, bands and rules drawn on a
+page are a wash of black, so they read the same on the panel as on a card. The home page
+fades from the panel's grey at its head to the frame's at its foot, as Linear's Agent page does.
+
+**The home page** (`AgentHome.jsx`; 15 November 2026 - before, the app opened on the releases
+list, which repeated the sidebar) is a chat with the Agent, laid out as Linear's Agent page:
+one box in the middle, three examples under it (what needs attention, a chart, and the live
+release furthest behind its target) and the last few chats under those; once a question is
+asked the conversation runs down the page with the box at its foot. The header's name opens
+the list of chats and New chat. It is the same conversation the Agent's press shows on the
+other pages (`agentChat.js` holds it for both).
+
+**Releases** (`Releases.jsx`), under Releases in the sidebar (`?view=releases`), lists every launch as Linear lists
 issues: views All / In flight / Upcoming / Recent / Closed with their counts, LE and TL pills
 to filter by type, and a header row over the columns - Launch, Type, Against target (a bar
 to the target with a tick at 100%), Status (the gap to target, or the state in words), Lead
@@ -1038,7 +1062,8 @@ and its own options behind a ⋯ menu:
 An upcoming release shows what is known instead (Not live yet, the milestones, the works and
 their edition and price, Set targets); a release without targets shows its actuals alone.
 
-**The Agent**, bottom right of every page but Permissions (`Agent.jsx`), answers questions
+**The Agent**, the home page and the press bottom right of every other page but Permissions
+(`Agent.jsx`), answers questions
 about the data: how a release is doing, what a figure means and how it is worked out, and
 questions across launches that no card shows. It reads the release snapshots (with the
 reader's Direct display, so its figures match the screen), the tables under `data/` (units
@@ -1048,7 +1073,9 @@ card) and `docs/METHODOLOGY.md` are always in front of it, the rest it reads by 
 can draw line, bar, stacked, horizontal-bar and scatter charts in the chat, with the
 dashboard's chart components (`AgentChart.jsx`). It cannot change anything: its six tools
 (`server/agent/tools.js`) only read, and a chart lives only in the chat. On a release page
-the chat's scope switch picks This release or All launches; the thread is kept for the tab.
+the chat's scope switch picks This release or All launches; the open chat is kept for the tab,
+and the last twelve chats are kept in the reader's browser (never on the server) for the home
+page's list.
 
 The server (`server/agent/`) runs the tool loop through the Claude API with the key in
 `ANTHROPIC_API_KEY` and streams status lines, the answer and its charts back as server-sent

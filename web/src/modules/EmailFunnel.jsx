@@ -57,8 +57,6 @@ export default function EmailFunnel({ snap, vs = "target" }) {
   const { steps, byPlan, sessions } = emailStages(snap, vs);
   const e = snap.email || {};
   const g = (snap.funnelByGroup || {}).aa_email || {};
-  const cohort = (snap.benchmarks || {}).emailRefCohort;
-  const basketWords = cohort ? `the ${fmt(cohort.n)} launches with sends on file` : "the basket";
   const units = finite(g.units_actual) ? g.units_actual : null;
   const emailCh = (snap.channels || []).find((c) => c.key === "aa_email");
   const unitsNow = emailCh ? emailCh.now : units;
@@ -66,7 +64,7 @@ export default function EmailFunnel({ snap, vs = "target" }) {
   const unitsExp = emailCh ? (byBm ? emailCh.bmExp : emailCh.exp) : null;
   const W = wordsOf(snap);
   const head = finite(unitsNow)
-    ? <Head v={fmt(unitsNow)} u={`${W.unit} from email`} deltas={[byBm ? vsDelta(unitsNow, unitsExp, "benchmark", "Against the basket's AA Email units by today") : vsDelta(unitsNow, unitsExp, "plan", "Against the plan's AA Email units by today")]} aside={e.sends ? `${fmt(e.sends)} send${e.sends === 1 ? "" : "s"}` : ""} />
+    ? <Head v={fmt(unitsNow)} u={`${W.unit} from email`} deltas={[byBm ? vsDelta(unitsNow, unitsExp, "benchmark", "Against the basket's AA Email units by today") : vsDelta(unitsNow, unitsExp, "plan", "Against the plan's AA Email units by today")]} tip={e.sends ? `${fmt(e.sends)} send${e.sends === 1 ? "" : "s"}` : undefined} />
     : null;
   if (!steps.length) {
     return <Card title="Email funnel" aria="Email funnel">{head}<div className="empty-state">No sends on file for this release yet</div></Card>;
@@ -85,10 +83,6 @@ export default function EmailFunnel({ snap, vs = "target" }) {
   const signedPc = (d) => `${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d))}%`;
   const show = (s, v) => (s.kind === "count" ? fmt(v) : s.kind === "ratio" ? (Math.round(v * 100) / 100).toFixed(2) : pc(v * 100));
   const refName = (s) => (s.kind === "count" ? (byPlan ? "Plan by today" : "Basket by today") : s.src === "pages" ? `${RefWord}, organic sessions` : byPlan ? "Plan (the basket's rate)" : "Basket");
-  // the four sends stages multiply to the AA Email sessions against the same reference
-  const sessRef = byPlan ? g.sessions_expected : g.sessions_benchmark;
-  const sessDev = finite(sessions) && finite(sessRef) && sessRef > 0 ? (sessions / sessRef - 1) * 100 : null;
-  const chained = steps.filter((s) => !s.src).length === 4 && steps.filter((s) => !s.src).every((s) => finite(s.ref) && s.ref > 0);
   return (
     <Card title="Email funnel" aria="Email funnel">
       {head}
@@ -105,11 +99,6 @@ export default function EmailFunnel({ snap, vs = "target" }) {
           ];
         }}
         aria={`Email funnel against the ${refWord}: ${steps.map((s, i) => `${s.name} ${show(s, s.v)}${finite(s.ref) && s.ref > 0 ? ` (${signedPc(dev[i])} against ${show(s, s.ref)})` : ""}`).join("; ")}`} />
-      {chained && sessDev !== null && (
-        <div className="cnote" title={`Delivered x open rate x click rate (of opens) x sessions per click = AA Email sessions, so the four bars multiply to the sessions against the ${refWord}, the figure Funnel by channel shows. The plan holds the rates at ${basketWords}' and scales the volume, so Delivered is where the plan and the basket part.`}>
-          Together: AA Email sessions <b className={sessDev >= 0 ? "rag-up" : sessDev >= -20 ? "rag-near" : "rag-dn"}>{signedPc(sessDev)}</b> vs {refWord}
-        </div>
-      )}
     </Card>
   );
 }

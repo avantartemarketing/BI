@@ -1485,7 +1485,11 @@ entries of the line's own draws. `paid.adsetEntries` (`adset_entries`) is the En
 table under the line's paid cards: `lines[]` (`key`, `name`, `own`) and `daily[]` (`date`,
 `line`, `entries`, `paid`, `preorders`, `draws`), what the line's ad sets drove on each line
 of the release; the card adds the waiting units at `preorderRate` and the entry rate and
-sums the days its switch picks (all, or the last seven, three or one full days). The combined page of such a release is not moved by the ad sets (every paid entry
+sums the days its switch picks (all, or the last seven, three or one full days). Its rows carry
+the page's folds since 13 November 2026 (`fold_line_paid`): Untracked always, and Direct in the
+page's Direct view (`direct` true, under `variants.lines_direct`), each shared between the ad
+sets as their own entries on that line's works that day, so the table adds up to the paid
+cards' entries and converting units either way the Direct switch is set. The combined page of such a release is not moved by the ad sets (every paid entry
 is its campaign's), but its paid profit per unit is weighted the same way since the same day:
 every work's own by the paid-social converting units on its draw (`with_paid_profit`, from
 each draw's `conv`; `aa_ppu_paid`, `artist_ppu_paid`, and `paid.frameUpliftPerUnit` for the
@@ -2046,7 +2050,7 @@ run to (the page's `asOf`, "so far" while `asOfFraction` is under 1), the attrib
 page has Direct on Spread, the totals (paid, awaiting payment, expected from the draw, at close the units still
 to come) and the two framing readings behind the table's figure (`framing.rate` on the paid
 prints with the count behind it, and the entrants' rate on their pre-authorised prints, the
-Framing card's two bars, §6.4; either alone where only one has anything to say; nothing on a
+the two readings in the Framing card's headline hover, §6.4; either alone where only one has anything to say; nothing on a
 snapshot without the block or where no print has a frame on offer; the plan's rate is not
 repeated) as plain sentences. The figures are computed once, on the server, at the horizon the page is on
 and with its Direct switch (on Spread, from the snapshot with `variants.direct_spread` laid over
@@ -2136,10 +2140,10 @@ counted apart. The rate is read on prints rather than orders because the economi
 print: 71% of the Warhol buyers took a frame but 67% of the prints went out framed, a few
 multi-print orders having framed only some.
 
-Two populations, on the same scale (the feed's framing columns, §2.4), drawn as the card's
-two bars:
+Two populations, on the same scale (the feed's framing columns, §2.4), the two readings the
+headline is made of, named in its hover:
 
-| Bar | Numerator / denominator | What it says |
+| Reading | Numerator / denominator | What it says |
 |---|---|---|
 | Buyers | `frames_paid` / `prints_offered_paid` (paid orders: not cancelled, not pending, not refunded in full) | what has gone out framed |
 | Entrants | `frames_entry_drafts` / `prints_offered_entry_drafts` (the app's pre-authorisation drafts, §2.4) | the frames the people still in the draw have asked for: what allocation brings if they win at this rate |
@@ -2166,6 +2170,27 @@ entrants had asked for frames on 73%, so the 68.5% headline is the two weighted 
 each brings. A snapshot built before the forecast heads the card with the buyers' rate, says
 "of paid prints", and the Slack table leaves its framing columns out.
 
+**The bars are the works.** Since 13 November 2026 the card draws a bar per work, not one for
+the buyers and one for the entrants: each work's frames per print on the headline's own units
+at the page's horizon (`framing.forecast.products`, in the sell-through's order), so the bars
+add up to the headline, with the basket's rate a dotted mark on each. A work's hover gives its
+frames and prints, and its paid prints so far where the two differ. Works that are variants of
+one work show the variant alone ("White Portrait"), as on the sell-through cards. A snapshot
+whose forecast has no rows by work draws each work's paid prints (`works[]`), and a release
+read as one row draws one bar, "All works". The buyers' and the entrants' readings moved to
+the headline's hover, and with them the count behind the rate ("770 of 1,123 prints"): the
+head is the rate alone.
+
+**Less copy on the cards (13 November 2026).** The grey words beside a card's headline figure
+went where the chart or a table already says them, and are on the figure's hover instead:
+Orders by country's share in the top countries and its orders, the Email funnel's sends (and
+the line under its chart, the sessions against the reference, which Funnel by channel shows),
+the range and the units on Sell-through forecast by work and the range and take-up on Framing
+forecast by work, and the two pills over the timed launch's forecast table. Sell-through by
+product reads "units" without an edition, Units by channel no longer says "no targets" (the
+strip under the header does), and the Spend levels card without a level keeps its pill, with
+the sentence behind it on the pill's hover.
+
 **References, kept off the card.** The plan is the release's frame conversion (`frame_terms`:
 the product's Airtable figure or the typed one, weighted over the products that frame, else the
 last twelve months' frames per print in the band of the frame's price against the print's,
@@ -2178,14 +2203,14 @@ panel the draw launches run at 0.54 frames per print, the timed launches at 0.35
 the plan default came from), and the estate draws higher still (Mondrian 0.67, Warhol 0.67,
 Dali 0.58, Murakami 0.55). Both stay in the snapshot's `framing` block, and the plan's uplift is
 in the economics, but since 3 October 2026 the Framing card draws neither: it reads what is,
-the headline, the two bars with their numbers and the units with no frame on offer, and
+the headline, the bars by work with their numbers and the units with no frame on offer, and
 nothing on it is a target.
 
 The snapshot's `framing` block (`framing_block`): `prints`, `frames`, `rate` (the paid
-prints, the Buyers bar); `entrants` (`prints`, `frames`, `rate`, or null without entry
+prints, the buyers' reading); `entrants` (`prints`, `frames`, `rate`, or null without entry
 drafts); `plan`; `benchmark` (`rate`, `n` members rated, `of` members in the basket, or
 null); `works[]` (per product with paid prints on offer: `name`, `prints`, `frames`, `rate`,
-sorted by rate, the Buyers bar's hover); `notOffered` (`units` paid with no framing option,
+sorted by rate, each bar's paid prints in its hover and the bars themselves without the forecast's rows); `notOffered` (`units` paid with no framing option,
 and the `works`); `forecast` (`framing_forecast`: `today` and `close`, each `prints`,
 `frames`, `rate` and `notOffered`, the units counted with no frame on offer, and `parts`,
 the same prints and frames by kind of unit - `paid` (with the sales no work is named for),
@@ -2198,7 +2223,7 @@ Null when nothing on the release has been offered a frame: the card keeps its pl
 A feed pulled before the framing columns existed reads as no framing. The forecast differs
 between the Direct views at close (the entries still to come do), so it rides in
 `variants.direct_spread` like the sell-through. The sell-through update posted to Slack
-reads the forecast for its framing columns and the two bars' rates for its framing sentence
+reads the forecast for its framing columns and the buyers' and entrants' rates for its framing sentence
 (§6.3), so the channel reads the card's figures.
 
 ---
@@ -2538,8 +2563,10 @@ ones with no estimate. `key` is stable per rule (`email.last_chance.widen`,
 **Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed, by,
 at}}}` in `plan_changes.json` beside the decision log; `by` is the signed-in address's part
 before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` and the card
-draws nothing unless `visible` (`PLAN_CHANGES_AUDIENCE`: `admins` by default, `everyone`,
-`off`). On a draw launch in flight the card keeps its place when the build has nothing for it
+draws nothing when `visible` is false (`PLAN_CHANGES_AUDIENCE`: `everyone` by default since
+16 November 2026, `admins`, `off`). The page asks for it beside the release's snapshot and
+draws once both have landed (`App.jsx`), so the card is on the page at its first paint; a read
+that fails draws the card with no ticks. On a draw launch in flight the card keeps its place when the build has nothing for it
 (no `planChanges`, or an empty list) and reads "No suggested actions".
 
 **Not in it yet:** AA Social, uneven works, paid creative and audiences, WhatsApp and SMS
@@ -2571,7 +2598,7 @@ Per the design handoff (README + artboards; the mock's reconciliation rules are 
 | Paid spend/day | recommended | §7: min(ROI-floor spend, supply-cap spend), paced by the spend rules, `cap` naming the rule that bound it; Implement → append-only decision log |
 | Sell-through by product | rows | §6.3: per product sold / entries in hand allocated by the maximum-quantity rule × the entry → order rate / (at close) units still to come, against the product's edition; no target or benchmark drawn |
 | Orders by country | top 5 | units paid by the country the order ships to, from the orders feed (`data/units_by_country.csv`, since 28 October 2026); entries by country would need `Collector_Concept` |
-| Framing | buyers, entrants | §6.4: frames per print on the prints a frame was on offer for, paid orders and the app's pre-authorisation drafts; no plan or benchmark on the card |
+| Framing | a bar per work | §6.4: frames per print on the prints a frame was on offer for, each work on the headline's units (paid, awaiting payment, expected from the draw); the buyers' and entrants' readings in the headline's hover; no plan or benchmark on the card |
 | Projection vs target | waterfall | stored model outputs: Organic traffic / Organic conversion / Paid spend / Paid efficiency contributions summing exactly to projection − target |
 
 Every figure in the table can explain itself: shift-click it on the page and the explainer

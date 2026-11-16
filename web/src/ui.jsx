@@ -54,10 +54,10 @@ export function Card({ wide, title, seg, menu, right, children, style, aria, cla
 
 /* The headline in a card's head: the figure, its unit, the deltas (each
  * { t, dir: "up" | "dn" | "flat" }) and a quiet aside with a hover. */
-export function Head({ v, u, deltas = [], aside, asideTip, children }) {
+export function Head({ v, u, deltas = [], aside, asideTip, tip, children }) {
   return (
     <div className="hn">
-      <span className="hv">{v}</span>
+      <span className="hv" title={tip}>{v}</span>
       {u ? <span className="hu">{u}</span> : null}
       {deltas.filter(Boolean).map((d, i) => (
         <span key={i} className={`dl ${d.dir || "flat"}`} title={d.tip}>{d.dir === "up" ? <Up /> : d.dir === "dn" ? <Dn /> : null}{d.t}</span>

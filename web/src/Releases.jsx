@@ -1,4 +1,4 @@
-/* The releases list, the page the app opens on: every launch in flight,
+/* The releases list, under Releases in the sidebar: every launch in flight,
  * upcoming and recently closed, laid out as Linear lists issues. Each group
  * is a rounded band with a caret that folds it, a status icon, the name and
  * the count. Each row reads left to right: the state dot, the type where
@@ -7,7 +7,7 @@
  * opens. Views narrow it; the LE and TL pills filter by type. */
 import React, { useState } from "react";
 import { Avatar, Badge } from "./ui.jsx";
-import { Caret8 } from "./icons.jsx";
+import { Caret8, Hamburger } from "./icons.jsx";
 import { nameOf, stateColor, statusWord, vsTarget, whenWords } from "./rows.mjs";
 
 const VIEWS = [["all", "All"], ["live", "In flight"], ["upcoming", "Upcoming"], ["recent", "Recent"], ["closed", "Closed"]];
@@ -56,7 +56,7 @@ function Row({ r, asOf, onPick }) {
   );
 }
 
-export default function Releases({ groups, asOf, onPick }) {
+export default function Releases({ groups, asOf, onPick, onMenu }) {
   const [view, setView] = useState("all");
   const [type, setType] = useState(null);
   const [shut, setShut] = useState(() => new Set());
@@ -70,6 +70,7 @@ export default function Releases({ groups, asOf, onPick }) {
   return (
     <main className="page rel">
       <header className="phead">
+        <button className="ib menub" style={{ marginLeft: -8 }} aria-label="Open the sidebar" onClick={onMenu}><Hamburger /></button>
         <span className="name">Releases</span>
         <span style={{ flex: 1 }} />
       </header>

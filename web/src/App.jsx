@@ -1,8 +1,9 @@
 /* The dashboard shell (the Linear redesign, October 2026): the sidebar, the
- * releases list, a release's page, the permissions page, the command bar
- * and the Agent (on every page but Permissions). The address carries where the reader is (?release=<id>,
- * &tab=targets, &basket=1, ?view=releases, ?view=permissions) so a page can
- * be shared or reloaded.
+ * Agent's chat as the home page, the releases list, a release's page, the
+ * permissions page, the command bar and the Agent's press (on every page but
+ * the home page and Permissions). The address carries where the reader is
+ * (nothing for the home page, ?release=<id>, &tab=targets, &basket=1,
+ * ?view=releases, ?view=permissions) so a page can be shared or reloaded.
  *
  * Settings that hold for every release (Direct spread) live here and stick
  * per browser; a reading of one release (its horizon, its line) lives on its
@@ -14,6 +15,8 @@ import Releases from "./Releases.jsx";
 import ReleasePage from "./ReleasePage.jsx";
 import Permissions from "./Permissions.jsx";
 import AgentDock from "./Agent.jsx";
+import AgentHome from "./AgentHome.jsx";
+import { useAgentChat } from "./agentChat.js";
 import { sidebarGroups } from "./rows.mjs";
 
 async function getJSON(url) {
@@ -34,15 +37,15 @@ function readRoute() {
   if (q.get("view") === "permissions") return { view: "permissions" };
   if (id) return { view: "release", id, tab: q.get("tab") === "targets" ? "targets" : "overview", basket: q.get("basket") === "1" };
   if (q.get("view") === "releases") return { view: "releases" };
-  return { view: null };
+  return { view: "home" };   // nothing named opens the Agent's chat
 }
 function writeRoute(r) {
   const q = new URLSearchParams();
   if (r.view === "permissions") q.set("view", "permissions");
   else if (r.view === "release" && r.id) { q.set("release", r.id); if (r.tab === "targets") q.set("tab", "targets"); if (r.basket) q.set("basket", "1"); }
-  else q.set("view", "releases");
-  const s = "?" + q.toString();
-  if (s !== window.location.search) { try { window.history.pushState(null, "", s); } catch { /* not important */ } }
+  else if (r.view === "releases") q.set("view", "releases");
+  const s = q.toString() ? "?" + q.toString() : "";
+  if (s !== window.location.search) { try { window.history.pushState(null, "", s || window.location.pathname); } catch { /* not important */ } }
 }
 
 const DIRECT_PREF = "directSpread";
@@ -81,6 +84,7 @@ export default function App() {
   const [route, setRoute] = useState(readRoute);
   const [snap, setSnap] = useState(null);
   const [snapError, setSnapError] = useState(null);
+  const [actions, setActions] = useState(null);   // the Suggested actions card's { visible, states }, loaded with the page
   const [nav, setNav] = useState(false);
   const [palette, setPalette] = useState(false);
   const [directSpread, setDirectSpreadState] = useState(readDirectPref);
@@ -92,9 +96,7 @@ export default function App() {
   useEffect(() => { fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {}); }, []);
   const loadIndex = useCallback(() => getJSON("/api/index").then((ix) => { setIndex(ix); return ix; }), []);
   useEffect(() => { loadIndex().catch((e) => setError(String(e))); }, [loadIndex]);
-  // the address opens the page it names; nothing named opens the releases list
-  useEffect(() => { if (route.view === null) setRoute({ view: "releases" }); }, [route.view]);
-  useEffect(() => { if (route.view) writeRoute(route); }, [route]);
+  useEffect(() => { writeRoute(route); }, [route]);
   useEffect(() => {
     const back = () => setRoute(readRoute());
     window.addEventListener("popstate", back);
@@ -113,9 +115,21 @@ export default function App() {
 
   const releaseId = route.view === "release" ? route.id : null;
   useEffect(() => {
-    if (!releaseId) return;
-    setSnap(null); setSnapError(null);
-    getJSON(`/api/releases/${releaseId}`).then(setSnap).catch((e) => setSnapError({ message: e.message, pending: !!e.pending }));
+    if (!releaseId) return undefined;
+    setSnap(null); setSnapError(null); setActions(null);
+    // the Suggested actions card's ticks are asked for beside the page and
+    // land with it, so the card is there at the first paint, not a moment
+    // after; a read that fails, or is not back in four seconds, costs the
+    // ticks, never the page
+    let live = true;
+    const acts = Promise.race([
+      fetch(`/api/releases/${releaseId}/plan-changes`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      new Promise((done) => setTimeout(() => done(null), 4000)),
+    ]);
+    Promise.all([getJSON(`/api/releases/${releaseId}`), acts])
+      .then(([s, a]) => { if (live) { setActions(a); setSnap(s); } })
+      .catch((e) => { if (live) setSnapError({ message: e.message, pending: !!e.pending }); });
+    return () => { live = false; };
   }, [releaseId]);
   // a save's rebuild lands whenever it lands: only the page on screen is swapped
   const onScreen = React.useRef(releaseId);
@@ -129,6 +143,10 @@ export default function App() {
   const groups = useMemo(() => (index ? sidebarGroups(index.releases, index.asOf) : { all: [], live: [], upcoming: [], recent: [], closed: [], catalogue: [] }), [index]);
   const current = groups.all.find((r) => r.id === releaseId) || null;
 
+  // one conversation for the whole app: the home page and the press bottom right both show it
+  const chat = useAgentChat({ snap: route.view === "release" ? snap : null,
+    context: { view: route.view, release: releaseId, tab: route.tab, display: directSpread ? "spread" : "channel", compareTo } });
+
   const pick = (id, tab) => { setRoute({ view: "release", id, tab: tab || "overview", basket: false }); setNav(false); setPalette(false); window.scrollTo(0, 0); };
   const go = (r) => { setRoute(r); setNav(false); window.scrollTo(0, 0); };
 
@@ -137,22 +155,21 @@ export default function App() {
     <>
       <div className="app">
         <Sidebar groups={groups} asOf={index && index.asOf} currentId={releaseId} view={route.view} me={me} open={nav} onClose={() => setNav(false)}
-          onPick={pick} onReleases={() => go({ view: "releases" })} onPermissions={() => go({ view: "permissions" })}
+          onPick={pick} onHome={() => go({ view: "home" })} onReleases={() => go({ view: "releases" })} onPermissions={() => go({ view: "permissions" })}
           onSearch={() => setPalette(true)} />
         {route.view === "permissions" ? (
           <Permissions me={me} onMenu={() => setNav(true)} />
         ) : route.view === "release" ? (
-          <ReleasePage snap={snap} snapError={snapError} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
+          <ReleasePage snap={snap} snapError={snapError} actions={actions} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
             directSpread={directSpread} setDirectSpread={setDirectSpread} compareTo={compareTo} setCompareTo={setCompareTo} onSaved={onSaved} onRefreshed={onRefreshed} onRefresh={startRefresh} onOpen={pick} onMenu={() => setNav(true)} />
+        ) : route.view === "releases" ? (
+          <Releases groups={groups} asOf={index && index.asOf} onPick={pick} onMenu={() => setNav(true)} />
         ) : (
-          <Releases groups={groups} asOf={index && index.asOf} onPick={pick} />
+          <AgentHome chat={chat} groups={groups} onMenu={() => setNav(true)} />
         )}
       </div>
       {palette && <CommandBar groups={groups} asOf={index && index.asOf} onPick={pick} onClose={() => setPalette(false)} />}
-      {route.view !== "permissions" && (
-        <AgentDock snap={route.view === "release" ? snap : null}
-          context={{ view: route.view, release: releaseId, tab: route.tab, display: directSpread ? "spread" : "channel", compareTo }} />
-      )}
+      {route.view !== "permissions" && route.view !== "home" && <AgentDock chat={chat} snap={route.view === "release" ? snap : null} />}
     </>
   );
 }
