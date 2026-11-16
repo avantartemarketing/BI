@@ -2535,9 +2535,14 @@ ones with no estimate. `key` is stable per rule (`email.last_chance.widen`,
 `artist.post.unseen`, `artist.last_chance.add`), which is what a tick is saved against.
 `lever` is the id in the marketing team's lever playbook.
 
-**Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed, by,
-at}}}` in `plan_changes.json` beside the decision log; `by` is the signed-in address's part
-before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` and the card
+**Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed |
+snoozed, by, at, until}}}` in `plan_changes.json` beside the decision log; `by` is the
+signed-in address's part before the @. `accepted` is the card's Mark as complete and
+`dismissed` its Delete (the first card's words, kept so the file on the disk reads as it
+did); `snoozed` carries `until`, a time ahead of the save and at most 60 days off, and a
+snooze past it is left out of a read, so the row is back in the list. A save takes one
+`key` or several `keys` (at most 50) in one write, which is how the card's tickboxes and
+Actions button handle rows together. `GET /api/releases/:id/plan-changes` returns `{visible, states}` and the card
 draws nothing unless `visible` (`PLAN_CHANGES_AUDIENCE`: `admins` by default, `everyone`,
 `off`). On a draw launch in flight the card keeps its place when the build has nothing for it
 (no `planChanges`, or an empty list) and reads "No suggested actions".

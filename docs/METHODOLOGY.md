@@ -1009,8 +1009,13 @@ so when the recent launches stand in, only those whose biggest send was
 between half and twice this launch's are read. A change with too little
 behind it says "No estimate" rather than guess.
 
-**Accept and Dismiss** are a record on the dashboard (who, and when), undone
-from the card's menu. Nothing is written to the plan in Notion or to Meta. A
+**Mark as complete, Snooze and Delete** are a record on the dashboard (who,
+and when), undone from the card's menu. Each row has a tickbox: tick one or
+several and an Actions button appears at the foot of the page that does any
+of the three to all of them at once; an open row has the same three presses
+for itself. A snoozed change leaves the list and comes back by itself
+tomorrow, in 3 days or in a week, as chosen. Nothing is written to the plan
+in Notion or to Meta. A
 change stops being proposed by itself once the send appears in HubSpot, the
 row appears in the plan, or the spend moves. **Ask** hands the question to
 the Agent.

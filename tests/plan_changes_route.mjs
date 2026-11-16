@@ -1,7 +1,9 @@
 /* The Suggested actions card's server side end to end (server/planChanges.js): an
- * admin sees the card and a change they accept, dismiss or undo is kept by
- * release and key with who and when (the name before the @, never the
- * address); a body that is not a change is refused; and while the audience is
+ * admin sees the card and a change they complete ("accepted"), delete
+ * ("dismissed"), snooze or undo is kept by release and key with who and when
+ * (the name before the @, never the address), one row or several in a write,
+ * a snooze until its day and no longer; a body that is not a change is
+ * refused; and while the audience is
  * admins another account is told the card is not theirs and can save nothing.
  *
  *   node tests/plan_changes_route.mjs
@@ -85,9 +87,27 @@ check(Object.keys(r.body.states).length === 0, "another release has its own");
 r = await admin.post(url, { key: "email.last_chance.widen", state: null });
 check(r.status === 200 && !r.body.states["email.last_chance.widen"] && r.body.states["artist.post.unseen"], `undone: ${JSON.stringify(r.body)}`);
 
+// several rows in one write, and a snooze: kept with its day, gone from a read once the day has come
+const soon = new Date(Date.now() + 3 * 86400000).toISOString();
+r = await admin.post(url, { keys: ["email.mid.add", "paid.lower"], state: "snoozed", until: soon });
+check(r.status === 200 && ["email.mid.add", "paid.lower"].every((k) => r.body.states[k] && r.body.states[k].state === "snoozed" && r.body.states[k].until === soon) && r.body.states["artist.post.unseen"],
+  `two snoozed in one write, the rest as it was: ${JSON.stringify(r.body)}`);
+r = await admin.post(url, { keys: ["email.mid.add", "paid.lower"], state: null });
+check(r.status === 200 && Object.keys(r.body.states).join() === "artist.post.unseen", `and both undone in one: ${JSON.stringify(r.body)}`);
+const doc = JSON.parse(fs.readFileSync(FILE, "utf8"));
+doc[RELEASE]["email.mid.add"] = { state: "snoozed", by: "tom.lloyd", at: "2026-01-01T09:00:00.000Z", until: "2026-01-02T00:00:00.000Z" };
+fs.writeFileSync(FILE, JSON.stringify(doc));
+r = await admin.get(url);
+check(!r.body.states["email.mid.add"] && r.body.states["artist.post.unseen"], `a snooze whose day has come is back in the list: ${JSON.stringify(r.body)}`);
+r = await admin.post(url, { key: "artist.post.unseen", state: "dismissed" });
+check(!JSON.parse(fs.readFileSync(FILE, "utf8"))[RELEASE]["email.mid.add"], "and leaves the file with the next write");
+
 // refused bodies write nothing
 const before = fs.readFileSync(FILE, "utf8");
-for (const body of [{ key: "email.last_chance.widen", state: "done" }, { state: "accepted" }, { key: "../etc", state: "accepted" }, { key: "x".repeat(80), state: "accepted" }]) {
+const far = new Date(Date.now() + 90 * 86400000).toISOString();
+for (const body of [{ key: "email.last_chance.widen", state: "done" }, { state: "accepted" }, { key: "../etc", state: "accepted" }, { key: "x".repeat(80), state: "accepted" },
+  { keys: [], state: "accepted" }, { keys: ["a.b", "../etc"], state: "accepted" }, { keys: Array.from({ length: 51 }, (_, i) => `k.${i}`), state: "accepted" },
+  { key: "a.b", state: "snoozed" }, { key: "a.b", state: "snoozed", until: "2026-01-02T00:00:00.000Z" }, { key: "a.b", state: "snoozed", until: far }, { key: "a.b", state: "snoozed", until: "soon" }]) {
   r = await admin.post(url, body);
   check(r.status === 400, `refused: ${JSON.stringify(body)} -> ${r.status}`);
 }
@@ -121,5 +141,5 @@ srv.app.kill();
 
 fs.rmSync(tmp, { recursive: true, force: true });
 if (failed) { console.error(`plan changes route: ${failed} failed`); process.exit(1); }
-console.log("plan changes route: ok (accept, dismiss, undo, refusals, admins only by default, everyone, off)");
+console.log("plan changes route: ok (complete, delete, snooze, several at once, undo, refusals, admins only by default, everyone, off)");
 process.exit(0);

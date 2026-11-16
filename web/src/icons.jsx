@@ -33,6 +33,7 @@ export const Arrow = ({ w = 13 }) => I('<path d="M8 13V3M8 3L4 7M8 3l4 4"></path
 export const X = ({ w = 14 }) => I('<path d="M4 4l8 8M12 4l-8 8"></path>', w, 1.6);
 export const Plus = ({ w = 14 }) => I('<path d="M8 3v10M3 8h10"></path>', w, 1.5);
 export const Check = ({ w = 14 }) => I('<path d="M3 8.5l3.2 3L13 4.5"></path>', w, 1.6);
+export const Trash = ({ w = 14 }) => I('<path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"></path>', w, 1.4);
 export const Undo = ({ w = 14 }) => I('<path d="M3 8a5 5 0 1 0 1.5-3.5"></path><path d="M3 2.5v2.5h2.5"></path>', w, 1.5);
 export const Send = ({ w = 15 }) => I('<path d="M2.5 8L13.5 3l-3.5 10.5-2.5-4.5z"></path>', w);
 export const Agent = ({ w = 14 }) => <svg width={w} height={w} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true"><path d="M3 2.5l10 4.2-4.3 1.6L7 12.8z" /></svg>;

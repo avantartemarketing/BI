@@ -1,16 +1,25 @@
-/* The Suggested actions card's ticks and dismissals (web/src/modules/PlanChanges.jsx;
+/* What a reader has done with a suggested action (web/src/modules/PlanChanges.jsx;
  * the card was named Plan changes for its first hours, and the files, the
  * route and the setting keep that name).
  *
  * The build proposes changes to a live launch's comms plan on its page
  * (etl/plan_changes.py, `planChanges` on the snapshot). What a person does
- * with one - accept it, or dismiss it - is theirs, not the build's, so it is
- * kept here, by release and by the change's key, and laid over the page's
- * list by the card: an accepted or dismissed change leaves the list until it
- * is undone. Nothing is written to the plan in Notion; this is a record.
+ * with one - mark it complete, snooze it, or delete it - is theirs, not the
+ * build's, so it is kept here, by release and by the change's key, and laid
+ * over the page's list by the card: a handled change leaves the list until it
+ * is undone, and a snoozed one comes back by itself once its day arrives.
+ * Nothing is written to the plan in Notion; this is a record.
  *
- *   GET  /api/releases/:id/plan-changes   -> { visible, states: { key: { state, by, at } } }
- *   POST /api/releases/:id/plan-changes   { key, state: "accepted" | "dismissed" | null }
+ * The saved words are older than the card's: "accepted" is the card's Mark
+ * as complete and "dismissed" its Delete (the first card said Accept and
+ * Dismiss, and the file on the disk keeps those). "snoozed" carries `until`.
+ *
+ *   GET  /api/releases/:id/plan-changes   -> { visible, states: { key: { state, by, at, until? } } }
+ *   POST /api/releases/:id/plan-changes   { key | keys: [..], state: "accepted" | "dismissed" | "snoozed" | null, until? }
+ *
+ * `keys` handles several rows in one write (the card's tickboxes and its
+ * Actions menu). `until` is a time ahead of now and at most SNOOZE_MAX_DAYS
+ * off; a snooze past its `until` is left out of what a read returns.
  *
  * Who sees the card is decided here too. PLAN_CHANGES_AUDIENCE is "admins"
  * (the default while the rules are new: the people on the Permissions tab
@@ -32,7 +41,11 @@ const audience = () => (AUDIENCES.has(process.env.PLAN_CHANGES_AUDIENCE) ? proce
 
 const ID = /^[a-z0-9_]{1,120}$/;
 const KEY = /^[a-z0-9_.]{1,64}$/;
-const STATES = new Set(["accepted", "dismissed"]);
+const STATES = new Set(["accepted", "dismissed", "snoozed"]);
+const MAX_KEYS = 50;
+const SNOOZE_MAX_DAYS = 60;
+const DAY_MS = 86400000;
+const bad = (msg) => Object.assign(new Error(msg), { status: 400 });
 
 function read() {
   try {
@@ -50,17 +63,31 @@ function write(doc) {
   fs.renameSync(tmp, FILE);
 }
 
-const statesOf = (id) => read()[id] || {};
+/* a release's states as a read gives them: a snooze whose day has come is no longer one */
+const current = (rel, now) => Object.fromEntries(Object.entries(rel || {}).filter(([, v]) => !(v && v.state === "snoozed" && !(Date.parse(v.until) > now.getTime()))));
+const statesOf = (id, now = new Date()) => current(read()[id], now);
 
-/* One change's state for one release; null clears it. Returns the release's states. */
-function setState(id, key, state, by, now = new Date()) {
-  if (!ID.test(String(id || ""))) throw Object.assign(new Error("unknown release"), { status: 400 });
-  if (!KEY.test(String(key || ""))) throw Object.assign(new Error("key is required"), { status: 400 });
-  if (state !== null && !STATES.has(state)) throw Object.assign(new Error("state is accepted, dismissed or null"), { status: 400 });
+/* One state for one change or several of one release; null clears it, and
+ * "snoozed" needs `until`. All of it is checked before anything is written.
+ * Returns the release's states. */
+function setState(id, key, state, by, now = new Date(), until = null) {
+  const keys = Array.isArray(key) ? key : [key];
+  if (!ID.test(String(id || ""))) throw bad("unknown release");
+  if (!keys.length || keys.length > MAX_KEYS || !keys.every((k) => typeof k === "string" && KEY.test(k))) throw bad("key is required");
+  if (state !== null && !STATES.has(state)) throw bad("state is accepted, dismissed, snoozed or null");
+  let till = null;
+  if (state === "snoozed") {
+    const t = typeof until === "string" ? Date.parse(until) : NaN;
+    if (!(t > now.getTime()) || t > now.getTime() + SNOOZE_MAX_DAYS * DAY_MS) throw bad(`until is a time ahead of now, at most ${SNOOZE_MAX_DAYS} days off`);
+    till = new Date(t).toISOString();
+  }
   const doc = read();
-  const rel = { ...(doc[id] || {}) };
-  if (state === null) delete rel[key];
-  else rel[key] = { state, by: String(by || "").split("@")[0].slice(0, 60), at: now.toISOString() };
+  const rel = current(doc[id], now);   // a snooze that has run out goes from the file with the next write
+  const who = String(by || "").split("@")[0].slice(0, 60);
+  for (const k of keys) {
+    if (state === null) delete rel[k];
+    else rel[k] = { state, by: who, at: now.toISOString(), ...(till ? { until: till } : {}) };
+  }
   if (Object.keys(rel).length) doc[id] = rel;
   else delete doc[id];
   write(doc);
@@ -86,9 +113,9 @@ function install(app, { sessionFrom, userOf }) {
   app.post("/api/releases/:id/plan-changes", (req, res) => {
     const { session, user } = who(req);
     if (!visibleTo(user)) return res.status(403).json({ error: "The Suggested actions card is not open to this account." });
-    const { key, state } = req.body || {};
+    const { key, keys, state, until } = req.body || {};
     try {
-      res.json({ states: setState(req.params.id, key, state === undefined ? null : state, session && session.email) });
+      res.json({ states: setState(req.params.id, keys === undefined ? key : keys, state === undefined ? null : state, session && session.email, new Date(), until) });
     } catch (e) {
       res.status(e.status || 500).json({ error: e.status ? e.message : "The change could not be saved." });
     }

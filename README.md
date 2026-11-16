@@ -600,7 +600,8 @@ and the setting keep that name. The rules and how a size is worked out are in
 `docs/METHODOLOGY.md` 7d and `docs/DATA_MODEL.md` 8a; `python3 tests/test_plan_changes.py`
 holds each rule to a hand-built launch.
 
-Accepting or dismissing a change is kept by `server/planChanges.js` in `plan_changes.json`
+Marking a change complete, snoozing it or deleting it (a row's own buttons, or the Actions
+button that appears once rows are ticked) is kept by `server/planChanges.js` in `plan_changes.json`
 beside the decision log (so on the persistent disk with it; `PLAN_CHANGES_PATH` names another
 place). Nothing is written to Notion or Meta. `node tests/plan_changes_route.mjs` runs the routes.
 

@@ -17,8 +17,8 @@ changes, each one a change to the plan as it stands:
 
 A change is one of three kinds: add (something the plan does not hold),
 change (a planned item done differently) and drop. Nothing here writes to the
-plan: a change is ticked or dismissed on the page and that is recorded by the
-server (server/planChanges.js).
+plan: a change is marked complete, snoozed or deleted on the page and that is
+recorded by the server (server/planChanges.js).
 
 Sizes are rough and say so: clicks a send of that kind brought on comparable
 launches (the quartiles) times the units this launch has had per email click.
