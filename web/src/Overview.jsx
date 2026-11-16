@@ -1,5 +1,6 @@
 /* The Overview's cards, in the order the page shows them (11 November 2026;
- * the Suggested actions card above them all on a live draw launch, 12 November),
+ * the Suggested actions card above them all, on every release's page since
+ * 16 November),
  * two to a row with the sell-through table and the trajectory across both,
  * in three sections: the outcome (the trajectory; the sell-through table, a
  * row per work today and at the close, on a timed launch before its window
@@ -11,10 +12,12 @@
  * with its own recommendation). The Paid spend card is gone: its spend by day
  * is on the Paid ROI chart, its recommendation on the Spend levels card,
  * which stays on a draw launch with no level to give and says why. Two more
- * keep their place and say so: Framing ("No framing") and, on a draw launch
- * in flight, Suggested actions ("No suggested actions"). Any other card a
- * release has nothing for is left out; before a release has numbers
- * the page shows what it knows instead (Upcoming, no targets, catalogue). */
+ * keep their place and say so: Framing ("No framing") and Suggested actions
+ * ("No suggested actions"), which is at the top of every release's page,
+ * whatever its type or state and on one line's view too, where it is the
+ * release's. Any other card a release has nothing for is left out; before a
+ * release has numbers the page shows what it knows instead, under the card
+ * (Upcoming, no targets, catalogue). */
 import React from "react";
 import Trajectory from "./modules/Trajectory.jsx";
 import SpendLevels from "./modules/SpendLevels.jsx";
@@ -48,11 +51,11 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   const isTL = snap.type === "TL";
   const targeted = snap.targeted !== false;
   // before the announce (a timed launch before its signups open too) the page shows what it knows
-  if (snap.upcoming || (isTL && snap.tlState === "upcoming")) return <div className="body plain"><Upcoming snap={snap} onSetup={onSetup} /></div>;
+  // the Suggested actions card is the release's, on every page and view of it
+  const actionsCard = <PlanChanges snap={base || snap} state={actions} />;
+  if (snap.upcoming || (isTL && snap.tlState === "upcoming")) return <div className="body plain">{actionsCard}<Upcoming snap={snap} onSetup={onSetup} /></div>;
   const preWindow = isTL && (snap.tlState === "signups" || snap.tlState === "upcoming");
   const framingOn = !!(snap.framing && (snap.framing.prints > 0 || (snap.framing.works || []).length));
-  // the Suggested actions card stays on a draw launch in flight with nothing to suggest, and says so
-  const actionsOn = !isTL && !snap.line && (!!snap.planChanges || (!snap.complete && !snap.catalogue));
   const geoOn = !isTL && !!(snap.geo && (Array.isArray(snap.geo) ? snap.geo.length : (snap.geo.rows || []).length));
   const paidOn = !!snap.paid;
   // the Spend levels card is on every draw launch with a paid block: without
@@ -63,7 +66,7 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   return (
     <div className="body">
       <div className="grid2">
-        {actionsOn && <PlanChanges snap={snap} state={actions} />}
+        {actionsCard}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}

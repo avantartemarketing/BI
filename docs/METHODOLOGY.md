@@ -964,8 +964,10 @@ plan sized to match).
 
 ## 7d. Suggested actions
 
-A live draw launch gets a card at the top of its Overview: **Suggested
-actions**. Each row is one change to the plan as it stands, comms and paid in
+Every release has a card at the top of its Overview: **Suggested
+actions**. Changes are worked out for a live draw launch; on any other page
+(a timed launch, a closed or upcoming release, the catalogue) the card is
+there all the same and reads "No suggested actions". Each row is one change to the plan as it stands, comms and paid in
 one list, never a fresh to-do list:
 
 - **Add**: something the plan does not hold (a mid-campaign email, a 48-hour

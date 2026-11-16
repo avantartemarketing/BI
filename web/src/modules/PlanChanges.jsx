@@ -1,4 +1,7 @@
-/* Suggested actions: the card at the top of a live draw launch's Overview.
+/* Suggested actions: the card at the top of every release's Overview. The
+ * build works changes out for a draw launch in flight; on any other page
+ * (a timed launch, a closed or upcoming release, the catalogue) the card is
+ * there all the same and says it has none.
  * Each row is a change to the plan as it stands (the build's `planChanges`,
  * etl/plan_changes.py): what kind (add, change, drop), what, the change
  * itself, whose channel, the day and a rough size - the units it adds, or

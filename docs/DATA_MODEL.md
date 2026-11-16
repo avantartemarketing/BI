@@ -2480,7 +2480,7 @@ Notion log is read live and carries neither (`postsThrough` null).
 
 ---
 
-## 8a. Suggested actions (the card at the top of a live draw launch)
+## 8a. Suggested actions (the card at the top of every release's Overview)
 
 The card was named Plan changes for its first hours (12 November 2026); the module, the
 snapshot's `planChanges`, the route and the setting keep that name.
@@ -2566,8 +2566,11 @@ before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` a
 draws nothing when `visible` is false (`PLAN_CHANGES_AUDIENCE`: `everyone` by default since
 16 November 2026, `admins`, `off`). The page asks for it beside the release's snapshot and
 draws once both have landed (`App.jsx`), so the card is on the page at its first paint; a read
-that fails draws the card with no ticks. On a draw launch in flight the card keeps its place when the build has nothing for it
-(no `planChanges`, or an empty list) and reads "No suggested actions".
+that fails draws the card with no ticks. The card is at the top of every release's Overview (since 16 November 2026): a draw launch
+in flight or closed, a timed launch in any state, an upcoming release (above what is known of
+it), the catalogue, and one line's view, where it is the release's card. When the build has
+nothing for it (no `planChanges`, or an empty list) it keeps its place and reads "No suggested
+actions".
 
 **Not in it yet:** AA Social, uneven works, paid creative and audiences, WhatsApp and SMS
 (no feed), and timed launches.

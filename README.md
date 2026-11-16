@@ -592,7 +592,9 @@ pipeline's accumulators are already silently truncating history (docs §11).
 
 ## Suggested actions
 
-A live draw launch gets a **Suggested actions** card at the top of its Overview: changes to
+Every release has a **Suggested actions** card at the top of its Overview. For a live draw
+launch it lists changes; any other page (a timed launch, a closed or upcoming release, the
+catalogue) keeps the card and reads "No suggested actions". The changes are changes to
 the plan as it stands (add, change, drop), comms and the paid budget in one list, each with a
 rough size (the units it adds, or for a paid cut the spend it saves). They are proposed by
 `etl/plan_changes.py` from the launch's page, the plan's rows in Notion

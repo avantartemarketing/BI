@@ -1,8 +1,8 @@
 release,country,units_paid,orders
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Saudi Arabia,8,4
 Abdulnasser Gharem · Hemisphere · 2026 Q3,United Arab Emirates,4,4
-Abdulnasser Gharem · Hemisphere · 2026 Q3,United States,3,3
 Abdulnasser Gharem · Hemisphere · 2026 Q3,United Kingdom,2,2
+Abdulnasser Gharem · Hemisphere · 2026 Q3,United States,2,2
 Abdulnasser Gharem · Hemisphere · 2026 Q3,France,1,1
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Hong Kong,1,1
 Abdulnasser Gharem · Hemisphere · 2026 Q3,Switzerland,1,1
@@ -23,17 +23,17 @@ Ahmed Mater · Multiple · 2026 Q3,United Arab Emirates,2,2
 Ahmed Mater · Multiple · 2026 Q3,Belgium,1,1
 Ahmed Mater · Multiple · 2026 Q3,Germany,1,1
 Ahmed Mater · Multiple · 2026 Q3,Spain,1,1
-Ai Weiwei · Arm · Multiple · 2026 Q2,United States,38,38
-Ai Weiwei · Arm · Multiple · 2026 Q2,United Kingdom,24,24
+Ai Weiwei · Arm · Multiple · 2026 Q2,United States,37,37
+Ai Weiwei · Arm · Multiple · 2026 Q2,United Kingdom,23,23
 Ai Weiwei · Arm · Multiple · 2026 Q2,Germany,12,12
 Ai Weiwei · Arm · Multiple · 2026 Q2,Italy,8,8
 Ai Weiwei · Arm · Multiple · 2026 Q2,Switzerland,8,8
+Ai Weiwei · Arm · Multiple · 2026 Q2,Netherlands,7,7
 Ai Weiwei · Arm · Multiple · 2026 Q2,Australia,6,6
-Ai Weiwei · Arm · Multiple · 2026 Q2,Netherlands,6,6
 Ai Weiwei · Arm · Multiple · 2026 Q2,Canada,4,4
-Ai Weiwei · Arm · Multiple · 2026 Q2,Hong Kong,4,4
 Ai Weiwei · Arm · Multiple · 2026 Q2,Sweden,4,4
 Ai Weiwei · Arm · Multiple · 2026 Q2,Belgium,3,3
+Ai Weiwei · Arm · Multiple · 2026 Q2,Hong Kong,3,3
 Ai Weiwei · Arm · Multiple · 2026 Q2,Singapore,3,3
 Ai Weiwei · Arm · Multiple · 2026 Q2,Austria,2,2
 Ai Weiwei · Arm · Multiple · 2026 Q2,Denmark,2,2
@@ -78,69 +78,10 @@ Ai Weiwei · Combat fear with truth · 2025 Q1,Indonesia,1,1
 Ai Weiwei · Combat fear with truth · 2025 Q1,Mexico,1,1
 Ai Weiwei · Combat fear with truth · 2025 Q1,New Zealand,1,1
 Ai Weiwei · Combat fear with truth · 2025 Q1,Sweden,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,United States,328,305
-Ai Weiwei · Everyone is a dragon · 2024 Q3,United Kingdom,233,226
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Germany,81,80
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Netherlands,72,71
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Singapore,50,48
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Australia,45,44
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Canada,34,34
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Switzerland,30,30
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Portugal,28,27
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Mexico,24,23
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Hong Kong,23,21
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Italy,21,20
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Denmark,16,15
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Belgium,15,14
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Spain,15,15
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Austria,11,11
-Ai Weiwei · Everyone is a dragon · 2024 Q3,France,10,10
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Poland,9,9
-Ai Weiwei · Everyone is a dragon · 2024 Q3,United Arab Emirates,9,8
-Ai Weiwei · Everyone is a dragon · 2024 Q3,New Zealand,8,8
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Malaysia,6,6
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Norway,6,6
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Sweden,6,6
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Ireland,5,5
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Estonia,4,4
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Greece,4,4
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Hungary,2,2
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Japan,2,2
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Luxembourg,2,2
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Chile,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,China,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Colombia,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Croatia,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Cyprus,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Czech Republic,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,India,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Indonesia,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Romania,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Taiwan,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Thailand,1,1
-Ai Weiwei · Everyone is a dragon · 2024 Q3,Turkey,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,United Kingdom,189,186
-Ai Weiwei · Glass Vase · 2023 Q3,United States,36,32
-Ai Weiwei · Glass Vase · 2023 Q3,Germany,27,25
-Ai Weiwei · Glass Vase · 2023 Q3,Netherlands,10,10
-Ai Weiwei · Glass Vase · 2023 Q3,France,6,6
-Ai Weiwei · Glass Vase · 2023 Q3,Switzerland,6,6
-Ai Weiwei · Glass Vase · 2023 Q3,Canada,4,4
-Ai Weiwei · Glass Vase · 2023 Q3,Italy,3,3
-Ai Weiwei · Glass Vase · 2023 Q3,Spain,3,3
-Ai Weiwei · Glass Vase · 2023 Q3,Australia,2,2
-Ai Weiwei · Glass Vase · 2023 Q3,Austria,2,2
-Ai Weiwei · Glass Vase · 2023 Q3,Norway,2,2
-Ai Weiwei · Glass Vase · 2023 Q3,Portugal,2,2
-Ai Weiwei · Glass Vase · 2023 Q3,United Arab Emirates,2,2
-Ai Weiwei · Glass Vase · 2023 Q3,Belgium,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,Croatia,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,Faroe Islands,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,Ireland,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,Israel,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,Poland,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,Singapore,1,1
-Ai Weiwei · Glass Vase · 2023 Q3,Sweden,1,1
+Ai Weiwei · Everyone is a dragon · 2024 Q3,United Kingdom,4,4
+Ai Weiwei · Everyone is a dragon · 2024 Q3,United States,2,2
+Ai Weiwei · Everyone is a dragon · 2024 Q3,Australia,1,1
+Ai Weiwei · Glass Vase · 2023 Q3,United Arab Emirates,1,1
 Ai Weiwei · Guar · Multiple · 2026 Q2,United States,317,235
 Ai Weiwei · Guar · Multiple · 2026 Q2,United Kingdom,235,192
 Ai Weiwei · Guar · Multiple · 2026 Q2,Netherlands,58,49
@@ -183,150 +124,13 @@ Ai Weiwei · Guar · Multiple · 2026 Q2,Slovenia,1,1
 Ai Weiwei · Guar · Multiple · 2026 Q2,Sweden,1,1
 Ai Weiwei · Guar · Multiple · 2026 Q2,Taiwan,1,1
 Ai Weiwei · Guar · Multiple · 2026 Q2,Vietnam,1,1
-Ai Weiwei · Guardian · 2024 Q1,United Kingdom,467,454
-Ai Weiwei · Guardian · 2024 Q1,United States,466,452
-Ai Weiwei · Guardian · 2024 Q1,Germany,78,78
-Ai Weiwei · Guardian · 2024 Q1,Australia,76,76
-Ai Weiwei · Guardian · 2024 Q1,Netherlands,76,75
-Ai Weiwei · Guardian · 2024 Q1,Canada,47,47
-Ai Weiwei · Guardian · 2024 Q1,France,35,35
-Ai Weiwei · Guardian · 2024 Q1,Italy,35,34
-Ai Weiwei · Guardian · 2024 Q1,Mexico,31,30
-Ai Weiwei · Guardian · 2024 Q1,Hong Kong,25,22
-Ai Weiwei · Guardian · 2024 Q1,Portugal,24,24
-Ai Weiwei · Guardian · 2024 Q1,Singapore,24,24
-Ai Weiwei · Guardian · 2024 Q1,Switzerland,22,13
-Ai Weiwei · Guardian · 2024 Q1,Spain,21,21
-Ai Weiwei · Guardian · 2024 Q1,Belgium,20,18
-Ai Weiwei · Guardian · 2024 Q1,Austria,16,16
-Ai Weiwei · Guardian · 2024 Q1,Denmark,14,13
-Ai Weiwei · Guardian · 2024 Q1,New Zealand,12,11
-Ai Weiwei · Guardian · 2024 Q1,Taiwan,12,10
-Ai Weiwei · Guardian · 2024 Q1,Sweden,10,10
-Ai Weiwei · Guardian · 2024 Q1,Japan,9,8
-Ai Weiwei · Guardian · 2024 Q1,Ireland,8,8
-Ai Weiwei · Guardian · 2024 Q1,Poland,8,7
-Ai Weiwei · Guardian · 2024 Q1,South Korea,8,8
-Ai Weiwei · Guardian · 2024 Q1,Norway,7,7
-Ai Weiwei · Guardian · 2024 Q1,Greece,5,5
-Ai Weiwei · Guardian · 2024 Q1,United Arab Emirates,5,5
-Ai Weiwei · Guardian · 2024 Q1,Iceland,4,4
-Ai Weiwei · Guardian · 2024 Q1,Romania,4,3
-Ai Weiwei · Guardian · 2024 Q1,China,3,3
-Ai Weiwei · Guardian · 2024 Q1,Cyprus,3,3
-Ai Weiwei · Guardian · 2024 Q1,Finland,3,3
-Ai Weiwei · Guardian · 2024 Q1,South Africa,3,3
-Ai Weiwei · Guardian · 2024 Q1,Brazil,2,2
-Ai Weiwei · Guardian · 2024 Q1,Indonesia,2,2
-Ai Weiwei · Guardian · 2024 Q1,Luxembourg,2,2
-Ai Weiwei · Guardian · 2024 Q1,Philippines,2,2
-Ai Weiwei · Guardian · 2024 Q1,Slovakia,2,2
-Ai Weiwei · Guardian · 2024 Q1,Cayman Islands,1,1
-Ai Weiwei · Guardian · 2024 Q1,Czech Republic,1,1
-Ai Weiwei · Guardian · 2024 Q1,Estonia,1,1
-Ai Weiwei · Guardian · 2024 Q1,Gibraltar,1,1
-Ai Weiwei · Guardian · 2024 Q1,India,1,1
-Ai Weiwei · Guardian · 2024 Q1,Malaysia,1,1
-Ai Weiwei · Guardian · 2024 Q1,Malta,1,1
-Ai Weiwei · Guardian · 2024 Q1,Pakistan,1,1
-Ai Weiwei · Guardian · 2024 Q1,Slovenia,1,1
-Ai Weiwei · Guardian · 2024 Q1,Thailand,1,1
-Ai Weiwei · Guardian · 2024 Q1,Turkey,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,United Kingdom,485,449
-Ai Weiwei · Middle Finger in Red · 2023 Q1,United States,349,301
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Germany,56,51
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Netherlands,48,46
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Canada,32,32
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Italy,30,23
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Switzerland,30,27
-Ai Weiwei · Middle Finger in Red · 2023 Q1,France,28,21
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Singapore,26,22
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Japan,20,18
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Belgium,19,17
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Hong Kong,19,13
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Australia,17,17
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Spain,17,16
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Sweden,10,9
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Taiwan,10,9
-Ai Weiwei · Middle Finger in Red · 2023 Q1,South Korea,9,7
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Austria,8,8
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Norway,8,8
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Denmark,7,6
-Ai Weiwei · Middle Finger in Red · 2023 Q1,New Zealand,7,7
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Portugal,7,7
-Ai Weiwei · Middle Finger in Red · 2023 Q1,United Arab Emirates,6,6
-Ai Weiwei · Middle Finger in Red · 2023 Q1,China,4,4
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Mexico,4,4
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Poland,4,4
-Ai Weiwei · Middle Finger in Red · 2023 Q1,South Africa,4,3
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Indonesia,3,3
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Brazil,2,2
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Greece,2,2
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Malaysia,2,2
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Turkey,2,2
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Argentina,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Bulgaria,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Colombia,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Cyprus,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Czech Republic,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Hungary,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Ireland,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Philippines,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Romania,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Slovenia,1,1
-Ai Weiwei · Middle Finger in Red · 2023 Q1,Thailand,1,1
-Ai Weiwei · Multiple · 2023 Q2,United Kingdom,177,173
-Ai Weiwei · Multiple · 2023 Q2,United States,50,47
-Ai Weiwei · Multiple · 2023 Q2,Germany,29,29
-Ai Weiwei · Multiple · 2023 Q2,Netherlands,13,12
-Ai Weiwei · Multiple · 2023 Q2,Australia,4,4
-Ai Weiwei · Multiple · 2023 Q2,Canada,4,3
-Ai Weiwei · Multiple · 2023 Q2,France,4,4
-Ai Weiwei · Multiple · 2023 Q2,Austria,3,3
-Ai Weiwei · Multiple · 2023 Q2,Norway,3,3
-Ai Weiwei · Multiple · 2023 Q2,Italy,2,2
-Ai Weiwei · Multiple · 2023 Q2,Poland,2,2
-Ai Weiwei · Multiple · 2023 Q2,Singapore,2,2
-Ai Weiwei · Multiple · 2023 Q2,Sweden,2,2
-Ai Weiwei · Multiple · 2023 Q2,United Arab Emirates,2,2
-Ai Weiwei · Multiple · 2023 Q2,Belgium,1,1
-Ai Weiwei · Multiple · 2023 Q2,China,1,1
-Ai Weiwei · Multiple · 2023 Q2,Greece,1,1
-Ai Weiwei · Multiple · 2023 Q2,Hong Kong,1,1
-Ai Weiwei · Multiple · 2023 Q2,Japan,1,1
-Ai Weiwei · Multiple · 2023 Q2,Jersey,1,1
-Ai Weiwei · Multiple · 2023 Q2,Malta,1,1
-Ai Weiwei · Multiple · 2023 Q2,New Zealand,1,1
-Ai Weiwei · Multiple · 2023 Q2,South Korea,1,1
-Ai Weiwei · Multiple · 2023 Q2,Switzerland,1,1
-Ai Weiwei · Multiple · 2023 Q2,Taiwan,1,1
-Ai Weiwei · Multiple · 2023 Q2,Thailand,1,1
-Ai Weiwei · Multiple · 2024 Q4,United Kingdom,62,61
-Ai Weiwei · Multiple · 2024 Q4,United States,58,58
-Ai Weiwei · Multiple · 2024 Q4,Netherlands,14,14
-Ai Weiwei · Multiple · 2024 Q4,Australia,9,9
-Ai Weiwei · Multiple · 2024 Q4,Germany,9,9
-Ai Weiwei · Multiple · 2024 Q4,Hong Kong,8,7
-Ai Weiwei · Multiple · 2024 Q4,Switzerland,7,7
-Ai Weiwei · Multiple · 2024 Q4,Canada,6,6
-Ai Weiwei · Multiple · 2024 Q4,Singapore,6,5
-Ai Weiwei · Multiple · 2024 Q4,Portugal,4,4
-Ai Weiwei · Multiple · 2024 Q4,France,3,3
-Ai Weiwei · Multiple · 2024 Q4,Japan,3,3
-Ai Weiwei · Multiple · 2024 Q4,Belgium,2,2
-Ai Weiwei · Multiple · 2024 Q4,Norway,2,2
-Ai Weiwei · Multiple · 2024 Q4,Brazil,1,1
-Ai Weiwei · Multiple · 2024 Q4,Colombia,1,1
-Ai Weiwei · Multiple · 2024 Q4,Denmark,1,1
-Ai Weiwei · Multiple · 2024 Q4,Estonia,1,1
-Ai Weiwei · Multiple · 2024 Q4,Ireland,1,1
-Ai Weiwei · Multiple · 2024 Q4,Italy,1,1
-Ai Weiwei · Multiple · 2024 Q4,Luxembourg,1,1
-Ai Weiwei · Multiple · 2024 Q4,Malaysia,1,1
-Ai Weiwei · Multiple · 2024 Q4,Malta,1,1
-Ai Weiwei · Multiple · 2024 Q4,Mexico,1,1
-Ai Weiwei · Multiple · 2024 Q4,United Arab Emirates,1,1
-Ai Weiwei · Multiple · 2025 Q3,United States,132,106
+Ai Weiwei · Guardian · 2024 Q1,United Kingdom,2,2
+Ai Weiwei · Guardian · 2024 Q1,Italy,1,1
+Ai Weiwei · Middle Finger in Red · 2023 Q1,United States,1,1
+Ai Weiwei · Multiple · 2024 Q4,United States,3,3
+Ai Weiwei · Multiple · 2024 Q4,Germany,1,1
+Ai Weiwei · Multiple · 2024 Q4,United Kingdom,1,1
+Ai Weiwei · Multiple · 2025 Q3,United States,131,105
 Ai Weiwei · Multiple · 2025 Q3,United Kingdom,100,85
 Ai Weiwei · Multiple · 2025 Q3,Italy,28,25
 Ai Weiwei · Multiple · 2025 Q3,Netherlands,21,21
@@ -416,31 +220,33 @@ Ai Weiwei · Multiple · 2026 Q3,Saudi Arabia,1,1
 Ai Weiwei · Multiple · 2026 Q3,Singapore,1,1
 Ai Weiwei · Multiple · 2026 Q3,Switzerland,1,1
 Ai Weiwei · Multiple · 2026 Q3,United States,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,United Kingdom,61,59
-Ai Weiwei · To Be Looked At... · 2024 Q4,United States,58,58
-Ai Weiwei · To Be Looked At... · 2024 Q4,Netherlands,13,13
-Ai Weiwei · To Be Looked At... · 2024 Q4,Germany,11,11
-Ai Weiwei · To Be Looked At... · 2024 Q4,Belgium,6,6
-Ai Weiwei · To Be Looked At... · 2024 Q4,Australia,5,5
-Ai Weiwei · To Be Looked At... · 2024 Q4,Denmark,5,5
-Ai Weiwei · To Be Looked At... · 2024 Q4,Hong Kong,5,5
-Ai Weiwei · To Be Looked At... · 2024 Q4,Switzerland,5,5
-Ai Weiwei · To Be Looked At... · 2024 Q4,Canada,4,4
-Ai Weiwei · To Be Looked At... · 2024 Q4,France,4,4
-Ai Weiwei · To Be Looked At... · 2024 Q4,Singapore,4,4
-Ai Weiwei · To Be Looked At... · 2024 Q4,Portugal,3,3
-Ai Weiwei · To Be Looked At... · 2024 Q4,Taiwan,3,3
-Ai Weiwei · To Be Looked At... · 2024 Q4,Austria,2,2
-Ai Weiwei · To Be Looked At... · 2024 Q4,Italy,2,2
-Ai Weiwei · To Be Looked At... · 2024 Q4,Sweden,2,2
-Ai Weiwei · To Be Looked At... · 2024 Q4,Japan,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,Jersey,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,Mexico,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,New Zealand,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,Norway,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,Romania,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,South Africa,1,1
-Ai Weiwei · To Be Looked At... · 2024 Q4,United Arab Emirates,1,1
+Ai Weiwei · Multiple · 2026 Q4,United States,103,84
+Ai Weiwei · Multiple · 2026 Q4,United Kingdom,71,59
+Ai Weiwei · Multiple · 2026 Q4,Netherlands,21,15
+Ai Weiwei · Multiple · 2026 Q4,Germany,17,14
+Ai Weiwei · Multiple · 2026 Q4,Italy,16,15
+Ai Weiwei · Multiple · 2026 Q4,France,15,15
+Ai Weiwei · Multiple · 2026 Q4,Switzerland,14,13
+Ai Weiwei · Multiple · 2026 Q4,Singapore,8,6
+Ai Weiwei · Multiple · 2026 Q4,Austria,6,6
+Ai Weiwei · Multiple · 2026 Q4,Canada,6,5
+Ai Weiwei · Multiple · 2026 Q4,Greece,6,5
+Ai Weiwei · Multiple · 2026 Q4,Portugal,6,3
+Ai Weiwei · Multiple · 2026 Q4,Australia,5,5
+Ai Weiwei · Multiple · 2026 Q4,Belgium,4,4
+Ai Weiwei · Multiple · 2026 Q4,Hong Kong,4,3
+Ai Weiwei · Multiple · 2026 Q4,Denmark,3,3
+Ai Weiwei · Multiple · 2026 Q4,Ireland,3,2
+Ai Weiwei · Multiple · 2026 Q4,Mexico,3,2
+Ai Weiwei · Multiple · 2026 Q4,Japan,2,2
+Ai Weiwei · Multiple · 2026 Q4,Luxembourg,2,2
+Ai Weiwei · Multiple · 2026 Q4,Norway,2,2
+Ai Weiwei · Multiple · 2026 Q4,Romania,2,1
+Ai Weiwei · Multiple · 2026 Q4,Spain,2,2
+Ai Weiwei · Multiple · 2026 Q4,Sweden,2,2
+Ai Weiwei · Multiple · 2026 Q4,Bulgaria,1,1
+Ai Weiwei · Multiple · 2026 Q4,United Arab Emirates,1,1
+Ai Weiwei · To Be Looked At... · 2024 Q4,Belgium,1,1
 Alex Katz · Ada Ada · 2025 Q4,United States,122,122
 Alex Katz · Ada Ada · 2025 Q4,Germany,17,14
 Alex Katz · Ada Ada · 2025 Q4,United Kingdom,14,14
@@ -461,26 +267,11 @@ Alex Katz · Ada Ada · 2025 Q4,Portugal,1,1
 Alex Katz · Ada Ada · 2025 Q4,United Arab Emirates,1,1
 Ali Banisadr · Thinkpol · 2021 Q2,Qatar,1,1
 Ali Banisadr · Thinkpol · 2021 Q2,United States,1,1
-Alpha Centauri Kid · Multiple · 2024 Q4,United States,49,27
-Alpha Centauri Kid · Multiple · 2024 Q4,United Kingdom,6,4
-Alpha Centauri Kid · Multiple · 2024 Q4,Spain,3,2
-Alpha Centauri Kid · Multiple · 2024 Q4,Australia,2,1
-Alpha Centauri Kid · Multiple · 2024 Q4,Canada,2,1
-Alpha Centauri Kid · Multiple · 2024 Q4,Germany,2,1
-Alpha Centauri Kid · Multiple · 2024 Q4,Netherlands,2,1
-Alpha Centauri Kid · Multiple · 2024 Q4,Portugal,2,1
-Alpha Centauri Kid · Multiple · 2024 Q4,Slovenia,2,1
-Alpha Centauri Kid · Multiple · 2024 Q4,United Arab Emirates,1,1
-Alpha Centauri Kid · Warothy · 2023 Q4,United States,18,18
-Alpha Centauri Kid · Warothy · 2023 Q4,Canada,2,2
-Alpha Centauri Kid · Warothy · 2023 Q4,United Kingdom,2,2
-Alpha Centauri Kid · Warothy · 2023 Q4,Germany,1,1
-Alpha Centauri Kid · Warothy · 2023 Q4,Netherlands,1,1
-Alpha Centauri Kid · Warothy · 2023 Q4,South Korea,1,1
-Amani Lewis · TWO QUEENS: Ode to Romare Bearden · 2021 Q3,United States,3,3
-Amani Lewis · TWO QUEENS: Ode to Romare Bearden · 2021 Q3,France,1,1
+Alpha Centauri Kid · Multiple · 2024 Q4,United States,3,3
+Alpha Centauri Kid · Multiple · 2024 Q4,United Kingdom,2,2
+Alpha Centauri Kid · Multiple · 2024 Q4,Spain,1,1
 Amani Lewis · TWO QUEENS: Ode to Romare Bearden · 2021 Q3,United Kingdom,1,1
-Andy Warhol Estate · Multiple · 2026 Q4,United States,681,546
+Andy Warhol Estate · Multiple · 2026 Q4,United States,676,542
 Andy Warhol Estate · Multiple · 2026 Q4,United Kingdom,164,139
 Andy Warhol Estate · Multiple · 2026 Q4,Canada,41,34
 Andy Warhol Estate · Multiple · 2026 Q4,Germany,35,26
@@ -498,9 +289,9 @@ Andy Warhol Estate · Multiple · 2026 Q4,France,14,13
 Andy Warhol Estate · Multiple · 2026 Q4,Japan,13,10
 Andy Warhol Estate · Multiple · 2026 Q4,Singapore,12,12
 Andy Warhol Estate · Multiple · 2026 Q4,South Korea,11,7
-Andy Warhol Estate · Multiple · 2026 Q4,Portugal,7,5
 Andy Warhol Estate · Multiple · 2026 Q4,Austria,6,6
 Andy Warhol Estate · Multiple · 2026 Q4,Norway,6,6
+Andy Warhol Estate · Multiple · 2026 Q4,Portugal,6,4
 Andy Warhol Estate · Multiple · 2026 Q4,Greece,4,2
 Andy Warhol Estate · Multiple · 2026 Q4,New Zealand,4,2
 Andy Warhol Estate · Multiple · 2026 Q4,Spain,4,4
@@ -516,37 +307,8 @@ Andy Warhol Estate · Multiple · 2026 Q4,Iceland,1,1
 Andy Warhol Estate · Multiple · 2026 Q4,Israel,1,1
 Andy Warhol Estate · Multiple · 2026 Q4,Monaco,1,1
 Andy Warhol Estate · Multiple · 2026 Q4,Poland,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,United Kingdom,125,122
-Anish Kapoor · Out of the Dark · 2023 Q4,United States,91,86
-Anish Kapoor · Out of the Dark · 2023 Q4,Netherlands,21,20
-Anish Kapoor · Out of the Dark · 2023 Q4,Germany,9,9
-Anish Kapoor · Out of the Dark · 2023 Q4,France,8,8
-Anish Kapoor · Out of the Dark · 2023 Q4,Japan,8,8
-Anish Kapoor · Out of the Dark · 2023 Q4,Canada,7,7
-Anish Kapoor · Out of the Dark · 2023 Q4,Italy,7,7
-Anish Kapoor · Out of the Dark · 2023 Q4,South Korea,7,6
-Anish Kapoor · Out of the Dark · 2023 Q4,Belgium,6,6
-Anish Kapoor · Out of the Dark · 2023 Q4,Portugal,6,6
-Anish Kapoor · Out of the Dark · 2023 Q4,New Zealand,5,5
-Anish Kapoor · Out of the Dark · 2023 Q4,Spain,5,5
-Anish Kapoor · Out of the Dark · 2023 Q4,Australia,4,4
-Anish Kapoor · Out of the Dark · 2023 Q4,Austria,4,4
-Anish Kapoor · Out of the Dark · 2023 Q4,Hong Kong,3,2
-Anish Kapoor · Out of the Dark · 2023 Q4,Mexico,3,3
-Anish Kapoor · Out of the Dark · 2023 Q4,Switzerland,2,2
-Anish Kapoor · Out of the Dark · 2023 Q4,United Arab Emirates,2,2
-Anish Kapoor · Out of the Dark · 2023 Q4,Cayman Islands,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Denmark,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Ireland,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Norway,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Saudi Arabia,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Singapore,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,South Africa,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Sweden,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Taiwan,1,1
-Anish Kapoor · Out of the Dark · 2023 Q4,Thailand,1,1
+Anish Kapoor · Out of the Dark · 2023 Q4,Netherlands,1,1
 Anna Weyant · Loose Screw · 2022 Q2,Netherlands,1,1
-Anna Weyant · Loose Screw · 2022 Q2,United States,1,1
 Anni and Josef Albers · Multiple · 2026 Q2,United States,599,581
 Anni and Josef Albers · Multiple · 2026 Q2,United Kingdom,104,99
 Anni and Josef Albers · Multiple · 2026 Q2,Australia,30,29
@@ -579,21 +341,6 @@ Anni and Josef Albers · Multiple · 2026 Q2,Isle Of Man,1,1
 Anni and Josef Albers · Multiple · 2026 Q2,Israel,1,1
 Anni and Josef Albers · Multiple · 2026 Q2,Malta,1,1
 Anni and Josef Albers · Multiple · 2026 Q2,Saudi Arabia,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,United Kingdom,31,31
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,United States,5,5
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Japan,3,3
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,United Arab Emirates,2,2
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Bulgaria,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Canada,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Denmark,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Germany,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Hong Kong,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Ireland,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Lithuania,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Luxembourg,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Malta,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Netherlands,1,1
-Antony Micallef · Portrait of Francis Bacon · 2024 Q3,Portugal,1,1
 Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,United Kingdom,31,31
 Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,United States,17,17
 Antony Micallef · Self Portrait with Blue Slash · 2026 Q2,United Arab Emirates,3,3
@@ -624,43 +371,7 @@ Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,Portuga
 Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,Singapore,1,1
 Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,South Korea,1,1
 Antony Micallef · Self Portrait with Yellow Lake and Magenta · 2025 Q3,United Arab Emirates,1,1
-Arghavan Khosravi · The Earring · 2023 Q4,United States,8,8
-Arghavan Khosravi · The Earring · 2023 Q4,United Kingdom,4,4
-Arghavan Khosravi · The Earring · 2023 Q4,France,2,2
-Arghavan Khosravi · The Earring · 2023 Q4,Germany,2,2
-Arghavan Khosravi · The Earring · 2023 Q4,Hong Kong,2,2
-Arghavan Khosravi · The Earring · 2023 Q4,Australia,1,1
-Arghavan Khosravi · The Earring · 2023 Q4,Poland,1,1
-Arghavan Khosravi · The Earring · 2023 Q4,Taiwan,1,1
-Arghavan Khosravi · The Earring · 2023 Q4,United Arab Emirates,1,1
 Artspace Amphora Project · Multiple · 2025 Q1,United States,3,3
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,United States,21,21
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,United Kingdom,10,10
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Japan,3,3
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Singapore,3,3
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,South Korea,3,3
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Canada,2,2
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Spain,2,2
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Taiwan,2,2
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Belgium,1,1
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Germany,1,1
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Hong Kong,1,1
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Italy,1,1
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Sweden,1,1
-Asuka Anastacia Ogawa · Sleepy · 2024 Q2,Switzerland,1,1
-Aya Takano · Anthem (Detail) · 2023 Q1,United States,14,14
-Aya Takano · Anthem (Detail) · 2023 Q1,Japan,9,9
-Aya Takano · Anthem (Detail) · 2023 Q1,Hong Kong,3,3
-Aya Takano · Anthem (Detail) · 2023 Q1,Netherlands,3,3
-Aya Takano · Anthem (Detail) · 2023 Q1,Taiwan,2,2
-Aya Takano · Anthem (Detail) · 2023 Q1,United Kingdom,2,2
-Aya Takano · Anthem (Detail) · 2023 Q1,Belgium,1,1
-Aya Takano · Anthem (Detail) · 2023 Q1,Canada,1,1
-Aya Takano · Anthem (Detail) · 2023 Q1,China,1,1
-Aya Takano · Anthem (Detail) · 2023 Q1,France,1,1
-Aya Takano · Anthem (Detail) · 2023 Q1,Germany,1,1
-Aya Takano · Anthem (Detail) · 2023 Q1,Malaysia,1,1
-Aya Takano · Anthem (Detail) · 2023 Q1,South Korea,1,1
 Ayako Rokkaku · Untitled · 2025 Q2,Japan,15,15
 Ayako Rokkaku · Untitled · 2025 Q2,United States,5,5
 Ayako Rokkaku · Untitled · 2025 Q2,Canada,1,1
@@ -681,21 +392,6 @@ Backside works. · Multiple · 2026 Q3,Poland,1,1
 Backside works. · Multiple · 2026 Q3,Romania,1,1
 Backside works. · Multiple · 2026 Q3,Switzerland,1,1
 Backside works. · Multiple · 2026 Q3,United Arab Emirates,1,1
-Baldur Helgason · Menippean Satire · 2024 Q1,United States,24,24
-Baldur Helgason · Menippean Satire · 2024 Q1,Iceland,5,4
-Baldur Helgason · Menippean Satire · 2024 Q1,Hong Kong,3,3
-Baldur Helgason · Menippean Satire · 2024 Q1,Japan,3,3
-Baldur Helgason · Menippean Satire · 2024 Q1,Norway,3,3
-Baldur Helgason · Menippean Satire · 2024 Q1,South Korea,2,2
-Baldur Helgason · Menippean Satire · 2024 Q1,United Kingdom,2,2
-Baldur Helgason · Menippean Satire · 2024 Q1,Aruba,1,1
-Baldur Helgason · Menippean Satire · 2024 Q1,Canada,1,1
-Baldur Helgason · Menippean Satire · 2024 Q1,France,1,1
-Baldur Helgason · Menippean Satire · 2024 Q1,Netherlands,1,1
-Baldur Helgason · Menippean Satire · 2024 Q1,Singapore,1,1
-Baldur Helgason · Menippean Satire · 2024 Q1,Taiwan,1,1
-Baldur Helgason · Menippean Satire · 2024 Q1,United Arab Emirates,1,1
-Baldur Helgason · Picaresque · 2022 Q4,Iceland,3,1
 Barry McGee · Fuzz Gathering · 2025 Q1,United States,441,418
 Barry McGee · Fuzz Gathering · 2025 Q1,Japan,53,49
 Barry McGee · Fuzz Gathering · 2025 Q1,United Kingdom,44,42
@@ -720,67 +416,11 @@ Barry McGee · Fuzz Gathering · 2025 Q1,Austria,1,1
 Barry McGee · Fuzz Gathering · 2025 Q1,Finland,1,1
 Barry McGee · Fuzz Gathering · 2025 Q1,Poland,1,1
 Barry McGee · Fuzz Gathering · 2025 Q1,Taiwan,1,1
-Barry McGee · Multiple · 2023 Q4,United States,226,215
-Barry McGee · Multiple · 2023 Q4,Japan,149,146
-Barry McGee · Multiple · 2023 Q4,France,38,14
-Barry McGee · Multiple · 2023 Q4,United Kingdom,37,33
-Barry McGee · Multiple · 2023 Q4,Netherlands,9,9
-Barry McGee · Multiple · 2023 Q4,Australia,8,8
-Barry McGee · Multiple · 2023 Q4,Spain,6,6
-Barry McGee · Multiple · 2023 Q4,Canada,5,5
-Barry McGee · Multiple · 2023 Q4,Germany,4,3
-Barry McGee · Multiple · 2023 Q4,Italy,4,4
-Barry McGee · Multiple · 2023 Q4,Singapore,4,4
-Barry McGee · Multiple · 2023 Q4,Hong Kong,3,3
-Barry McGee · Multiple · 2023 Q4,Portugal,3,3
-Barry McGee · Multiple · 2023 Q4,Thailand,3,3
-Barry McGee · Multiple · 2023 Q4,Denmark,2,2
-Barry McGee · Multiple · 2023 Q4,South Korea,2,2
-Barry McGee · Multiple · 2023 Q4,Taiwan,2,2
-Barry McGee · Multiple · 2023 Q4,United Arab Emirates,2,2
-Barry McGee · Multiple · 2023 Q4,China,1,1
-Barry McGee · Multiple · 2023 Q4,Sweden,1,1
-Beeple · Multiple · 2024 Q4,United States,228,194
-Beeple · Multiple · 2024 Q4,United Kingdom,51,48
-Beeple · Multiple · 2024 Q4,Germany,19,18
-Beeple · Multiple · 2024 Q4,Canada,15,15
-Beeple · Multiple · 2024 Q4,Australia,12,12
-Beeple · Multiple · 2024 Q4,France,12,10
-Beeple · Multiple · 2024 Q4,Netherlands,9,9
-Beeple · Multiple · 2024 Q4,Portugal,9,9
-Beeple · Multiple · 2024 Q4,Italy,8,8
-Beeple · Multiple · 2024 Q4,Mexico,6,6
-Beeple · Multiple · 2024 Q4,Norway,5,5
-Beeple · Multiple · 2024 Q4,Hong Kong,4,4
-Beeple · Multiple · 2024 Q4,United Arab Emirates,4,4
-Beeple · Multiple · 2024 Q4,Austria,3,3
-Beeple · Multiple · 2024 Q4,South Korea,3,3
-Beeple · Multiple · 2024 Q4,Spain,3,3
-Beeple · Multiple · 2024 Q4,Croatia,2,2
-Beeple · Multiple · 2024 Q4,Finland,2,2
-Beeple · Multiple · 2024 Q4,Greece,2,2
-Beeple · Multiple · 2024 Q4,Ireland,2,2
-Beeple · Multiple · 2024 Q4,Paraguay,2,2
-Beeple · Multiple · 2024 Q4,Singapore,2,2
-Beeple · Multiple · 2024 Q4,Sweden,2,2
-Beeple · Multiple · 2024 Q4,Switzerland,2,2
-Beeple · Multiple · 2024 Q4,Armenia,1,1
-Beeple · Multiple · 2024 Q4,Belgium,1,1
-Beeple · Multiple · 2024 Q4,China,1,1
-Beeple · Multiple · 2024 Q4,Czech Republic,1,1
-Beeple · Multiple · 2024 Q4,India,1,1
-Beeple · Multiple · 2024 Q4,Japan,1,1
-Beeple · Multiple · 2024 Q4,New Zealand,1,1
-Beeple · Multiple · 2024 Q4,Poland,1,1
-Beeple · Multiple · 2024 Q4,Taiwan,1,1
-Beeple · Multiple · 2024 Q4,Uruguay,1,1
-Benrei Huang · Minority Rules · 2024 Q1,Taiwan,23,21
-Benrei Huang · Minority Rules · 2024 Q1,United States,9,9
-Benrei Huang · Minority Rules · 2024 Q1,Singapore,4,4
-Benrei Huang · Minority Rules · 2024 Q1,Hong Kong,2,2
-Benrei Huang · Minority Rules · 2024 Q1,Netherlands,1,1
-Benrei Huang · Minority Rules · 2024 Q1,Portugal,1,1
-Bisa Butler · Multiple · 2026 Q4,United States,1373,1195
+Barry McGee · Multiple · 2023 Q4,United States,2,2
+Beeple · Multiple · 2024 Q4,United States,15,1
+Beeple · Multiple · 2024 Q4,United Kingdom,3,1
+Beeple · Multiple · 2024 Q4,Germany,1,1
+Bisa Butler · Multiple · 2026 Q4,United States,1379,1201
 Bisa Butler · Multiple · 2026 Q4,United Kingdom,35,24
 Bisa Butler · Multiple · 2026 Q4,Canada,11,10
 Bisa Butler · Multiple · 2026 Q4,Netherlands,5,5
@@ -788,54 +428,37 @@ Bisa Butler · Multiple · 2026 Q4,Germany,4,4
 Bisa Butler · Multiple · 2026 Q4,Italy,4,2
 Bisa Butler · Multiple · 2026 Q4,Australia,3,2
 Bisa Butler · Multiple · 2026 Q4,France,2,2
+Bisa Butler · Multiple · 2026 Q4,Japan,2,2
 Bisa Butler · Multiple · 2026 Q4,Portugal,2,2
 Bisa Butler · Multiple · 2026 Q4,Qatar,2,2
 Bisa Butler · Multiple · 2026 Q4,Spain,2,1
 Bisa Butler · Multiple · 2026 Q4,Belgium,1,1
 Bisa Butler · Multiple · 2026 Q4,Denmark,1,1
-Bisa Butler · Multiple · 2026 Q4,Japan,1,1
 Bisa Butler · Multiple · 2026 Q4,Luxembourg,1,1
 Bisa Butler · Multiple · 2026 Q4,Nigeria,1,1
 Bisa Butler · Multiple · 2026 Q4,Singapore,1,1
-Bony Ramirez · TORO! · 2023 Q4,United States,24,24
-Bony Ramirez · TORO! · 2023 Q4,Germany,1,1
-Brian Calvin · Multiple · 2023 Q3,United States,68,52
-Brian Calvin · Multiple · 2023 Q3,France,8,8
-Brian Calvin · Multiple · 2023 Q3,Belgium,5,3
-Brian Calvin · Multiple · 2023 Q3,Germany,5,5
-Brian Calvin · Multiple · 2023 Q3,Japan,4,4
-Brian Calvin · Multiple · 2023 Q3,South Korea,3,3
-Brian Calvin · Multiple · 2023 Q3,Hong Kong,2,2
-Brian Calvin · Multiple · 2023 Q3,Italy,2,1
-Brian Calvin · Multiple · 2023 Q3,Spain,2,2
-Brian Calvin · Multiple · 2023 Q3,Monaco,1,1
+Bony Ramirez · TORO! · 2023 Q4,United States,6,6
+Brian Calvin · Multiple · 2023 Q3,United States,19,17
+Brian Calvin · Multiple · 2023 Q3,Germany,2,2
+Brian Calvin · Multiple · 2023 Q3,Belgium,1,1
 Brian Calvin · Multiple · 2023 Q3,Netherlands,1,1
-Brian Calvin · Multiple · 2023 Q3,Singapore,1,1
-Brian Calvin · Multiple · 2023 Q3,Switzerland,1,1
-Brian Calvin · Multiple · 2023 Q3,United Arab Emirates,1,1
+Brian Calvin · Multiple · 2023 Q3,Spain,1,1
 Brian Calvin · Multiple · 2023 Q3,United Kingdom,1,1
-Brice Guilbert · Multiple · 2023 Q3,United States,2,2
-Brice Guilbert · Multiple · 2023 Q3,Netherlands,1,1
-Bridget Mullen · Multiple · 2023 Q3,United States,2,2
-Bridget Mullen · Multiple · 2023 Q3,United Kingdom,1,1
-Bäst · Sunday Afternoon · 2022 Q4,Spain,1,1
-Bäst · Sunday Afternoon · 2022 Q4,United Kingdom,1,1
-Bäst · Sunday Afternoon · 2022 Q4,United States,1,1
-Cai Guo-Qiang · Multiple · 2026 Q4,United States,69,66
-Cai Guo-Qiang · Multiple · 2026 Q4,United Kingdom,21,20
-Cai Guo-Qiang · Multiple · 2026 Q4,Singapore,16,16
-Cai Guo-Qiang · Multiple · 2026 Q4,Australia,10,10
-Cai Guo-Qiang · Multiple · 2026 Q4,Italy,10,10
-Cai Guo-Qiang · Multiple · 2026 Q4,Hong Kong,8,8
+Cai Guo-Qiang · Multiple · 2026 Q4,United States,90,82
+Cai Guo-Qiang · Multiple · 2026 Q4,United Kingdom,22,21
+Cai Guo-Qiang · Multiple · 2026 Q4,Singapore,17,17
+Cai Guo-Qiang · Multiple · 2026 Q4,Hong Kong,12,12
+Cai Guo-Qiang · Multiple · 2026 Q4,Australia,11,11
+Cai Guo-Qiang · Multiple · 2026 Q4,Italy,11,11
 Cai Guo-Qiang · Multiple · 2026 Q4,Switzerland,6,6
 Cai Guo-Qiang · Multiple · 2026 Q4,Japan,4,4
+Cai Guo-Qiang · Multiple · 2026 Q4,United Arab Emirates,4,4
 Cai Guo-Qiang · Multiple · 2026 Q4,Germany,3,3
 Cai Guo-Qiang · Multiple · 2026 Q4,Netherlands,3,3
-Cai Guo-Qiang · Multiple · 2026 Q4,United Arab Emirates,3,3
+Cai Guo-Qiang · Multiple · 2026 Q4,Canada,2,2
 Cai Guo-Qiang · Multiple · 2026 Q4,Cyprus,2,2
 Cai Guo-Qiang · Multiple · 2026 Q4,France,2,2
 Cai Guo-Qiang · Multiple · 2026 Q4,Ireland,2,2
-Cai Guo-Qiang · Multiple · 2026 Q4,Canada,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Denmark,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Luxembourg,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Mexico,1,1
@@ -843,37 +466,6 @@ Cai Guo-Qiang · Multiple · 2026 Q4,New Zealand,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Poland,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,Romania,1,1
 Cai Guo-Qiang · Multiple · 2026 Q4,South Korea,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,United States,21,21
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Taiwan,5,5
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,United Kingdom,4,4
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Australia,3,3
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,China,3,3
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Netherlands,3,3
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Japan,2,2
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,United Arab Emirates,2,2
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Belgium,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Canada,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Germany,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Hong Kong,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Macao,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Singapore,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Sweden,1,1
-Cai Guo-Qiang · Snow Lotus No. 1 · 2024 Q1,Thailand,1,1
-Cali Thornhill Dewitt · Haunted · 2020 Q3,United States,2,2
-Camilla Engström · Island Creators · 2023 Q4,United States,18,18
-Camilla Engström · Island Creators · 2023 Q4,Hong Kong,7,7
-Camilla Engström · Island Creators · 2023 Q4,United Kingdom,7,7
-Camilla Engström · Island Creators · 2023 Q4,Germany,3,3
-Camilla Engström · Island Creators · 2023 Q4,Canada,2,2
-Camilla Engström · Island Creators · 2023 Q4,France,2,2
-Camilla Engström · Island Creators · 2023 Q4,Japan,2,2
-Camilla Engström · Island Creators · 2023 Q4,Netherlands,2,2
-Camilla Engström · Island Creators · 2023 Q4,Norway,2,2
-Camilla Engström · Island Creators · 2023 Q4,Sweden,2,2
-Camilla Engström · Island Creators · 2023 Q4,Belgium,1,1
-Camilla Engström · Island Creators · 2023 Q4,China,1,1
-Camilla Engström · Island Creators · 2023 Q4,Denmark,1,1
-Camilla Engström · Yellow Moon · 2022 Q3,Norway,1,1
 Carrie Mae Weems · Multiple · 2025 Q3,United States,964,770
 Carrie Mae Weems · Multiple · 2025 Q3,United Kingdom,57,49
 Carrie Mae Weems · Multiple · 2025 Q3,Germany,16,16
@@ -894,46 +486,10 @@ Carrie Mae Weems · Multiple · 2025 Q3,Hong Kong,1,1
 Carrie Mae Weems · Multiple · 2025 Q3,Qatar,1,1
 Carrie Mae Weems · Multiple · 2025 Q3,South Africa,1,1
 Carrie Mae Weems · Multiple · 2025 Q3,United Arab Emirates,1,1
-"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1",Hong Kong,6,6
-"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1",Taiwan,3,3
-"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1",Japan,1,1
-"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1",Netherlands,1,1
-"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1",United Kingdom,1,1
-"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1",United States,1,1
+"Chris Huen Sin Kan · Joel, Tess and Haze · 2023 Q1",Hong Kong,1,1
 Chris Succo · Multiple · 2019 Q1,United States,2,2
 Chris Succo · Multiple · 2019 Q1,Canada,1,1
-Chris Succo · Multiple · 2019 Q1,Denmark,1,1
-Chris Succo · Multiple · 2019 Q1,India,1,1
 Chris Succo · Multiple · 2019 Q1,Netherlands,1,1
-Christian Rex van Minnen · Multiple · 2023 Q2,United States,14,14
-Christian Rex van Minnen · Multiple · 2023 Q2,United Kingdom,3,3
-Christian Rex van Minnen · Multiple · 2023 Q2,France,2,2
-Christian Rex van Minnen · Multiple · 2023 Q2,Hong Kong,2,2
-Christian Rex van Minnen · Multiple · 2023 Q2,Australia,1,1
-Christian Rex van Minnen · Multiple · 2023 Q2,Austria,1,1
-Christian Rex van Minnen · Multiple · 2023 Q2,Canada,1,1
-Christian Rex van Minnen · Multiple · 2023 Q2,Netherlands,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,United States,78,75
-Christian Rex van Minnen · Multiple · 2023 Q4,United Kingdom,13,13
-Christian Rex van Minnen · Multiple · 2023 Q4,Spain,6,4
-Christian Rex van Minnen · Multiple · 2023 Q4,Canada,5,5
-Christian Rex van Minnen · Multiple · 2023 Q4,Netherlands,5,5
-Christian Rex van Minnen · Multiple · 2023 Q4,Germany,4,4
-Christian Rex van Minnen · Multiple · 2023 Q4,Sweden,4,4
-Christian Rex van Minnen · Multiple · 2023 Q4,Japan,3,3
-Christian Rex van Minnen · Multiple · 2023 Q4,Australia,2,2
-Christian Rex van Minnen · Multiple · 2023 Q4,Austria,2,2
-Christian Rex van Minnen · Multiple · 2023 Q4,Italy,2,2
-Christian Rex van Minnen · Multiple · 2023 Q4,Denmark,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,France,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,Hong Kong,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,Luxembourg,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,Peru,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,Singapore,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,Switzerland,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,Thailand,1,1
-Christian Rex van Minnen · Multiple · 2023 Q4,United Arab Emirates,1,1
-Christian Rex van Minnen · Parallax · 2022 Q1,United Arab Emirates,1,1
 Cindy Sherman · Untitled · 2025 Q4,United States,355,342
 Cindy Sherman · Untitled · 2025 Q4,United Kingdom,78,77
 Cindy Sherman · Untitled · 2025 Q4,Italy,25,25
@@ -963,7 +519,7 @@ Cindy Sherman · Untitled · 2025 Q4,Israel,1,1
 Cindy Sherman · Untitled · 2025 Q4,Poland,1,1
 Cindy Sherman · Untitled · 2025 Q4,Romania,1,1
 Cindy Sherman · Untitled · 2025 Q4,Slovakia,1,1
-Cindy Sherman · Untitled · 2026 Q2,United States,302,302
+Cindy Sherman · Untitled · 2026 Q2,United States,301,301
 Cindy Sherman · Untitled · 2026 Q2,United Kingdom,54,54
 Cindy Sherman · Untitled · 2026 Q2,Italy,19,19
 Cindy Sherman · Untitled · 2026 Q2,Germany,16,16
@@ -1003,41 +559,13 @@ Claire Silver · daydreamer · 2025 Q3,South Korea,1,1
 Claire Silver · daydreamer · 2025 Q3,Sweden,1,1
 Claire Silver · daydreamer · 2025 Q3,Thailand,1,1
 Claire Silver · daydreamer · 2025 Q3,United Arab Emirates,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,United States,20,18
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,France,10,9
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,United Kingdom,4,4
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Hong Kong,3,3
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Singapore,3,3
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Israel,2,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Denmark,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Italy,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Japan,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Liechtenstein,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Luxembourg,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Netherlands,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Portugal,1,1
-Claire Tabouret · Paysage d’Intérieur (printemps) · 2024 Q4,Taiwan,1,1
-Cleon Peterson · Multiple · 2023 Q3,United States,77,67
-Cleon Peterson · Multiple · 2023 Q3,Australia,8,7
-Cleon Peterson · Multiple · 2023 Q3,Canada,7,7
-Cleon Peterson · Multiple · 2023 Q3,Netherlands,7,6
-Cleon Peterson · Multiple · 2023 Q3,Japan,4,3
-Cleon Peterson · Multiple · 2023 Q3,Mexico,4,4
-Cleon Peterson · Multiple · 2023 Q3,Belgium,3,3
-Cleon Peterson · Multiple · 2023 Q3,Germany,3,3
-Cleon Peterson · Multiple · 2023 Q3,France,2,2
-Cleon Peterson · Multiple · 2023 Q3,Singapore,2,2
-Cleon Peterson · Multiple · 2023 Q3,Spain,2,2
+Cleon Peterson · Multiple · 2023 Q3,United States,11,10
 Cleon Peterson · Multiple · 2023 Q3,United Kingdom,2,2
-Cleon Peterson · Multiple · 2023 Q3,Hong Kong,1,1
-Cleon Peterson · Multiple · 2023 Q3,Kuwait,1,1
-Cleon Peterson · Multiple · 2023 Q3,Monaco,1,1
-Cleon Peterson · Multiple · 2023 Q3,Norway,1,1
-Cleon Peterson · Multiple · 2023 Q3,Portugal,1,1
-Cleon Peterson · Multiple · 2023 Q3,South Korea,1,1
-Cleon Peterson · Multiple · 2023 Q3,Sweden,1,1
-Cleon Peterson · Multiple · 2023 Q3,Switzerland,1,1
-Cleon Peterson · Multiple · 2023 Q3,Thailand,1,1
+Cleon Peterson · Multiple · 2023 Q3,Canada,1,1
+Cleon Peterson · Multiple · 2023 Q3,Germany,1,1
+Cleon Peterson · Multiple · 2023 Q3,Mexico,1,1
+Cleon Peterson · Multiple · 2023 Q3,Netherlands,1,1
+Cleon Peterson · Multiple · 2023 Q3,Spain,1,1
 Cleon Peterson · Shame · 2025 Q3,United States,139,137
 Cleon Peterson · Shame · 2025 Q3,France,28,28
 Cleon Peterson · Shame · 2025 Q3,United Kingdom,22,22
@@ -1072,62 +600,14 @@ Cleon Peterson · Shame · 2025 Q3,South Africa,1,1
 Cleon Peterson · Shame · 2025 Q3,South Korea,1,1
 Cleon Peterson · Shame · 2025 Q3,Taiwan,1,1
 Cleon Peterson · Shame · 2025 Q3,Thailand,1,1
-Cristina de Miguel · Tentacular Thinking · 2024 Q3,United States,4,4
-Cristina de Miguel · Tentacular Thinking · 2024 Q3,South Korea,1,1
-Cristina de Miguel · Tentacular Thinking · 2024 Q3,Spain,1,1
-Cristina de Miguel · Tentacular Thinking · 2024 Q3,United Kingdom,1,1
-CryptoPunks · Multiple · 2023 Q4,United States,451,416
-CryptoPunks · Multiple · 2023 Q4,Germany,113,64
-CryptoPunks · Multiple · 2023 Q4,United Kingdom,109,102
-CryptoPunks · Multiple · 2023 Q4,South Korea,49,45
-CryptoPunks · Multiple · 2023 Q4,Canada,42,40
-CryptoPunks · Multiple · 2023 Q4,Singapore,36,33
-CryptoPunks · Multiple · 2023 Q4,Switzerland,32,23
-CryptoPunks · Multiple · 2023 Q4,France,30,25
-CryptoPunks · Multiple · 2023 Q4,Japan,30,29
-CryptoPunks · Multiple · 2023 Q4,Hong Kong,28,27
-CryptoPunks · Multiple · 2023 Q4,Netherlands,18,18
-CryptoPunks · Multiple · 2023 Q4,United Arab Emirates,18,14
-CryptoPunks · Multiple · 2023 Q4,Australia,17,17
-CryptoPunks · Multiple · 2023 Q4,Austria,14,12
-CryptoPunks · Multiple · 2023 Q4,Italy,13,11
-CryptoPunks · Multiple · 2023 Q4,Portugal,12,12
-CryptoPunks · Multiple · 2023 Q4,Taiwan,11,9
-CryptoPunks · Multiple · 2023 Q4,China,10,7
-CryptoPunks · Multiple · 2023 Q4,Malaysia,10,9
-CryptoPunks · Multiple · 2023 Q4,Belgium,9,8
-CryptoPunks · Multiple · 2023 Q4,Mexico,9,7
-CryptoPunks · Multiple · 2023 Q4,Spain,9,7
-CryptoPunks · Multiple · 2023 Q4,Indonesia,6,5
-CryptoPunks · Multiple · 2023 Q4,New Zealand,6,5
-CryptoPunks · Multiple · 2023 Q4,Israel,5,5
-CryptoPunks · Multiple · 2023 Q4,Norway,5,5
-CryptoPunks · Multiple · 2023 Q4,India,3,3
-CryptoPunks · Multiple · 2023 Q4,Brazil,2,2
-CryptoPunks · Multiple · 2023 Q4,Czech Republic,2,2
-CryptoPunks · Multiple · 2023 Q4,Georgia,2,2
-CryptoPunks · Multiple · 2023 Q4,Greece,2,2
-CryptoPunks · Multiple · 2023 Q4,Ireland,2,2
-CryptoPunks · Multiple · 2023 Q4,Luxembourg,2,2
-CryptoPunks · Multiple · 2023 Q4,Poland,2,2
-CryptoPunks · Multiple · 2023 Q4,Saudi Arabia,2,2
-CryptoPunks · Multiple · 2023 Q4,Slovenia,2,2
-CryptoPunks · Multiple · 2023 Q4,Argentina,1,1
-CryptoPunks · Multiple · 2023 Q4,Cyprus,1,1
-CryptoPunks · Multiple · 2023 Q4,Gibraltar,1,1
-CryptoPunks · Multiple · 2023 Q4,Hungary,1,1
-CryptoPunks · Multiple · 2023 Q4,Reunion,1,1
-CryptoPunks · Multiple · 2023 Q4,Sweden,1,1
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,United States,4,4
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,United Kingdom,2,2
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,China,1,1
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,France,1,1
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,Germany,1,1
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,Italy,1,1
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,Monaco,1,1
+Cristina de Miguel · Tentacular Thinking · 2024 Q3,United States,1,1
+CryptoPunks · Multiple · 2023 Q4,Belgium,1,1
+CryptoPunks · Multiple · 2023 Q4,Germany,1,1
+CryptoPunks · Multiple · 2023 Q4,Italy,1,1
+CryptoPunks · Multiple · 2023 Q4,Singapore,1,1
+CryptoPunks · Multiple · 2023 Q4,United States,1,1
+Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,United States,2,2
 Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,Netherlands,1,1
-Cui Jie · Shanghai Federation of Industry & Commerce Building · 2023 Q4,Singapore,1,1
-DRIFT · Another Future · 2020 Q3,Germany,1,1
 DRIFT · Proto Nature I · 2026 Q1,Netherlands,8,8
 DRIFT · Proto Nature I · 2026 Q1,United States,7,7
 DRIFT · Proto Nature I · 2026 Q1,Germany,2,2
@@ -1136,14 +616,6 @@ DRIFT · Proto Nature I · 2026 Q1,India,1,1
 DRIFT · Proto Nature I · 2026 Q1,Saudi Arabia,1,1
 DRIFT · Proto Nature I · 2026 Q1,Taiwan,1,1
 DRIFT · Proto Nature I · 2026 Q1,United Kingdom,1,1
-Danielle Mckinney · Dream Catcher · 2023 Q1,United States,18,18
-Danielle Mckinney · Dream Catcher · 2023 Q1,United Kingdom,4,4
-Danielle Mckinney · Dream Catcher · 2023 Q1,Switzerland,3,3
-Danielle Mckinney · Dream Catcher · 2023 Q1,Canada,1,1
-Danielle Mckinney · Dream Catcher · 2023 Q1,France,1,1
-Danielle Mckinney · Dream Catcher · 2023 Q1,Israel,1,1
-Danielle Mckinney · Dream Catcher · 2023 Q1,Italy,1,1
-Danielle Mckinney · Dream Catcher · 2023 Q1,Portugal,1,1
 Danielle Mckinney · Sandman · 2025 Q1,United States,839,816
 Danielle Mckinney · Sandman · 2025 Q1,United Kingdom,171,170
 Danielle Mckinney · Sandman · 2025 Q1,Netherlands,29,29
@@ -1177,53 +649,34 @@ Danielle Mckinney · Sandman · 2025 Q1,Malaysia,1,1
 Danielle Mckinney · Sandman · 2025 Q1,Monaco,1,1
 Danielle Mckinney · Sandman · 2025 Q1,Saudi Arabia,1,1
 Danielle Mckinney · Sandman · 2025 Q1,South Africa,1,1
-Danielle Mckinney · Shelter · 2024 Q3,United States,62,62
-Danielle Mckinney · Shelter · 2024 Q3,United Kingdom,25,25
-Danielle Mckinney · Shelter · 2024 Q3,Netherlands,4,4
-Danielle Mckinney · Shelter · 2024 Q3,France,3,3
-Danielle Mckinney · Shelter · 2024 Q3,Germany,2,2
-Danielle Mckinney · Shelter · 2024 Q3,Italy,2,2
-Danielle Mckinney · Shelter · 2024 Q3,Greece,1,1
-Danielle Mckinney · Shelter · 2024 Q3,Hong Kong,1,1
-Danielle Mckinney · Shelter · 2024 Q3,Japan,1,1
-Danielle Mckinney · Shelter · 2024 Q3,Spain,1,1
-David Wojnarowicz · Multiple · 2026 Q4,United States,199,167
+Danielle Mckinney · Shelter · 2024 Q3,United Kingdom,1,1
+David Wojnarowicz · Multiple · 2026 Q4,United States,198,166
 David Wojnarowicz · Multiple · 2026 Q4,United Kingdom,22,21
 David Wojnarowicz · Multiple · 2026 Q4,Canada,10,9
-David Wojnarowicz · Multiple · 2026 Q4,Australia,7,6
+David Wojnarowicz · Multiple · 2026 Q4,Australia,6,5
 David Wojnarowicz · Multiple · 2026 Q4,France,6,6
+David Wojnarowicz · Multiple · 2026 Q4,Germany,5,5
 David Wojnarowicz · Multiple · 2026 Q4,Netherlands,5,5
 David Wojnarowicz · Multiple · 2026 Q4,Switzerland,5,4
-David Wojnarowicz · Multiple · 2026 Q4,Germany,4,4
 David Wojnarowicz · Multiple · 2026 Q4,Italy,4,4
 David Wojnarowicz · Multiple · 2026 Q4,Poland,4,4
 David Wojnarowicz · Multiple · 2026 Q4,Belgium,3,2
 David Wojnarowicz · Multiple · 2026 Q4,Ireland,2,1
+David Wojnarowicz · Multiple · 2026 Q4,Portugal,2,2
 David Wojnarowicz · Multiple · 2026 Q4,Spain,2,2
-David Wojnarowicz · Multiple · 2026 Q4,Sweden,2,2
 David Wojnarowicz · Multiple · 2026 Q4,Brazil,1,1
 David Wojnarowicz · Multiple · 2026 Q4,Denmark,1,1
 David Wojnarowicz · Multiple · 2026 Q4,Greece,1,1
 David Wojnarowicz · Multiple · 2026 Q4,Monaco,1,1
 David Wojnarowicz · Multiple · 2026 Q4,New Zealand,1,1
-David Wojnarowicz · Multiple · 2026 Q4,Portugal,1,1
+David Wojnarowicz · Multiple · 2026 Q4,Sweden,1,1
 David Wojnarowicz · Multiple · 2026 Q4,United Arab Emirates,1,1
-DeeKay · Love Ripples · 2024 Q1,United States,18,17
-DeeKay · Love Ripples · 2024 Q1,Canada,4,4
-DeeKay · Love Ripples · 2024 Q1,South Korea,4,4
-DeeKay · Love Ripples · 2024 Q1,United Kingdom,2,2
-DeeKay · Love Ripples · 2024 Q1,Australia,1,1
-DeeKay · Love Ripples · 2024 Q1,Hong Kong,1,1
-DeeKay · Love Ripples · 2024 Q1,Netherlands,1,1
-DeeKay · Love Ripples · 2024 Q1,Taiwan,1,1
+DeeKay · Love Ripples · 2024 Q1,United States,1,1
 Derek Fordjour · Multiple · 2025 Q1,United States,20,20
 Derek Fordjour · Multiple · 2025 Q1,South Korea,4,4
 Derek Fordjour · Multiple · 2025 Q1,Italy,1,1
 Derek Fordjour · Multiple · 2025 Q1,Netherlands,1,1
-Devan Shimoyama · Le Mat · 2023 Q4,United States,11,11
-Devan Shimoyama · Le Mat · 2023 Q4,Germany,2,2
-Devan Shimoyama · Le Mat · 2023 Q4,United Kingdom,2,2
-Devan Shimoyama · Le Mat · 2023 Q4,Japan,1,1
+Devan Shimoyama · Le Mat · 2023 Q4,United States,1,1
 Dominique Fung · Handheld Fan · 2025 Q3,United States,21,21
 Dominique Fung · Handheld Fan · 2025 Q3,United Kingdom,5,5
 Dominique Fung · Handheld Fan · 2025 Q3,Germany,2,2
@@ -1235,48 +688,9 @@ Dominique Fung · Handheld Fan · 2025 Q3,Netherlands,1,1
 Dominique Fung · Handheld Fan · 2025 Q3,Spain,1,1
 Dominique Fung · Handheld Fan · 2025 Q3,Switzerland,1,1
 Dominique Fung · Handheld Fan · 2025 Q3,Taiwan,1,1
-Donna Huanca · Multiple · 2021 Q2,Sweden,1,1
 Donna Huanca · Multiple · 2021 Q2,United Arab Emirates,1,1
-Donna Huanca · Multiple · 2021 Q2,United States,1,1
-Ed Ruscha · Actual Size · 2024 Q2,United States,1348,1273
-Ed Ruscha · Actual Size · 2024 Q2,United Kingdom,174,153
-Ed Ruscha · Actual Size · 2024 Q2,Germany,39,35
-Ed Ruscha · Actual Size · 2024 Q2,Canada,35,31
-Ed Ruscha · Actual Size · 2024 Q2,Hong Kong,30,27
-Ed Ruscha · Actual Size · 2024 Q2,Japan,27,23
-Ed Ruscha · Actual Size · 2024 Q2,Singapore,25,25
-Ed Ruscha · Actual Size · 2024 Q2,Netherlands,22,20
-Ed Ruscha · Actual Size · 2024 Q2,Australia,20,19
-Ed Ruscha · Actual Size · 2024 Q2,Italy,20,20
-Ed Ruscha · Actual Size · 2024 Q2,France,19,16
-Ed Ruscha · Actual Size · 2024 Q2,South Korea,16,12
-Ed Ruscha · Actual Size · 2024 Q2,Switzerland,9,9
-Ed Ruscha · Actual Size · 2024 Q2,United Arab Emirates,9,8
-Ed Ruscha · Actual Size · 2024 Q2,Portugal,7,7
-Ed Ruscha · Actual Size · 2024 Q2,Sweden,7,7
-Ed Ruscha · Actual Size · 2024 Q2,Austria,6,6
-Ed Ruscha · Actual Size · 2024 Q2,Belgium,6,6
-Ed Ruscha · Actual Size · 2024 Q2,China,6,4
-Ed Ruscha · Actual Size · 2024 Q2,Spain,6,6
-Ed Ruscha · Actual Size · 2024 Q2,New Zealand,5,5
-Ed Ruscha · Actual Size · 2024 Q2,Taiwan,5,5
-Ed Ruscha · Actual Size · 2024 Q2,Thailand,5,4
-Ed Ruscha · Actual Size · 2024 Q2,Denmark,4,2
-Ed Ruscha · Actual Size · 2024 Q2,Norway,4,4
-Ed Ruscha · Actual Size · 2024 Q2,Cyprus,3,3
-Ed Ruscha · Actual Size · 2024 Q2,Ireland,3,3
-Ed Ruscha · Actual Size · 2024 Q2,Malaysia,3,3
-Ed Ruscha · Actual Size · 2024 Q2,Monaco,3,3
-Ed Ruscha · Actual Size · 2024 Q2,South Africa,3,3
-Ed Ruscha · Actual Size · 2024 Q2,Greece,2,2
-Ed Ruscha · Actual Size · 2024 Q2,Hungary,2,2
-Ed Ruscha · Actual Size · 2024 Q2,Jersey,1,1
-Ed Ruscha · Actual Size · 2024 Q2,Lebanon,1,1
-Ed Ruscha · Actual Size · 2024 Q2,Mexico,1,1
-Ed Ruscha · Actual Size · 2024 Q2,Philippines,1,1
-Ed Ruscha · Actual Size · 2024 Q2,Poland,1,1
-Ed Ruscha · Actual Size · 2024 Q2,Saudi Arabia,1,1
-Ed Ruscha · Actual Size · 2024 Q2,Slovakia,1,1
+Ed Ruscha · Actual Size · 2024 Q2,United States,8,2
+Ed Ruscha · Actual Size · 2024 Q2,United Kingdom,1,1
 Eddie Martinez · Olive Garden · 2026 Q2,United States,61,61
 Eddie Martinez · Olive Garden · 2026 Q2,United Kingdom,11,11
 Eddie Martinez · Olive Garden · 2026 Q2,Italy,3,3
@@ -1298,30 +712,7 @@ Eddie Martinez · Olive Garden · 2026 Q2,Japan,1,1
 Eddie Martinez · Olive Garden · 2026 Q2,Netherlands,1,1
 Eddie Martinez · Olive Garden · 2026 Q2,Singapore,1,1
 Eddie Martinez · Olive Garden · 2026 Q2,Taiwan,1,1
-Eddie Martinez · Scaffold · 2024 Q2,United States,104,104
-Eddie Martinez · Scaffold · 2024 Q2,United Kingdom,40,40
-Eddie Martinez · Scaffold · 2024 Q2,Taiwan,7,7
-Eddie Martinez · Scaffold · 2024 Q2,Norway,6,6
-Eddie Martinez · Scaffold · 2024 Q2,France,5,5
-Eddie Martinez · Scaffold · 2024 Q2,Canada,4,4
-Eddie Martinez · Scaffold · 2024 Q2,Singapore,4,4
-Eddie Martinez · Scaffold · 2024 Q2,Germany,3,3
-Eddie Martinez · Scaffold · 2024 Q2,South Korea,3,3
-Eddie Martinez · Scaffold · 2024 Q2,Spain,3,3
-Eddie Martinez · Scaffold · 2024 Q2,Thailand,3,3
-Eddie Martinez · Scaffold · 2024 Q2,Australia,2,2
-Eddie Martinez · Scaffold · 2024 Q2,Belgium,2,2
-Eddie Martinez · Scaffold · 2024 Q2,Cyprus,2,2
-Eddie Martinez · Scaffold · 2024 Q2,Hong Kong,2,2
-Eddie Martinez · Scaffold · 2024 Q2,Netherlands,2,2
-Eddie Martinez · Scaffold · 2024 Q2,Austria,1,1
-Eddie Martinez · Scaffold · 2024 Q2,Denmark,1,1
-Eddie Martinez · Scaffold · 2024 Q2,Ireland,1,1
 Eddie Martinez · Scaffold · 2024 Q2,Israel,1,1
-Eddie Martinez · Scaffold · 2024 Q2,Japan,1,1
-Eddie Martinez · Scaffold · 2024 Q2,Mexico,1,1
-Eddie Martinez · Scaffold · 2024 Q2,Portugal,1,1
-Eddie Martinez · Scaffold · 2024 Q2,Switzerland,1,1
 Em Cooper · Multiple · 2026 Q1,United States,17,16
 Em Cooper · Multiple · 2026 Q1,United Kingdom,9,7
 Em Cooper · Multiple · 2026 Q1,Australia,4,4
@@ -1335,16 +726,6 @@ Em Cooper · Multiple · 2026 Q1,Ireland,1,1
 Em Cooper · Multiple · 2026 Q1,Japan,1,1
 Em Cooper · Multiple · 2026 Q1,Netherlands,1,1
 Em Cooper · Multiple · 2026 Q1,Sweden,1,1
-Emily Xie · Guardian Lion · 2024 Q1,United States,20,20
-Emily Xie · Guardian Lion · 2024 Q1,Germany,2,2
-Emily Xie · Guardian Lion · 2024 Q1,United Kingdom,2,2
-Emily Xie · Guardian Lion · 2024 Q1,Australia,1,1
-Emily Xie · Guardian Lion · 2024 Q1,Belgium,1,1
-Emily Xie · Guardian Lion · 2024 Q1,China,1,1
-Emily Xie · Guardian Lion · 2024 Q1,Denmark,1,1
-Emily Xie · Guardian Lion · 2024 Q1,Hong Kong,1,1
-Emily Xie · Guardian Lion · 2024 Q1,Taiwan,1,1
-Emily Xie · Guardian Lion · 2024 Q1,Thailand,1,1
 En Iwamura · Multiple · 2025 Q3,United States,18,18
 En Iwamura · Multiple · 2025 Q3,Singapore,4,4
 En Iwamura · Multiple · 2025 Q3,Hong Kong,2,2
@@ -1356,8 +737,6 @@ En Iwamura · Multiple · 2025 Q3,France,1,1
 En Iwamura · Multiple · 2025 Q3,Germany,1,1
 En Iwamura · Multiple · 2025 Q3,Poland,1,1
 En Iwamura · Multiple · 2025 Q3,United Arab Emirates,1,1
-Esiri Erheriene-Essi · Multiple · 2022 Q1,United States,4,4
-Esiri Erheriene-Essi · Multiple · 2022 Q1,United Kingdom,1,1
 Felipe Pantone · Chromadynamica 19 P · 2025 Q3,United States,109,108
 Felipe Pantone · Chromadynamica 19 P · 2025 Q3,Spain,31,30
 Felipe Pantone · Chromadynamica 19 P · 2025 Q3,United Kingdom,25,25
@@ -1421,6 +800,15 @@ Ferrari Sheppard · Iris · 2025 Q2,Belgium,1,1
 Ferrari Sheppard · Iris · 2025 Q2,Canada,1,1
 Ferrari Sheppard · Iris · 2025 Q2,Malta,1,1
 Ferrari Sheppard · Iris · 2025 Q2,South Africa,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,United States,59,53
+Ferrari Sheppard · Multiple · 2026 Q4,United Kingdom,7,7
+Ferrari Sheppard · Multiple · 2026 Q4,Switzerland,2,2
+Ferrari Sheppard · Multiple · 2026 Q4,Australia,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,Belgium,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,Canada,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,Netherlands,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,Portugal,1,1
+Ferrari Sheppard · Multiple · 2026 Q4,Singapore,1,1
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,United States,79,79
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,United Kingdom,9,9
 Ferrari Sheppard · Put Some Red On It · 2026 Q1,Canada,2,2
@@ -1467,36 +855,10 @@ Friedrich Kunath · Storms Never Last · 2025 Q2,Poland,1,1
 Friedrich Kunath · Storms Never Last · 2025 Q2,Slovakia,1,1
 Friedrich Kunath · Storms Never Last · 2025 Q2,Sweden,1,1
 Friedrich Kunath · Storms Never Last · 2025 Q2,United Arab Emirates,1,1
-Gabriel Moses · Multiple · 2024 Q3,United States,19,17
-Gabriel Moses · Multiple · 2024 Q3,United Kingdom,11,10
-Gabriel Moses · Multiple · 2024 Q3,Netherlands,6,5
-Gabriel Moses · Multiple · 2024 Q3,France,2,2
-Gabriel Moses · Multiple · 2024 Q3,Germany,2,2
-Gabriel Moses · Multiple · 2024 Q3,Australia,1,1
-Gabriel Moses · Multiple · 2024 Q3,Belgium,1,1
-Gabriel Moses · Multiple · 2024 Q3,Switzerland,1,1
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,United States,102,101
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,United Kingdom,16,16
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Netherlands,10,10
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Canada,8,8
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Australia,4,4
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Belgium,3,2
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Portugal,3,2
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Sweden,3,3
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,China,2,2
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Italy,2,2
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Japan,2,2
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Norway,2,2
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Switzerland,2,2
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Aruba,1,1
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Denmark,1,1
+Gabriel Moses · Multiple · 2024 Q3,Netherlands,2,1
+Gabriel Moses · Multiple · 2024 Q3,United Kingdom,2,1
 Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,France,1,1
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Germany,1,1
 Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Greece,1,1
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Ireland,1,1
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Romania,1,1
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,South Korea,1,1
-Gabrielle Garland · Anything worth having hurts a little · 2023 Q1,Taiwan,1,1
 George Condo · Fashion Model AP · 2025 Q1,United States,5,5
 George Condo · Fashion Model AP · 2025 Q1,France,1,1
 George Condo · Fashion Model AP · 2025 Q1,South Korea,1,1
@@ -1525,36 +887,12 @@ George Condo · Fashion Model · 2025 Q1,Portugal,1,1
 George Condo · Fashion Model · 2025 Q1,Qatar,1,1
 George Condo · Fashion Model · 2025 Q1,Singapore,1,1
 George Condo · Fashion Model · 2025 Q1,Taiwan,1,1
-George Condo · Multiple · 2024 Q1,United States,249,147
-George Condo · Multiple · 2024 Q1,United Kingdom,98,60
-George Condo · Multiple · 2024 Q1,Hong Kong,26,16
-George Condo · Multiple · 2024 Q1,Netherlands,21,13
-George Condo · Multiple · 2024 Q1,Austria,10,4
-George Condo · Multiple · 2024 Q1,France,10,9
-George Condo · Multiple · 2024 Q1,South Korea,10,6
-George Condo · Multiple · 2024 Q1,Canada,9,7
-George Condo · Multiple · 2024 Q1,Switzerland,7,3
-George Condo · Multiple · 2024 Q1,Germany,6,5
-George Condo · Multiple · 2024 Q1,Israel,5,2
-George Condo · Multiple · 2024 Q1,Italy,5,4
-George Condo · Multiple · 2024 Q1,Denmark,4,3
-George Condo · Multiple · 2024 Q1,Australia,3,1
-George Condo · Multiple · 2024 Q1,Japan,3,1
-George Condo · Multiple · 2024 Q1,Malaysia,3,2
-George Condo · Multiple · 2024 Q1,Norway,3,2
-George Condo · Multiple · 2024 Q1,Taiwan,3,1
-George Condo · Multiple · 2024 Q1,United Arab Emirates,3,3
-George Condo · Multiple · 2024 Q1,Greece,2,2
-George Condo · Multiple · 2024 Q1,Poland,2,2
-George Condo · Multiple · 2024 Q1,Belgium,1,1
-George Condo · Multiple · 2024 Q1,Ireland,1,1
-George Condo · Multiple · 2024 Q1,Liechtenstein,1,1
-George Condo · Multiple · 2024 Q1,New Zealand,1,1
-George Condo · Multiple · 2024 Q1,Spain,1,1
-George Rouy · Keeping it for Myself · 2022 Q1,Hong Kong,1,1
-George Rouy · Keeping it for Myself · 2022 Q1,United Kingdom,1,1
-George Rouy · Tearing of the Savage Breast · 2022 Q4,United Kingdom,3,3
-Giorgiko · Unacquainted Friends · 2023 Q4,Netherlands,1,1
+George Condo · Multiple · 2024 Q1,United States,11,6
+George Condo · Multiple · 2024 Q1,United Kingdom,9,5
+George Condo · Multiple · 2024 Q1,Austria,6,2
+George Condo · Multiple · 2024 Q1,Hong Kong,4,2
+George Condo · Multiple · 2024 Q1,Netherlands,3,2
+George Condo · Multiple · 2024 Q1,United Arab Emirates,1,1
 Gisela McDaniel · Are you watching? · 2022 Q1,United States,1,1
 Giuseppe Penone · Multiple · 2026 Q3,Italy,7,7
 Giuseppe Penone · Multiple · 2026 Q3,United States,5,5
@@ -1592,17 +930,8 @@ Glenn Ligon · Multiple · 2026 Q3,Liechtenstein,1,1
 Glenn Ligon · Multiple · 2026 Q3,Mauritius,1,1
 Glenn Ligon · Multiple · 2026 Q3,Saudi Arabia,1,1
 Glenn Ligon · Multiple · 2026 Q3,South Korea,1,1
-"Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2",United States,10,10
 "Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2",Mexico,1,1
-"Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2",Portugal,1,1
-Grant Riven Yun · Fall · 2023 Q2,United States,28,28
-Grant Riven Yun · Fall · 2023 Q2,Canada,2,2
-Grant Riven Yun · Fall · 2023 Q2,South Korea,2,2
-Grant Riven Yun · Fall · 2023 Q2,Australia,1,1
-Grant Riven Yun · Fall · 2023 Q2,Malaysia,1,1
-Grant Riven Yun · Fall · 2023 Q2,Singapore,1,1
-Grant Riven Yun · Fall · 2023 Q2,United Arab Emirates,1,1
-Grant Riven Yun · Fall · 2023 Q2,United Kingdom,1,1
+"Grant Levy-Lucero · de la Rosa, Dulcería La Moderna · 2023 Q2",United States,1,1
 Grant Riven Yun · High Fly Over the Valley · 2026 Q2,United States,11,11
 Grant Riven Yun · High Fly Over the Valley · 2026 Q2,South Korea,2,2
 Grant Riven Yun · High Fly Over the Valley · 2026 Q2,Belgium,1,1
@@ -1610,38 +939,13 @@ Grant Riven Yun · High Fly Over the Valley · 2026 Q2,France,1,1
 Grant Riven Yun · High Fly Over the Valley · 2026 Q2,Germany,1,1
 Grant Riven Yun · High Fly Over the Valley · 2026 Q2,Hong Kong,1,1
 Grant Riven Yun · High Fly Over the Valley · 2026 Q2,United Kingdom,1,1
-Grant Riven Yun · Multiple · 2023 Q3,United States,1,1
-Grant Riven Yun · Multiple · 2024 Q1,United States,8,4
 Grant Riven Yun · Multiple · 2024 Q1,Switzerland,6,1
-Grant Riven Yun · Multiple · 2024 Q1,Hong Kong,4,2
 Grayson Perry · Magical Thinking (Large) · 2025 Q2,United Kingdom,4,4
 Grayson Perry · Magical Thinking (Large) · 2025 Q2,Poland,1,1
 Grayson Perry · Magical Thinking (Large) · 2025 Q2,United States,1,1
-Grayson Perry · Magical Thinking · 2024 Q4,United Kingdom,1019,992
-Grayson Perry · Magical Thinking · 2024 Q4,United States,30,29
-Grayson Perry · Magical Thinking · 2024 Q4,Australia,25,25
-Grayson Perry · Magical Thinking · 2024 Q4,Netherlands,21,21
-Grayson Perry · Magical Thinking · 2024 Q4,Germany,9,9
-Grayson Perry · Magical Thinking · 2024 Q4,France,8,8
-Grayson Perry · Magical Thinking · 2024 Q4,Ireland,8,8
-Grayson Perry · Magical Thinking · 2024 Q4,Denmark,6,6
-Grayson Perry · Magical Thinking · 2024 Q4,Switzerland,5,5
-Grayson Perry · Magical Thinking · 2024 Q4,Hong Kong,4,2
-Grayson Perry · Magical Thinking · 2024 Q4,New Zealand,4,4
-Grayson Perry · Magical Thinking · 2024 Q4,Malta,3,3
-Grayson Perry · Magical Thinking · 2024 Q4,Spain,3,3
-Grayson Perry · Magical Thinking · 2024 Q4,Belgium,2,2
-Grayson Perry · Magical Thinking · 2024 Q4,Canada,2,2
-Grayson Perry · Magical Thinking · 2024 Q4,Jersey,2,2
-Grayson Perry · Magical Thinking · 2024 Q4,Norway,2,2
-Grayson Perry · Magical Thinking · 2024 Q4,Portugal,2,2
-Grayson Perry · Magical Thinking · 2024 Q4,Singapore,2,2
-Grayson Perry · Magical Thinking · 2024 Q4,United Arab Emirates,2,2
-Grayson Perry · Magical Thinking · 2024 Q4,Gibraltar,1,1
-Grayson Perry · Magical Thinking · 2024 Q4,Italy,1,1
-Grayson Perry · Magical Thinking · 2024 Q4,Japan,1,1
-Grayson Perry · Magical Thinking · 2024 Q4,Malaysia,1,1
-Grayson Perry · Magical Thinking · 2024 Q4,Mexico,1,1
+Grayson Perry · Magical Thinking · 2024 Q4,United Kingdom,6,6
+Grayson Perry · Magical Thinking · 2024 Q4,Netherlands,1,1
+Grayson Perry · Magical Thinking · 2024 Q4,United States,1,1
 Grayson Perry · The Changeling · 2026 Q2,United Kingdom,374,359
 Grayson Perry · The Changeling · 2026 Q2,United States,19,19
 Grayson Perry · The Changeling · 2026 Q2,Australia,12,11
@@ -1665,37 +969,11 @@ Grayson Perry · The Changeling · 2026 Q2,Singapore,1,1
 Grayson Perry · The Changeling · 2026 Q2,South Korea,1,1
 Grayson Perry · The Changeling · 2026 Q2,Sweden,1,1
 Grayson Perry · The Changeling · 2026 Q2,Switzerland,1,1
-Gregory Crewdson · Multiple · 2023 Q4,United States,294,285
-Gregory Crewdson · Multiple · 2023 Q4,United Kingdom,79,78
-Gregory Crewdson · Multiple · 2023 Q4,France,69,69
-Gregory Crewdson · Multiple · 2023 Q4,Germany,45,43
-Gregory Crewdson · Multiple · 2023 Q4,Netherlands,22,22
-Gregory Crewdson · Multiple · 2023 Q4,Australia,18,18
-Gregory Crewdson · Multiple · 2023 Q4,Canada,15,15
-Gregory Crewdson · Multiple · 2023 Q4,Italy,12,12
-Gregory Crewdson · Multiple · 2023 Q4,Belgium,10,10
-Gregory Crewdson · Multiple · 2023 Q4,Spain,7,7
-Gregory Crewdson · Multiple · 2023 Q4,Switzerland,7,7
-Gregory Crewdson · Multiple · 2023 Q4,Norway,6,6
-Gregory Crewdson · Multiple · 2023 Q4,Austria,4,4
-Gregory Crewdson · Multiple · 2023 Q4,Portugal,4,4
-Gregory Crewdson · Multiple · 2023 Q4,Denmark,2,2
-Gregory Crewdson · Multiple · 2023 Q4,Finland,2,2
-Gregory Crewdson · Multiple · 2023 Q4,Hong Kong,2,2
-Gregory Crewdson · Multiple · 2023 Q4,Japan,2,2
-Gregory Crewdson · Multiple · 2023 Q4,Mexico,2,2
-Gregory Crewdson · Multiple · 2023 Q4,Slovenia,2,2
-Gregory Crewdson · Multiple · 2023 Q4,Sweden,2,2
-Gregory Crewdson · Multiple · 2023 Q4,United Arab Emirates,2,2
-Gregory Crewdson · Multiple · 2023 Q4,China,1,1
-Gregory Crewdson · Multiple · 2023 Q4,Czech Republic,1,1
-Gregory Crewdson · Multiple · 2023 Q4,Estonia,1,1
-Gregory Crewdson · Multiple · 2023 Q4,Gibraltar,1,1
-Gregory Crewdson · Multiple · 2023 Q4,Ireland,1,1
-Gregory Crewdson · Multiple · 2023 Q4,Luxembourg,1,1
-Gregory Crewdson · Multiple · 2023 Q4,New Zealand,1,1
-Gregory Crewdson · Multiple · 2023 Q4,Poland,1,1
-Gregory Crewdson · Multiple · 2023 Q4,South Korea,1,1
+Gregory Crewdson · Multiple · 2023 Q4,United States,3,3
+Gregory Crewdson · Multiple · 2023 Q4,Germany,2,1
+Gregory Crewdson · Multiple · 2023 Q4,Australia,1,1
+Gregory Crewdson · Multiple · 2023 Q4,Italy,1,1
+Gregory Crewdson · Multiple · 2023 Q4,United Kingdom,1,1
 Gregory Crewdson · Multiple · 2026 Q2,United States,1206,698
 Gregory Crewdson · Multiple · 2026 Q2,United Kingdom,457,266
 Gregory Crewdson · Multiple · 2026 Q2,France,248,147
@@ -1733,7 +1011,6 @@ Gregory Crewdson · Multiple · 2026 Q2,Bulgaria,1,1
 Gregory Crewdson · Multiple · 2026 Q2,Côte d'Ivoire,1,1
 Gregory Crewdson · Multiple · 2026 Q2,Japan,1,1
 Gregory Crewdson · Multiple · 2026 Q2,Slovakia,1,1
-Guimi You · Point Reyes · 2022 Q4,United States,2,2
 Hajime Sorayama · Untitled · 2025 Q2,United States,208,204
 Hajime Sorayama · Untitled · 2025 Q2,United Kingdom,41,41
 Hajime Sorayama · Untitled · 2025 Q2,Hong Kong,39,39
@@ -1767,19 +1044,8 @@ Hajime Sorayama · Untitled · 2025 Q2,New Zealand,1,1
 Hajime Sorayama · Untitled · 2025 Q2,Norway,1,1
 Hajime Sorayama · Untitled · 2025 Q2,Poland,1,1
 Hajime Sorayama · Untitled · 2025 Q2,Portugal,1,1
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",United States,240,233
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",United Kingdom,10,10
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",Canada,3,3
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",Netherlands,3,3
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",Belgium,2,2
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",France,2,1
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",Germany,2,2
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",Portugal,2,2
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",New Zealand,1,1
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",Singapore,1,1
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",South Africa,1,1
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",South Korea,1,1
-"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",Trinidad and Tobago,1,1
+"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",United States,2,2
+"Hank Willis Thomas · ""The only bond worth anything between human beings is their humanness."" · 2024 Q3",United Kingdom,1,1
 Hank Willis Thomas · “Success is no accident.” · 2026 Q2,United States,232,231
 Hank Willis Thomas · “Success is no accident.” · 2026 Q2,United Kingdom,26,26
 Hank Willis Thomas · “Success is no accident.” · 2026 Q2,Netherlands,9,9
@@ -1841,99 +1107,21 @@ Harmonia · Multiple · 2025 Q4,Mexico,1,1
 Harmonia · Multiple · 2025 Q4,New Zealand,1,1
 Harmonia · Multiple · 2025 Q4,Saudi Arabia,1,1
 Harmonia · Multiple · 2025 Q4,United Arab Emirates,1,1
-Haroshi · Multiple · 2021 Q2,United States,2,1
-Haroshi · Multiple · 2021 Q2,France,1,1
-Haroshi · Multiple · 2021 Q2,Japan,1,1
-Hassan Hajjaj · Yazid & Rania · 2021 Q3,United States,5,5
-Hassan Hajjaj · Yazid & Rania · 2021 Q3,United Kingdom,2,2
-Hassan Hajjaj · Yazid & Rania · 2021 Q3,Canada,1,1
+Hassan Hajjaj · Yazid & Rania · 2021 Q3,United States,2,2
 Hassan Hajjaj · Yazid & Rania · 2021 Q3,Liechtenstein,1,1
 Hassan Hajjaj · Yazid & Rania · 2021 Q3,Netherlands,1,1
-Hebru Brantley · Free Advice (Large) · 2022 Q1,Hong Kong,1,1
-Hebru Brantley · Free Advice · 2022 Q2,Hong Kong,2,2
-Hebru Brantley · Free Advice · 2022 Q2,Canada,1,1
-Hebru Brantley · Free Advice · 2022 Q2,United States,1,1
-Hebru Brantley · Multiple · 2020 Q4,Canada,1,1
-Hebru Brantley · Multiple · 2020 Q4,China,1,1
-Hebru Brantley · Multiple · 2020 Q4,United States,1,1
-Hein Koh · Multiple · 2023 Q3,United States,14,14
-Hein Koh · Multiple · 2023 Q3,Netherlands,1,1
-Hein Koh · Multiple · 2023 Q3,South Korea,1,1
+Hassan Hajjaj · Yazid & Rania · 2021 Q3,United Kingdom,1,1
+Hebru Brantley · Free Advice · 2022 Q2,Hong Kong,1,1
+Hein Koh · Multiple · 2023 Q3,United States,2,2
 Hein Koh · Multiple · 2023 Q3,Spain,1,1
 Hein Koh · Multiple · 2023 Q3,United Kingdom,1,1
-Hideaki Kawashima · Multiple · 2023 Q4,Japan,11,2
-Hideaki Kawashima · Multiple · 2023 Q4,Hong Kong,2,2
-Hideaki Kawashima · Multiple · 2023 Q4,United Kingdom,2,2
-Hideaki Kawashima · Multiple · 2023 Q4,Canada,1,1
-Hideaki Kawashima · Multiple · 2023 Q4,Singapore,1,1
-Hideaki Kawashima · Multiple · 2023 Q4,South Korea,1,1
-Hideaki Kawashima · Multiple · 2023 Q4,United States,1,1
 Hilary Pecis · Multiple · 2025 Q1,Israel,10,1
 Hilary Pecis · Multiple · 2025 Q1,United States,10,9
 Hilary Pecis · Multiple · 2025 Q1,South Korea,3,3
 Hilary Pecis · Multiple · 2025 Q1,United Kingdom,3,3
-Hiroya Kurata · Lemonhead · 2023 Q4,United States,11,2
-Hiroya Kurata · Lemonhead · 2023 Q4,Japan,2,2
-Hiroya Kurata · Lemonhead · 2023 Q4,Netherlands,2,2
-Hiroya Kurata · Lemonhead · 2023 Q4,Italy,1,1
-Hiroya Kurata · Lemonhead · 2023 Q4,Turkey,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,United States,15,15
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,United Kingdom,12,12
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,South Korea,7,7
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Canada,3,3
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Netherlands,2,2
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Belgium,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,China,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Denmark,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Germany,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Hong Kong,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Italy,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Japan,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Malaysia,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Portugal,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Singapore,1,1
-Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,Switzerland,1,1
-Iskra Velitchkova · EYENESSLESS · 2024 Q3,United States,3,3
-Iskra Velitchkova · EYENESSLESS · 2024 Q3,Australia,1,1
-Iskra Velitchkova · EYENESSLESS · 2024 Q3,Serbia,1,1
-Iskra Velitchkova · EYENESSLESS · 2024 Q3,Singapore,1,1
-Iskra Velitchkova · EYENESSLESS · 2024 Q3,Switzerland,1,1
-Iskra Velitchkova · EYENESSLESS · 2024 Q3,United Kingdom,1,1
-"JR · GIANTS, High jump in Rio · 2023 Q3",Germany,5,3
-"JR · GIANTS, High jump in Rio · 2023 Q3",Switzerland,5,1
-"JR · GIANTS, High jump in Rio · 2023 Q3",United States,4,4
-"JR · GIANTS, High jump in Rio · 2023 Q3",Hong Kong,3,3
-"JR · GIANTS, High jump in Rio · 2023 Q3",France,2,2
-"JR · GIANTS, High jump in Rio · 2023 Q3",South Korea,2,2
-"JR · GIANTS, High jump in Rio · 2023 Q3",United Kingdom,2,2
-"JR · GIANTS, High jump in Rio · 2023 Q3",China,1,1
-"JR · GIANTS, High jump in Rio · 2023 Q3",Netherlands,1,1
-JR · La Nascita · 2024 Q2,Italy,76,74
-JR · La Nascita · 2024 Q2,France,64,60
-JR · La Nascita · 2024 Q2,United States,57,57
-JR · La Nascita · 2024 Q2,United Kingdom,30,29
-JR · La Nascita · 2024 Q2,Germany,20,19
-JR · La Nascita · 2024 Q2,Japan,6,5
-JR · La Nascita · 2024 Q2,Belgium,5,5
-JR · La Nascita · 2024 Q2,Mexico,5,5
-JR · La Nascita · 2024 Q2,Switzerland,5,5
-JR · La Nascita · 2024 Q2,Canada,4,4
-JR · La Nascita · 2024 Q2,Netherlands,4,4
-JR · La Nascita · 2024 Q2,Portugal,3,3
-JR · La Nascita · 2024 Q2,United Arab Emirates,3,3
-JR · La Nascita · 2024 Q2,Spain,2,2
-JR · La Nascita · 2024 Q2,Austria,1,1
-JR · La Nascita · 2024 Q2,Brazil,1,1
-JR · La Nascita · 2024 Q2,Hong Kong,1,1
-JR · La Nascita · 2024 Q2,Macao,1,1
-JR · La Nascita · 2024 Q2,New Zealand,1,1
-JR · La Nascita · 2024 Q2,Peru,1,1
-JR · La Nascita · 2024 Q2,South Korea,1,1
-"Jack Kaido · ICYMI, 2024 · 2024 Q4",United States,15,15
-"Jack Kaido · ICYMI, 2024 · 2024 Q4",United Kingdom,2,2
-"Jack Kaido · ICYMI, 2024 · 2024 Q4",China,1,1
-"Jack Kaido · ICYMI, 2024 · 2024 Q4",Hong Kong,1,1
-"Jack Kaido · ICYMI, 2024 · 2024 Q4",South Korea,1,1
+Hyangmok Baik · I Know What You Did Last Summer · 2023 Q1,United States,1,1
+JR · La Nascita · 2024 Q2,Italy,1,1
+JR · La Nascita · 2024 Q2,United Kingdom,1,1
 James Jarvis · Hang in there! · 2025 Q3,United States,66,66
 James Jarvis · Hang in there! · 2025 Q3,United Kingdom,16,16
 James Jarvis · Hang in there! · 2025 Q3,Singapore,12,12
@@ -1958,46 +1146,11 @@ James Jarvis · Hang in there! · 2025 Q3,Mexico,1,1
 James Jarvis · Hang in there! · 2025 Q3,Poland,1,1
 James Jarvis · Hang in there! · 2025 Q3,Portugal,1,1
 James Jarvis · Hang in there! · 2025 Q3,United Arab Emirates,1,1
-James Jean · Descendent - Lucid Dreamer,United States,261,257
-James Jean · Descendent - Lucid Dreamer,Australia,34,33
-James Jean · Descendent - Lucid Dreamer,United Kingdom,28,28
-James Jean · Descendent - Lucid Dreamer,Hong Kong,25,23
-James Jean · Descendent - Lucid Dreamer,South Korea,23,21
-James Jean · Descendent - Lucid Dreamer,Canada,22,21
-James Jean · Descendent - Lucid Dreamer,Netherlands,19,17
-James Jean · Descendent - Lucid Dreamer,Singapore,19,19
-James Jean · Descendent - Lucid Dreamer,Germany,15,15
-James Jean · Descendent - Lucid Dreamer,Taiwan,12,12
-James Jean · Descendent - Lucid Dreamer,France,10,9
-James Jean · Descendent - Lucid Dreamer,China,8,7
-James Jean · Descendent - Lucid Dreamer,Japan,8,8
-James Jean · Descendent - Lucid Dreamer,Mexico,6,6
-James Jean · Descendent - Lucid Dreamer,Spain,6,6
-James Jean · Descendent - Lucid Dreamer,Malaysia,5,5
-James Jean · Descendent - Lucid Dreamer,New Zealand,4,4
-James Jean · Descendent - Lucid Dreamer,Thailand,4,4
-James Jean · Descendent - Lucid Dreamer,Sweden,3,3
-James Jean · Descendent - Lucid Dreamer,Switzerland,3,3
-James Jean · Descendent - Lucid Dreamer,Colombia,2,2
-James Jean · Descendent - Lucid Dreamer,Indonesia,2,2
-James Jean · Descendent - Lucid Dreamer,Macao,2,2
-James Jean · Descendent - Lucid Dreamer,Philippines,2,2
-James Jean · Descendent - Lucid Dreamer,United Arab Emirates,2,2
-James Jean · Descendent - Lucid Dreamer,Aruba,1,1
-James Jean · Descendent - Lucid Dreamer,Austria,1,1
+James Jean · Descendent - Lucid Dreamer,United States,3,3
+James Jean · Descendent - Lucid Dreamer,Australia,1,1
 James Jean · Descendent - Lucid Dreamer,Brazil,1,1
-James Jean · Descendent - Lucid Dreamer,Hungary,1,1
-James Jean · Descendent - Lucid Dreamer,Italy,1,1
-James Jean · Descendent - Lucid Dreamer,Kuwait,1,1
-James Jean · Descendent - Lucid Dreamer,Lithuania,1,1
-James Jean · Descendent - Lucid Dreamer,Norway,1,1
-James Jean · Descendent - Lucid Dreamer,Peru,1,1
-James Jean · Descendent - Lucid Dreamer,Poland,1,1
-James Jean · Descendent - Lucid Dreamer,Portugal,1,1
-James Jean · Descendent - Lucid Dreamer,Romania,1,1
-James Jean · Descendent Osiris · 2022 Q1,United Arab Emirates,1,1
-James Jean · Descendent Verdigris · 2021 Q3,Macao,1,1
-James Jean · Maze (Print) · 2022 Q4,Netherlands,2,2
+James Jean · Descendent - Lucid Dreamer,Malaysia,1,1
+James Jean · Descendent - Lucid Dreamer,Singapore,1,1
 James Jean · Maze (Print) · 2022 Q4,United States,1,1
 James Jean · Maze - Lucid · 2025 Q1,United States,199,196
 James Jean · Maze - Lucid · 2025 Q1,Singapore,18,18
@@ -2069,7 +1222,7 @@ James Jean · Multiple · 2026 Q3,Switzerland,12,12
 James Jean · Multiple · 2026 Q3,France,8,8
 James Jean · Multiple · 2026 Q3,Japan,8,7
 James Jean · Multiple · 2026 Q3,Hong Kong,6,6
-James Jean · Multiple · 2026 Q3,Taiwan,6,6
+James Jean · Multiple · 2026 Q3,Taiwan,5,5
 James Jean · Multiple · 2026 Q3,Belgium,4,4
 James Jean · Multiple · 2026 Q3,Norway,4,4
 James Jean · Multiple · 2026 Q3,United Arab Emirates,4,4
@@ -2089,10 +1242,6 @@ James Jean · Multiple · 2026 Q3,Luxembourg,1,1
 James Jean · Multiple · 2026 Q3,Portugal,1,1
 James Jean · Multiple · 2026 Q3,Saudi Arabia,1,1
 James Jean · Multiple · 2026 Q3,Sweden,1,1
-James Jean · Woodcutter (Bronze) · 2022 Q2,United Kingdom,1,1
-James Jean · Woodcutter (Wood) · 2024 Q2,Germany,1,1
-James Jean · Woodcutter (Wood) · 2024 Q2,Hong Kong,1,1
-James Jean · Woodcutter (Wood) · 2024 Q2,United States,1,1
 Jammie Holmes · Fred · 2025 Q1,United States,64,64
 Jammie Holmes · Fred · 2025 Q1,Netherlands,3,3
 Jammie Holmes · Fred · 2025 Q1,United Kingdom,3,3
@@ -2126,75 +1275,7 @@ Jaume Plensa · UTOPIA · 2026 Q3,Norway,1,1
 Jaume Plensa · UTOPIA · 2026 Q3,Oman,1,1
 Jaume Plensa · UTOPIA · 2026 Q3,Saudi Arabia,1,1
 Javier Calleja · Multiple · 2020 Q1,Netherlands,1,1
-Javier Calleja · Multiple · 2023 Q1,United States,275,261
-Javier Calleja · Multiple · 2023 Q1,Hong Kong,111,109
-Javier Calleja · Multiple · 2023 Q1,United Kingdom,105,98
-Javier Calleja · Multiple · 2023 Q1,Spain,73,69
-Javier Calleja · Multiple · 2023 Q1,Japan,57,48
-Javier Calleja · Multiple · 2023 Q1,South Korea,55,45
-Javier Calleja · Multiple · 2023 Q1,France,45,39
-Javier Calleja · Multiple · 2023 Q1,Taiwan,45,42
-Javier Calleja · Multiple · 2023 Q1,Canada,29,27
-Javier Calleja · Multiple · 2023 Q1,Germany,28,26
-Javier Calleja · Multiple · 2023 Q1,Singapore,24,23
-Javier Calleja · Multiple · 2023 Q1,Thailand,24,22
-Javier Calleja · Multiple · 2023 Q1,Netherlands,22,19
-Javier Calleja · Multiple · 2023 Q1,United Arab Emirates,16,15
-Javier Calleja · Multiple · 2023 Q1,China,14,14
-Javier Calleja · Multiple · 2023 Q1,Italy,8,8
-Javier Calleja · Multiple · 2023 Q1,Australia,7,7
-Javier Calleja · Multiple · 2023 Q1,Belgium,7,7
-Javier Calleja · Multiple · 2023 Q1,Norway,7,6
-Javier Calleja · Multiple · 2023 Q1,Denmark,6,6
-Javier Calleja · Multiple · 2023 Q1,Philippines,6,6
-Javier Calleja · Multiple · 2023 Q1,Switzerland,4,4
-Javier Calleja · Multiple · 2023 Q1,Israel,3,1
-Javier Calleja · Multiple · 2023 Q1,Malaysia,3,3
-Javier Calleja · Multiple · 2023 Q1,Mexico,3,3
-Javier Calleja · Multiple · 2023 Q1,Indonesia,2,2
-Javier Calleja · Multiple · 2023 Q1,Lebanon,2,2
-Javier Calleja · Multiple · 2023 Q1,Macao,2,2
-Javier Calleja · Multiple · 2023 Q1,Portugal,2,2
-Javier Calleja · Multiple · 2023 Q1,Sweden,2,2
-Javier Calleja · Multiple · 2023 Q1,Argentina,1,1
-Javier Calleja · Multiple · 2023 Q1,Aruba,1,1
-Javier Calleja · Multiple · 2023 Q1,Austria,1,1
-Javier Calleja · Multiple · 2023 Q1,Cambodia,1,1
-Javier Calleja · Multiple · 2023 Q1,Cayman Islands,1,1
-Javier Calleja · Multiple · 2023 Q1,Czech Republic,1,1
-Javier Calleja · Multiple · 2023 Q1,Nigeria,1,1
-Javier Calleja · Multiple · 2023 Q1,Saudi Arabia,1,1
-Javier Calleja · Multiple · 2023 Q1,South Africa,1,1
-Javier Calleja · Multiple · 2024 Q2,United States,95,95
-Javier Calleja · Multiple · 2024 Q2,Hong Kong,33,33
-Javier Calleja · Multiple · 2024 Q2,Spain,19,19
-Javier Calleja · Multiple · 2024 Q2,South Korea,17,17
-Javier Calleja · Multiple · 2024 Q2,United Kingdom,17,17
-Javier Calleja · Multiple · 2024 Q2,Taiwan,10,10
-Javier Calleja · Multiple · 2024 Q2,Japan,9,9
-Javier Calleja · Multiple · 2024 Q2,Singapore,9,9
-Javier Calleja · Multiple · 2024 Q2,Germany,7,7
-Javier Calleja · Multiple · 2024 Q2,United Arab Emirates,7,7
-Javier Calleja · Multiple · 2024 Q2,France,6,6
-Javier Calleja · Multiple · 2024 Q2,Switzerland,6,6
-Javier Calleja · Multiple · 2024 Q2,Canada,5,5
-Javier Calleja · Multiple · 2024 Q2,Australia,3,3
-Javier Calleja · Multiple · 2024 Q2,Belgium,3,2
-Javier Calleja · Multiple · 2024 Q2,China,3,3
-Javier Calleja · Multiple · 2024 Q2,Greece,3,3
-Javier Calleja · Multiple · 2024 Q2,Philippines,2,2
-Javier Calleja · Multiple · 2024 Q2,Aruba,1,1
-Javier Calleja · Multiple · 2024 Q2,Austria,1,1
-Javier Calleja · Multiple · 2024 Q2,Cyprus,1,1
-Javier Calleja · Multiple · 2024 Q2,Indonesia,1,1
-Javier Calleja · Multiple · 2024 Q2,Isle Of Man,1,1
-Javier Calleja · Multiple · 2024 Q2,Israel,1,1
-Javier Calleja · Multiple · 2024 Q2,Italy,1,1
-Javier Calleja · Multiple · 2024 Q2,Mexico,1,1
-Javier Calleja · Multiple · 2024 Q2,Monaco,1,1
-Javier Calleja · Multiple · 2024 Q2,Netherlands,1,1
-Javier Calleja · Multiple · 2024 Q2,Norway,1,1
-Jean-Michel Othoniel · Lotus of Hope · 2021 Q4,South Korea,2,2
+Javier Calleja · Multiple · 2023 Q1,United Kingdom,1,1
 Jean-Michel Othoniel · Multiple · 2026 Q1,South Korea,49,49
 Jean-Michel Othoniel · Multiple · 2026 Q1,United States,36,34
 Jean-Michel Othoniel · Multiple · 2026 Q1,France,16,13
@@ -2248,23 +1329,23 @@ Jen Stark · Multiple · 2025 Q2,Canada,3,2
 Jen Stark · Multiple · 2025 Q2,Germany,3,2
 Jen Stark · Multiple · 2025 Q2,Norway,1,1
 Jen Stark · Multiple · 2025 Q2,Switzerland,1,1
-Jenna Gribbon · Glaring Shade · 2023 Q2,United Kingdom,8,8
-Jenna Gribbon · Glaring Shade · 2023 Q2,United States,2,2
-Jenna Gribbon · Glaring Shade · 2023 Q2,Belgium,1,1
-Jenna Gribbon · Glaring Shade · 2023 Q2,Germany,1,1
-Jenny Brosinski · Untitled 6 · 2020 Q3,United States,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,United States,23,23
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,United Kingdom,3,3
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,France,2,2
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Hong Kong,2,2
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Japan,2,2
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Belgium,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Canada,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Germany,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Netherlands,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,Singapore,1,1
+Jennifer Guidi · Roar Beneath Mist · 2026 Q4,South Korea,1,1
 Jenny Brosinski · Untitled 9 · 2020 Q3,Germany,1,1
 Jenny Holzer · Multiple · 2025 Q1,United States,14,14
 Jenny Holzer · Multiple · 2025 Q1,Israel,3,1
 Jenny Holzer · Multiple · 2025 Q1,Germany,2,2
 Jenny Holzer · Multiple · 2025 Q1,Switzerland,1,1
 Jenny Holzer · Multiple · 2025 Q1,United Kingdom,1,1
-Jenny Holzer · URGE AND URGE AND URGE · 2020 Q3,Switzerland,1,1
-Jessie Makinson · Multiple · 2022 Q1,Hong Kong,2,2
-Jessie Makinson · Multiple · 2022 Q1,United Kingdom,2,2
-Jessie Makinson · Multiple · 2022 Q1,Netherlands,1,1
-Joakim Ojanen · Multiple · 2022 Q3,Belgium,1,1
-Joakim Ojanen · Multiple · 2022 Q3,United States,1,1
 Joakim Ojanen · The dance we dance when we are together · 2026 Q1,Sweden,19,19
 Joakim Ojanen · The dance we dance when we are together · 2026 Q1,United States,8,8
 Joakim Ojanen · The dance we dance when we are together · 2026 Q1,Spain,3,3
@@ -2328,7 +1409,7 @@ Joan Cornellà · Work Hard and Then Die · 2025 Q4,Lithuania,1,1
 Joan Cornellà · Work Hard and Then Die · 2025 Q4,Macao,1,1
 Joan Cornellà · Work Hard and Then Die · 2025 Q4,Philippines,1,1
 Joel Mesler · Multiple · 2026 Q2,United States,51,40
-Joel Mesler · Multiple · 2026 Q2,United Kingdom,10,10
+Joel Mesler · Multiple · 2026 Q2,United Kingdom,9,9
 Joel Mesler · Multiple · 2026 Q2,Israel,6,1
 Joel Mesler · Multiple · 2026 Q2,Japan,5,2
 Joel Mesler · Multiple · 2026 Q2,Romania,4,1
@@ -2372,36 +1453,29 @@ Johnson Tsang · Alliance · 2026 Q2,Qatar,1,1
 Johnson Tsang · Alliance · 2026 Q2,Romania,1,1
 Johnson Tsang · Alliance · 2026 Q2,Slovenia,1,1
 Johnson Tsang · Alliance · 2026 Q2,Thailand,1,1
-Johnson Tsang · Fight for a Dream · 2021 Q2,Hong Kong,1,1
-Johnson Tsang · Multiple · 2022 Q1,United Kingdom,21,9
-Johnson Tsang · Multiple · 2022 Q1,United States,17,17
-Johnson Tsang · Multiple · 2022 Q1,Netherlands,4,3
-Johnson Tsang · Multiple · 2022 Q1,Hong Kong,3,3
-Johnson Tsang · Multiple · 2022 Q1,Denmark,2,1
-Johnson Tsang · Multiple · 2022 Q1,United Arab Emirates,2,2
-Johnson Tsang · Multiple · 2022 Q1,Germany,1,1
-Johnson Tsang · Multiple · 2022 Q1,Ireland,1,1
-Johnson Tsang · Multiple · 2022 Q1,Spain,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,United States,47,47
-Johnson Tsang · Open the Right Mind · 2023 Q4,United Kingdom,15,14
-Johnson Tsang · Open the Right Mind · 2023 Q4,Germany,6,6
-Johnson Tsang · Open the Right Mind · 2023 Q4,Canada,5,5
-Johnson Tsang · Open the Right Mind · 2023 Q4,Italy,5,5
-Johnson Tsang · Open the Right Mind · 2023 Q4,United Arab Emirates,5,5
-Johnson Tsang · Open the Right Mind · 2023 Q4,Australia,3,3
-Johnson Tsang · Open the Right Mind · 2023 Q4,Hong Kong,3,3
-Johnson Tsang · Open the Right Mind · 2023 Q4,France,2,2
-Johnson Tsang · Open the Right Mind · 2023 Q4,Philippines,2,2
-Johnson Tsang · Open the Right Mind · 2023 Q4,Singapore,2,2
-Johnson Tsang · Open the Right Mind · 2023 Q4,Brazil,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,Ireland,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,Luxembourg,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,Mexico,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,Montenegro,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,Poland,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,Portugal,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,South Korea,1,1
-Johnson Tsang · Open the Right Mind · 2023 Q4,Switzerland,1,1
+Johnson Tsang · In Position · 2026 Q4,United States,31,31
+Johnson Tsang · In Position · 2026 Q4,United Kingdom,8,8
+Johnson Tsang · In Position · 2026 Q4,Germany,5,5
+Johnson Tsang · In Position · 2026 Q4,Switzerland,5,5
+Johnson Tsang · In Position · 2026 Q4,Netherlands,3,3
+Johnson Tsang · In Position · 2026 Q4,United Arab Emirates,3,3
+Johnson Tsang · In Position · 2026 Q4,Australia,2,2
+Johnson Tsang · In Position · 2026 Q4,Spain,2,2
+Johnson Tsang · In Position · 2026 Q4,Belgium,1,1
+Johnson Tsang · In Position · 2026 Q4,Canada,1,1
+Johnson Tsang · In Position · 2026 Q4,China,1,1
+Johnson Tsang · In Position · 2026 Q4,Dominican Republic,1,1
+Johnson Tsang · In Position · 2026 Q4,France,1,1
+Johnson Tsang · In Position · 2026 Q4,Israel,1,1
+Johnson Tsang · In Position · 2026 Q4,Italy,1,1
+Johnson Tsang · In Position · 2026 Q4,Mexico,1,1
+Johnson Tsang · In Position · 2026 Q4,Norway,1,1
+Johnson Tsang · In Position · 2026 Q4,Poland,1,1
+Johnson Tsang · In Position · 2026 Q4,Portugal,1,1
+Johnson Tsang · In Position · 2026 Q4,Qatar,1,1
+Johnson Tsang · In Position · 2026 Q4,Saudi Arabia,1,1
+Johnson Tsang · Multiple · 2022 Q1,United Kingdom,10,2
+Johnson Tsang · Open the Right Mind · 2023 Q4,United Kingdom,2,1
 Johnson Tsang · Remembrance · 2025 Q3,United States,51,51
 Johnson Tsang · Remembrance · 2025 Q3,United Kingdom,15,13
 Johnson Tsang · Remembrance · 2025 Q3,Italy,11,11
@@ -2410,10 +1484,10 @@ Johnson Tsang · Remembrance · 2025 Q3,France,7,7
 Johnson Tsang · Remembrance · 2025 Q3,Germany,5,5
 Johnson Tsang · Remembrance · 2025 Q3,Switzerland,5,5
 Johnson Tsang · Remembrance · 2025 Q3,United Arab Emirates,5,5
+Johnson Tsang · Remembrance · 2025 Q3,Australia,4,4
 Johnson Tsang · Remembrance · 2025 Q3,Austria,4,4
 Johnson Tsang · Remembrance · 2025 Q3,Brazil,4,4
 Johnson Tsang · Remembrance · 2025 Q3,Hong Kong,4,4
-Johnson Tsang · Remembrance · 2025 Q3,Australia,3,3
 Johnson Tsang · Remembrance · 2025 Q3,Canada,3,3
 Johnson Tsang · Remembrance · 2025 Q3,Portugal,3,3
 Johnson Tsang · Remembrance · 2025 Q3,Singapore,3,3
@@ -2431,44 +1505,10 @@ Johnson Tsang · Remembrance · 2025 Q3,Romania,1,1
 Johnson Tsang · Remembrance · 2025 Q3,South Africa,1,1
 Johnson Tsang · Remembrance · 2025 Q3,South Korea,1,1
 Johnson Tsang · Remembrance · 2025 Q3,Spain,1,1
-Johnson Tsang · Searching for Spring · 2022 Q2,United States,2,2
 Johnson Tsang · Searching for Spring · 2022 Q2,Germany,1,1
 Johnson Tsang · Searching for Spring · 2022 Q2,United Kingdom,1,1
-Johnson Tsang · The Moment · 2024 Q4,United States,75,75
-Johnson Tsang · The Moment · 2024 Q4,United Kingdom,33,30
-Johnson Tsang · The Moment · 2024 Q4,Netherlands,22,21
-Johnson Tsang · The Moment · 2024 Q4,Italy,14,14
-Johnson Tsang · The Moment · 2024 Q4,Hong Kong,11,11
-Johnson Tsang · The Moment · 2024 Q4,Canada,10,10
-Johnson Tsang · The Moment · 2024 Q4,France,9,9
-Johnson Tsang · The Moment · 2024 Q4,Spain,8,8
-Johnson Tsang · The Moment · 2024 Q4,Germany,7,7
-Johnson Tsang · The Moment · 2024 Q4,Norway,6,6
-Johnson Tsang · The Moment · 2024 Q4,United Arab Emirates,6,6
-Johnson Tsang · The Moment · 2024 Q4,Australia,5,5
-Johnson Tsang · The Moment · 2024 Q4,Singapore,5,5
-Johnson Tsang · The Moment · 2024 Q4,Austria,4,4
-Johnson Tsang · The Moment · 2024 Q4,Denmark,4,4
-Johnson Tsang · The Moment · 2024 Q4,Portugal,4,4
-Johnson Tsang · The Moment · 2024 Q4,Poland,3,3
-Johnson Tsang · The Moment · 2024 Q4,Switzerland,3,3
-Johnson Tsang · The Moment · 2024 Q4,Luxembourg,2,2
-Johnson Tsang · The Moment · 2024 Q4,Mexico,2,2
-Johnson Tsang · The Moment · 2024 Q4,Monaco,2,2
-Johnson Tsang · The Moment · 2024 Q4,Romania,2,2
-Johnson Tsang · The Moment · 2024 Q4,South Korea,2,2
-Johnson Tsang · The Moment · 2024 Q4,Sweden,2,2
-Johnson Tsang · The Moment · 2024 Q4,Brazil,1,1
-Johnson Tsang · The Moment · 2024 Q4,China,1,1
-Johnson Tsang · The Moment · 2024 Q4,Czech Republic,1,1
-Johnson Tsang · The Moment · 2024 Q4,Iceland,1,1
-Johnson Tsang · The Moment · 2024 Q4,Ireland,1,1
-Johnson Tsang · The Moment · 2024 Q4,Japan,1,1
-Johnson Tsang · The Moment · 2024 Q4,Lithuania,1,1
-Johnson Tsang · The Moment · 2024 Q4,Philippines,1,1
-Johnson Tsang · The Moment · 2024 Q4,San Marino,1,1
-Johnson Tsang · The Moment · 2024 Q4,Slovenia,1,1
-Johnson Tsang · The Moment · 2024 Q4,Thailand,1,1
+Johnson Tsang · Searching for Spring · 2022 Q2,United States,1,1
+Johnson Tsang · The Moment · 2024 Q4,United Kingdom,4,1
 Johnson Tsang · Work in Progress · 2026 Q1,United States,38,38
 Johnson Tsang · Work in Progress · 2026 Q1,United Kingdom,20,20
 Johnson Tsang · Work in Progress · 2026 Q1,Netherlands,17,17
@@ -2497,17 +1537,6 @@ Johnson Tsang · Work in Progress · 2026 Q1,Monaco,1,1
 Johnson Tsang · Work in Progress · 2026 Q1,New Zealand,1,1
 Johnson Tsang · Work in Progress · 2026 Q1,Thailand,1,1
 Johnson Tsang · Work in Progress · 2026 Q1,Turkey,1,1
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,United States,18,18
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,Australia,8,8
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,New Zealand,8,8
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,United Kingdom,6,6
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,Canada,2,2
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,France,2,2
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,Germany,2,2
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,Hong Kong,2,2
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,Netherlands,1,1
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,South Korea,1,1
-Jonny Niesche · Diamond Vibration (Caught by the fuzz) · 2023 Q4,Vietnam,1,1
 Jonny Niesche · Multiple · 2025 Q2,United States,59,50
 Jonny Niesche · Multiple · 2025 Q2,Australia,25,22
 Jonny Niesche · Multiple · 2025 Q2,New Zealand,17,13
@@ -2529,11 +1558,7 @@ Jonny Niesche · Multiple · 2025 Q2,France,1,1
 Jonny Niesche · Multiple · 2025 Q2,Greece,1,1
 Jonny Niesche · Multiple · 2025 Q2,Norway,1,1
 Jonny Niesche · Multiple · 2025 Q2,Singapore,1,1
-Jonny Niesche · Schein Blossom · 2020 Q4,Canada,1,1
 Jonny Niesche · Schein Blossom · 2020 Q4,United Arab Emirates,1,1
-Jonny Niesche · moon moth lust in warm copper AP · 2022 Q4,United Arab Emirates,1,1
-Jonny Niesche · moon moth lust in warm copper · 2022 Q4,Canada,1,1
-Jonny Niesche · moon moth lust in warm copper · 2022 Q4,France,1,1
 Jonny Niesche · moon moth lust in warm copper · 2022 Q4,Netherlands,1,1
 Jordan Casteel · Multiple · 2025 Q1,United States,10,9
 Jordan Casteel · Multiple · 2025 Q1,Israel,3,1
@@ -2546,23 +1571,7 @@ Jordan Casteel · Multiple · 2025 Q1,United Arab Emirates,1,1
 Josh Smith · Multiple · 2025 Q1,United States,4,4
 Josh Smith · Multiple · 2025 Q1,Belgium,2,2
 Josh Smith · Multiple · 2025 Q1,United Kingdom,1,1
-José Parlá · Multiple · 2024 Q4,United States,57,57
-José Parlá · Multiple · 2024 Q4,United Kingdom,11,11
-José Parlá · Multiple · 2024 Q4,Canada,6,6
-José Parlá · Multiple · 2024 Q4,Japan,6,6
-José Parlá · Multiple · 2024 Q4,Germany,5,5
-José Parlá · Multiple · 2024 Q4,Portugal,4,4
-José Parlá · Multiple · 2024 Q4,Netherlands,3,3
-José Parlá · Multiple · 2024 Q4,Australia,2,2
-José Parlá · Multiple · 2024 Q4,Belgium,1,1
-José Parlá · Multiple · 2024 Q4,France,1,1
-José Parlá · Multiple · 2024 Q4,Hong Kong,1,1
-José Parlá · Multiple · 2024 Q4,Mexico,1,1
-José Parlá · Multiple · 2024 Q4,Singapore,1,1
-José Parlá · Multiple · 2024 Q4,Spain,1,1
-José Parlá · Multiple · 2024 Q4,Switzerland,1,1
-José Parlá · Multiple · 2024 Q4,United Arab Emirates,1,1
-José Parlá · The Founders AP · 2021 Q4,United States,2,2
+José Parlá · Multiple · 2024 Q4,United States,1,1
 José Parlá · Writers’ Bench 149th Street and Grand Concourse · 2020 Q3,United States,1,1
 Judy Chicago · Multiple · 2025 Q2,United States,220,195
 Judy Chicago · Multiple · 2025 Q2,United Kingdom,52,44
@@ -2604,7 +1613,7 @@ Julian Schnabel · Multiple · 2026 Q3,United States,98,90
 Julian Schnabel · Multiple · 2026 Q3,Germany,16,5
 Julian Schnabel · Multiple · 2026 Q3,United Kingdom,9,7
 Julian Schnabel · Multiple · 2026 Q3,Italy,8,6
-Julian Schnabel · Multiple · 2026 Q3,France,5,5
+Julian Schnabel · Multiple · 2026 Q3,France,5,4
 Julian Schnabel · Multiple · 2026 Q3,United Arab Emirates,5,5
 Julian Schnabel · Multiple · 2026 Q3,Canada,4,4
 Julian Schnabel · Multiple · 2026 Q3,Sweden,4,3
@@ -2632,7 +1641,7 @@ Katharina Grosse · Multiple · 2026 Q1,Austria,19,15
 Katharina Grosse · Multiple · 2026 Q1,France,11,10
 Katharina Grosse · Multiple · 2026 Q1,New Zealand,8,6
 Katharina Grosse · Multiple · 2026 Q1,Spain,7,5
-Katharina Grosse · Multiple · 2026 Q1,Netherlands,5,5
+Katharina Grosse · Multiple · 2026 Q1,Netherlands,6,5
 Katharina Grosse · Multiple · 2026 Q1,Italy,4,4
 Katharina Grosse · Multiple · 2026 Q1,Czech Republic,3,1
 Katharina Grosse · Multiple · 2026 Q1,Malta,3,1
@@ -2645,7 +1654,7 @@ Katharina Grosse · Multiple · 2026 Q1,Estonia,1,1
 Katharina Grosse · Multiple · 2026 Q1,Mexico,1,1
 Katharina Grosse · Multiple · 2026 Q1,South Korea,1,1
 Katharina Grosse · Multiple · 2026 Q1,United Arab Emirates,1,1
-Katherine Bradford · Swing Over Pool · 2025 Q3,United States,88,85
+Katherine Bradford · Swing Over Pool · 2025 Q3,United States,93,86
 Katherine Bradford · Swing Over Pool · 2025 Q3,United Kingdom,33,33
 Katherine Bradford · Swing Over Pool · 2025 Q3,Denmark,6,6
 Katherine Bradford · Swing Over Pool · 2025 Q3,Germany,6,6
@@ -2668,25 +1677,8 @@ Katherine Bradford · Swing Over Pool · 2025 Q3,Romania,1,1
 Katherine Bradford · Swing Over Pool · 2025 Q3,Singapore,1,1
 Katherine Bradford · Swing Over Pool · 2025 Q3,Switzerland,1,1
 Katherine Bradford · Swing Over Pool · 2025 Q3,United Arab Emirates,1,1
-Katrin Fridriks · Multiple · 2019 Q4,United States,3,3
-Kaï · Content (Hand-finished) · 2024 Q2,United States,25,25
-Kaï · Content (Hand-finished) · 2024 Q2,Netherlands,2,2
-Kaï · Content (Hand-finished) · 2024 Q2,Taiwan,2,2
-Kaï · Content (Hand-finished) · 2024 Q2,United Kingdom,2,2
-Kaï · Content (Hand-finished) · 2024 Q2,Australia,1,1
-Kaï · Content (Hand-finished) · 2024 Q2,Denmark,1,1
-Kaï · Content (Hand-finished) · 2024 Q2,France,1,1
-Kaï · Content (Hand-finished) · 2024 Q2,Hong Kong,1,1
+Katrin Fridriks · Multiple · 2019 Q4,United States,2,2
 Kaï · Content (Hand-finished) · 2024 Q2,United Arab Emirates,1,1
-Kaï · Content · 2024 Q2,United States,70,70
-Kaï · Content · 2024 Q2,Netherlands,4,4
-Kaï · Content · 2024 Q2,Belgium,3,3
-Kaï · Content · 2024 Q2,Canada,2,2
-Kaï · Content · 2024 Q2,France,2,2
-Kaï · Content · 2024 Q2,Australia,1,1
-Kaï · Content · 2024 Q2,South Africa,1,1
-Kaï · Content · 2024 Q2,Switzerland,1,1
-Kaï · Content · 2024 Q2,United Arab Emirates,1,1
 Keita Morimoto · Multiple · 2025 Q4,United States,125,117
 Keita Morimoto · Multiple · 2025 Q4,United Kingdom,76,72
 Keita Morimoto · Multiple · 2025 Q4,Japan,49,47
@@ -2718,17 +1710,9 @@ Keita Morimoto · Multiple · 2025 Q4,Ireland,1,1
 Keita Morimoto · Multiple · 2025 Q4,Lithuania,1,1
 Keita Morimoto · Multiple · 2025 Q4,Romania,1,1
 Keita Morimoto · Multiple · 2025 Q4,Slovakia,1,1
-Kotao Tomozawa · Multiple · 2023 Q4,Japan,31,31
-Kotao Tomozawa · Multiple · 2023 Q4,Hong Kong,3,2
-Kotao Tomozawa · Multiple · 2023 Q4,Germany,1,1
-Kotao Tomozawa · Multiple · 2023 Q4,Taiwan,1,1
 Kour Pour · Sacred Flames (Yoshitoshi) · 2020 Q1,United Kingdom,1,1
-Kudzanai-Violet Hwami · Multiple · 2022 Q3,United Kingdom,2,2
-Kudzanai-Violet Hwami · Multiple · 2022 Q3,United States,1,1
-Kwesi Botchway · African Style · 2023 Q1,United States,3,3
-Kwesi Botchway · African Style · 2023 Q1,Bahrain,1,1
-Kwesi Botchway · Lady with a Tampi · 2022 Q2,United States,2,2
-LY · Confused LUV (Medium) · 2022 Q4,Hong Kong,1,1
+Kwesi Botchway · African Style · 2023 Q1,United States,1,1
+Kwesi Botchway · Lady with a Tampi · 2022 Q2,United States,1,1
 LY · LUV Blossoming · 2025 Q2,Japan,19,19
 LY · LUV Blossoming · 2025 Q2,United States,6,6
 LY · LUV Blossoming · 2025 Q2,Hong Kong,4,4
@@ -2739,8 +1723,8 @@ LY · LUV Blossoming · 2025 Q2,Canada,1,1
 LY · LUV Blossoming · 2025 Q2,Netherlands,1,1
 LY · LUV Blossoming · 2025 Q2,Thailand,1,1
 LY · LUV New Beginnings · 2026 Q3,Japan,10,10
-LY · LUV New Beginnings · 2026 Q3,United States,7,7
 LY · LUV New Beginnings · 2026 Q3,Hong Kong,6,6
+LY · LUV New Beginnings · 2026 Q3,United States,6,6
 LY · LUV New Beginnings · 2026 Q3,Taiwan,2,2
 LY · LUV New Beginnings · 2026 Q3,Australia,1,1
 LY · LUV New Beginnings · 2026 Q3,Italy,1,1
@@ -2748,56 +1732,14 @@ LY · LUV New Beginnings · 2026 Q3,Netherlands,1,1
 LY · LUV New Beginnings · 2026 Q3,South Korea,1,1
 LY · LUV New Beginnings · 2026 Q3,Thailand,1,1
 LY · LUV New Beginnings · 2026 Q3,United Kingdom,1,1
-LY · LUV Somewhere New · 2023 Q4,Japan,13,13
-LY · LUV Somewhere New · 2023 Q4,United States,6,6
-LY · LUV Somewhere New · 2023 Q4,United Kingdom,4,4
-LY · LUV Somewhere New · 2023 Q4,Netherlands,2,2
-LY · LUV Somewhere New · 2023 Q4,Taiwan,2,2
-LY · LUV Somewhere New · 2023 Q4,Canada,1,1
-LY · LUV Somewhere New · 2023 Q4,Singapore,1,1
-LY · LUV Somewhere New · 2023 Q4,South Korea,1,1
-LY · LUV Somewhere New · 2023 Q4,Switzerland,1,1
-LY · Multiple · 2021 Q3,Japan,1,1
-LY · Multiple · 2023 Q2,Japan,64,53
-LY · Multiple · 2023 Q2,United States,55,47
-LY · Multiple · 2023 Q2,Hong Kong,17,16
-LY · Multiple · 2023 Q2,Taiwan,17,16
-LY · Multiple · 2023 Q2,United Kingdom,16,15
-LY · Multiple · 2023 Q2,Singapore,11,9
-LY · Multiple · 2023 Q2,South Korea,10,8
-LY · Multiple · 2023 Q2,Canada,8,7
-LY · Multiple · 2023 Q2,Netherlands,7,7
-LY · Multiple · 2023 Q2,France,6,6
-LY · Multiple · 2023 Q2,Australia,5,5
-LY · Multiple · 2023 Q2,Germany,4,4
-LY · Multiple · 2023 Q2,Thailand,4,4
-LY · Multiple · 2023 Q2,Switzerland,3,3
-LY · Multiple · 2023 Q2,Colombia,1,1
-LY · Multiple · 2023 Q2,Denmark,1,1
-LY · Multiple · 2023 Q2,Italy,1,1
-LY · Multiple · 2023 Q2,Macao,1,1
-LY · Multiple · 2023 Q2,Malaysia,1,1
-LY · Multiple · 2023 Q2,Norway,1,1
-LY · Multiple · 2023 Q2,Philippines,1,1
+LY · LUV Somewhere New · 2023 Q4,Netherlands,1,1
+LY · Multiple · 2023 Q2,United States,4,4
+LY · Multiple · 2023 Q2,Germany,2,2
+LY · Multiple · 2023 Q2,Japan,2,2
+LY · Multiple · 2023 Q2,Netherlands,1,1
 LY · Multiple · 2023 Q2,Poland,1,1
-LY · Multiple · 2023 Q2,Portugal,1,1
-LY · Multiple · 2023 Q2,Sweden,1,1
-LY · Multiple · 2023 Q2,United Arab Emirates,1,1
-LY · This is LUV (Small) · 2022 Q3,United Kingdom,1,1
-Laura El · Park Ave · 2024 Q1,United States,16,16
-Laura El · Park Ave · 2024 Q1,United Kingdom,3,3
-Laura El · Park Ave · 2024 Q1,Hong Kong,2,2
-Laura El · Park Ave · 2024 Q1,Netherlands,2,2
-Laura El · Park Ave · 2024 Q1,South Korea,2,2
-Laura El · Park Ave · 2024 Q1,Belgium,1,1
-Laura El · Park Ave · 2024 Q1,Canada,1,1
-Laura El · Park Ave · 2024 Q1,Israel,1,1
-Laura El · Park Ave · 2024 Q1,Japan,1,1
-Laura El · Park Ave · 2024 Q1,Thailand,1,1
-Lawrence Weiner · HERE & NOW · 2022 Q4,United States,5,3
-Lawrence Weiner · HERE & NOW · 2022 Q4,Netherlands,2,2
-Lawrence Weiner · HERE & NOW · 2022 Q4,United Kingdom,2,2
-Lawrence Weiner · HERE & NOW · 2022 Q4,Japan,1,1
+LY · Multiple · 2023 Q2,Taiwan,1,1
+LY · Multiple · 2023 Q2,United Kingdom,1,1
 Lee Ufan · Dialogue · 2026 Q1,South Korea,89,70
 Lee Ufan · Dialogue · 2026 Q1,United States,26,26
 Lee Ufan · Dialogue · 2026 Q1,Hong Kong,13,10
@@ -2836,9 +1778,6 @@ Lee Ufan · Multiple · 2025 Q2,New Zealand,1,1
 Lee Ufan · Multiple · 2025 Q2,Norway,1,1
 Lee Ufan · Multiple · 2025 Q2,Portugal,1,1
 Lee Ufan · Multiple · 2025 Q2,Spain,1,1
-Linda Dounia · Faux Letters · 2024 Q2,United Kingdom,2,2
-Linda Dounia · Faux Letters · 2024 Q2,Greece,1,1
-Linda Dounia · Faux Letters · 2024 Q2,United States,1,1
 Loie Hollowell · Mother's Milk · 2026 Q4,United States,43,43
 Loie Hollowell · Mother's Milk · 2026 Q4,United Kingdom,13,13
 Loie Hollowell · Mother's Milk · 2026 Q4,Hong Kong,3,3
@@ -2852,7 +1791,7 @@ Loie Hollowell · Mother's Milk · 2026 Q4,Hungary,1,1
 Loie Hollowell · Mother's Milk · 2026 Q4,Norway,1,1
 Loie Hollowell · Mother's Milk · 2026 Q4,Sweden,1,1
 Loie Hollowell · Mother's Milk · 2026 Q4,United Arab Emirates,1,1
-Lu Yang · Gong Tau Alien · 2020 Q4,United States,2,2
+Lu Yang · Gong Tau Alien · 2020 Q4,United States,1,1
 Luc Tuymans · Bell Boy · 2026 Q1,Belgium,59,59
 Luc Tuymans · Bell Boy · 2026 Q1,Netherlands,18,8
 Luc Tuymans · Bell Boy · 2026 Q1,United States,9,9
@@ -2917,19 +1856,8 @@ Lucian Freud · Multiple · 2026 Q2,Greece,1,1
 Lucian Freud · Multiple · 2026 Q2,Jersey,1,1
 Lucian Freud · Multiple · 2026 Q2,Poland,1,1
 Lucian Freud · Multiple · 2026 Q2,South Korea,1,1
-Ludovic Nkoth · Multiple · 2021 Q3,United States,2,2
-Luis Ponce · And the Absurd Was Born · 2023 Q4,United States,15,15
-Luis Ponce · And the Absurd Was Born · 2023 Q4,South Korea,7,7
-Luis Ponce · And the Absurd Was Born · 2023 Q4,Canada,1,1
-Luis Ponce · And the Absurd Was Born · 2023 Q4,Japan,1,1
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,United States,18,18
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,Netherlands,2,2
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,United Kingdom,2,2
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,Belgium,1,1
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,Ireland,1,1
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,Japan,1,1
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,South Korea,1,1
-Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,Thailand,1,1
+Ludovic Nkoth · Multiple · 2021 Q3,United States,1,1
+Magdalena Suarez Frimkess · Homage for Jasper Johns · 2024 Q3,United States,2,2
 Makiko Kudo · Empathy AP · 2021 Q2,Netherlands,1,1
 Man Ray · Multiple · 2026 Q1,United States,172,155
 Man Ray · Multiple · 2026 Q1,United Kingdom,56,54
@@ -2958,22 +1886,12 @@ Man Ray · Multiple · 2026 Q1,Brazil,1,1
 Man Ray · Multiple · 2026 Q1,Hong Kong,1,1
 Man Ray · Multiple · 2026 Q1,Portugal,1,1
 Man Ray · Multiple · 2026 Q1,Qatar,1,1
-Marc Quinn · Aragonitesphere · 2019 Q3,France,1,1
-Marc Quinn · Aragonitesphere · 2019 Q3,Hong Kong,1,1
-Marc Quinn · Aragonitesphere · 2019 Q3,United Kingdom,1,1
 Marc Quinn · Aragonitesphere · 2019 Q3,United States,1,1
-Marcus Jansen · Afro Painter · 2023 Q4,United States,26,25
-Marcus Jansen · Afro Painter · 2023 Q4,United Kingdom,4,4
-Marcus Jansen · Afro Painter · 2023 Q4,Hong Kong,2,2
-Marcus Jansen · Afro Painter · 2023 Q4,Netherlands,2,2
-Marcus Jansen · Afro Painter · 2023 Q4,Australia,1,1
-Marcus Jansen · Afro Painter · 2023 Q4,Canada,1,1
+Marcus Jansen · Afro Painter · 2023 Q4,United States,10,10
 Marcus Jansen · Afro Painter · 2023 Q4,France,1,1
-Marcus Jansen · Afro Painter · 2023 Q4,Germany,1,1
 Marcus Jansen · Afro Painter · 2023 Q4,Italy,1,1
 Marcus Jansen · Afro Painter · 2023 Q4,South Africa,1,1
 Marcus Jansen · Afro Painter · 2023 Q4,Sweden,1,1
-Marcus Jansen · Afro Painter · 2023 Q4,United Arab Emirates,1,1
 Margo Wolowiec · -57° · 2020 Q1,United States,1,1
 Marina Abramović · Maria/Marina · 2026 Q1,Italy,207,204
 Marina Abramović · Maria/Marina · 2026 Q1,United States,157,157
@@ -3046,38 +1964,8 @@ Mark Bradford · Scorched Earth Edition · 2025 Q2,Poland,1,1
 Mark Bradford · Scorched Earth Edition · 2025 Q2,Portugal,1,1
 Mark Bradford · Scorched Earth Edition · 2025 Q2,Singapore,1,1
 Mark Bradford · Scorched Earth Edition · 2025 Q2,Sweden,1,1
-Mark Whalen · Early Light · 2023 Q3,United States,3,3
-Mark Whalen · Early Light · 2023 Q3,Denmark,1,1
-Mark Whalen · Early Light · 2023 Q3,Norway,1,1
 Mark Whalen · Early Light · 2023 Q3,Qatar,1,1
-Mark Whalen · Early Light · 2023 Q3,United Kingdom,1,1
-Matt DesLauriers · Sierra · 2024 Q1,United States,91,90
-Matt DesLauriers · Sierra · 2024 Q1,United Kingdom,22,19
-Matt DesLauriers · Sierra · 2024 Q1,Germany,12,12
-Matt DesLauriers · Sierra · 2024 Q1,Canada,9,9
-Matt DesLauriers · Sierra · 2024 Q1,France,6,6
-Matt DesLauriers · Sierra · 2024 Q1,Australia,4,4
-Matt DesLauriers · Sierra · 2024 Q1,New Zealand,3,3
-Matt DesLauriers · Sierra · 2024 Q1,Netherlands,2,2
-Matt DesLauriers · Sierra · 2024 Q1,Spain,2,2
-Matt DesLauriers · Sierra · 2024 Q1,Belgium,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Brazil,1,1
-Matt DesLauriers · Sierra · 2024 Q1,China,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Cyprus,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Finland,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Greece,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Hong Kong,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Indonesia,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Italy,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Japan,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Philippines,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Poland,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Portugal,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Singapore,1,1
-Matt DesLauriers · Sierra · 2024 Q1,South Korea,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Sweden,1,1
-Matt DesLauriers · Sierra · 2024 Q1,United Arab Emirates,1,1
-Matt DesLauriers · Sierra · 2024 Q1,Uzbekistan,1,1
+Mark Whalen · Early Light · 2023 Q3,United States,1,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,Italy,283,281
 Maurizio Cattelan · La Nona Ora · 2026 Q2,United States,116,116
 Maurizio Cattelan · La Nona Ora · 2026 Q2,France,41,40
@@ -3115,20 +2003,20 @@ Maurizio Cattelan · La Nona Ora · 2026 Q2,Slovakia,1,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,Taiwan,1,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,Turkey,1,1
 Maurizio Cattelan · La Nona Ora · 2026 Q2,United Arab Emirates,1,1
-Maurizio Cattelan · Multiple · 2026 Q4,Italy,609,570
-Maurizio Cattelan · Multiple · 2026 Q4,United States,265,231
-Maurizio Cattelan · Multiple · 2026 Q4,Germany,129,88
-Maurizio Cattelan · Multiple · 2026 Q4,United Kingdom,107,92
+Maurizio Cattelan · Multiple · 2026 Q4,Italy,608,569
+Maurizio Cattelan · Multiple · 2026 Q4,United States,266,232
+Maurizio Cattelan · Multiple · 2026 Q4,Germany,132,91
+Maurizio Cattelan · Multiple · 2026 Q4,United Kingdom,105,90
 Maurizio Cattelan · Multiple · 2026 Q4,France,87,63
 Maurizio Cattelan · Multiple · 2026 Q4,Switzerland,82,77
-Maurizio Cattelan · Multiple · 2026 Q4,Netherlands,58,54
-Maurizio Cattelan · Multiple · 2026 Q4,Belgium,48,41
-Maurizio Cattelan · Multiple · 2026 Q4,Mexico,38,36
+Maurizio Cattelan · Multiple · 2026 Q4,Netherlands,57,53
+Maurizio Cattelan · Multiple · 2026 Q4,Belgium,49,42
+Maurizio Cattelan · Multiple · 2026 Q4,Mexico,37,35
 Maurizio Cattelan · Multiple · 2026 Q4,Spain,23,22
 Maurizio Cattelan · Multiple · 2026 Q4,United Arab Emirates,19,18
-Maurizio Cattelan · Multiple · 2026 Q4,Australia,17,16
-Maurizio Cattelan · Multiple · 2026 Q4,Austria,17,14
 Maurizio Cattelan · Multiple · 2026 Q4,Denmark,17,15
+Maurizio Cattelan · Multiple · 2026 Q4,Australia,16,15
+Maurizio Cattelan · Multiple · 2026 Q4,Austria,15,12
 Maurizio Cattelan · Multiple · 2026 Q4,Hong Kong,14,13
 Maurizio Cattelan · Multiple · 2026 Q4,Singapore,13,12
 Maurizio Cattelan · Multiple · 2026 Q4,Canada,11,11
@@ -3136,9 +2024,9 @@ Maurizio Cattelan · Multiple · 2026 Q4,Luxembourg,10,9
 Maurizio Cattelan · Multiple · 2026 Q4,Czech Republic,9,7
 Maurizio Cattelan · Multiple · 2026 Q4,Greece,7,6
 Maurizio Cattelan · Multiple · 2026 Q4,Poland,7,7
-Maurizio Cattelan · Multiple · 2026 Q4,Portugal,7,7
 Maurizio Cattelan · Multiple · 2026 Q4,Romania,7,5
 Maurizio Cattelan · Multiple · 2026 Q4,Israel,6,5
+Maurizio Cattelan · Multiple · 2026 Q4,Portugal,6,6
 Maurizio Cattelan · Multiple · 2026 Q4,South Korea,6,4
 Maurizio Cattelan · Multiple · 2026 Q4,Monaco,5,5
 Maurizio Cattelan · Multiple · 2026 Q4,New Zealand,5,4
@@ -3273,51 +2161,9 @@ Maurizio Cattelan · Window · 2026 Q1,Poland,1,1
 Maurizio Cattelan · Window · 2026 Q1,Romania,1,1
 Maurizio Cattelan · Window · 2026 Q1,Sweden,1,1
 Michael Kagan · Critical Mass · 2021 Q3,United States,1,1
-Michael Kozlowski · Mecha · 2024 Q2,United States,25,24
-Michael Kozlowski · Mecha · 2024 Q2,United Kingdom,6,6
-Michael Kozlowski · Mecha · 2024 Q2,Canada,2,2
-Michael Kozlowski · Mecha · 2024 Q2,France,2,2
-Michael Kozlowski · Mecha · 2024 Q2,South Korea,2,2
-Michael Kozlowski · Mecha · 2024 Q2,Switzerland,2,2
-Michael Kozlowski · Mecha · 2024 Q2,Australia,1,1
-Michael Kozlowski · Mecha · 2024 Q2,Netherlands,1,1
-Michael Kozlowski · Mecha · 2024 Q2,Portugal,1,1
-Michael Kozlowski · Mecha · 2024 Q2,Singapore,1,1
-Michael Kozlowski · Mecha · 2024 Q2,Thailand,1,1
-Michael Kozlowski · Mecha · 2024 Q2,United Arab Emirates,1,1
-Michael Kozlowski · Metropolis print Manual · 2023 Q1,United States,1,1
-Michael Kozlowski · Metropolis print · 2023 Q1,United States,54,28
-Michael Kozlowski · Metropolis print · 2023 Q1,United Kingdom,9,5
-Michael Kozlowski · Metropolis print · 2023 Q1,Australia,4,2
-Michael Kozlowski · Metropolis print · 2023 Q1,Germany,4,3
-Michael Kozlowski · Metropolis print · 2023 Q1,South Korea,3,2
-Michaela Yearwood-Dan · Multiple · 2023 Q4,United States,28,28
-Michaela Yearwood-Dan · Multiple · 2023 Q4,United Kingdom,17,17
-Michaela Yearwood-Dan · Multiple · 2023 Q4,Belgium,1,1
-Michaela Yearwood-Dan · Multiple · 2023 Q4,Canada,1,1
-Michaela Yearwood-Dan · Multiple · 2023 Q4,Denmark,1,1
-Michaela Yearwood-Dan · Multiple · 2023 Q4,Germany,1,1
-Michaela Yearwood-Dan · Multiple · 2023 Q4,Singapore,1,1
-Mickalene Thomas · Multiple · 2024 Q2,United States,814,699
-Mickalene Thomas · Multiple · 2024 Q2,United Kingdom,33,31
-Mickalene Thomas · Multiple · 2024 Q2,Switzerland,16,2
-Mickalene Thomas · Multiple · 2024 Q2,Canada,14,13
-Mickalene Thomas · Multiple · 2024 Q2,France,11,10
-Mickalene Thomas · Multiple · 2024 Q2,Germany,9,8
-Mickalene Thomas · Multiple · 2024 Q2,Monaco,7,3
-Mickalene Thomas · Multiple · 2024 Q2,Belgium,5,5
-Mickalene Thomas · Multiple · 2024 Q2,Netherlands,5,5
-Mickalene Thomas · Multiple · 2024 Q2,Australia,3,3
-Mickalene Thomas · Multiple · 2024 Q2,Austria,1,1
-Mickalene Thomas · Multiple · 2024 Q2,Bermuda,1,1
-Mickalene Thomas · Multiple · 2024 Q2,Hong Kong,1,1
-Mickalene Thomas · Multiple · 2024 Q2,Israel,1,1
-Mickalene Thomas · Multiple · 2024 Q2,Italy,1,1
-Mickalene Thomas · Multiple · 2024 Q2,Japan,1,1
-Mickalene Thomas · Multiple · 2024 Q2,South Africa,1,1
-Mickalene Thomas · Multiple · 2024 Q2,Spain,1,1
-Mickalene Thomas · Multiple · 2024 Q2,Taiwan,1,1
-Mickalene Thomas · Multiple · 2024 Q2,United Arab Emirates,1,1
+Mickalene Thomas · Multiple · 2024 Q2,United States,10,10
+Mickalene Thomas · Multiple · 2024 Q2,United Kingdom,2,2
+Mickalene Thomas · Multiple · 2024 Q2,France,1,1
 Mickalene Thomas · Multiple · 2025 Q1,United States,1709,1357
 Mickalene Thomas · Multiple · 2025 Q1,United Kingdom,109,89
 Mickalene Thomas · Multiple · 2025 Q1,France,34,23
@@ -3375,41 +2221,8 @@ Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,Taiwan,2,2
 Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,Cyprus,1,1
 Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,Netherlands,1,1
 Miwa Komatsu · Innocent Days and Wishes · 2025 Q2,United Kingdom,1,1
-Miwa Komatsu · Multiple · 2023 Q4,Japan,34,34
-Miwa Komatsu · Multiple · 2023 Q4,Taiwan,27,24
-Miwa Komatsu · Multiple · 2023 Q4,Hong Kong,8,8
-Miwa Komatsu · Multiple · 2023 Q4,United States,8,8
-Miwa Komatsu · Multiple · 2023 Q4,Singapore,6,6
-Miwa Komatsu · Multiple · 2023 Q4,South Korea,5,5
-Miwa Komatsu · Multiple · 2023 Q4,China,4,4
-Miwa Komatsu · Multiple · 2023 Q4,United Kingdom,4,4
-Miwa Komatsu · Multiple · 2023 Q4,Australia,2,2
-Miwa Komatsu · Multiple · 2023 Q4,France,2,2
-Miwa Komatsu · Multiple · 2023 Q4,Canada,1,1
-Miwa Komatsu · Multiple · 2023 Q4,Germany,1,1
-Miwa Komatsu · Multiple · 2023 Q4,Macao,1,1
-Miwa Komatsu · Multiple · 2023 Q4,Norway,1,1
-Miwa Komatsu · Multiple · 2023 Q4,Thailand,1,1
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Japan,219,144
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Taiwan,49,43
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,United Kingdom,29,29
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,United States,16,15
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,France,8,8
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Singapore,8,8
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,South Korea,7,7
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Hong Kong,6,6
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,China,5,5
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Germany,4,4
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Canada,3,3
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Netherlands,3,3
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Australia,2,2
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Malaysia,2,2
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Norway,2,2
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Greece,1,1
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,India,1,1
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Mexico,1,1
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Portugal,1,1
-Miwa Komatsu · Sacred Connectedness · 2024 Q2,Thailand,1,1
+Miwa Komatsu · Multiple · 2023 Q4,Hong Kong,1,1
+Miwa Komatsu · Multiple · 2023 Q4,Singapore,1,1
 Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,Japan,30,30
 Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,Taiwan,7,7
 Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,United States,3,3
@@ -3418,44 +2231,17 @@ Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,Hong K
 Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,Singapore,2,2
 Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,Belgium,1,1
 Miwa Komatsu · Three Guardians: Gatekeeping the Heat and Cold · 2026 Q2,United Kingdom,1,1
-Miwa Komatsu · White and Black Guiding Yamainu-sama · 2024 Q4,Japan,10,10
-Miwa Komatsu · White and Black Guiding Yamainu-sama · 2024 Q4,Taiwan,3,3
-Miwa Komatsu · White and Black Guiding Yamainu-sama · 2024 Q4,Hong Kong,1,1
-Miwa Komatsu · White and Black Guiding Yamainu-sama · 2024 Q4,United States,1,1
-Moe Nakamura · Inside Us · 2023 Q4,Taiwan,16,16
-Moe Nakamura · Inside Us · 2023 Q4,Japan,6,6
-Moe Nakamura · Inside Us · 2023 Q4,Hong Kong,3,3
-Moe Nakamura · Inside Us · 2023 Q4,United States,3,3
+Moe Nakamura · Inside Us · 2023 Q4,Hong Kong,1,1
 Moe Nakamura · Inside Us · 2023 Q4,Romania,1,1
-Moe Nakamura · Inside Us · 2023 Q4,South Korea,1,1
 Moe Nakamura · Inside Us · 2023 Q4,Switzerland,1,1
-Moe Nakamura · Inside Us · 2023 Q4,United Kingdom,1,1
-Neo Image Matloga · Majakathata · 2021 Q3,Netherlands,1,1
-Neo Image Matloga · Multiple · 2023 Q3,United States,7,6
-Neo Image Matloga · Multiple · 2023 Q3,Kenya,5,1
-Neo Image Matloga · Multiple · 2023 Q3,Netherlands,4,4
+Neo Image Matloga · Multiple · 2023 Q3,United States,4,3
 Neo Image Matloga · Multiple · 2023 Q3,Spain,2,2
-Neo Image Matloga · Multiple · 2023 Q3,Australia,1,1
 Neo Image Matloga · Multiple · 2023 Q3,United Kingdom,1,1
-Nicasio Fernandez · D.I.Y (Hand-finished) · 2022 Q4,United States,1,1
-Nigel Howlett · Multiple · 2022 Q1,United States,4,4
-Nigel Howlett · Multiple · 2022 Q1,France,2,2
+Nigel Howlett · Multiple · 2022 Q1,United States,3,3
+Nigel Howlett · Multiple · 2022 Q1,France,1,1
 Nigel Howlett · Multiple · 2022 Q1,Hong Kong,1,1
 Nigel Howlett · Multiple · 2022 Q1,Netherlands,1,1
-Nigel Howlett · Multiple · 2022 Q1,Singapore,1,1
 Nigel Howlett · Multiple · 2022 Q1,South Korea,1,1
-Nigel Howlett · Multiple · 2022 Q1,United Kingdom,1,1
-Okokume · Sumergidos · 2023 Q1,Hong Kong,18,18
-Okokume · Sumergidos · 2023 Q1,United States,10,10
-Okokume · Sumergidos · 2023 Q1,Japan,6,6
-Okokume · Sumergidos · 2023 Q1,South Korea,3,3
-Okokume · Sumergidos · 2023 Q1,Taiwan,3,3
-Okokume · Sumergidos · 2023 Q1,Australia,2,2
-Okokume · Sumergidos · 2023 Q1,France,2,2
-Okokume · Sumergidos · 2023 Q1,Malaysia,2,2
-Okokume · Sumergidos · 2023 Q1,Netherlands,2,2
-Okokume · Sumergidos · 2023 Q1,Canada,1,1
-Okokume · Sumergidos · 2023 Q1,Germany,1,1
 "Oscar yi Hou · Coolieisms, aka: Born In The USA (Go And Kill The Yellow Man) · 2025 Q2",United States,3,3
 "Oscar yi Hou · Coolieisms, aka: Born In The USA (Go And Kill The Yellow Man) · 2025 Q2",Norway,1,1
 "Oscar yi Hou · Coolieisms, aka: Born In The USA (Go And Kill The Yellow Man) · 2025 Q2",United Kingdom,1,1
@@ -3465,34 +2251,12 @@ Other World · Dogs of War · 2025 Q2,Switzerland,2,2
 Other World · Dogs of War · 2025 Q2,United Kingdom,2,2
 Other World · Dogs of War · 2025 Q2,Hong Kong,1,1
 Other World · Dogs of War · 2025 Q2,United Arab Emirates,1,1
-Otis Kwame Kye Quaicoe · View of Yoei William · 2021 Q1,United States,1,1
-Pablo Tomek · Multiple · 2023 Q2,United States,1,1
 Paco Pomet · The Last Evening · 2019 Q2,Spain,2,2
 Paco Pomet · The Last Evening · 2019 Q2,Netherlands,1,1
-Paco Pomet · The Last Evening · 2019 Q2,Switzerland,1,1
 Paco Pomet · The Last Evening · 2019 Q2,United States,1,1
-Parra · Multiple · 2022 Q3,Netherlands,6,6
+Parra · Multiple · 2022 Q3,Netherlands,3,3
 Parra · Multiple · 2022 Q3,United Kingdom,1,1
-Parra · Multiple · 2022 Q3,United States,1,1
-Parra · Multiple · 2024 Q4,Netherlands,87,86
-Parra · Multiple · 2024 Q4,United States,73,72
-Parra · Multiple · 2024 Q4,United Kingdom,27,26
-Parra · Multiple · 2024 Q4,France,10,10
-Parra · Multiple · 2024 Q4,Germany,8,8
-Parra · Multiple · 2024 Q4,Canada,7,7
-Parra · Multiple · 2024 Q4,Belgium,5,5
-Parra · Multiple · 2024 Q4,Australia,4,4
-Parra · Multiple · 2024 Q4,Hong Kong,4,3
-Parra · Multiple · 2024 Q4,Sweden,3,3
-Parra · Multiple · 2024 Q4,Switzerland,3,3
-Parra · Multiple · 2024 Q4,Mexico,2,2
-Parra · Multiple · 2024 Q4,Spain,2,2
-Parra · Multiple · 2024 Q4,United Arab Emirates,2,2
-Parra · Multiple · 2024 Q4,Italy,1,1
-Parra · Multiple · 2024 Q4,New Zealand,1,1
-Parra · Multiple · 2024 Q4,Norway,1,1
-Parra · Multiple · 2024 Q4,Portugal,1,1
-Parra · Multiple · 2024 Q4,South Korea,1,1
+Parra · Multiple · 2024 Q4,Netherlands,2,2
 Parra · Multiple · 2025 Q3,Netherlands,90,84
 Parra · Multiple · 2025 Q3,United States,55,50
 Parra · Multiple · 2025 Q3,United Kingdom,20,19
@@ -3536,31 +2300,8 @@ Parra · Multiple · 2026 Q3,Slovakia,1,1
 Parra · Multiple · 2026 Q3,South Korea,1,1
 Parra · Multiple · 2026 Q3,United Arab Emirates,1,1
 Patrick Quarm · Multiple · 2022 Q1,United States,2,2
-Paul Insect · Christmas Tree Baubles · 2022 Q4,United States,8,7
-Paul Insect · Christmas Tree Baubles · 2022 Q4,Austria,3,1
-Paul Insect · Christmas Tree Baubles · 2022 Q4,United Kingdom,3,3
-Paul Insect · Christmas Tree Baubles · 2022 Q4,Mexico,2,2
-Paul Insect · Christmas Tree Baubles · 2022 Q4,Belgium,1,1
-Paul Insect · Christmas Tree Baubles · 2022 Q4,Germany,1,1
 Paul Insect · Christmas Tree Baubles · 2022 Q4,Spain,1,1
-Paul Insect · Christmas Tree Baubles · 2022 Q4,Sweden,1,1
 Paul Insect · Christmas Tree Baubles · 2022 Q4,Switzerland,1,1
-Paul Insect · Multiple · 2021 Q4,Austria,5,1
-Paul Insect · Multiple · 2021 Q4,Netherlands,2,2
-Paul Insect · Multiple · 2024 Q3,United States,48,47
-Paul Insect · Multiple · 2024 Q3,United Kingdom,22,22
-Paul Insect · Multiple · 2024 Q3,Germany,5,5
-Paul Insect · Multiple · 2024 Q3,Netherlands,4,4
-Paul Insect · Multiple · 2024 Q3,Belgium,3,3
-Paul Insect · Multiple · 2024 Q3,Canada,2,2
-Paul Insect · Multiple · 2024 Q3,Malaysia,2,1
-Paul Insect · Multiple · 2024 Q3,Singapore,2,2
-Paul Insect · Multiple · 2024 Q3,Spain,2,2
-Paul Insect · Multiple · 2024 Q3,Australia,1,1
-Paul Insect · Multiple · 2024 Q3,France,1,1
-Paul Insect · Multiple · 2024 Q3,Japan,1,1
-Paul Insect · Multiple · 2024 Q3,South Korea,1,1
-Paul Insect · Multiple · 2024 Q3,United Arab Emirates,1,1
 Paul Insect · Prismatic Visions · 2026 Q2,United States,26,26
 Paul Insect · Prismatic Visions · 2026 Q2,United Kingdom,12,12
 Paul Insect · Prismatic Visions · 2026 Q2,Germany,2,2
@@ -3575,37 +2316,8 @@ Paul Insect · Prismatic Visions · 2026 Q2,Singapore,1,1
 Paul Insect · The Observer 1 AP · 2021 Q1,Netherlands,1,1
 Paul Insect · The Reflection (Blue) · 2021 Q1,France,1,1
 Paul Insect · The Reflection (Red) · 2021 Q1,Canada,1,1
-Pejac · Multiple · 2024 Q3,United States,231,221
-Pejac · Multiple · 2024 Q3,United Kingdom,210,208
-Pejac · Multiple · 2024 Q3,Norway,111,107
-Pejac · Multiple · 2024 Q3,France,39,38
-Pejac · Multiple · 2024 Q3,Germany,29,29
-Pejac · Multiple · 2024 Q3,Netherlands,28,27
-Pejac · Multiple · 2024 Q3,Spain,27,27
-Pejac · Multiple · 2024 Q3,Belgium,21,21
-Pejac · Multiple · 2024 Q3,Canada,16,16
-Pejac · Multiple · 2024 Q3,Australia,11,11
-Pejac · Multiple · 2024 Q3,Switzerland,11,11
-Pejac · Multiple · 2024 Q3,Italy,9,9
-Pejac · Multiple · 2024 Q3,United Arab Emirates,6,6
-Pejac · Multiple · 2024 Q3,Japan,5,5
-Pejac · Multiple · 2024 Q3,Sweden,5,5
-Pejac · Multiple · 2024 Q3,Denmark,4,4
-Pejac · Multiple · 2024 Q3,Hong Kong,4,4
-Pejac · Multiple · 2024 Q3,New Zealand,4,4
-Pejac · Multiple · 2024 Q3,Portugal,4,4
-Pejac · Multiple · 2024 Q3,Singapore,4,4
-Pejac · Multiple · 2024 Q3,Czech Republic,3,3
-Pejac · Multiple · 2024 Q3,Mexico,3,3
-Pejac · Multiple · 2024 Q3,South Korea,3,3
-Pejac · Multiple · 2024 Q3,Austria,2,2
-Pejac · Multiple · 2024 Q3,Greece,2,2
-Pejac · Multiple · 2024 Q3,Jersey,2,2
-Pejac · Multiple · 2024 Q3,Luxembourg,2,2
-Pejac · Multiple · 2024 Q3,Poland,2,2
-Pejac · Multiple · 2024 Q3,China,1,1
-Pejac · Multiple · 2024 Q3,Philippines,1,1
-Pejac · Multiple · 2024 Q3,Thailand,1,1
+Pejac · Multiple · 2024 Q3,South Korea,1,1
+Pejac · Multiple · 2024 Q3,United States,1,1
 Pejac · Multiple · 2026 Q1,United States,37,37
 Pejac · Multiple · 2026 Q1,United Kingdom,19,19
 Pejac · Multiple · 2026 Q1,Norway,16,16
@@ -3622,17 +2334,13 @@ Pejac · Multiple · 2026 Q1,Japan,2,2
 Pejac · Multiple · 2026 Q1,Finland,1,1
 Pejac · Multiple · 2026 Q1,Hungary,1,1
 Pejac · Multiple · 2026 Q1,South Korea,1,1
-Peter Halley · Rising High II · 2024 Q2,United States,23,21
-Peter Halley · Rising High II · 2024 Q2,Switzerland,3,3
-Peter Halley · Rising High II · 2024 Q2,Germany,2,2
-Peter Halley · Rising High II · 2024 Q2,United Kingdom,2,2
-Peter Halley · Rising High II · 2024 Q2,Belgium,1,1
-Peter Halley · Rising High II · 2024 Q2,Canada,1,1
-Peter Halley · Rising High II · 2024 Q2,Hong Kong,1,1
+Pejac · Multiple · 2026 Q4,United Kingdom,5,4
+Pejac · Multiple · 2026 Q4,United States,4,3
+Pejac · Multiple · 2026 Q4,France,2,1
+Pejac · Multiple · 2026 Q4,Germany,2,1
+Peter Halley · Rising High II · 2024 Q2,United States,5,4
 Peter Halley · Rising High II · 2024 Q2,Italy,1,1
-Peter Halley · Rising High II · 2024 Q2,Netherlands,1,1
-Peter Halley · Rising High II · 2024 Q2,Spain,1,1
-Piet Mondrian Estate · Multiple · 2026 Q3,United States,357,318
+Piet Mondrian Estate · Multiple · 2026 Q3,United States,358,319
 Piet Mondrian Estate · Multiple · 2026 Q3,United Kingdom,131,118
 Piet Mondrian Estate · Multiple · 2026 Q3,Netherlands,59,43
 Piet Mondrian Estate · Multiple · 2026 Q3,Australia,35,29
@@ -3671,13 +2379,6 @@ Piet Mondrian Estate · Multiple · 2026 Q3,Estonia,1,1
 Piet Mondrian Estate · Multiple · 2026 Q3,Hungary,1,1
 Piet Mondrian Estate · Multiple · 2026 Q3,Jersey,1,1
 Piet Mondrian Estate · Multiple · 2026 Q3,South Africa,1,1
-Prune Nourry · Mater Earth · 2023 Q1,France,5,5
-Prune Nourry · Mater Earth · 2023 Q1,United States,4,4
-Prune Nourry · Mater Earth · 2023 Q1,Aruba,1,1
-Prune Nourry · Mater Earth · 2023 Q1,Belgium,1,1
-Prune Nourry · Mater Earth · 2023 Q1,Malaysia,1,1
-Prune Nourry · Mater Earth · 2023 Q1,Netherlands,1,1
-Prune Nourry · Mater Earth · 2023 Q1,Switzerland,1,1
 Robert Longo · Multiple · 2025 Q2,United States,881,716
 Robert Longo · Multiple · 2025 Q2,United Kingdom,155,119
 Robert Longo · Multiple · 2025 Q2,Germany,114,99
@@ -3716,7 +2417,7 @@ Robert Longo · Multiple · 2025 Q2,Peru,1,1
 Robert Longo · Multiple · 2025 Q2,Slovakia,1,1
 Robert Longo · Multiple · 2025 Q2,Slovenia,1,1
 Robert Longo · Multiple · 2025 Q2,South Africa,1,1
-"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",United States,63,63
+"Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",United States,82,65
 "Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",United Kingdom,10,10
 "Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",Italy,4,4
 "Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",Belgium,2,2
@@ -3732,125 +2433,70 @@ Robert Longo · Multiple · 2025 Q2,South Africa,1,1
 "Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",Singapore,1,1
 "Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",Spain,1,1
 "Robert Longo · Untitled (Sandy, from the series “Men in the Cities”) · 2026 Q3",Taiwan,1,1
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,United States,11,11
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,Hong Kong,10,10
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,South Korea,6,6
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,Taiwan,3,3
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,Australia,2,2
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,Japan,2,2
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,Singapore,2,2
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,United Kingdom,2,2
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,France,1,1
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,Netherlands,1,1
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,Philippines,1,1
-Roby Dwi Antono · CLEMENTINE · 2023 Q4,United Arab Emirates,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,United States,20,20
-Roby Dwi Antono · HAYU · 2023 Q1,United Kingdom,8,8
-Roby Dwi Antono · HAYU · 2023 Q1,Hong Kong,6,6
-Roby Dwi Antono · HAYU · 2023 Q1,France,3,3
-Roby Dwi Antono · HAYU · 2023 Q1,Japan,2,2
-Roby Dwi Antono · HAYU · 2023 Q1,United Arab Emirates,2,2
-Roby Dwi Antono · HAYU · 2023 Q1,Australia,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,Canada,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,Italy,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,Netherlands,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,Singapore,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,South Korea,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,Switzerland,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,Taiwan,1,1
-Roby Dwi Antono · HAYU · 2023 Q1,Thailand,1,1
 Roby Dwi Antono · KIRA (Black) · 2021 Q4,United Kingdom,1,1
 Roby Dwi Antono · KIRA (Burnished Gold) · 2021 Q4,United Arab Emirates,1,1
 Roby Dwi Antono · KIRA (Burnished Gold) · 2021 Q4,United States,1,1
-Roby Dwi Antono · Multiple · 2022 Q2,United Kingdom,2,2
-Roby Dwi Antono · Multiple · 2022 Q2,Aruba,1,1
-Roby Dwi Antono · Multiple · 2022 Q2,Indonesia,1,1
-Roby Dwi Antono · Multiple · 2022 Q2,Malaysia,1,1
-Roby Dwi Antono · Multiple · 2022 Q2,United Arab Emirates,1,1
-Roby Dwi Antono · Multiple · 2022 Q2,United States,1,1
-Rooo Lou · Earnest · 2023 Q2,Netherlands,5,5
-Rooo Lou · Earnest · 2023 Q2,Hong Kong,3,3
-Rooo Lou · Earnest · 2023 Q2,United Kingdom,3,3
-Rooo Lou · Earnest · 2023 Q2,United States,3,3
-Rooo Lou · Earnest · 2023 Q2,Australia,2,2
-Rooo Lou · Earnest · 2023 Q2,South Korea,2,2
-Rooo Lou · Earnest · 2023 Q2,Taiwan,2,1
-Rooo Lou · Earnest · 2023 Q2,United Arab Emirates,2,2
-Rooo Lou · Earnest · 2023 Q2,Belgium,1,1
-Rooo Lou · Earnest · 2023 Q2,Canada,1,1
-Rooo Lou · Earnest · 2023 Q2,Denmark,1,1
-Rooo Lou · Earnest · 2023 Q2,France,1,1
-Rooo Lou · Earnest · 2023 Q2,Japan,1,1
-Rooo Lou · Earnest · 2023 Q2,Malaysia,1,1
-Rooo Lou · Earnest · 2023 Q2,Norway,1,1
-Rooo Lou · Earnest · 2023 Q2,Singapore,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,United States,732,410
-Roy Lichtenstein Estate · Multiple · 2026 Q4,United Kingdom,253,146
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Germany,54,32
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Netherlands,39,25
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Australia,37,23
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Canada,37,21
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Switzerland,33,19
-Roy Lichtenstein Estate · Multiple · 2026 Q4,France,25,17
-Roy Lichtenstein Estate · Multiple · 2026 Q4,United Arab Emirates,23,13
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Singapore,22,13
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Italy,21,17
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Japan,21,12
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Denmark,17,9
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Hong Kong,16,10
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Mexico,14,8
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Austria,11,7
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Greece,11,5
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Portugal,11,7
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Sweden,11,7
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Belgium,9,6
-Roy Lichtenstein Estate · Multiple · 2026 Q4,South Korea,9,6
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Norway,8,5
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Israel,6,2
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Spain,6,6
+Roy Lichtenstein Estate · Multiple · 2026 Q4,United States,982,599
+Roy Lichtenstein Estate · Multiple · 2026 Q4,United Kingdom,331,205
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Germany,82,54
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Netherlands,51,36
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Canada,50,33
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Australia,47,33
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Switzerland,46,29
+Roy Lichtenstein Estate · Multiple · 2026 Q4,France,39,28
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Singapore,33,20
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Japan,32,18
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Italy,31,27
+Roy Lichtenstein Estate · Multiple · 2026 Q4,United Arab Emirates,25,15
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Denmark,24,14
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Mexico,23,12
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Greece,20,9
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Hong Kong,19,13
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Spain,16,12
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Portugal,15,10
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Sweden,14,10
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Austria,12,8
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Belgium,11,8
+Roy Lichtenstein Estate · Multiple · 2026 Q4,South Korea,11,8
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Norway,10,7
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Israel,9,3
+Roy Lichtenstein Estate · Multiple · 2026 Q4,New Zealand,9,5
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Luxembourg,5,3
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Malaysia,4,1
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Malaysia,5,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Czech Republic,4,3
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Malta,4,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,New Zealand,4,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,South Africa,4,1
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Jersey,3,2
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Poland,3,2
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Croatia,2,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Jersey,2,1
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Estonia,2,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Hungary,2,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Ireland,2,2
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Monaco,2,2
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Saudi Arabia,2,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Cyprus,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Czech Republic,1,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Finland,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Hungary,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Ireland,1,1
 Roy Lichtenstein Estate · Multiple · 2026 Q4,Lithuania,1,1
-Roy Lichtenstein Estate · Multiple · 2026 Q4,Philippines,1,1
-SETH · Little Sower · 2023 Q4,France,24,24
-SETH · Little Sower · 2023 Q4,China,2,2
-SETH · Little Sower · 2023 Q4,Portugal,2,1
-SETH · Little Sower · 2023 Q4,Reunion,2,2
-SETH · Little Sower · 2023 Q4,United States,2,2
-SETH · Little Sower · 2023 Q4,Belgium,1,1
-SETH · Little Sower · 2023 Q4,Hong Kong,1,1
-SETH · Little Sower · 2023 Q4,United Kingdom,1,1
-Salvador Dali Estate · Multiple · 2026 Q3,United States,518,502
-Salvador Dali Estate · Multiple · 2026 Q3,United Kingdom,162,155
+Roy Lichtenstein Estate · Multiple · 2026 Q4,Taiwan,1,1
+Salvador Dali Estate · Multiple · 2026 Q3,United States,511,495
+Salvador Dali Estate · Multiple · 2026 Q3,United Kingdom,159,152
 Salvador Dali Estate · Multiple · 2026 Q3,Australia,58,58
 Salvador Dali Estate · Multiple · 2026 Q3,Netherlands,34,29
-Salvador Dali Estate · Multiple · 2026 Q3,Canada,31,31
+Salvador Dali Estate · Multiple · 2026 Q3,Canada,29,29
 Salvador Dali Estate · Multiple · 2026 Q3,Norway,27,26
 Salvador Dali Estate · Multiple · 2026 Q3,Singapore,26,24
 Salvador Dali Estate · Multiple · 2026 Q3,Italy,19,19
 Salvador Dali Estate · Multiple · 2026 Q3,Spain,19,18
-Salvador Dali Estate · Multiple · 2026 Q3,Germany,18,18
 Salvador Dali Estate · Multiple · 2026 Q3,United Arab Emirates,18,15
+Salvador Dali Estate · Multiple · 2026 Q3,Germany,17,17
 Salvador Dali Estate · Multiple · 2026 Q3,Switzerland,16,15
 Salvador Dali Estate · Multiple · 2026 Q3,Belgium,15,15
 Salvador Dali Estate · Multiple · 2026 Q3,Mexico,12,12
 Salvador Dali Estate · Multiple · 2026 Q3,France,10,10
 Salvador Dali Estate · Multiple · 2026 Q3,Portugal,10,10
 Salvador Dali Estate · Multiple · 2026 Q3,Denmark,9,8
-Salvador Dali Estate · Multiple · 2026 Q3,New Zealand,9,9
 Salvador Dali Estate · Multiple · 2026 Q3,Sweden,9,9
+Salvador Dali Estate · Multiple · 2026 Q3,New Zealand,8,8
 Salvador Dali Estate · Multiple · 2026 Q3,Ireland,7,6
 Salvador Dali Estate · Multiple · 2026 Q3,Hong Kong,5,5
 Salvador Dali Estate · Multiple · 2026 Q3,Malta,5,5
@@ -3875,16 +2521,24 @@ Salvador Dali Estate · Multiple · 2026 Q3,Poland,1,1
 Salvador Dali Estate · Multiple · 2026 Q3,Qatar,1,1
 Salvador Dali Estate · Multiple · 2026 Q3,South Africa,1,1
 Salvador Dali Estate · Multiple · 2026 Q3,Taiwan,1,1
-Sarah Morris · Industry (Spiderweb) · 2023 Q2,Netherlands,1,1
 Sarah Morris · Industry (Spiderweb) · 2023 Q2,Romania,1,1
-Sarah Morris · Industry (Spiderweb) · 2023 Q2,Thailand,1,1
 Sayre Gomez · America's Tire · 2025 Q2,United States,10,10
 Sayre Gomez · America's Tire · 2025 Q2,United Kingdom,2,2
 Sayre Gomez · America's Tire · 2025 Q2,Japan,1,1
 Sayre Gomez · America's Tire · 2025 Q2,Portugal,1,1
-Scott Kahn · INGERSOLL'S BRANCH · 2022 Q4,Hong Kong,1,1
-Scott Kahn · INGERSOLL'S BRANCH · 2022 Q4,United Kingdom,1,1
-Shigeki Matsuyama · Multiple · 2023 Q2,United States,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,United States,34,34
+Seth Armstrong · Micheltorena · 2026 Q4,United Kingdom,9,9
+Seth Armstrong · Micheltorena · 2026 Q4,Netherlands,4,2
+Seth Armstrong · Micheltorena · 2026 Q4,Germany,2,2
+Seth Armstrong · Micheltorena · 2026 Q4,Canada,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Finland,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Hong Kong,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Indonesia,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Italy,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Japan,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Luxembourg,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Sweden,1,1
+Seth Armstrong · Micheltorena · 2026 Q4,Switzerland,1,1
 Shirin Neshat · Multiple · 2025 Q1,United States,231,221
 Shirin Neshat · Multiple · 2025 Q1,United Kingdom,68,61
 Shirin Neshat · Multiple · 2025 Q1,Italy,32,31
@@ -3919,7 +2573,7 @@ Shirin Neshat · Multiple · 2025 Q1,Norway,1,1
 Shirin Neshat · Multiple · 2025 Q1,Oman,1,1
 Shirin Neshat · Multiple · 2025 Q1,Slovakia,1,1
 Shirin Neshat · Multiple · 2025 Q1,South Africa,1,1
-Shirin Neshat · Multiple · 2026 Q2,United States,159,107
+Shirin Neshat · Multiple · 2026 Q2,United States,157,106
 Shirin Neshat · Multiple · 2026 Q2,Italy,40,32
 Shirin Neshat · Multiple · 2026 Q2,United Kingdom,28,21
 Shirin Neshat · Multiple · 2026 Q2,United Arab Emirates,17,9
@@ -3947,80 +2601,17 @@ Shirin Neshat · Multiple · 2026 Q2,Ireland,1,1
 Shirin Neshat · Multiple · 2026 Q2,Luxembourg,1,1
 Shirin Neshat · Multiple · 2026 Q2,Qatar,1,1
 Shirin Neshat · Multiple · 2026 Q2,Romania,1,1
-Slawn · Ugly Bastard · 2024 Q3,United Kingdom,40,40
-Slawn · Ugly Bastard · 2024 Q3,United States,27,27
-Slawn · Ugly Bastard · 2024 Q3,Netherlands,6,6
-Slawn · Ugly Bastard · 2024 Q3,Germany,3,3
-Slawn · Ugly Bastard · 2024 Q3,Spain,3,3
-Slawn · Ugly Bastard · 2024 Q3,Australia,2,2
-Slawn · Ugly Bastard · 2024 Q3,Belgium,2,2
-Slawn · Ugly Bastard · 2024 Q3,Canada,2,2
-Slawn · Ugly Bastard · 2024 Q3,Japan,2,2
-Slawn · Ugly Bastard · 2024 Q3,Singapore,2,2
-Slawn · Ugly Bastard · 2024 Q3,Aruba,1,1
-Slawn · Ugly Bastard · 2024 Q3,China,1,1
-Slawn · Ugly Bastard · 2024 Q3,Hong Kong,1,1
-Slawn · Ugly Bastard · 2024 Q3,New Zealand,1,1
-Slawn · Ugly Bastard · 2024 Q3,South Korea,1,1
-Slawn · Ugly Bastard · 2024 Q3,Sweden,1,1
-Slawn · Ugly Bastard · 2024 Q3,United Arab Emirates,1,1
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,United States,117,108
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,United Kingdom,34,30
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Germany,33,30
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,South Korea,17,17
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Canada,8,8
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,France,8,8
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Switzerland,6,5
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,United Arab Emirates,6,6
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Japan,5,5
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Australia,4,4
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Austria,4,4
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Mexico,3,3
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Denmark,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Netherlands,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Norway,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Portugal,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Singapore,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Spain,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Sweden,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Taiwan,2,2
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Belgium,1,1
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,China,1,1
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Hong Kong,1,1
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Israel,1,1
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Luxembourg,1,1
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Malaysia,1,1
-Snowfro · Chromie Squiggle #8107 · 2023 Q4,Slovakia,1,1
-So Youn Lee · Ready? · 2023 Q4,United States,20,20
-So Youn Lee · Ready? · 2023 Q4,Hong Kong,8,8
-So Youn Lee · Ready? · 2023 Q4,South Korea,6,6
-So Youn Lee · Ready? · 2023 Q4,United Kingdom,4,4
-So Youn Lee · Ready? · 2023 Q4,Australia,3,3
-So Youn Lee · Ready? · 2023 Q4,Netherlands,3,3
-So Youn Lee · Ready? · 2023 Q4,Canada,1,1
-So Youn Lee · Ready? · 2023 Q4,China,1,1
-So Youn Lee · Ready? · 2023 Q4,Japan,1,1
+Snowfro · Chromie Squiggle #8107 · 2023 Q4,United States,1,1
+So Youn Lee · Ready? · 2023 Q4,United States,4,4
+So Youn Lee · Ready? · 2023 Q4,Hong Kong,1,1
 So Youn Lee · Ready? · 2023 Q4,Mexico,1,1
-So Youn Lee · Ready? · 2023 Q4,Philippines,1,1
-So Youn Lee · Ready? · 2023 Q4,Singapore,1,1
-So Youn Lee · Ready? · 2023 Q4,Taiwan,1,1
-Sola Olulode · Laying in the Grass (Hand-finished) · 2021 Q4,United States,3,3
-Sola Olulode · Laying in the Grass (Hand-finished) · 2021 Q4,United Kingdom,2,2
-Stickymonger · Multiple · 2022 Q2,United States,2,1
-"Stickymonger · Obsession, No Joke · 2021 Q1",Netherlands,1,1
+So Youn Lee · Ready? · 2023 Q4,Netherlands,1,1
+So Youn Lee · Ready? · 2023 Q4,South Korea,1,1
+So Youn Lee · Ready? · 2023 Q4,United Kingdom,1,1
+Sola Olulode · Laying in the Grass (Hand-finished) · 2021 Q4,United States,1,1
 Susumu Kamijo · The Sinner at Dusk · 2021 Q1,Armenia,1,1
-TIDE · Multiple · 2024 Q4,Japan,15,15
-TIDE · Multiple · 2024 Q4,United States,6,6
-TIDE · Multiple · 2024 Q4,Hong Kong,4,4
-TIDE · Multiple · 2024 Q4,Singapore,3,3
-TIDE · Multiple · 2024 Q4,Australia,1,1
-TIDE · Multiple · 2024 Q4,Canada,1,1
-TIDE · Multiple · 2024 Q4,France,1,1
-TIDE · Multiple · 2024 Q4,Italy,1,1
-TIDE · Multiple · 2024 Q4,United Kingdom,1,1
-Takahiro Komuro · Sphinx - Kira · 2023 Q4,Hong Kong,2,2
-Takahiro Komuro · Sphinx - Kira · 2023 Q4,Japan,1,1
-Takashi Murakami · Multiple · 2026 Q2,United States,364,336
+TIDE · Multiple · 2024 Q4,Japan,1,1
+Takashi Murakami · Multiple · 2026 Q2,United States,363,335
 Takashi Murakami · Multiple · 2026 Q2,United Kingdom,120,94
 Takashi Murakami · Multiple · 2026 Q2,Netherlands,63,49
 Takashi Murakami · Multiple · 2026 Q2,Japan,57,57
@@ -4029,7 +2620,7 @@ Takashi Murakami · Multiple · 2026 Q2,Germany,24,23
 Takashi Murakami · Multiple · 2026 Q2,Canada,23,23
 Takashi Murakami · Multiple · 2026 Q2,South Korea,23,20
 Takashi Murakami · Multiple · 2026 Q2,Switzerland,23,17
-Takashi Murakami · Multiple · 2026 Q2,Singapore,22,22
+Takashi Murakami · Multiple · 2026 Q2,Singapore,20,20
 Takashi Murakami · Multiple · 2026 Q2,Italy,18,17
 Takashi Murakami · Multiple · 2026 Q2,France,16,15
 Takashi Murakami · Multiple · 2026 Q2,Taiwan,10,9
@@ -4077,22 +2668,6 @@ Taku Obata · B BOY JUSHI · 2025 Q1,Mexico,1,1
 Taku Obata · B BOY JUSHI · 2025 Q1,Spain,1,1
 Taku Obata · B BOY JUSHI · 2025 Q1,Switzerland,1,1
 Taku Obata · B BOY JUSHI · 2025 Q1,Thailand,1,1
-Taku Obata · B BOY SEIDOU · 2024 Q4,Japan,20,20
-Taku Obata · B BOY SEIDOU · 2024 Q4,France,1,1
-Taku Obata · B BOY SEIDOU · 2024 Q4,Hong Kong,1,1
-Taku Obata · B BOY SEIDOU · 2024 Q4,United Kingdom,1,1
-Taku Obata · B BOY SEIDOU · 2024 Q4,United States,1,1
-Tau Lewis · Poppy · 2021 Q3,Netherlands,1,1
-Taylor Lee · Multiple · 2023 Q4,United States,7,5
-Taylor Lee · Multiple · 2023 Q4,Italy,2,2
-Taylor Lee · Multiple · 2023 Q4,United Kingdom,1,1
-Thenjiwe Niki Nkosi · Multiple · 2021 Q4,United States,5,5
-Tom Sachs · Too Darn Hot · 2022 Q4,Australia,2,2
-Tom Sachs · Too Darn Hot · 2022 Q4,Hong Kong,2,2
-Tom Sachs · Too Darn Hot · 2022 Q4,Luxembourg,2,2
-Tom Sachs · Too Darn Hot · 2022 Q4,Japan,1,1
-Tom Sachs · Too Darn Hot · 2022 Q4,Netherlands,1,1
-Tom Sachs · Too Darn Hot · 2022 Q4,South Korea,1,1
 Tom Sachs · Too Darn Hot · 2022 Q4,United Kingdom,1,1
 Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,Japan,32,26
 Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,United States,23,10
@@ -4101,66 +2676,8 @@ Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,Hong Kong,1,1
 Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,Netherlands,1,1
 Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,Singapore,1,1
 Tomokazu Matsuyama · Morning Sun Dance · 2025 Q3,United Kingdom,1,1
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,United States,41,19
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Japan,24,23
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Hong Kong,5,5
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,South Korea,3,3
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Singapore,2,2
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Canada,1,1
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Denmark,1,1
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,France,1,1
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Luxembourg,1,1
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,Taiwan,1,1
-Tomokazu Matsuyama · Perfect All Alone Ironic · 2023 Q4,United Kingdom,1,1
-Tomás Sánchez · En el paisaje interior · 2022 Q1,Singapore,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,United States,337,319
-Tomás Sánchez · Inner Love · 2024 Q1,United Kingdom,93,89
-Tomás Sánchez · Inner Love · 2024 Q1,Australia,25,25
-Tomás Sánchez · Inner Love · 2024 Q1,Netherlands,24,24
-Tomás Sánchez · Inner Love · 2024 Q1,Canada,18,17
-Tomás Sánchez · Inner Love · 2024 Q1,France,17,16
-Tomás Sánchez · Inner Love · 2024 Q1,Germany,13,13
-Tomás Sánchez · Inner Love · 2024 Q1,Spain,13,13
-Tomás Sánchez · Inner Love · 2024 Q1,Mexico,11,11
-Tomás Sánchez · Inner Love · 2024 Q1,Costa Rica,10,7
-Tomás Sánchez · Inner Love · 2024 Q1,Singapore,7,7
-Tomás Sánchez · Inner Love · 2024 Q1,Thailand,7,7
-Tomás Sánchez · Inner Love · 2024 Q1,Hong Kong,6,6
-Tomás Sánchez · Inner Love · 2024 Q1,United Arab Emirates,6,6
-Tomás Sánchez · Inner Love · 2024 Q1,Belgium,5,5
-Tomás Sánchez · Inner Love · 2024 Q1,South Africa,4,4
-Tomás Sánchez · Inner Love · 2024 Q1,South Korea,4,4
-Tomás Sánchez · Inner Love · 2024 Q1,Sweden,4,4
-Tomás Sánchez · Inner Love · 2024 Q1,Switzerland,4,4
-Tomás Sánchez · Inner Love · 2024 Q1,Italy,3,3
-Tomás Sánchez · Inner Love · 2024 Q1,Japan,3,3
-Tomás Sánchez · Inner Love · 2024 Q1,Finland,2,2
-Tomás Sánchez · Inner Love · 2024 Q1,Malaysia,2,2
-Tomás Sánchez · Inner Love · 2024 Q1,New Zealand,2,2
-Tomás Sánchez · Inner Love · 2024 Q1,Norway,2,2
-Tomás Sánchez · Inner Love · 2024 Q1,Taiwan,2,2
-Tomás Sánchez · Inner Love · 2024 Q1,Argentina,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Armenia,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Brazil,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Chile,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,China,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Colombia,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Denmark,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Ireland,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Lithuania,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Peru,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Portugal,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Saudi Arabia,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Slovenia,1,1
-Tomás Sánchez · Inner Love · 2024 Q1,Vietnam,1,1
-Tomás Sánchez · Meditador en la orilla (Hand-finished) · 2020 Q4,Germany,1,1
-Tomás Sánchez · Meditador en la orilla · 2020 Q3,Netherlands,1,1
-Tomás Sánchez · Meditador en la orilla · 2020 Q3,United States,1,1
-Tomás Sánchez · Multiple · 2021 Q1,United States,6,6
-Tomás Sánchez · Multiple · 2021 Q1,United Kingdom,2,2
-Tomás Sánchez · Multiple · 2021 Q1,Costa Rica,1,1
-Tomás Sánchez · Multiple · 2021 Q1,Gibraltar,1,1
-Tomás Sánchez · Multiple · 2021 Q1,Singapore,1,1
+Tomás Sánchez · Inner Love · 2024 Q1,Spain,1,1
+Tomás Sánchez · Inner Love · 2024 Q1,United Kingdom,1,1
 Tomás Sánchez · Multiple · 2025 Q1,United States,457,339
 Tomás Sánchez · Multiple · 2025 Q1,United Kingdom,89,66
 Tomás Sánchez · Multiple · 2025 Q1,France,32,22
@@ -4235,15 +2752,11 @@ Tomás Sánchez · Multiple · 2026 Q1,Romania,1,1
 Tomás Sánchez · Multiple · 2026 Q1,Saudi Arabia,1,1
 Tomás Sánchez · Multiple · 2026 Q1,Sweden,1,1
 Tomás Sánchez · Multiple · 2026 Q1,Taiwan,1,1
-Tomás Sánchez · Sonido de aguas en la noche · 2022 Q1,United States,2,2
 Tomás Sánchez · Sonido de aguas en la noche · 2022 Q1,Portugal,1,1
-Trudy Benson · Red Sky · 2019 Q4,United States,3,3
 Trudy Benson · Red Sky · 2019 Q4,Hong Kong,1,1
 Trudy Benson · Red Sky · 2019 Q4,Japan,1,1
-Trudy Benson · Red Sky · 2019 Q4,Sweden,1,1
-Tschabalala Self · Multiple · 2023 Q3,United States,8,8
-Tschabalala Self · Multiple · 2023 Q3,United Kingdom,3,2
-Tschabalala Self · Multiple · 2023 Q3,Netherlands,1,1
+Tschabalala Self · Multiple · 2023 Q3,United States,4,4
+Tschabalala Self · Multiple · 2023 Q3,United Kingdom,2,1
 Tschabalala Self · Multiple · 2023 Q3,Spain,1,1
 Tschabalala Self · Multiple · 2026 Q3,United States,73,71
 Tschabalala Self · Multiple · 2026 Q3,United Kingdom,10,10
@@ -4259,7 +2772,6 @@ Tschabalala Self · Multiple · 2026 Q3,South Africa,1,1
 Tschabalala Self · Multiple · 2026 Q3,Spain,1,1
 Tschabalala Self · Seated Bronze · 2022 Q4,United States,1,1
 Tunji Adeniyi-Jones · Violet Dance (Hand-finished) · 2021 Q4,United Kingdom,1,1
-Tunji Adeniyi-Jones · Violet Dance (Hand-finished) · 2021 Q4,United States,1,1
 Urs Fischer · Multiple · 2026 Q2,United States,59,54
 Urs Fischer · Multiple · 2026 Q2,Italy,10,10
 Urs Fischer · Multiple · 2026 Q2,Switzerland,9,9
@@ -4275,27 +2787,9 @@ Urs Fischer · Multiple · 2026 Q2,Austria,1,1
 Urs Fischer · Multiple · 2026 Q2,Israel,1,1
 Urs Fischer · Multiple · 2026 Q2,Japan,1,1
 Urs Fischer · Multiple · 2026 Q2,Netherlands,1,1
-Vhils · Multiple · 2024 Q3,Portugal,164,163
-Vhils · Multiple · 2024 Q3,France,19,19
-Vhils · Multiple · 2024 Q3,United States,16,16
-Vhils · Multiple · 2024 Q3,United Kingdom,12,12
-Vhils · Multiple · 2024 Q3,Germany,8,8
-Vhils · Multiple · 2024 Q3,Luxembourg,6,6
-Vhils · Multiple · 2024 Q3,Italy,4,4
-Vhils · Multiple · 2024 Q3,Switzerland,3,3
-Vhils · Multiple · 2024 Q3,Belgium,2,2
-Vhils · Multiple · 2024 Q3,Hong Kong,2,2
-Vhils · Multiple · 2024 Q3,Japan,2,2
-Vhils · Multiple · 2024 Q3,Netherlands,2,2
-Vhils · Multiple · 2024 Q3,Spain,2,2
-Vhils · Multiple · 2024 Q3,United Arab Emirates,2,2
-Vhils · Multiple · 2024 Q3,Australia,1,1
-Vhils · Multiple · 2024 Q3,Canada,1,1
-Vhils · Multiple · 2024 Q3,Ireland,1,1
-Vhils · Multiple · 2024 Q3,Mexico,1,1
 Wang Yan Cheng · Between Two Poles · 2020 Q4,Hong Kong,1,1
 Wang Yan Cheng · Between Two Poles · 2020 Q4,United States,1,1
-"Wang Zhibo · 15℃, Nationalistic Optimism by the Sea · 2024 Q3",United States,3,3
+"Wang Zhibo · 15℃, Nationalistic Optimism by the Sea · 2024 Q3",United States,1,1
 Will Cotton · The Cowgirl · 2025 Q1,United States,69,69
 Will Cotton · The Cowgirl · 2025 Q1,United Kingdom,15,15
 Will Cotton · The Cowgirl · 2025 Q1,Switzerland,6,6
@@ -4312,24 +2806,6 @@ William Blake · Multiple · 2025 Q4,United Kingdom,4,4
 William Blake · Multiple · 2025 Q4,New Zealand,3,1
 William Blake · Multiple · 2025 Q4,United States,2,2
 William Blake · Multiple · 2025 Q4,Mexico,1,1
-William Mapan · Centrifuge · 2024 Q1,United States,22,22
-William Mapan · Centrifuge · 2024 Q1,United Kingdom,5,5
-William Mapan · Centrifuge · 2024 Q1,Hong Kong,2,2
-William Mapan · Centrifuge · 2024 Q1,Canada,1,1
-William Mapan · Centrifuge · 2024 Q1,Malaysia,1,1
-William Mapan · Centrifuge · 2024 Q1,Poland,1,1
-William Mapan · Centrifuge · 2024 Q1,South Korea,1,1
-William Mapan · Centrifuge · 2024 Q1,Spain,1,1
-William Mapan · Centrifuge · 2024 Q1,Sweden,1,1
-Woo Kuk Won · Multiple · 2024 Q4,South Korea,60,46
-Woo Kuk Won · Multiple · 2024 Q4,United States,14,13
-Woo Kuk Won · Multiple · 2024 Q4,United Kingdom,6,5
-Woo Kuk Won · Multiple · 2024 Q4,Japan,2,2
-Woo Kuk Won · Multiple · 2024 Q4,United Arab Emirates,2,2
-Woo Kuk Won · Multiple · 2024 Q4,Canada,1,1
-Woo Kuk Won · Multiple · 2024 Q4,Hong Kong,1,1
-Woo Kuk Won · Multiple · 2024 Q4,Netherlands,1,1
-Woo Kuk Won · Multiple · 2024 Q4,Singapore,1,1
 Woo Kuk Won · Multiple · 2025 Q3,South Korea,137,95
 Woo Kuk Won · Multiple · 2025 Q3,United States,25,19
 Woo Kuk Won · Multiple · 2025 Q3,United Kingdom,6,5
@@ -4341,14 +2817,16 @@ Woo Kuk Won · Multiple · 2025 Q3,Poland,1,1
 Woo Kuk Won · Multiple · 2025 Q3,Portugal,1,1
 Woo Kuk Won · Multiple · 2025 Q3,Singapore,1,1
 Woo Kuk Won · Multiple · 2025 Q3,Taiwan,1,1
-Woo Kuk Won · Multiple · 2026 Q4,South Korea,41,29
-Woo Kuk Won · Multiple · 2026 Q4,United States,6,6
+Woo Kuk Won · Multiple · 2026 Q4,South Korea,67,53
+Woo Kuk Won · Multiple · 2026 Q4,United States,7,7
 Woo Kuk Won · Multiple · 2026 Q4,Hong Kong,3,3
-Woo Kuk Won · Multiple · 2026 Q4,Japan,2,1
+Woo Kuk Won · Multiple · 2026 Q4,Japan,3,2
 Woo Kuk Won · Multiple · 2026 Q4,Netherlands,2,1
+Woo Kuk Won · Multiple · 2026 Q4,Canada,1,1
+Woo Kuk Won · Multiple · 2026 Q4,Italy,1,1
 Woo Kuk Won · Multiple · 2026 Q4,Switzerland,1,1
 Woo Kuk Won · Multiple · 2026 Q4,Taiwan,1,1
-Yoon Hyup · Ambre Roulette · 2026 Q3,United States,83,83
+Yoon Hyup · Ambre Roulette · 2026 Q3,United States,82,82
 Yoon Hyup · Ambre Roulette · 2026 Q3,South Korea,39,39
 Yoon Hyup · Ambre Roulette · 2026 Q3,United Kingdom,21,21
 Yoon Hyup · Ambre Roulette · 2026 Q3,Japan,7,7
@@ -4372,54 +2850,6 @@ Yoon Hyup · Ambre Roulette · 2026 Q3,Mexico,1,1
 Yoon Hyup · Ambre Roulette · 2026 Q3,New Zealand,1,1
 Yoon Hyup · Ambre Roulette · 2026 Q3,Saudi Arabia,1,1
 Yoon Hyup · Ambre Roulette · 2026 Q3,Spain,1,1
-Yoon Hyup · City Fountain · 2024 Q3,United States,72,72
-Yoon Hyup · City Fountain · 2024 Q3,South Korea,48,48
-Yoon Hyup · City Fountain · 2024 Q3,United Kingdom,27,27
-Yoon Hyup · City Fountain · 2024 Q3,Japan,12,12
-Yoon Hyup · City Fountain · 2024 Q3,Singapore,7,7
-Yoon Hyup · City Fountain · 2024 Q3,Australia,4,4
-Yoon Hyup · City Fountain · 2024 Q3,Germany,3,3
-Yoon Hyup · City Fountain · 2024 Q3,Hong Kong,3,3
-Yoon Hyup · City Fountain · 2024 Q3,Netherlands,3,3
-Yoon Hyup · City Fountain · 2024 Q3,Thailand,3,3
-Yoon Hyup · City Fountain · 2024 Q3,United Arab Emirates,3,3
-Yoon Hyup · City Fountain · 2024 Q3,France,2,2
-Yoon Hyup · City Fountain · 2024 Q3,Italy,2,2
-Yoon Hyup · City Fountain · 2024 Q3,Malaysia,2,2
-Yoon Hyup · City Fountain · 2024 Q3,Switzerland,2,2
-Yoon Hyup · City Fountain · 2024 Q3,Austria,1,1
-Yoon Hyup · City Fountain · 2024 Q3,Gibraltar,1,1
-Yoon Hyup · City Fountain · 2024 Q3,Ireland,1,1
-Yoon Hyup · City Fountain · 2024 Q3,Macao,1,1
-Yoon Hyup · City Fountain · 2024 Q3,Mexico,1,1
-Yoon Hyup · City Fountain · 2024 Q3,New Zealand,1,1
-Yoon Hyup · City Fountain · 2024 Q3,Portugal,1,1
-Yoon Hyup · City Fountain · 2024 Q3,Taiwan,1,1
-Yoon Hyup · In The City · 2023 Q4,United States,87,87
-Yoon Hyup · In The City · 2023 Q4,South Korea,35,35
-Yoon Hyup · In The City · 2023 Q4,United Kingdom,26,26
-Yoon Hyup · In The City · 2023 Q4,Canada,9,9
-Yoon Hyup · In The City · 2023 Q4,Japan,9,9
-Yoon Hyup · In The City · 2023 Q4,France,8,8
-Yoon Hyup · In The City · 2023 Q4,Netherlands,3,3
-Yoon Hyup · In The City · 2023 Q4,Thailand,3,3
-Yoon Hyup · In The City · 2023 Q4,United Arab Emirates,3,2
-Yoon Hyup · In The City · 2023 Q4,Australia,2,2
-Yoon Hyup · In The City · 2023 Q4,Germany,2,2
-Yoon Hyup · In The City · 2023 Q4,Greece,2,2
-Yoon Hyup · In The City · 2023 Q4,Hong Kong,2,2
-Yoon Hyup · In The City · 2023 Q4,Singapore,2,2
-Yoon Hyup · In The City · 2023 Q4,Switzerland,2,2
-Yoon Hyup · In The City · 2023 Q4,Belgium,1,1
-Yoon Hyup · In The City · 2023 Q4,Gibraltar,1,1
-Yoon Hyup · In The City · 2023 Q4,Ireland,1,1
-Yoon Hyup · In The City · 2023 Q4,Italy,1,1
-Yoon Hyup · In The City · 2023 Q4,Luxembourg,1,1
-Yoon Hyup · In The City · 2023 Q4,New Zealand,1,1
-Yoon Hyup · In The City · 2023 Q4,Norway,1,1
-Yoon Hyup · In The City · 2023 Q4,Spain,1,1
-Yoon Hyup · Night in Paris - Golden Light AP · 2022 Q4,South Korea,2,2
-Yoon Hyup · Night in Paris - Golden Light AP · 2022 Q4,United Kingdom,1,1
 Yoon Hyup · Summer in San Sebastian · 2025 Q3,United States,74,74
 Yoon Hyup · Summer in San Sebastian · 2025 Q3,South Korea,42,42
 Yoon Hyup · Summer in San Sebastian · 2025 Q3,United Kingdom,33,33
@@ -4442,48 +2872,6 @@ Yoon Hyup · Summer in San Sebastian · 2025 Q3,Philippines,1,1
 Yoon Hyup · Summer in San Sebastian · 2025 Q3,Portugal,1,1
 Yoon Hyup · Summer in San Sebastian · 2025 Q3,Singapore,1,1
 Yoon Hyup · Summer in San Sebastian · 2025 Q3,Thailand,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,Japan,216,205
-Yu Nagaba · Fishbowl · 2023 Q1,United States,47,45
-Yu Nagaba · Fishbowl · 2023 Q1,Hong Kong,19,18
-Yu Nagaba · Fishbowl · 2023 Q1,Taiwan,19,14
-Yu Nagaba · Fishbowl · 2023 Q1,United Kingdom,16,15
-Yu Nagaba · Fishbowl · 2023 Q1,Netherlands,10,10
-Yu Nagaba · Fishbowl · 2023 Q1,Singapore,10,10
-Yu Nagaba · Fishbowl · 2023 Q1,France,8,5
-Yu Nagaba · Fishbowl · 2023 Q1,Germany,7,7
-Yu Nagaba · Fishbowl · 2023 Q1,Italy,5,4
-Yu Nagaba · Fishbowl · 2023 Q1,Switzerland,4,4
-Yu Nagaba · Fishbowl · 2023 Q1,Canada,3,3
-Yu Nagaba · Fishbowl · 2023 Q1,China,3,3
-Yu Nagaba · Fishbowl · 2023 Q1,Australia,2,2
-Yu Nagaba · Fishbowl · 2023 Q1,Malaysia,2,2
-Yu Nagaba · Fishbowl · 2023 Q1,Sweden,2,2
-Yu Nagaba · Fishbowl · 2023 Q1,Czech Republic,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,Denmark,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,Macao,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,Norway,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,South Africa,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,South Korea,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,Spain,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,Thailand,1,1
-Yu Nagaba · Fishbowl · 2023 Q1,United Arab Emirates,1,1
-Yuichi Hirako · Green Master / Bloom AP · 2022 Q3,United Kingdom,1,1
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,United States,13,13
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Japan,9,9
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,United Kingdom,6,6
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Singapore,5,5
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Australia,2,2
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,France,2,2
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Germany,2,2
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Netherlands,2,2
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,South Korea,2,2
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,United Arab Emirates,2,2
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Aruba,1,1
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Hong Kong,1,1
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Norway,1,1
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Slovakia,1,1
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Switzerland,1,1
-Yutaka Hashimoto · Study_for_Null_Portrait of someone#166 · 2024 Q1,Taiwan,1,1
 Zeng Fanzhi · Multiple · 2026 Q3,Hong Kong,16,14
 Zeng Fanzhi · Multiple · 2026 Q3,United States,14,12
 Zeng Fanzhi · Multiple · 2026 Q3,United Kingdom,7,6
@@ -4529,8 +2917,5 @@ Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,Portugal,1,1
 Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,Sweden,1,1
 Zeng Fanzhi · Rainbow (Mask Series 1997 no.8) · 2026 Q3,Taiwan,1,1
 Zhang Huan · Amitabha · 2021 Q3,Switzerland,1,1
-Zhang Ruyi · Forced Separation · 2024 Q3,United States,3,3
-Zhang Ruyi · Forced Separation · 2024 Q3,Australia,1,1
-Zhang Ruyi · Forced Separation · 2024 Q3,Germany,1,1
 Zhang Ruyi · Forced Separation · 2024 Q3,Netherlands,1,1
-Zhang Ruyi · Forced Separation · 2024 Q3,United Kingdom,1,1
+Zhang Ruyi · Forced Separation · 2024 Q3,United States,1,1
