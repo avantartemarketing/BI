@@ -221,7 +221,7 @@ export default function PaidRoi({ snap }) {
       <div ref={ref} style={{ position: "relative", marginTop: "auto" }}>
         <SpendBars W={boxW} bars={[...pts.filter((p) => p.spend > 0).map((p) => ({ i: p.s, v: p.spend, partial: p.partial })), ...aheadBars]} n={n} top={spendTop} />
         <div style={{ position: "relative" }}>
-          <LineChart H={H} L={L} R={R} T={T} B={B} n={n} ymax={ax.ymax} yticks={ax.ticks} yfmt={(t) => (roiOk ? `${tick(t)}×` : `€${tick(t)}`)} xticks={stepTicks(snap, of)}
+          <LineChart H={H} L={L} R={R} T={T} B={B} n={n} ymax={ax.ymax} yticks={ax.ticks} yfmt={(t) => (roiOk ? tick(t) : `€${tick(t)}`)} xticks={stepTicks(snap, of)}
             marks={complete ? [] : [today]} noLegend
             series={[
               ...(has(P.target) && roiOk ? [{ name: "Target", color: COL.DARK, w: 1.5, da: "4 4", vals: Array.from({ length: n }, () => P.target) }] : []),
@@ -233,9 +233,9 @@ export default function PaidRoi({ snap }) {
             rows={(i) => {
               const p = byStep.get(i);
               const out = [];
-              if (has(lineVals[i])) out.push({ n: roiOk ? `${P.label} ROI (${winLabel})` : `€ per ${unitWord} (${winLabel})`, v: roiOk ? `${fmt(lineVals[i], 2)}×` : fmtMoney(lineVals[i], 2), k: lk(COL.IND) });
-              else if (has(projVals[i])) out.push({ n: "ROI ahead", v: `${fmt(projVals[i], 2)}×`, k: lk(COL.IND, "dashed") });
-              if (has(P.target) && roiOk) out.push({ n: "Target", v: `${fmt(P.target, 2)}×`, k: lk(COL.DARK, "dashed") });
+              if (has(lineVals[i])) out.push({ n: roiOk ? `${P.label} ROI (${winLabel})` : `€ per ${unitWord} (${winLabel})`, v: roiOk ? fmt(lineVals[i], 2) : fmtMoney(lineVals[i], 2), k: lk(COL.IND) });
+              else if (has(projVals[i])) out.push({ n: "ROI ahead", v: fmt(projVals[i], 2), k: lk(COL.IND, "dashed") });
+              if (has(P.target) && roiOk) out.push({ n: "Target", v: fmt(P.target, 2), k: lk(COL.DARK, "dashed") });
               if (p) out.push({ n: "Spend", v: fmtMoney(p.spend, 0), k: sw(COL.TRACK) });
               else if (i > today && schedByStep.has(i)) out.push({ n: "Spend ahead", v: schedByStep.get(i) > 0 ? fmtMoney(schedByStep.get(i), 0) : "nothing: paid stops", k: aheadKey });
               if (p && has(p.entries)) out.push({ n: tl ? `Paid ${V.unit}` : "Entries", v: fmt(p.entries), k: { width: 8, flex: "0 0 8px" } });
