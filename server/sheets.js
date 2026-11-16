@@ -310,7 +310,7 @@ async function runEtlOnce(release) {
   }
   const build = await runPy("build.py", 5 * 60 * 1000);
   lastBuild = parseBuildSummary(build);
-  return [agg, ...build.split("\n").slice(-4)].filter(Boolean).join(" | ");
+  return [agg, ...build.split("\n").slice(-5)].filter(Boolean).join(" | ");
 }
 
 // only one build.py at a time (a save-triggered rerun can race the scheduler)

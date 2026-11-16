@@ -4517,6 +4517,132 @@ def known_codes(emails: pd.DataFrame, content: pd.DataFrame, artist_posts: pd.Da
     return {c for c in out if _CODE_RE.match(c)}
 
 
+def feed_codes(emails: pd.DataFrame | None, content: pd.DataFrame | None, artist_posts: pd.DataFrame | None,
+               spend: pd.DataFrame | None) -> set[str]:
+    """Every campaign code the other feeds carry, as each writes it and
+    whatever its shape: the sends' campaign, the posts' code, and the code a
+    Meta campaign is named for ("<code> · Enter draw"). known_codes keeps the
+    ones shaped Artist_Middle_26, which the guess needs to read an artist and
+    a year off. A code the orders feed names for a release needs no reading,
+    only to be a code these feeds use, and a code is typed: FerrariSh_LE_Repeat26
+    and AiWeiwei_Lego_2026 are not of that shape, and the first launch's page
+    was filed under the artist's January code, the second's under none."""
+    out: set[str] = set()
+    for col, frame in (("campaign", emails), ("campaign_code", content), ("campaign_code", artist_posts)):
+        if frame is not None and col in frame.columns:
+            out.update(str(v).strip() for v in frame[col].dropna().unique())
+    if spend is not None and "campaign_name" in spend.columns:
+        out.update(str(n).split(" · ")[0].strip() for n in spend["campaign_name"].dropna().unique() if " · " in str(n))
+    return {c for c in out if c}
+
+
+# the pages this build filed under another code than the one they came with (a saved one, or a guess), for its
+# closing lines: (id, the code set aside or None, the code in force or None, why)
+CODE_MOVES: list[tuple] = []
+
+
+def _code_owners(orders: dict[str, list[str]]) -> dict[str, set]:
+    """Which releases the orders feed gives each code to, by the code's
+    normalised spelling."""
+    out: dict[str, set] = {}
+    for rel, cs in orders.items():
+        for c in set(cs):
+            out.setdefault(_norm(c), set()).add(rel)
+    return out
+
+
+def _quarter_of(name: str) -> tuple[int, int] | None:
+    """The quarter a release's name ends in ("... · 2026 Q4"), as (2026, 4)."""
+    m = _QUARTER_RE.match(str(name).split(" · ")[-1].strip())
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _earlier_launch(code: str, name: str, opens, owners: dict[str, set], closes: dict[str, object]) -> str | None:
+    """The release a code belongs to instead of `name`: the one release the
+    orders feed gives it to, when that release's launch closed before this
+    one opened. An artist's last launch, in short: two releases sold together
+    under one code are both still open, and are left alone. A release with no
+    close on file (no campaign clock: Maurizio Cattelan's Window of 2026 Q1)
+    is read by the quarter its name ends in instead."""
+    own = owners.get(_norm(code)) or set()
+    if len(own) != 1 or name in own:
+        return None
+    (other,) = own
+    theirs = closes.get(other)
+    if theirs:
+        return other if opens and str(theirs)[:10] < str(opens)[:10] else None
+    qa, qb = _quarter_of(other), _quarter_of(name)
+    return other if qa and qb and qa < qb else None
+
+
+def settle_configured_codes(releases: list[dict], discovered: list[dict], raw: set[str],
+                            orders: dict[str, list[str]] | None = None) -> list[tuple]:
+    """A configured draw release's campaign code where what is saved cannot be
+    right (docs 11b). Saved inputs start from the page's code on the day
+    targets were first set (server/index.js defaultsFor), a guess included,
+    and the tab has no field to retype a code a release already carries. The
+    orders feed names the campaign each release's own order lines were sold
+    under, so it settles two cases:
+
+    - nothing is saved (no code, no campaign ticked): the orders' code;
+    - the saved code is one the orders feed gives one other release alone,
+      whose launch closed before this one opened (the artist's last launch:
+      Ferrari Sheppard's All Blues, saved under January's FerrariSh_LE_26
+      while its sends, its orders and its Meta campaign ran as
+      FerrariSh_LE_Repeat26): the orders' code in its place.
+
+    Only when the orders give this release exactly one code, no other release
+    and no other configured release carries it, and the feeds use it (taken in
+    the feeds' spelling). The saved campaigns named for the code set aside go
+    with it, so resolve_release matches the draw campaign named for the code in
+    force. The saved file is not changed: the release's entry is, for this
+    build. Returns (id, the code set aside or None, the code in force) for each."""
+    orders = orders_codes() if orders is None else orders
+    owners = _code_owners(orders)
+    spelt: dict[str, set] = {}
+    for c in raw:
+        spelt.setdefault(_norm(c), set()).add(c)
+
+    def in_feeds(cand: str) -> str | None:
+        if cand in raw:
+            return cand
+        got = spelt.get(_norm(cand)) or set()
+        return next(iter(got)) if len(got) == 1 else None
+
+    seen = {r["release_name"]: r for r in discovered}
+    closes = {n: r.get("launch_end") for n, r in seen.items()}
+    closes.update({r["release_name"]: r.get("launch_end") for r in releases if r.get("launch_end")})
+
+    def in_force(r: dict) -> str:
+        names = [str(n).strip() for n in (r.get("campaign_names") or []) if str(n).strip()] or ([str(r["campaign_name"]).strip()] if r.get("campaign_name") else [])
+        return str(r.get("campaign_code") or "").strip() or (names[0].split(" · ")[0].strip() if names else "")
+    carried = collections.Counter(_norm(in_force(r)) for r in releases if in_force(r))
+    out = []
+    for r in releases:
+        if r.get("type") == "TL":
+            continue
+        name, have = r["release_name"], in_force(r)
+        mine = orders.get(name) or []
+        if len(mine) != 1 or owners.get(_norm(mine[0])) != {name} or _norm(mine[0]) == _norm(have):
+            continue
+        code = in_feeds(mine[0])
+        if not code or carried.get(_norm(code)):
+            continue
+        clock = seen.get(name) or {}
+        opens = r.get("announce_date") or clock.get("announce_date") or r.get("launch_end") or clock.get("launch_end")
+        if have and not _earlier_launch(have, name, opens, owners, closes):
+            continue
+        kept = [n for n in (r.get("campaign_names") or []) if not (have and str(n).strip().startswith(f"{have} · "))]
+        r["campaign_code"], r["campaign_names"] = code, kept
+        if r.get("campaign_name") and have and str(r["campaign_name"]).strip().startswith(f"{have} · "):
+            r["campaign_name"] = None
+        r["code_moved"] = {"from": have or None, "to": code}
+        print(f"{r['id']}: campaign code {code} from its orders" + (f", in place of the saved {have} (the orders feed gives that to "
+              f"{next(iter(owners[_norm(have)]))!r}, which closed before this launch opened)" if have else " (none was saved)"))
+        out.append((r["id"], have or None, code))
+    return out
+
+
 def code_activity(spend: pd.DataFrame | None, emails: pd.DataFrame | None) -> dict[str, tuple[date, date]]:
     """When each campaign code was active: the first and last day it spent on
     Meta or sent an email. A launch the funnel has not seen yet is matched to
@@ -4606,7 +4732,8 @@ def orders_codes() -> dict[str, list[str]]:
 
 
 def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd.DataFrame | None,
-                          spend: pd.DataFrame | None, orders: dict[str, list[str]] | None = None) -> list[tuple]:
+                          spend: pd.DataFrame | None, orders: dict[str, list[str]] | None = None,
+                          raw: set[str] | None = None) -> list[tuple]:
     """Each funnel release's campaign code from its own feeds, before the
     guess (docs 11b): the code the orders feed gives it, else the release
     code of the Airtable launch it matched, taken when exactly one code the
@@ -4624,11 +4751,20 @@ def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd
     names another code than the sourced one is kept and said: one release can
     be tagged two ways (Eddie Martinez's Scaffold, EDDIE_SCAFFOLD_24 on its
     sends and EddieMart_Scaffold_24 on its orders and Meta), and the guess is
-    the one joining sends today. Sets campaign_code and code_source
+    the one joining sends today. Not so a guess the orders feed gives one
+    other release alone, whose launch closed before this one opened: that
+    is the artist's last launch's code (guess_code takes the artist's lone LE
+    code of the year for a release titled Multiple), and it is dropped, for
+    the orders' own code when there is one and for none otherwise, since a
+    wrong code reads another campaign's sends and spend onto the page.
+
+    `raw` is every code the feeds carry whatever its shape (feed_codes): a
+    code the orders or Airtable name is taken when the feeds use it, shaped
+    Artist_Middle_26 or not. Sets campaign_code and code_source
     ('orders', 'airtable', 'guess' or None) on every record; returns
     (id, code, source) for each code it set."""
     orders = orders_codes() if orders is None else orders
-    feed = {c for c in codes if _CODE_RE.match(str(c))}
+    feed = {c for c in codes if _CODE_RE.match(str(c))} | set(raw or ())
     if spend is not None and "campaign_name" in spend.columns:
         feed |= {p for p in (str(n).split(" · ")[0].strip() for n in spend["campaign_name"].dropna()) if _CODE_RE.match(p)}
     spelt: dict[str, set] = {}
@@ -4654,6 +4790,8 @@ def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd
     users = {"orders": collections.Counter(_norm(c) for cs in orders.values() for c in set(cs)),
              "airtable": collections.Counter(_norm(c) for cs in at.values() for c in set(cs))}
     configured = {_norm(r["campaign_code"]): r["release_name"] for r in INPUTS["releases"] if r.get("campaign_code")}
+    owners = _code_owners(orders)
+    closes = {r["release_name"]: r.get("launch_end") for r in records}
 
     def pick(name: str, cands: list[str]) -> str | None:
         # a group show's code, whichever feed proposes it: shared on the
@@ -4674,6 +4812,13 @@ def source_campaign_codes(records: list[dict], codes: set[str], launch_frame: pd
             code, src = pick(name, orders[name]), "orders"
         if code is None and at.get(name):
             code, src = pick(name, at[name]), "airtable"
+        other = _earlier_launch(guess, name, r.get("announce_date") or r.get("launch_end"), owners, closes) if guess else None
+        if other and _norm(guess) != _norm(code or ""):
+            print(f"{r['id']}: campaign code {guess} (guessed) dropped - the orders feed gives it to {other!r}, which closed "
+                  f"before this launch opened" + (f"; its own {src} give {code}" if code else ""))
+            if not any(m[0] == r["id"] for m in CODE_MOVES):      # a configured release's twin is already listed, as saved
+                CODE_MOVES.append((r["id"], guess, code, "a guess that was an earlier launch's code"))
+            r["campaign_code"] = guess = None
         if code is None:
             r["code_source"] = "guess" if guess else None
             continue
@@ -5234,7 +5379,8 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
         r["campaign_code"] = names[0].split(" · ")[0].strip() or None
         sources["campaign_code"] = "campaigns"
     else:
-        sources["campaign_code"] = "typed" if code else None
+        # a code the build took from the release's orders in place of what was saved (settle_configured_codes)
+        sources["campaign_code"] = "orders" if (code and r.get("code_moved")) else "typed" if code else None
     r["input_sources"] = sources
     return r
 
@@ -8855,8 +9001,21 @@ def main(only: str | None = None):
     # each release's campaign code from its orders or its Airtable launch
     # before the guess discover_releases made (docs 11b), and before the
     # upcoming launches are guessed from the codes nobody carries
+    # a configured release's code first, where what is saved cannot be right (settle_configured_codes): before
+    # the discovered pages take theirs, so the code a release is moved off is free for the launch it belongs to.
+    # The inputs as saved are kept for the tab's document (inputs.json), which shows what is saved
+    as_saved = {r["id"]: {k: (list(r[k]) if isinstance(r[k], list) else r[k]) for k in ("campaign_code", "campaign_names", "campaign_name") if k in r}
+                for r in INPUTS["releases"]}
+    CODE_MOVES.clear()
     try:
-        got = source_campaign_codes(discovered, known_codes(emails, content, artist_posts), launch_frame, spend)
+        raw_codes = feed_codes(emails, content, artist_posts, spend)
+        CODE_MOVES.extend((rid, old, new, "the saved code was an earlier launch's" if old else "none was saved")
+                          for rid, old, new in settle_configured_codes(INPUTS["releases"], discovered, raw_codes))
+    except Exception as e:  # noqa: BLE001 - the saved codes stand; the refresh goes on
+        raw_codes = set()
+        print(f"warning: the saved campaign codes could not be checked against the orders ({e}) - they stand")
+    try:
+        got = source_campaign_codes(discovered, known_codes(emails, content, artist_posts), launch_frame, spend, raw=raw_codes)
     except Exception as e:  # noqa: BLE001 - the guesses stand; the refresh goes on
         got = []
         print(f"warning: campaign codes from the orders and Airtable failed ({e}) - the guesses stand")
@@ -8878,7 +9037,11 @@ def main(only: str | None = None):
     # the inputs in force for every configured release: Airtable's products,
     # the Notion dates, the typed figures, the funnel's clock (resolve_release)
     notion = load_notion_campaigns()
-    raw_inputs = [dict(r) for r in INPUTS["releases"]]
+    # ... as saved: a release moved to its orders' code above goes into the tab's document with what is on file
+    code_keys = ("campaign_code", "campaign_names", "campaign_name")
+    raw_inputs = [dict(r) if not r.get("code_moved") else
+                  {k: as_saved[r["id"]].get(k, v) for k, v in r.items() if k != "code_moved" and (k not in code_keys or k in as_saved[r["id"]])}
+                  for r in INPUTS["releases"]]
     resolve_inputs(discovered, spend, notion)
     mark("inputs")
     posts_bench = artist_posts_benchmarks(artist_posts, as_of)
@@ -9202,6 +9365,12 @@ def main(only: str | None = None):
         print(f"panel: {len(PANEL_WARNINGS)} warning(s) above - the benchmark panel wants a re-run (README, 'Re-running the benchmark panel')")
     if SNAPSHOT_WARNINGS:
         print(f"check_snapshot: {len(SNAPSHOT_WARNINGS)} warning(s) from the soft checks (nothing stopped)")
+    # the pages filed under another code than the one they came with (settle_configured_codes, source_campaign_codes),
+    # on a line the refresh's log carries
+    if CODE_MOVES:
+        print(f"campaign codes: {len(CODE_MOVES)} page(s) refiled by their orders - "
+              + "; ".join(f"{rid} ({old or 'none'} -> {new or 'none'}, {why})" for rid, old, new, why in CODE_MOVES[:6])
+              + (f"; and {len(CODE_MOVES) - 6} more" if len(CODE_MOVES) > 6 else ""))
     # the launches read off their comms plan as well (variants.plan, docs/PLAN_MODEL.md 6), on a line the
     # refresh's log carries: the page's Targets from switch shows on these and no others
     if plan_view.context() is None:

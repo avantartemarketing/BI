@@ -2841,7 +2841,36 @@ no code while their orders named it (EUR 121,761 of draw spend and 1.38m emails 
 no page, September 2026). A guess that names another code than the orders stays and the build
 says so (Eddie Martinez's Scaffold sends are `EDDIE_SCAFFOLD_24`, its orders and Meta
 `EddieMart_Scaffold_24`), and the build warns of a Meta draw campaign the orders tie to one
-release on file that no page claims (`unclaimed_draw_campaigns`). The name is the export's own
+release on file that no page claims (`unclaimed_draw_campaigns`).
+
+A code is typed, and three things follow (16 November 2026). **Its shape.** Not every code is
+`Artist_Middle_26`: Ferrari Sheppard's All Blues ran as `FerrariSh_LE_Repeat26` and Ai
+Weiwei's toy bricks as `AiWeiwei_Lego_2026`. The guess still reads only the shaped ones, since
+it reads an artist and a year off them, but a code the orders or Airtable name is taken
+whatever its shape when the feeds use it (`feed_codes`: the sends' campaign, the posts' code,
+the code a Meta campaign is named for). **A guess that is the artist's last launch's.** For a
+release titled Multiple the guess takes the artist's lone LE code of the year, which for a
+second launch in the year is the first one's. A guess the orders feed gives one other release
+alone, whose launch closed before this one opened (by its close, or by the quarter in its
+name where it has no campaign clock), is dropped: for the orders' own code when there is one,
+for none otherwise. **A code saved with the targets.** Saved inputs start from the page's
+code on the day targets were first set (`server/index.js defaultsFor`), a guess included, and
+the tab shows no code field once a release carries one. So a configured draw release is
+built under its orders' code (`settle_configured_codes`, `inputSources.campaign_code`
+`orders`) when nothing is saved for it, or when its saved code is an earlier launch's by the
+same test; the saved campaigns named for the code set aside go with it and the draw campaign
+named for the code in force is matched. Only when the orders give the release exactly one
+code, no other release and no other configured release carries it, and the feeds use it. The
+saved file is not changed, and `inputs.json` keeps what is saved. Both were found on one
+page: Ferrari Sheppard's All Blues, saved under January's `FerrariSh_LE_26`, showed no emails
+and no paid spend ten days into its launch while four sends (155,412 delivered) and its draw
+campaign ran under `FerrariSh_LE_Repeat26`; Maurizio Cattelan's closed horse launch read the
+same way (seven sends, EUR 268,669 of draw spend under `MaurizioCatt_HorseLE_26`). Of 377
+pages those two changed. The build's closing lines name every page refiled this way
+(`campaign codes: 2 page(s) refiled by their orders - ...`), and the refresh's log carries
+that line. `python3 tests/test_campaign_codes.py` holds each case.
+
+The name is the export's own
 and the join key, so its quarter stands even where the campaign closes in another; the build
 prints that and keeps it as the release's `dates_note` ("the name says 2027 Q1, but the
 campaign closes 2026-10-15 (2026 Q4)"), for the name to be corrected upstream, and the
