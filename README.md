@@ -607,8 +607,10 @@ Accepting or dismissing a change is kept by `server/planChanges.js` in `plan_cha
 beside the decision log (so on the persistent disk with it; `PLAN_CHANGES_PATH` names another
 place). Nothing is written to Notion or Meta. `node tests/plan_changes_route.mjs` runs the routes.
 
-**Who sees it:** `PLAN_CHANGES_AUDIENCE` is `admins` (the default while the rules are new),
-`everyone` or `off`. The refresh status line's Notion part says how many plan rows it read
+**Who sees it:** `PLAN_CHANGES_AUDIENCE` is `everyone` (the default since 16 November 2026),
+`admins` (the default while the rules were new) or `off`. A value set by hand under
+Environment on Render wins over the default, so one left at `admins` has to be changed or
+removed there. The refresh status line's Notion part says how many plan rows it read
 and how many of them are emails ("plan N rows (M email)"): a plan with no email rows
 means the "Not in the plan" email rule stays quiet, by design.
 

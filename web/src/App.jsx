@@ -84,6 +84,7 @@ export default function App() {
   const [route, setRoute] = useState(readRoute);
   const [snap, setSnap] = useState(null);
   const [snapError, setSnapError] = useState(null);
+  const [actions, setActions] = useState(null);   // the Suggested actions card's { visible, states }, loaded with the page
   const [nav, setNav] = useState(false);
   const [palette, setPalette] = useState(false);
   const [directSpread, setDirectSpreadState] = useState(readDirectPref);
@@ -114,9 +115,21 @@ export default function App() {
 
   const releaseId = route.view === "release" ? route.id : null;
   useEffect(() => {
-    if (!releaseId) return;
-    setSnap(null); setSnapError(null);
-    getJSON(`/api/releases/${releaseId}`).then(setSnap).catch((e) => setSnapError({ message: e.message, pending: !!e.pending }));
+    if (!releaseId) return undefined;
+    setSnap(null); setSnapError(null); setActions(null);
+    // the Suggested actions card's ticks are asked for beside the page and
+    // land with it, so the card is there at the first paint, not a moment
+    // after; a read that fails, or is not back in four seconds, costs the
+    // ticks, never the page
+    let live = true;
+    const acts = Promise.race([
+      fetch(`/api/releases/${releaseId}/plan-changes`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      new Promise((done) => setTimeout(() => done(null), 4000)),
+    ]);
+    Promise.all([getJSON(`/api/releases/${releaseId}`), acts])
+      .then(([s, a]) => { if (live) { setActions(a); setSnap(s); } })
+      .catch((e) => { if (live) setSnapError({ message: e.message, pending: !!e.pending }); });
+    return () => { live = false; };
   }, [releaseId]);
   // a save's rebuild lands whenever it lands: only the page on screen is swapped
   const onScreen = React.useRef(releaseId);
@@ -147,7 +160,7 @@ export default function App() {
         {route.view === "permissions" ? (
           <Permissions me={me} onMenu={() => setNav(true)} />
         ) : route.view === "release" ? (
-          <ReleasePage snap={snap} snapError={snapError} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
+          <ReleasePage snap={snap} snapError={snapError} actions={actions} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
             directSpread={directSpread} setDirectSpread={setDirectSpread} compareTo={compareTo} setCompareTo={setCompareTo} onSaved={onSaved} onRefreshed={onRefreshed} onRefresh={startRefresh} onOpen={pick} onMenu={() => setNav(true)} />
         ) : route.view === "releases" ? (
           <Releases groups={groups} asOf={index && index.asOf} onPick={pick} onMenu={() => setNav(true)} />

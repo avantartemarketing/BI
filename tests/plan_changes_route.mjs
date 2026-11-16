@@ -1,8 +1,9 @@
 /* The Suggested actions card's server side end to end (server/planChanges.js): an
  * admin sees the card and a change they accept, dismiss or undo is kept by
  * release and key with who and when (the name before the @, never the
- * address); a body that is not a change is refused; and while the audience is
- * admins another account is told the card is not theirs and can save nothing.
+ * address); a body that is not a change is refused; while the audience is
+ * admins another account is told the card is not theirs and can save nothing;
+ * and with no audience set the card is everyone's.
  *
  *   node tests/plan_changes_route.mjs
  */
@@ -59,8 +60,8 @@ async function serve(port, extra) {
 
 const url = `/api/releases/${RELEASE}/plan-changes`;
 
-// the default audience: admins. The first listed account is the admin.
-let srv = await serve(10177, {});
+// the audience set to admins. The first listed account is the admin.
+let srv = await serve(10177, { PLAN_CHANGES_AUDIENCE: "admins" });
 const admin = await srv.as("tom.lloyd@avantarte.com");
 const lead = await srv.as("lead@avantarte.com");
 
@@ -103,8 +104,8 @@ check(r.status === 403, `and nothing saved by them: ${r.status}`);
 check(fs.readFileSync(FILE, "utf8") === before, "the file is as it was");
 srv.app.kill();
 
-// opened to everyone
-srv = await serve(10178, { PLAN_CHANGES_AUDIENCE: "everyone" });
+// no audience set: everyone's, the default
+srv = await serve(10178, { PLAN_CHANGES_AUDIENCE: "" });
 const lead2 = await srv.as("lead@avantarte.com");
 r = await lead2.get(url);
 check(r.body.visible === true && r.body.states["artist.post.unseen"], `everyone sees it, with what was saved: ${JSON.stringify(r.body)}`);
@@ -121,5 +122,5 @@ srv.app.kill();
 
 fs.rmSync(tmp, { recursive: true, force: true });
 if (failed) { console.error(`plan changes route: ${failed} failed`); process.exit(1); }
-console.log("plan changes route: ok (accept, dismiss, undo, refusals, admins only by default, everyone, off)");
+console.log("plan changes route: ok (accept, dismiss, undo, refusals, admins only, everyone by default, off)");
 process.exit(0);

@@ -2563,8 +2563,10 @@ ones with no estimate. `key` is stable per rule (`email.last_chance.widen`,
 **Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed, by,
 at}}}` in `plan_changes.json` beside the decision log; `by` is the signed-in address's part
 before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` and the card
-draws nothing unless `visible` (`PLAN_CHANGES_AUDIENCE`: `admins` by default, `everyone`,
-`off`). On a draw launch in flight the card keeps its place when the build has nothing for it
+draws nothing when `visible` is false (`PLAN_CHANGES_AUDIENCE`: `everyone` by default since
+16 November 2026, `admins`, `off`). The page asks for it beside the release's snapshot and
+draws once both have landed (`App.jsx`), so the card is on the page at its first paint; a read
+that fails draws the card with no ticks. On a draw launch in flight the card keeps its place when the build has nothing for it
 (no `planChanges`, or an empty list) and reads "No suggested actions".
 
 **Not in it yet:** AA Social, uneven works, paid creative and audiences, WhatsApp and SMS

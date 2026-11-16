@@ -188,7 +188,7 @@ function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup }) {
   ));
 }
 
-export default function ReleasePage({ snap, snapError, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
+export default function ReleasePage({ snap, snapError, actions, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
   const tab = route.tab || "overview";
   const setTab = (t) => setRoute({ ...route, tab: t, basket: false });
   const [horizon, setHorizon] = useState("today");
@@ -258,7 +258,7 @@ export default function ReleasePage({ snap, snapError, row, asOf, st, route, set
             {lines && <LineChip lines={lines} value={lineKey} onChange={setLineKey} />}
             {showCompare && <CompareSwitch snap={snap} vs={vs} onChange={setCompareTo} />}
           </div>
-          <Overview snap={view} base={snap} vs={vs} lineViews={lineViews} horizon={snap.complete ? "close" : horizon} onSetup={() => setTab("targets")} onOpen={onOpen} />
+          <Overview snap={view} base={snap} actions={actions} vs={vs} lineViews={lineViews} horizon={snap.complete ? "close" : horizon} onSetup={() => setTab("targets")} onOpen={onOpen} />
         </>
       )}
       {tab === "targets" && (isTL
