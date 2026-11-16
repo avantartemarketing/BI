@@ -172,12 +172,30 @@ def load_audiences(path: pathlib.Path | str | None = None) -> pd.DataFrame:
     return df
 
 
+def carries_code(aud: pd.DataFrame, code: str) -> pd.Series:
+    """Which emails are a campaign's: those the code is read off (code_of), and
+    those no code can be read off whose HubSpot campaign or own name spells
+    this one out. A code is typed, and not every one ends in a year a reader
+    can find by its shape (FerrariSh_LE_Repeat26): read by shape alone, that
+    launch's four sends were on no launch. Only a send with no code of its own
+    is taken this way, so one send stays on one campaign."""
+    mine = aud["code"] == code
+    loose = aud["code"].isna()
+    if loose.any():
+        pat = re.compile(r"(?<![A-Za-z0-9])" + re.escape(str(code)) + r"(?![A-Za-z0-9])", re.I)
+        text = aud.loc[loose, "name"].astype(str)
+        if "campaign" in aud.columns:
+            text = text + " | " + aud.loc[loose, "campaign"].astype(str)
+        mine = mine | text.map(lambda s: bool(pat.search(s))).reindex(aud.index, fill_value=False)
+    return mine
+
+
 def marketing_sends(aud: pd.DataFrame, code: str, start, end) -> pd.DataFrame:
     """A campaign's launch emails that went out in a window: the GEN, CUS and
     INS sends to at least MIN_DELIVERED people, surveys and thank-yous left out."""
     if aud is None or aud.empty or not code:
         return pd.DataFrame(columns=list(aud.columns) if aud is not None else [])
-    m = ((aud["code"] == code) & aud["type"].isin(["GEN", "CUS", "INS"]) & (aud["kind"] != "after") & aud["went"]
+    m = (carries_code(aud, code) & aud["type"].isin(["GEN", "CUS", "INS"]) & (aud["kind"] != "after") & aud["went"]
          & (aud["delivered"] >= MIN_DELIVERED) & (aud["day"] >= pd.Timestamp(start)) & (aud["day"] <= pd.Timestamp(end)))
     return aud[m].sort_values("ts").reset_index(drop=True)
 

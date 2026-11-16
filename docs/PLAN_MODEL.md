@@ -310,12 +310,19 @@ shows no switch. The build's closing lines name the launches that have the view 
 live draw launch with targets that has none, why (`plan views: 4 - ...; without one:
 <id> (no plan on file in Notion under <code>)`), and the refresh's log carries that line.
 
-The code is the page's own when the Notion plan has rows under it, else the Notion
-campaign's whose code begins with the artist's name and whose launch day is within four
-days of the page's close (`plan_model.match_campaign_codes`; two campaigns with different
-codes answering is no answer). A code is read off an email's name with its year as two
-digits or in full (`AntonyMic_LE_26`, `AiWeiwei_Lego_2026`); until 16 November 2026 only
-two digits were read, so a launch coded with the full year had its emails on no launch.
+The code is the page's own when the Notion plan has rows under it in the launch's days,
+else the Notion campaign's whose code begins with the artist's name and whose launch day
+is within four days of the page's close (`plan_model.match_campaign_codes`; two campaigns
+with different codes answering is no answer). The page's own code can be a guess, and a
+guess can be the artist's last launch's: Ferrari Sheppard's All Blues ran under
+`FerrariSh_LE_Repeat26` while its page carried `FerrariSh_LE_26`, January's.
+
+A code is read off an email's name with its year as two digits or in full
+(`AntonyMic_LE_26`, `AiWeiwei_Lego_2026`); until 16 November 2026 only two digits were
+read, so a launch coded with the full year had its emails on no launch. A code that ends
+in no year at all (`FerrariSh_LE_Repeat26`) cannot be read by its shape, so a send with no
+code of its own is the campaign's when its name or HubSpot's campaign spells that code out
+(`plan_model.carries_code`). A send with a code of its own stays on that campaign.
 
 **A launch selling lines of work** (docs/LINES_PLAN.md: Ai Weiwei's prints beside his toy
 bricks) is read as one launch, on its combined page: one email and one post reach one
@@ -456,3 +463,7 @@ the view to its combined page.
   page has none, the reason a launch has no view on the build's closing line, and the
   target told apart from the edition (the trajectory's level line, the ceiling, the
   shares on the Sell-through at close card), which that launch was the first to show.
+  The same change gave Ferrari Sheppard's and Harland Miller's launches the view, through
+  their Notion campaigns, and showed a third way a code is written: Ferrari Sheppard's
+  ends in no year, so its four sends were missing from its plan card for one refresh
+  until a send with no code was matched on the code written out.

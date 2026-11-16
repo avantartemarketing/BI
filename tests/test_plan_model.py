@@ -55,6 +55,19 @@ def test_names():
     # a code may carry its year in full
     assert P.code_of("", "271026_CUS_AiWeiwei_Lego_2026 - Early Access (LE)") == "AiWeiwei_Lego_2026"
     assert P.code_of("AiWeiwei_Lego_2026", "anything") == "AiWeiwei_Lego_2026"
+    # ... and a code with no year to find by its shape is on no send by reading: such a send is the campaign's
+    # when its name or HubSpot's campaign spells the code out, and a send with a code of its own stays where it is
+    assert P.code_of("FerrariSh_LE_Repeat26", "061126_CUS_FerrariSh_LE_Repeat26 - Early Access (LE)") is None
+    names = [("061126_CUS_FerrariSh_LE_Repeat26 - Early Access (LE)", "FerrariSh_LE_Repeat26"), ("101126_GEN_FerrariSh_LE_Repeat26 - Announcement (LE)", ""),
+             ("150126_GEN_FerrariSh_LE_26 - Announcement (LE)", "FerrariSh_LE_26"), ("101126_GEN_FerrariSh_LE_Repeat264 - Announcement", ""),
+             ("091126_GEN_FerrariSh_LE_Repeat26 - Microsite", "CindySher_LE_26")]
+    aud = pd.DataFrame([{"name": n, "campaign": c, "code": P.code_of(c, n), "type": P.email_type(n), "kind": P.email_kind(n), "went": True, "delivered": 5000.0,
+                         "day": pd.Timestamp("2026-11-10"), "ts": pd.Timestamp("2026-11-10 14:00") + pd.Timedelta(minutes=i)} for i, (n, c) in enumerate(names)])
+    assert list(P.carries_code(aud, "FerrariSh_LE_Repeat26")) == [True, True, False, False, False]
+    assert list(P.carries_code(aud, "ferrarish_le_repeat26")) == [True, True, False, False, False]      # typed in another case
+    assert list(P.carries_code(aud, "FerrariSh_LE_26")) == [False, False, True, False, False]
+    assert len(P.marketing_sends(aud, "FerrariSh_LE_Repeat26", "2026-11-01", "2026-11-30")) == 2
+    assert len(P.marketing_sends(aud.drop(columns=["campaign"]), "FerrariSh_LE_Repeat26", "2026-11-01", "2026-11-30")) == 2
 
 
 def test_plan_state():

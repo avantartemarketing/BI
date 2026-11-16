@@ -145,6 +145,9 @@ def test_qualifies():
     for code in (None, "Nobody_LE_26"):
         ov = V.override(page(campaignCode=code), at, GROUP_OF, c)
         assert ov["meta"]["code"] == CODE, code
+    # ... as does a page whose guessed code is the artist's last launch's: that code has a plan, but none in these days
+    old = pd.concat([c["comms"], c["comms"].assign(campaign_code="TestArtist_Old_25", date=c["comms"]["date"] - pd.Timedelta(days=300))], ignore_index=True)
+    assert V.override(page(campaignCode="TestArtist_Old_25"), at, GROUP_OF, dict(c, comms=old))["meta"]["code"] == CODE
     # ... and a launch tagged two ways keeps the emails sent under the page's own code beside the plan under Notion's
     two = dict(c, aud=c["aud"].assign(code="TESTARTIST_LE_26"))
     sent = V.override(page(campaignCode="TESTARTIST_LE_26"), at, GROUP_OF, two)["work"]["sends"]

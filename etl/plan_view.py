@@ -208,10 +208,11 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
     start = ann - pd.Timedelta(days=P.LEAD_DAYS)
     if today < start:
         return None
-    # the campaign's code: the page's own when the plan has rows under it, else the Notion campaign that answers to
-    # the artist and the launch day (a launch the funnel could not give a code still has its plan in Notion)
+    # the campaign's code: the page's own when the plan has rows under it in the launch's days, else the Notion
+    # campaign that answers to the artist and the launch day (a launch the funnel could not give a code still has
+    # its plan in Notion, and a page's guessed code can be the artist's last launch's)
     all_comms, own = ctx["comms"], code
-    if not code or not (all_comms["campaign_code"] == code).any():
+    if not code or not ((all_comms["campaign_code"] == code) & (all_comms["date"] >= start) & (all_comms["date"] <= close)).any():
         found = P.match_campaign_codes(pd.DataFrame([{"release_name": name, "artist": page.get("artist"), "campaign_code": None, "launch_end": str(close.date())}]),
                                        ctx.get("campaigns"))
         got = found["campaign_code"].iloc[0]
