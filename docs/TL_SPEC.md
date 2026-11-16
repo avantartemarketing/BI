@@ -151,9 +151,37 @@ unique people (distinct account ids) is a secondary figure beside it.
 ```
 orders needed   = units target / purchases per order
 signup target   = orders needed / signup -> order rate
-pace            = the basket's median cumulative share of pre-window signups by day to open
-benchmark       = the basket's median signups at the same day to open
+pace            = the basket's median cumulative share of pre-window signups at the same share
+                  of each launch's own announce -> open span (the campaign clock)
+benchmark       = the basket's median signups at the same share of the span
 ```
+
+**The pace is read on the campaign clock**, as the LE pages read theirs (`docs/METHODOLOGY.md`
+5), not by days to the open (16 November 2026). Each of the basket's launches is read at the
+share of its own announce -> open span gone by, 0 at its announce and 1 at its sales open
+(`etl/tl.py pace_curve`, on `PACE_FRACS`), and the page reads the median at the share of its own
+span gone by, so a launch announced six days out and one announced three weeks out line up at
+their announces. A launch's span starts at its announce on file, or on the day its signups began
+where that is later (the first day with 10 or more, decision 17's rule; `pace_days`): an announce
+on file weeks before any signup arrived is not the day the launch was announced. A basket with
+fewer than 4 launches (`TL_PACE_MIN`) does not shape a pace of its own and takes the median of
+every completed launch on the panel, as an LE basket under four launches takes the pooled
+panel's curve; the profile says which (`pace_source`, `pace_n`).
+
+Read by days to the open, a launch announced earlier than its basket's launches was given a
+target of nothing until the basket's announces came round. Matt DesLauriers' Serac, announced 19
+days before its sales open against five launches of which three took their first signups six
+days out or fewer, read 99 signups against 1 expected (+12275%) on day 12 and a projection of
+its signups to date plus the whole target; on the campaign clock the same basket expects 412 of
+the 488 by then. `etl/analysis/tl_pace_backtest.py` reads each of the 73 completed launches with
+an announce and a curve as if live, at each tenth of its span, against every other launch and
+against the eight nearest on signups: the mean gap between the pace and the launch's own share
+falls from 0.18 to 0.16 (0.30 to 0.16 for the launches with a longer lead than their basket,
+against every other launch), and the readings where a launch had a fifth of its signups and the
+pace had not started (under 5%) fall from 7% to none. Starting a member's span at its announce
+on file or where its signups began reads the same on that test (0.164 and 0.165, 0.160 and
+0.158); the second is kept because 9 of the 73 took no signups to speak of until three days or
+more after the announce on file, a median 23 days out on file against 11.
 
 Purchases per order and the signup -> order rate are the basket's medians, typed over on the
 tab. The launch strip reads "Announced d Mon, opens in N days".
@@ -371,7 +399,7 @@ The panel is every completed TL in the feed (81; 38 since 2025). Per launch, fro
 orders table and the spend feed:
 
 - window length; the pre-window length actually run;
-- signups: total, by channel, and the cumulative share by day to open (the pace curve);
+- signups: total, by channel, and the cumulative share by day to open, read on the campaign clock as the pace (§4);
 - sessions by channel and session -> signup rate by channel;
 - signup -> order rate (`converted_signup` on the signups, cross-checked against purchases
   carrying `purchase_with_signup`), purchases per order;
@@ -540,3 +568,4 @@ What the data showed on the way, and how the build reads it:
 | 24 | Settling after the close | 7 days, then frozen |
 | 25 | Direct switch on TL pages | The LE switch in both states, the basket's launches read the same way, the plan and its budgets held; the sell-through forecast keeps the feed's attribution (5 October 2026) |
 | 26 | Where the basket's launches show | A card in the Overview's grid, last by default: one launch per row with units and price, nothing else (5 October 2026) |
+| 27 | The clock the signup pace is read on | The campaign clock, as LE: the share of each launch's announce -> open span gone by, a span starting where the signups began when that is after the announce on file; the panel's pace under 4 launches (16 November 2026) |

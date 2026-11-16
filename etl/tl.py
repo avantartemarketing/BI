@@ -153,7 +153,8 @@ TL_EA_HOURS = 24            # the early access expected before a public open
 TL_EA_MIN_PIECES = 5        # pieces in an hour before the open that say the early access has begun
 TL_EA_WITHIN_HOURS = 36
 TL_PANEL_MIN_SIGNUPS = 50   # a completed launch needs this many pre-window signups to be a comparable
-TL_CURVE_DAYS = 45          # the signup pace curve runs from this many days before the open
+TL_CURVE_DAYS = 45          # a launch's signups by day are kept from this many days before the open
+TL_PACE_MIN = 4             # a basket shapes its own signup pace from this many launches; under it every completed launch does (the LE rule)
 TL_UNIT_CURVE_STEPS = 50    # the sales pace curve's steps across the window
 TL_THIN = 6                 # a basket under this is thin, and the length filter falls back to every TL
 TL_SIMILAR_N = 8
@@ -185,6 +186,9 @@ RECENT_MONTHS = 18          # a comparable that closed within this many months r
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
 ID_MAX_CHARS = 120
 CURVE_DAYS = list(range(-TL_CURVE_DAYS, 1))
+# the signup pace's clock (docs/TL_SPEC.md 4): the share of a launch's announce -> open span gone by, 0 at the
+# announce and 1 at the sales open, the half span before the announce kept for the signups that come ahead of it
+PACE_FRACS = [round(-0.5 + 0.01 * i, 2) for i in range(151)]
 CURVE_FRACS = [round(i / TL_UNIT_CURVE_STEPS, 2) for i in range(TL_UNIT_CURVE_STEPS + 1)]
 
 
@@ -965,6 +969,63 @@ def signup_curve(daily: pd.DataFrame, hourly: pd.DataFrame, sales_open: datetime
     return counts, shares
 
 
+def pace_days(pre_days, counts: list | None) -> float:
+    """The length in days of a completed launch's signup clock: its announce on
+    file to its sales open, or the day its signups began to the open where
+    that is later (the first day with TL_ANNOUNCE_MIN signups or more,
+    decision 17's rule). An announce on file weeks before any signup arrived
+    is not the day the launch was announced, and reading the pace from it
+    would say the launch stood still for most of its campaign. `counts` is the
+    launch's cumulative signups by day to the open (signup_curve)."""
+    lead = _num(pre_days)
+    began = None
+    prev = 0.0
+    for i, c in enumerate(counts or []):
+        if i > 0 and float(c) - prev >= TL_ANNOUNCE_MIN:
+            began = float(TL_CURVE_DAYS - i)
+            break
+        prev = float(c)
+    if not lead or lead <= 0:
+        lead = began or float(TL_ASSUMED_PRE_DAYS)
+    elif began is not None:
+        lead = min(lead, began)
+    return float(min(max(lead, 1.0), TL_CURVE_DAYS))
+
+
+def _days_curve_at(curve: list, dto: float) -> float:
+    """A by-day curve (CURVE_DAYS) at `dto` days to the open, read between the days and held at its ends."""
+    x = min(max(dto + TL_CURVE_DAYS, 0.0), float(len(curve) - 1))
+    i = int(math.floor(x))
+    j = min(i + 1, len(curve) - 1)
+    return float(curve[i]) + (float(curve[j]) - float(curve[i])) * (x - i)
+
+
+def pace_curve(curves: dict, members: list[str], key: str) -> list[float]:
+    """The members' median curve on the pace clock (PACE_FRACS): each member's
+    by-day curve read at the same share of its own announce -> open span
+    (pace_days), so a launch announced six days out and one announced three
+    weeks out line up, as the LE pages line their launches up on the campaign
+    clock (docs/METHODOLOGY.md 5)."""
+    rows = []
+    for m in members:
+        c = curves.get(m) or {}
+        by_day = c.get(key) or []
+        if len(by_day) != len(CURVE_DAYS):
+            continue
+        lead = _num(c.get("lead")) or pace_days(None, c.get("signups_count"))
+        rows.append([_days_curve_at(by_day, -lead * (1 - f)) for f in PACE_FRACS])
+    if not rows:
+        return [0.0] * len(PACE_FRACS)
+    return [float(v) for v in np.median(np.array(rows, dtype=float), axis=0)]
+
+
+def pace_at(curve: list, f: float) -> float:
+    """A pace curve (PACE_FRACS) at a share `f` of the announce -> open span, read between its steps and held at its ends."""
+    if not curve:
+        return min(max(f, 0.0), 1.0)
+    return float(np.interp(f, PACE_FRACS, curve))
+
+
 def units_curve(hourly: pd.DataFrame, sales_open: datetime, close: datetime, total: float) -> list[float]:
     """Cumulative window units by share of the window (CURVE_FRACS)."""
     if not len(hourly) or total <= 0:
@@ -1066,13 +1127,13 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
         cpu = spend_win / paid_units if spend_win > 0 and paid_units >= PAID_COST_MIN_UNITS else float("nan")
         pre_days = (d["sales_open"].date() - d["announce"]).days if d["announce"] else None
         counts, shares = signup_curve(daily, hourly, d["sales_open"], signups)
-        curves[name] = {"signups": shares, "signups_count": counts,
+        curves[name] = {"signups": shares, "signups_count": counts, "lead": pace_days(pre_days, counts),
                         "units": units_curve(hourly, d["sales_open"], d["close"], float(win["units"].sum()) if len(win) else 0.0)}
         row = {
             "release_name": name, "artist": r["artist"], "title": r["title"], "quarter": r["quarter"],
             "airtable_release": (launch or {}).get("airtable_release"), "campaign_code": code,
             "announce": _iso(d["announce"]), "open": _iso(d["open"]), "sales_open": _iso(d["sales_open"]), "close": _iso(d["close"]),
-            "window_hours": d["hours"], "early_access": d["early_access"] is not None, "pre_days": pre_days,
+            "window_hours": d["hours"], "early_access": d["early_access"] is not None, "pre_days": pre_days, "pace_days": curves[name]["lead"],
             "announce_source": d["announce_source"], "open_source": d["open_source"],
             "signups": signups, "signups_unique": _num(r.get("signups_unique_pre")), "sessions": float(pre["sessions"].sum()) if len(pre) else 0.0,
             "signup_order_rate": (converted / signups) if signups > 0 and not math.isnan(converted) else float("nan"),
@@ -1163,6 +1224,12 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
     ss, sess_s, us = mix_fallbacks(ss, sess_s, us)
     n_cps = int((pd.to_numeric(rows.get("cost_per_signup"), errors="coerce") > 0).sum()) if len(rows) else 0
     n_cpu = int((pd.to_numeric(rows.get("cost_per_sale"), errors="coerce") > 0).sum()) if len(rows) else 0
+    # the signup pace: the basket's own launches where TL_PACE_MIN of them can shape it, else every completed
+    # launch on the panel, as an LE basket under four launches takes the pooled panel's curve (docs/METHODOLOGY.md 5)
+    shaped = [m for m in used if len((curves.get(m) or {}).get("signups") or []) == len(CURVE_DAYS)]
+    pooled = len(shaped) < TL_PACE_MIN
+    pace_from = sorted(m for m in curves if len((curves[m] or {}).get("signups") or []) == len(CURVE_DAYS)) if pooled else shaped
+    pace = pace_curve(curves, pace_from, "signups")
     return {
         "n": len(used), "members": used,
         "signups": signups, "signups_p25": float(pd.to_numeric(rows["signups"], errors="coerce").quantile(0.25)) if len(rows) else 0.0,
@@ -1204,8 +1271,9 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
         "cost_per_sale": _median(rows, "cost_per_sale", positive=True) if n_cpu >= PAID_COST_MIN_MEMBERS else 0.0,
         "n_cost_per_signup": n_cps, "n_cost_per_sale": n_cpu,
         "spend_pre": _median(rows, "spend_pre", positive=True), "spend_window": _median(rows, "spend_window", positive=True),
-        "curve_days": CURVE_DAYS, "signup_curve": _median_curve(curves, used, "signups", len(CURVE_DAYS)),
-        "signup_curve_count": _median_curve(curves, used, "signups_count", len(CURVE_DAYS)),
+        "pace_fracs": PACE_FRACS, "signup_curve": pace,
+        "signup_curve_count": [signups * v for v in pace] if pooled else pace_curve(curves, shaped, "signups_count"),
+        "pace_source": "panel" if pooled else "basket", "pace_n": len(pace_from),
         "curve_fracs": CURVE_FRACS, "unit_curve": _median_curve(curves, used, "units", len(CURVE_FRACS)),
     }
 
@@ -2308,20 +2376,16 @@ def le_blocks(cx: dict) -> dict:
         labels = [s.isoformat() for s in steps]
         curve = profile.get("signup_curve") or []
 
-        def share_at(dto: int) -> float:
-            i = dto + TL_CURVE_DAYS
-            if i < 0:
-                return 0.0
-            if not curve:
-                return 1.0
-            return float(curve[min(i, len(curve) - 1)])
+        def share_at(day: int) -> float:
+            # the basket's pace at the end of `day` days from the announce, on this launch's own announce -> open span
+            return pace_at(curve, day / of_n) if curve else 1.0
 
-        pace = [share_at((s - open_day).days) for s in steps]
+        pace = [share_at(i) for i in range(len(steps))]
         live = as_of < open_day
         day_no = max(min((as_of - announce).days, of_n), 0) if live else of_n
         frac_day = seen if live else 1.0
-        dto = (min(as_of, open_day) - open_day).days
-        pace_now = (share_at(dto - 1) + frac_day * (share_at(dto) - share_at(dto - 1))) if live else 1.0
+        since = (min(as_of, open_day) - announce).days
+        pace_now = (share_at(since - 1) + frac_day * (share_at(since) - share_at(since - 1))) if live else 1.0
         seen_steps = [i <= day_no for i in range(len(steps))]
         frame = cx["daily"]
         cum_by_g = _cum_by_group(frame, "day", "signups", steps)
@@ -2798,20 +2862,16 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
     by_day = daily.groupby("day")["signups"].sum() if len(daily) else pd.Series(dtype=float)
     sess_by_day = daily.groupby("day")["sessions"].sum() if len(daily) else pd.Series(dtype=float)
     open_day = d["sales_open"].date()
-    curve_share = profile.get("signup_curve") or [0.0] * len(CURVE_DAYS)
-    curve_count = profile.get("signup_curve_count") or [0.0] * len(CURVE_DAYS)
+    curve_share = profile.get("signup_curve") or [0.0] * len(PACE_FRACS)
+    curve_count = profile.get("signup_curve_count") or [0.0] * len(PACE_FRACS)
+    # the pace is read on this launch's own clock, the share of its announce -> open span gone by (le_blocks reads it the same way)
+    span_days = max((open_day - (d["announce"] or (open_day - timedelta(days=TL_ASSUMED_PRE_DAYS)))).days, 1)
 
     def share_at(day_to_open: int) -> float:
-        i = day_to_open + TL_CURVE_DAYS
-        if i < 0:
-            return 0.0
-        return float(curve_share[min(i, len(curve_share) - 1)])
+        return pace_at(curve_share, 1 + day_to_open / span_days)
 
     def bm_at(day_to_open: int) -> float:
-        i = day_to_open + TL_CURVE_DAYS
-        if i < 0:
-            return 0.0
-        return float(curve_count[min(i, len(curve_count) - 1)])
+        return pace_at(curve_count, 1 + day_to_open / span_days)
 
     target = targets["signup_target"] if targeted else None
     pre_announce = float(by_day[by_day.index < d["announce"]].sum()) if d["announce"] and len(by_day) else 0.0
@@ -2996,7 +3056,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                       "suggested": rb["suggested"], "channelsOff": off, "k": targets["k"] if targeted else None,
                       "profile": profile} if basket["n"] else None,
         "baskets": [{**{k: b.get(k) for k in ("id", "kind", "name", "desc", "n", "members", "thin", "fallback", "disabled")},
-                     "profile": {k: v for k, v in b["profile"].items() if k not in ("signup_curve", "signup_curve_count", "unit_curve", "curve_days", "curve_fracs")}}
+                     "profile": {k: v for k, v in b["profile"].items() if k not in ("signup_curve", "signup_curve_count", "unit_curve", "pace_fracs", "curve_fracs")}}
                     for b in rb["ready"]],
         "signups": {"total": signups_total, "preWindow": signups_pre, "unique": _num(feed_row.get("signups_unique")), "preAnnounce": pre_announce,
                     "byDay": days, "byGroup": groups, "untracked": untracked, "converted": _num(feed_row.get("signups_converted"))},

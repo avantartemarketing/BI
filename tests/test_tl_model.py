@@ -144,7 +144,7 @@ if panel_path.exists() and tl.CURVES.exists():
     rel = {"release_name": "Bisa Butler · Multiple · 2026 Q4", "artist": "Bisa Butler", "window_open": "2026-10-13T16:00:00Z", "window_hours": 48.0, "units_target": 400.0, "unit_price_eur": 750.0}
     for b in tl.ready_baskets(panel, curves, rel, date(2026, 10, 1)):
         if b["n"]:
-            prof = {k: v for k, v in b["profile"].items() if k not in ("signup_curve", "signup_curve_count", "unit_curve", "curve_days", "curve_fracs")}
+            prof = {k: v for k, v in b["profile"].items() if k not in ("signup_curve", "signup_curve_count", "unit_curve", "pace_fracs", "curve_fracs", "pace_source", "pace_n")}
             cases.append({"name": f"live basket {b['id']}", "inputs": {"stretch_from": {"paid": 0.6, "aa_email": 0.4}}, "airtable_units": 400.0, "launch_value": 300000.0, "profile": prof})
             cases.append({"name": f"live basket {b['id']}, artist off", "inputs": {"channels_off": ["referral_artist"]}, "airtable_units": 400.0, "launch_value": 300000.0, "profile": prof})
     # a 48-hour launch is measured against 48-hour launches first
