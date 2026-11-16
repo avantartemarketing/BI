@@ -75,7 +75,7 @@ DROPPED = {"Not posted", "Cancelled", "On hold", "No content needed"}
 # the share of planned rows of a family that went out, when the history cannot say (plan_reliability)
 DEFAULT_RELIABILITY = {"artist_post": 0.73, "artist_story": 0.73, "artist_other": 0.63, "partner": 0.64}
 
-_CODE = re.compile(r"([A-Za-z]+_[A-Za-z0-9]+_\d{2})(?![A-Za-z0-9])")
+_CODE = re.compile(r"([A-Za-z]+_[A-Za-z0-9]+_\d{2}(?:\d{2})?)(?![A-Za-z0-9])")   # the year as 26, or in full as 2026
 _TYPES = ("GEN", "CUS", "INS", "TRNS", "AUT", "FREQ", "TEST")
 
 

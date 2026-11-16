@@ -303,10 +303,27 @@ still to come:
 **Plan** is this view. The choice is kept per browser. The switch is only on a page the
 build has read both ways.
 
-**Which launches.** A draw launch in its window, not a line of work and not a timed
-launch, with a campaign code, at least three emails and posts on file under it in the
-Notion plan, and at least one email sent or planned. Anything else keeps the clock's page
-alone and shows no switch.
+**Which launches.** A draw launch in its window with targets set, not a timed launch,
+with a campaign code, at least three emails and posts on file under it in the Notion plan,
+and at least one email sent or planned. Anything else keeps the clock's page alone and
+shows no switch. The build's closing lines name the launches that have the view and, for a
+live draw launch with targets that has none, why (`plan views: 4 - ...; without one:
+<id> (no plan on file in Notion under <code>)`), and the refresh's log carries that line.
+
+The code is the page's own when the Notion plan has rows under it, else the Notion
+campaign's whose code begins with the artist's name and whose launch day is within four
+days of the page's close (`plan_model.match_campaign_codes`; two campaigns with different
+codes answering is no answer). A code is read off an email's name with its year as two
+digits or in full (`AntonyMic_LE_26`, `AiWeiwei_Lego_2026`); until 16 November 2026 only
+two digits were read, so a launch coded with the full year had its emails on no launch.
+
+**A launch selling lines of work** (docs/LINES_PLAN.md: Ai Weiwei's prints beside his toy
+bricks) is read as one launch, on its combined page: one email and one post reach one
+audience, so the plan cannot be split between the lines. A line's own page keeps the clock
+and shows no switch. Paid is the one thing with comms of its own there, an ad set per
+line, so on the combined page the paid suggestions are each line's own, read off its own
+spend levels as on the clock's page, and the cards per ad set at the foot of the page are
+the same in both views. Until 16 November 2026 these launches had no plan view at all.
 
 **One source for every card.** The build makes the page a third time, in the view with
 Direct spread over the other channels, reading for each channel group outside paid the
@@ -340,6 +357,15 @@ The headline ("185 at the close, 15 short of the 200 target") is the plan as it 
 with nothing changed: paid held at today's spend. What a change would add is the suggested
 actions'.
 
+**Target and edition.** The target is the page's unit target, which is the edition unless
+a lower sell-through is aimed for (Ai Weiwei's toy bricks aim at a third of their 3,000).
+The plan card and the trajectory's level line read the target; the ceiling on what the
+page can count is the edition, so a plan strong enough lands past the target; and the
+Sell-through at close card reads shares of the edition, as on the clock's page, with its
+default reading (today's paid held to the close) set to the plan's own landing so the two
+cards agree. The first build read all three off the target, which only showed on a launch
+where target and edition differ.
+
 **Credit by the day people entered.** What has come in is shared out between the pieces
 and the baseline by the day a person entered or bought, each channel scaled to the page's
 own count for it so the card adds up to every other card. The page's own daily series
@@ -364,13 +390,16 @@ level and at how the piece's channel is running: an email still to come sent to 
 list or to a middle size (the full list is the widest send of the last 120 days), a
 sustain email when none is planned, a post from the artist, Avant Arte or a partner three
 days out, and the paid budget's step for tomorrow from the Spend levels card's own reading
-(`plan_changes.paid_change`). An email's range is the middle half of how past sends landed
+(`plan_changes.paid_changes`: the campaign's, or one per line of work on a launch that runs
+an ad set per line). An email's range is the middle half of how past sends landed
 around their reading; a post's is x0.6 to x1.4. The clock's page keeps its own suggested
 actions (`etl/plan_changes.py`), which read what comparable launches did.
 
 `python3 tests/test_plan_view.py` holds the view to a hand-built launch: the rows adding up
-to the page's counts and each row's pieces to the row, and the credit going to the day
-people entered.
+to the page's counts and each row's pieces to the row, the credit going to the day people
+entered, a target under the edition, and a paid suggestion per line of work.
+`python3 tests/test_lines.py` builds a two-line release through the real build and holds
+the view to its combined page.
 
 ## 7. Limits
 
@@ -419,3 +448,11 @@ people entered.
   default. With it: an email felt for four more days and a post for one (4.3); what came
   in credited to the day people entered, after the mockup showed a draw's batched orders
   landing on the baseline; the two feeds in the hourly refresh; `etl/plan_view.py`.
+- **16 November 2026, evening.** The owner asked why Ai Weiwei's launch had no switch. Two
+  reasons, both fixed: a launch selling lines of work was left out of the first build (it
+  is now read on its combined page), and its code carries the year in full
+  (`AiWeiwei_Lego_2026`), which the reading of an email's name did not take, so its six
+  sends were on no launch. With it: the code found through the Notion campaign when the
+  page has none, the reason a launch has no view on the build's closing line, and the
+  target told apart from the edition (the trajectory's level line, the ceiling, the
+  shares on the Sell-through at close card), which that launch was the first to show.

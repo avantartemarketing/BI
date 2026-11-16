@@ -729,6 +729,7 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
 
 
 PLAN_VIEWS: list[str] = []   # the launches this build read off their comms plan as well (variants.plan), for its closing lines
+PLAN_SKIPS: list[tuple[str, str]] = []   # ... and the live draw launches it could not, each with why
 
 
 def with_direct_spread(build, *args, **kwargs) -> dict:
@@ -742,20 +743,6 @@ def with_direct_spread(build, *args, **kwargs) -> dict:
     def diff(a: dict) -> dict:
         return {k: v for k, v in a.items() if k not in ("variants", "lines") and v != snap.get(k)}
     snap["variants"] = {"direct_spread": diff(alt)}
-    # a live draw launch with a comms plan on file is built a third way: on its plan's path in place of the
-    # clock's curve (etl/plan_view.py), in the view with Direct spread. The dashboard's switch lays it over the
-    # page; the clock's page stays the default. A failure here costs the page its plan view, never the page.
-    if build is build_release and not kwargs.get("line"):
-        try:
-            ov = plan_view.override({**snap, **snap["variants"]["direct_spread"]}, args[1], GROUP_OF, plan_view.context())
-            if ov:
-                pv = build(*args, **kwargs, direct_spread=True, plan_ov=ov["groups"])
-                plan_view.finish(pv, ov)
-                snap["variants"]["plan"] = diff(pv)
-                PLAN_VIEWS.append(str(snap.get("id")))
-        except Exception as e:  # noqa: BLE001 - the plan view never stops a page
-            snap["variants"].pop("plan", None)
-            print(f"plan view: {snap.get('id')}: not built ({type(e).__name__}: {str(e)[:200]})")
     # a release selling lines of work (docs/LINES_PLAN.md): each line's page
     # both ways too, under variants.lines[key] and variants.lines_direct[key],
     # and what the combined page says about each line (snap.lines[]) from
@@ -768,6 +755,26 @@ def with_direct_spread(build, *args, **kwargs) -> dict:
             snap["variants"]["lines"][ln["key"]] = diff(lb)
             snap["variants"]["lines_direct"][ln["key"]] = diff(ld)
             ln.update(line_summary(lb))
+    # a live draw launch with a comms plan on file is built a third way: on its plan's path in place of the
+    # clock's curve (etl/plan_view.py), in the view with Direct spread. The dashboard's switch lays it over the
+    # page; the clock's page stays the default. A launch selling lines of work is read as one launch, on its
+    # combined page (one email and one post reach one audience); a line's own page keeps the clock, and the
+    # paid suggestions are each line's own (its pages are built first, above, for that). A failure here costs
+    # the page its plan view, never the page.
+    if build is build_release and not kwargs.get("line"):
+        try:
+            ov = plan_view.override({**snap, **snap["variants"]["direct_spread"]}, args[1], GROUP_OF, plan_view.context())
+            if ov and ov.get("skip"):
+                PLAN_SKIPS.append((str(snap.get("id")), str(ov["skip"])))
+            elif ov:
+                pv = build(*args, **kwargs, direct_spread=True, plan_ov=ov["groups"])
+                plan_view.finish(pv, ov, line_pages=snap["variants"].get("lines"))
+                snap["variants"]["plan"] = diff(pv)
+                PLAN_VIEWS.append(str(snap.get("id")))
+        except Exception as e:  # noqa: BLE001 - the plan view never stops a page
+            snap["variants"].pop("plan", None)
+            PLAN_SKIPS.append((str(snap.get("id")), f"it failed to build ({type(e).__name__})"))
+            print(f"plan view: {snap.get('id')}: not built ({type(e).__name__}: {str(e)[:200]})")
     return snap
 
 
@@ -9201,7 +9208,8 @@ def main(only: str | None = None):
         print("plan views: off - the price list, the Notion plan or the email audiences are missing")
     else:
         print(f"plan views: {len(PLAN_VIEWS)} - " + (", ".join(PLAN_VIEWS[:8]) + (f" and {len(PLAN_VIEWS) - 8} more" if len(PLAN_VIEWS) > 8 else "")
-                                                     if PLAN_VIEWS else "no live draw launch with targets set and a plan on file"))
+                                                     if PLAN_VIEWS else "no live draw launch with targets set and a plan on file")
+              + ("; without one: " + "; ".join(f"{rid} ({why})" for rid, why in PLAN_SKIPS[:8]) if PLAN_SKIPS else ""))
     # the pages that did not build, on one line the refresh status reads
     # (server/sheets.js parseBuildSummary): the id and the error, the first
     # five in full

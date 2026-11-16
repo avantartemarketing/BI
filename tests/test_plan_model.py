@@ -52,6 +52,9 @@ def test_names():
     assert P.code_of("MaurizioCatt_HorseLE_26", "anything") == "MaurizioCatt_HorseLE_26"
     assert P.code_of("", "230926_CUS_AiWeiwei_Button_26 - Last Chance (LE)") == "AiWeiwei_Button_26"
     assert P.code_of("FREQ bundle", "a newsletter") is None
+    # a code may carry its year in full
+    assert P.code_of("", "271026_CUS_AiWeiwei_Lego_2026 - Early Access (LE)") == "AiWeiwei_Lego_2026"
+    assert P.code_of("AiWeiwei_Lego_2026", "anything") == "AiWeiwei_Lego_2026"
 
 
 def test_plan_state():

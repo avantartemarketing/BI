@@ -412,6 +412,54 @@ build.check_snapshot(snap1)
 check(snap1["lines"] is None and snap1["line"] is None and "lines" not in snap1["variants"], f"one line: nothing new on the page: {snap1['lines']}, {sorted(snap1['variants'])}")
 check(snap1["benchmark"]["basket"]["id"] != "lines" and snap1["benchmark"]["sessionsShared"] is False and "sessions_shared" not in snap1["targets"], "and the benchmark is one basket's")
 check(close(snap1["paid"]["spendToDate"], 800.0 * days), "the whole campaign's spend, ad sets summed")
+# ---- the plan-based view (docs/PLAN_MODEL.md 6) on a release selling two lines: read as one launch on the
+# combined page (one email and one post reach one audience), never on a line's own page; the target is the lines'
+# summed and under the edition, so the shares at the close are of the edition; and the paid suggestions are each
+# line's own, off its own spend levels. The feeds are a plan of four rows and one announce email, set here
+import plan_model as PM
+T_ = pd.Timestamp
+code = base["campaign_code"]
+plan_rows = [(announce, "email", "2-Announce", "Live", "Announcement (LE)", "AA Email"), (announce, "aa_post", "2-Announce", "Live", "Announcement", "IG Main"),
+             (TODAY + timedelta(days=2), "aa_story", "3-Sustain", "Scheduled", "Sustain story", "IG Main"), (launch - timedelta(days=1), "email", "4-Launch", "Not specced", "Last chance (LE)", "AA Email")]
+comms_p = pd.DataFrame([{"campaign_code": code, "date": T_(d), "family": f, "phase": ph, "status": s, "name": n, "channel": c, "created": "2026-01-01", "edited": "2026-01-01"}
+                        for d, f, ph, s, n, c in plan_rows])
+send = f"{announce:%d%m%y}_GEN_{code} - Announcement (LE)"
+aud_p = pd.DataFrame([{"name": send, "day": T_(announce), "ts": T_(announce) + pd.Timedelta(hours=14), "delivered": 120000.0, "clicked": 2400.0, "unsubscribed": 300.0,
+                       "code": code, "type": PM.email_type(send), "kind": PM.email_kind(send), "went": True}])
+camp_p = pd.DataFrame([{"campaign_code": code, "release": name, "announce": T_(announce), "launch": T_(launch), "mechanic": "Draw", "status": "7. In Flight", "tier": ""}])
+plan_ctx = {"prices": PM.load_prices(), "comms": comms_p, "aud": aud_p, "campaigns": camp_p}
+real_context = build.plan_view.context
+build.plan_view.context = lambda reload=False: plan_ctx
+try:
+    build.PLAN_VIEWS.clear(); build.PLAN_SKIPS.clear()
+    build.pricing.release_products = fake_products(PRODUCTS)
+    snap_p = build.with_direct_spread(build.build_release, copy.deepcopy(rel), at, spend, emails, content, curves, TODAY,
+                                      build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+    build.check_snapshot(snap_p)
+    VP = snap_p["variants"]
+    check("plan" in VP and VP["plan"].get("method") == "plan" and build.PLAN_VIEWS == [str(snap_p["id"])], f"the combined page of a two-line release has the plan view: {sorted(VP)}, {build.PLAN_VIEWS}, {build.PLAN_SKIPS}")
+    check(all("plan" not in lv and "method" not in lv for k in ("lines", "lines_direct") for lv in VP[k].values()), "a line's own page keeps the clock")
+    pp = {**snap_p, **VP["direct_spread"], **VP.get("plan", {})}
+    plan_p = pp.get("plan") or {"rows": [], "lands": 0.0, "target": 0.0}
+    check(plan_p["target"] == 1200 and pp["edition"]["total"] == 3300, f"the plan's target is the lines' summed, under the edition: {plan_p['target']} of {pp['edition']}")
+    check(close(sum(r["lands"] for r in plan_p["rows"]), plan_p["lands"], 1e-3) and [r["moment"] for r in plan_p["rows"]][-2:] == ["Baseline", "Paid"], "the plan card's rows add up to where it lands")
+    cfp = pp["closeForecast"]
+    check(close(cfp["pct"], cfp["units"] / 3300, 2e-3) and cfp["lo"] <= cfp["units"] <= cfp["hi"], f"the share at the close is of the edition, inside its range: {cfp['units']}, {cfp['pct']}, {cfp['lo']}-{cfp['hi']}")
+    check(close(cfp["scenarios"]["current"]["units"], cfp["units"]), "the close card's default reading is the plan's landing")
+    paid_p = [c["key"] for c in pp["planChanges"]["changes"] + pp["planChanges"]["more"] if c.get("channel") == "Paid"]
+    clock_paid = [c["key"] for c in build.plan_changes.paid_changes(snap_p, TODAY, launch)]      # what the clock's page is given (plan_changes.attach)
+    check(len(paid_p) == 2 and all(k.startswith(("paid.lego2026.", "paid.legomf.")) for k in paid_p) and sorted(paid_p) == sorted(clock_paid),
+          f"the paid suggestions are each line's own, the clock page's: {paid_p} vs {clock_paid}")
+    # the one-line release: the view too, with the campaign's own paid reading
+    build.pricing.release_products = fake_products(ONE_CODE)
+    snap_q = build.with_direct_spread(build.build_release, copy.deepcopy(base), at, spend, emails, content, curves, TODAY,
+                                      build.load_artist_posts(), {}, None, panel, people, full_through=TODAY, seen=1.0, direct_norm=direct_norm)
+    build.check_snapshot(snap_q)
+    check("plan" in snap_q["variants"] and "lines" not in snap_q["variants"], f"one line: the plan view and no line pages: {sorted(snap_q['variants'])}")
+    paid_q = [c["key"] for c in snap_q["variants"]["plan"]["planChanges"]["changes"] + snap_q["variants"]["plan"]["planChanges"]["more"] if c.get("channel") == "Paid"]
+    check(all(k.startswith("paid.") and k.count(".") <= 2 and not k.startswith(("paid.lego2026.", "paid.legomf.")) for k in paid_q), f"one line: the campaign's own paid suggestion: {paid_q}")
+finally:
+    build.plan_view.context = real_context
 print(f"prints K {TP['k']:.2f} on {pu:.0f}, bricks K {TB['k']:.2f} on {bu:.0f}; sessions {gt['aa_email']['sessions']:.0f} shared; "
       f"paid {P['paid']['spendToDate']:.0f} + {B['paid']['spendToDate']:.0f}; ROI {P['paid']['cumRoi']} / {B['paid']['cumRoi']}")
 print("FAILED" if failed else "ok: lines", failed if failed else "")

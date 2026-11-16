@@ -640,7 +640,10 @@ lays the plan-based view over it (the build's `variants.plan`, from `etl/plan_vi
 a plan card first (a bar per phase with the emails and posts inside), and every other card
 read against the plan's path instead of the clock's curve. The switch is only on a launch
 the build has read both ways: a draw in its window with targets set, a campaign code and a
-plan on file in Notion. The choice is kept per browser.
+plan on file in Notion. A launch selling two lines of work has it on its combined page
+(All lines), not on a line's own. The build's `plan views:` line, which the refresh's log
+carries, names the launches that have the view and says why a live launch has none. The
+choice is kept per browser.
 
 Its two feeds are pulled in the hourly refresh (`server/sheets.js`), with the tokens the
 dashboard already uses, and can be run by hand:

@@ -10,7 +10,10 @@ channel, the card's rows adding up to the page's own counts and each row's
 pieces to the row, an email the price list values above a post, what is still
 to come scaled by how the launch is running, and above all the credit: units
 a draw booked days after the entries are credited to the day people entered,
-so they land on the announce and not on the baseline. Run:
+so they land on the announce and not on the baseline. Then a launch whose
+target is under its edition (the close card's shares are of the edition, its
+default reading the plan's own landing) and one that sells two lines of work
+(a paid suggestion per line, off the line's own spend levels). Run:
   python3 tests/test_plan_view.py
 """
 from __future__ import annotations
@@ -94,7 +97,8 @@ def page(**over):
 
 
 def ctx():
-    return {"prices": PRICES, "comms": comms(), "aud": audiences()}
+    campaigns = pd.DataFrame([{"campaign_code": CODE, "release": "Test Artist - A Work", "announce": ANN, "launch": CLOSE, "mechanic": "Draw", "status": "7. In Flight", "tier": ""}])
+    return {"prices": PRICES, "comms": comms(), "aud": audiences(), "campaigns": campaigns}
 
 
 def test_audience_words():
@@ -134,9 +138,22 @@ def test_qualifies():
     assert V.override(page(), at, GROUP_OF, None) is None                              # no feeds: no plan view
     assert V.override(page(type="TL"), at, GROUP_OF, c) is None
     assert V.override(page(complete=True), at, GROUP_OF, c) is None
-    assert V.override(page(campaignCode=None), at, GROUP_OF, c) is None
-    assert V.override(page(campaignCode="Nobody_LE_26"), at, GROUP_OF, c) is None      # no plan on file under the code
-    assert V.override(page(line="prints"), at, GROUP_OF, c) is None
+    assert V.override(page(line="prints"), at, GROUP_OF, c) is None                    # one line's own page keeps the clock
+    assert "groups" in V.override(page(lines=[{"key": "prints"}, {"key": "bricks"}]), at, GROUP_OF, c)     # ... its combined page has the view
+    # a page with no code of its own, or one the plan has nothing under, takes the Notion campaign that answers to
+    # the artist and the launch day
+    for code in (None, "Nobody_LE_26"):
+        ov = V.override(page(campaignCode=code), at, GROUP_OF, c)
+        assert ov["meta"]["code"] == CODE, code
+    # ... and a launch tagged two ways keeps the emails sent under the page's own code beside the plan under Notion's
+    two = dict(c, aud=c["aud"].assign(code="TESTARTIST_LE_26"))
+    sent = V.override(page(campaignCode="TESTARTIST_LE_26"), at, GROUP_OF, two)["work"]["sends"]
+    assert int((~sent["planned"]).sum()) == 2 and V.override(page(), at, GROUP_OF, two)["work"]["sends"]["planned"].all()
+    # a live draw launch that cannot have the view says why
+    assert "no campaign code" in V.override(page(campaignCode=None, artist="Somebody Else"), at, GROUP_OF, c)["skip"]
+    assert "no targets" in V.override(page(hero={"target": 0}), at, GROUP_OF, c)["skip"]
+    bare = dict(c, comms=c["comms"].iloc[0:2])
+    assert "no plan on file" in V.override(page(), at, GROUP_OF, bare)["skip"]
 
 
 def test_launch():
@@ -192,6 +209,61 @@ def test_launch():
     assert ("change", "Last chance email") in titles and ("add", "Sustain email to the full list") in titles and ("add", "Artist IG post") in titles
     assert all(c["units"] is None or (c["units"]["low"] <= c["units"]["high"] and c["units"]["high"] >= 1) for c in found)
     assert pc["planVisible"] and pc["planDone"] == 2 and len(pc["planToCome"]) == 2 and pc["status"] in ("short", "on_course")
+
+
+def test_target_under_the_edition():
+    """A launch aiming at part of its edition (a 40% sell-through on 500): the target is the 200, the ceiling the
+    500, and the Sell-through at close card reads shares of the edition with a range that holds the landing."""
+    c, at = ctx(), funnel()
+    cf = {"units": 90.0, "pct": 0.18, "lo": 80.0, "hi": 110.0, "pctLo": 0.16, "pctHi": 0.22, "edition": 500.0, "target": 200.0, "today": 70.0, "built": {"sold": 60.0, "inHand": 10.0},
+          "scenarios": {"recommended": {"units": 90.0, "pct": 0.18, "lo": 80.0, "hi": 110.0}, "current": {"units": 100.0, "pct": 0.2, "lo": 85.0, "hi": 125.0, "works": []},
+                        "none": {"units": 75.0, "pct": 0.15, "lo": 70.0, "hi": 85.0}}}
+    pg = page(edition={"target": 200.0, "total": 500.0}, closeForecast=cf)
+    ov = V.override(pg, at, GROUP_OF, c)
+    V.finish(pg, ov)
+    plan, got = pg["plan"], pg["closeForecast"]
+    lands = min(plan["lands"], 500.0)
+    assert plan["target"] == 200.0 and pg["hero"]["projected"] == round(lands)
+    close_to(got["units"], lands, 0.06); close_to(got["pct"], lands / 500.0, 1e-3)                 # a share of the edition, not of the target
+    assert got["lo"] <= got["units"] <= got["hi"] <= 500.0
+    close_to(got["pctLo"], got["lo"] / 500.0, 1e-3); close_to(got["pctHi"], got["hi"] / 500.0, 1e-3)
+    close_to(got["lo"], min(85.0 * lands / 100.0, lands), 0.06)                                      # the range of the reading at today's paid, moved with the landing
+    held = got["scenarios"]["current"]
+    assert (held["units"], held["pct"], held["lo"], held["hi"]) == (got["units"], got["pct"], got["lo"], got["hi"]) and held["works"] == []
+    assert got["scenarios"]["none"]["units"] == 75.0                                                 # the other readings stay the build's
+    # a plan strong enough to pass the target lands past it, up to the edition
+    big = page(edition={"target": 200.0, "total": 500.0})
+    for ch in big["channels"]:
+        if ch["key"] == "paid":
+            ch["now"], ch["proj"] = 4.0, 400.0
+    ov2 = V.override(big, at, GROUP_OF, c)
+    V.finish(big, ov2)
+    assert big["plan"]["lands"] > 200.0 and 200 < big["hero"]["projected"] <= 500 and big["hero"]["ok"]
+    assert big["planChanges"]["status"] == "on_course"
+
+
+def test_lines_paid():
+    """A launch selling two lines of work runs an ad set per line: the paid suggestions are one per line, read off
+    the line's own spend levels (as the clock's page gives them), and the campaign's own reading is left out."""
+    c, at = ctx(), funnel()
+    lines = [{"key": "prints", "name": "Prints"}, {"key": "toy_bricks", "name": "Toy bricks"}]
+    whole = {"levels": {"today": 800.0, "recommended": 0.0, "stop": "marginal", "daysLeft": 17}, "spendToDate": 5600.0}
+    line_pages = {"prints": {"paid": {"levels": {"today": 300.0, "recommended": 0.0, "stop": "marginal", "daysLeft": 17}}},
+                  "toy_bricks": {"paid": {"levels": {"today": 500.0, "recommended": 800.0, "tomorrow": 650.0, "marginalToday": 1.6, "daysLeft": 17,
+                                                     "rows": [{"daily": 0.0, "unitsAtClose": 100.0}, {"daily": 500.0, "unitsAtClose": 140.0}, {"daily": 800.0, "unitsAtClose": 155.0}]}}}}
+    pg = page(lines=lines, paid=whole)
+    ov = V.override(pg, at, GROUP_OF, c)
+    V.finish(pg, ov, line_pages=line_pages)
+    found = pg["planChanges"]["changes"] + pg["planChanges"]["more"]
+    paid = {x["key"]: x for x in found if x["channel"] == "Paid"}
+    assert set(paid) == {"paid.prints.stop", "paid.toy_bricks.budget.650"}, sorted(paid)
+    assert paid["paid.prints.stop"]["title"] == "Paid spend \u00b7 Prints" and paid["paid.prints.stop"]["saves"] == 300 * 17
+    assert paid["paid.toy_bricks.budget.650"]["units"] == {"low": 15, "high": 15} and paid["paid.toy_bricks.budget.650"]["title"].endswith("Toy bricks")
+    # one line of work: the campaign's own reading, sized against what the plan's comms leave to do
+    one = page(paid=whole)
+    V.finish(one, V.override(one, at, GROUP_OF, c))
+    solo = [x for x in one["planChanges"]["changes"] + one["planChanges"]["more"] if x["channel"] == "Paid"]
+    assert [x["key"] for x in solo] == ["paid.stop"] and solo[0]["reason"].startswith("The plan's comms should bring about")
 
 
 def test_before_anything():

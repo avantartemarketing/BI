@@ -66,11 +66,14 @@ export default function Trajectory({ snap, vs = "target" }) {
   // where today sits on the clock: the day so far at the share of it seen
   const elapsed = complete ? day : Math.max(0, Math.min(dayElapsed(snap), of));
   const targeted = snap.targeted !== false && vs === "target";
-  // the plan-based view (docs/PLAN_MODEL.md): the pale line is the plan's path, the target is the edition as a
-  // level across the chart, and before anything has gone out the card reads the plan alone
+  // the plan-based view (docs/PLAN_MODEL.md): the pale line is the plan's path, the target is one level across
+  // the chart (the launch's unit target, the plan card's own: the edition unless a lower sell-through is aimed
+  // for), and before anything has gone out the card reads the plan alone
   const planMode = snap.method === "plan";
   const planStart = planMode && !!(snap.plan && snap.plan.state === "start");
-  const goal = planMode && snap.edition && snap.edition.total > 0 ? snap.edition.total : null;
+  const editionAll = snap.edition && snap.edition.total > 0 ? snap.edition.total : null;
+  const planTarget = planMode ? [snap.plan && snap.plan.target, snap.hero && snap.hero.target, editionAll].find((v) => Number.isFinite(v) && v > 0) : null;
+  const goal = planTarget || null;
   if (!s.pts.length) {
     return <Card wide title={W.trajTitle}><div className="empty-state">No {W.stepWord}-by-{W.stepWord} series yet</div></Card>;
   }
@@ -118,7 +121,7 @@ export default function Trajectory({ snap, vs = "target" }) {
   const legend = [
     ...(planStart ? [] : [{ n: W.secured, v: fmt(s.now), k: lk(COL.IND), tip: nowTip }]),
     ...(proj && !planStart ? [{ n: "Projected", v: fmt(s.proj), k: lk(COL.IND, "dashed"), tip: projTip }] : []),
-    ...(goal ? [{ n: "Target", v: fmt(goal), k: lk(COL.INK, "dotted"), tip: "The target: the edition" }] : []),
+    ...(goal ? [{ n: "Target", v: fmt(goal), k: lk(COL.INK, "dotted"), tip: editionAll && Math.round(goal) < Math.round(editionAll) ? `The target: ${fmt(goal)} of the edition of ${fmt(editionAll)}` : "The target: the edition" }] : []),
     ...(target ? [{ n: planMode ? "Plan" : "Target", v: fmt(s.target), k: lk(COL.LIGHT), tip: `${fmt(planToday)} ${planMode ? "in the plan" : "target"} by ${W.stepWord} ${day} · ${fmt(s.target)} at the ${W.closeWord}` }] : []),
     ...(bm ? [{ n: "Benchmark", v: fmt(s.bm), k: lk(COL.INK, "dotted"), tip: `${fmt(bmToday)} benchmark by ${W.stepWord} ${day} · ${fmt(s.bm)} at the ${W.closeWord}: the median of the matched basket` }] : []),
   ];

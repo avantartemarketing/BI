@@ -29,9 +29,12 @@ Three steps, each launch:
              in batches days after the entries, and read on those days they
              would land on days with nothing going out.
 
-A launch qualifies when it is a draw in its window with a campaign code, a
-plan on file and at least one email sent or planned. Anything else keeps the
-clock's page alone. Only pandas and numpy, as the build needs.
+A launch qualifies when it is a draw in its window with a campaign code (its
+own, or the Notion campaign's found by artist and launch day), a plan on file
+and at least one email sent or planned. A launch that sells lines of work is
+read on its combined page; each line's own page keeps the clock. Anything else
+keeps the clock's page alone, and override() says why. Only pandas and numpy,
+as the build needs.
 """
 from __future__ import annotations
 
@@ -87,7 +90,7 @@ def context(reload: bool = False) -> dict | None:
         return _CTX or None
     prices, comms, aud = P.load_prices(), P.load_comms(), P.load_audiences()
     ok = bool(prices) and not comms.empty and aud is not None and not aud.empty and "fade_email" in (prices or {}) and bool((prices or {}).get("split"))
-    _CTX = {"prices": prices, "comms": comms, "aud": aud} if ok else {}
+    _CTX = {"prices": prices, "comms": comms, "aud": aud, "campaigns": P.load_campaigns()} if ok else {}
     return _CTX or None
 
 
@@ -178,15 +181,16 @@ def entry_days(at: pd.DataFrame, name: str, days: pd.DatetimeIndex, group_of: di
 
 # ---------------------------------------------------------------- the override: the plan's path, channel by channel
 def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> dict | None:
-    """The plan's path for one launch, or None when the launch does not
-    qualify. `page` is the launch's page with Direct shared over the other
-    channels (the dashboard's default view), which is the view the plan is
-    read in. Returns {"groups": what the build reads per channel group,
-    "meta": the plan's level and how the launch runs against it, "work": what
-    finish() needs to lay the plan card out}."""
+    """The plan's path for one launch. `page` is the launch's page with Direct
+    shared over the other channels (the dashboard's default view), which is
+    the view the plan is read in. Returns {"groups": what the build reads per
+    channel group, "meta": the plan's level and how the launch runs against
+    it, "work": what finish() needs to lay the plan card out}; None for a page
+    the view is not for (a timed launch, a closed one, one line's own page);
+    and {"skip": why} for a live draw launch that could have had one."""
     if not ctx or not isinstance(page, dict):
         return None
-    if page.get("type") == "TL" or page.get("upcoming") or page.get("catalogue") or page.get("complete") or page.get("line") or page.get("lines"):
+    if page.get("type") == "TL" or page.get("upcoming") or page.get("catalogue") or page.get("complete") or page.get("line"):
         return None
     pr = ctx["prices"]
     ann, close, today = _ts(page.get("windowStart")), _ts(page.get("windowEnd")), _ts(page.get("asOf"))
@@ -194,23 +198,45 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
     target = float(((page.get("hero") or {}).get("target")) or 0.0)
     chan = {c["key"]: c for c in page.get("channels") or []}
     groups = [g for g in FAMILIES if g in chan and g in (pr.get("split") or {})]
-    if ann is None or close is None or today is None or not code or target <= 0 or close <= ann or today > close or len(groups) < 3:
+    if ann is None or close is None or today is None or close <= ann or today > close:
         return None
+    if target <= 0:
+        return {"skip": "no targets set"}
+    if len(groups) < 3:
+        return {"skip": "too few channels on the page"}
     L = int((close - ann).days)
     start = ann - pd.Timedelta(days=P.LEAD_DAYS)
     if today < start:
         return None
+    # the campaign's code: the page's own when the plan has rows under it, else the Notion campaign that answers to
+    # the artist and the launch day (a launch the funnel could not give a code still has its plan in Notion)
+    all_comms, own = ctx["comms"], code
+    if not code or not (all_comms["campaign_code"] == code).any():
+        found = P.match_campaign_codes(pd.DataFrame([{"release_name": name, "artist": page.get("artist"), "campaign_code": None, "launch_end": str(close.date())}]),
+                                       ctx.get("campaigns"))
+        got = found["campaign_code"].iloc[0]
+        if isinstance(got, str) and got:
+            code = got
+    if not code:
+        return {"skip": "no campaign code, and no Notion campaign answers to the artist and launch day"}
     coef, rel = pr["clicks"]["coef"], pr.get("reliability") or P.DEFAULT_RELIABILITY
     frac = float(page.get("asOfFraction") or 1.0)
     comms, aud = ctx["comms"], ctx["aud"]
 
     sends = P.marketing_sends(aud, code, start, close)
+    if own and own != code:
+        # one launch tagged two ways (the plan under Notion's code, the sends under the page's own): its emails are both's
+        more = P.marketing_sends(aud, own, start, close)
+        if len(more):
+            sends = pd.concat([sends, more]).drop_duplicates(subset=["name", "ts"]).sort_values("ts").reset_index(drop=True)
     plan = comms[(comms["campaign_code"] == code) & (comms["date"] >= start) & (comms["date"] <= close)].copy()
     plan = plan[plan["family"].isin(P.POST_FAMILIES + ["email"])]
     live = plan[~plan["status"].isin(P.DROPPED)]
     emails_planned = live[(live["family"] == "email") & (live["date"] >= today)]
-    if len(live) < MIN_PLAN_ROWS or (sends.empty and emails_planned.empty):
-        return None
+    if len(live) < MIN_PLAN_ROWS:
+        return {"skip": f"no plan on file in Notion under {code}"}
+    if sends.empty and emails_planned.empty:
+        return {"skip": f"no email sent or planned under {code}"}
     plan["moment"] = [phase_of(r, ann, L) for _, r in plan.iterrows()]
     # the emails still to come: the plan's email rows from today on that no send has answered yet, each at the
     # usual audience for its kind (only HubSpot knows a send's audience, and only once it is set)
@@ -319,7 +345,7 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
         out[g] = {"plan": {d: round(at_day(cum, d), 2) for d in dates}, "exp": round(exp[g], 2), "fut": round(fut, 2), "pull": round(pull[g], 3),
                   "plan_total": round(float(cum[-1]), 2), "share": {d: round(at_day(share, d), 4) for d in dates if d >= str(today.date())}}
     plan_total = sum(v["plan_total"] for v in out.values())
-    meta = {"level": level, "levelStudy": lv["level"], "levelBasis": lv["basis"], "levelN": lv["n"], "conv": conv, "pullAll": pull_all,
+    meta = {"code": code, "level": level, "levelStudy": lv["level"], "levelBasis": lv["basis"], "levelN": lv["n"], "conv": conv, "pullAll": pull_all,
             "organicPlan": plan_total, "organicRange": [plan_total * lv["range"][0] / lv["level"], plan_total * lv["range"][1] / lv["level"]] if lv["level"] > 0 else [plan_total, plan_total],
             "organicToCome": sum(v["fut"] for v in out.values()), "firstPiece": str(pd.Timestamp(first).date())}
     work = {"pr": pr, "coef": coef, "rel": rel, "ann": ann, "close": close, "today": today, "frac": frac, "L": L, "days": days, "iso": iso, "i_now": i_now, "t": t,
@@ -504,28 +530,38 @@ def changes(w: dict, page: dict) -> list[dict]:
             out.append({"key": f"post.{col}", "kind": "add", "title": label, "note": "Not in the plan", "channel": chn, "date": str(mid_day.date()),
                         "units": {"low": u * POST_BAND[0], "high": u * POST_BAND[1]},
                         "reason": f"{who} bringing {word} the plan expected so far." + (" Partner posts are the least certain piece: few past launches ran one." if chn == "Partner" else "")})
-    # the paid budget: the Spend levels card's own reading for tomorrow (etl/plan_changes.py paid_change), which on
-    # this page is sized against what the plan's comms leave to do
+    # the paid budget: the Spend levels card's own reading for tomorrow (etl/plan_changes.py paid_changes). One for
+    # the campaign, which on this page is sized against what the plan's comms leave to do; on a launch that runs an
+    # ad set per line of work, one per line off the line's own card, as the clock's page gives them
+    per_line = w.get("line_pages") or {}
+    by_line = bool(page.get("lines")) and bool(per_line)
     try:
-        c = plan_changes.paid_change((page.get("paid") or {}).get("levels"), today.date(), w["close"].date())
+        paid = plan_changes.paid_changes({"lines": page.get("lines"), "variants": {"lines": per_line}} if by_line else {"paid": page.get("paid")},
+                                         today.date(), w["close"].date())
     except Exception:  # noqa: BLE001 - a paid block the card cannot read is no suggestion, never no page
-        c = None
-    if c:
-        c["reason"] = f"The plan's comms should bring about {round(w['organic_to_come'])} more by the close. " + str(c.get("reason") or "")
+        paid = []
+    for c in paid:
+        if not by_line:
+            c["reason"] = f"The plan's comms should bring about {round(w['organic_to_come'])} more by the close. " + str(c.get("reason") or "")
         out.append(c)
     return out
 
 
 # ---------------------------------------------------------------- finish: the plan-built page made whole
-def finish(page: dict, ov: dict) -> None:
+def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
     """Lay the plan card, the suggested actions and the headline figures onto a page the build has just made
     on the plan's path (`ov` is override()'s answer for it). The page reads "as it stands": where the plan
-    lands with nothing changed, paid held at today's spend; what a change would add is the suggested actions'."""
+    lands with nothing changed, paid held at today's spend; what a change would add is the suggested actions'.
+    `line_pages` are the pages of the launch's lines of work where it sells more than one (the build's
+    variants.lines): a launch that runs an ad set per line has its paid suggestions read off each line's own."""
     w = ov["work"]
     w["organic_to_come"] = ov["meta"]["organicToCome"]
+    w["line_pages"] = line_pages or {}
     chan = {c["key"]: c for c in page.get("channels") or []}
     paid = page.get("paid") or {}
     target = float(((page.get("hero") or {}).get("target")) or w["target"])
+    # the most the launch can sell: its edition, which is the target unless a lower sell-through is aimed for
+    ceiling = max(float(((page.get("edition") or {}).get("total")) or 0.0), target)
     today_iso = str(w["today"].date())
     rows = card_rows(w)
 
@@ -554,7 +590,7 @@ def finish(page: dict, ov: dict) -> None:
     tot = {k: sum(r[k] for r in rows) for k in ("expected", "in", "toCome", "lands")}
     started = tot["in"] > 0 or w["today"] >= pd.Timestamp(w["first"])
     demand = tot["lands"] if started else tot["expected"]      # where the plan lands: demand, which a strong plan takes past the edition
-    lands = min(demand, target)                                   # ... and what the page's other cards can count: the edition is the ceiling
+    lands = min(demand, ceiling)                                  # ... and what the page's other cards can count: the edition is the ceiling
     by_today = sum(float(c.get("exp") or 0.0) for c in page.get("channels") or [])
     hero = page.setdefault("hero", {})
     now_all = float(hero.get("now") or tot["in"])
@@ -575,14 +611,25 @@ def finish(page: dict, ov: dict) -> None:
 
     cf = page.get("closeForecast")
     if isinstance(cf, dict) and cf.get("units"):
-        ratio = lands / max(float(cf["units"]), 1e-9)
-        cf.update({"units": round(lands, 1), "pct": round(lands / target, 4), "lo": round(float(cf.get("lo") or lands) * ratio, 1), "hi": round(min(float(cf.get("hi") or lands), target), 1),
-                   "pctLo": round(float(cf.get("lo") or lands) * ratio / target, 4), "confidence": "medium",
-                   "confidenceWhy": "what is still to come is read from the plan's remaining pieces, each a range",
-                   "built": {**(cf.get("built") or {}), "organic": round(ov["meta"]["organicToCome"], 1), **({"paid": round(max(float(pc.get("proj") or 0) - float(pc.get("now") or 0), 0.0), 1)} if pc else {})}})
+        # the Sell-through at close card: the plan's landing as a share of the edition, as the clock's page reads it,
+        # with the range of the build's own reading at today's paid moved with it. That reading (today's paid held)
+        # is the card's default, so it is given the plan's figures too and the card agrees with the plan card
+        sc = cf.get("scenarios") if isinstance(cf.get("scenarios"), dict) else {}
+        held_sc = sc.get("current") if isinstance(sc.get("current"), dict) and sc["current"].get("units") else None
+        src = held_sc or cf
+        ed = float(cf.get("edition") or 0.0) or ceiling
+        ratio = lands / max(float(src["units"]), 1e-9)
+        lo = min(float(src.get("lo") or lands) * ratio, lands)
+        hi = max(min(float(src.get("hi") or lands) * ratio, ed), lands)
+        read = {"units": round(lands, 1), "pct": round(lands / ed, 4), "lo": round(lo, 1), "hi": round(hi, 1), "pctLo": round(lo / ed, 4), "pctHi": round(hi / ed, 4),
+                "confidence": "medium", "confidenceWhy": "what is still to come is read from the plan's remaining pieces, each a range",
+                "built": {**(cf.get("built") or {}), "organic": round(ov["meta"]["organicToCome"], 1), **({"paid": round(max(float(pc.get("proj") or 0) - float(pc.get("now") or 0), 0.0), 1)} if pc else {})}}
         if lvl.get("today") is not None:
-            cf["paid"] = {"daily": lvl["today"], "today": lvl["today"], "change": 0.0, "direction": "hold", "spendAtClose": (paid.get("ifContinued") or {}).get("spendProjectedTotal"),
-                          "budget": paid.get("spendBudget"), "rule": "The forecast holds today's paid spend to the close, so it shows where the plan lands with nothing changed."}
+            read["paid"] = {"daily": lvl["today"], "today": lvl["today"], "change": 0.0, "direction": "hold", "spendAtClose": (paid.get("ifContinued") or {}).get("spendProjectedTotal"),
+                            "budget": paid.get("spendBudget"), "rule": "The forecast holds today's paid spend to the close, so it shows where the plan lands with nothing changed."}
+        cf.update(read)
+        if held_sc is not None:
+            sc["current"] = {**held_sc, **read}
     wf = page.get("waterfall")
     if isinstance(wf, dict):
         steps = [{"key": "plan", "label": "The plan against the target", "value": round(tot["expected"] - target)}]
