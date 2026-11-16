@@ -728,6 +728,9 @@ def spread_profile(profile: dict, norm: dict | None) -> dict:
     return out
 
 
+PLAN_VIEWS: list[str] = []   # the launches this build read off their comms plan as well (variants.plan), for its closing lines
+
+
 def with_direct_spread(build, *args, **kwargs) -> dict:
     """A page built both ways: as the funnel attributes it, and with Direct
     spread over the other channels (docs §1.3). The blocks that differ ride
@@ -749,6 +752,7 @@ def with_direct_spread(build, *args, **kwargs) -> dict:
                 pv = build(*args, **kwargs, direct_spread=True, plan_ov=ov["groups"])
                 plan_view.finish(pv, ov)
                 snap["variants"]["plan"] = diff(pv)
+                PLAN_VIEWS.append(str(snap.get("id")))
         except Exception as e:  # noqa: BLE001 - the plan view never stops a page
             snap["variants"].pop("plan", None)
             print(f"plan view: {snap.get('id')}: not built ({type(e).__name__}: {str(e)[:200]})")
@@ -9191,6 +9195,13 @@ def main(only: str | None = None):
         print(f"panel: {len(PANEL_WARNINGS)} warning(s) above - the benchmark panel wants a re-run (README, 'Re-running the benchmark panel')")
     if SNAPSHOT_WARNINGS:
         print(f"check_snapshot: {len(SNAPSHOT_WARNINGS)} warning(s) from the soft checks (nothing stopped)")
+    # the launches read off their comms plan as well (variants.plan, docs/PLAN_MODEL.md 6), on a line the
+    # refresh's log carries: the page's Targets from switch shows on these and no others
+    if plan_view.context() is None:
+        print("plan views: off - the price list, the Notion plan or the email audiences are missing")
+    else:
+        print(f"plan views: {len(PLAN_VIEWS)} - " + (", ".join(PLAN_VIEWS[:8]) + (f" and {len(PLAN_VIEWS) - 8} more" if len(PLAN_VIEWS) > 8 else "")
+                                                     if PLAN_VIEWS else "no live draw launch with targets set and a plan on file"))
     # the pages that did not build, on one line the refresh status reads
     # (server/sheets.js parseBuildSummary): the id and the error, the first
     # five in full

@@ -310,7 +310,7 @@ async function runEtlOnce(release) {
   }
   const build = await runPy("build.py", 5 * 60 * 1000);
   lastBuild = parseBuildSummary(build);
-  return [agg, ...build.split("\n").slice(-3)].filter(Boolean).join(" | ");
+  return [agg, ...build.split("\n").slice(-4)].filter(Boolean).join(" | ");
 }
 
 // only one build.py at a time (a save-triggered rerun can race the scheduler)
@@ -581,6 +581,7 @@ function startScheduler() {
   const tick = (label) => refresh()
     .then((r) => console.log(`sheets: ${label} refresh ${r.ok ? "ok" : "with failures"} - ` +
       `${r.bigquery ? r.bigquery + " | " : ""}${r.sheet} | ${r.emails} | ${r.notion} | ` +
+      `${r.commsPlan ? r.commsPlan + " | " : ""}${r.audiences ? r.audiences + " | " : ""}` +
       `${r.tookMs}ms | ${r.etl}`))
     .catch((e) => console.error(`sheets: ${label} refresh crashed - ${e.message}`));
   // the interval is read after every refresh: a timed launch's window opening
