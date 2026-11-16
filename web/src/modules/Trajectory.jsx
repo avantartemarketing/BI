@@ -66,6 +66,11 @@ export default function Trajectory({ snap, vs = "target" }) {
   // where today sits on the clock: the day so far at the share of it seen
   const elapsed = complete ? day : Math.max(0, Math.min(dayElapsed(snap), of));
   const targeted = snap.targeted !== false && vs === "target";
+  // the plan-based view (docs/PLAN_MODEL.md): the pale line is the plan's path, the target is the edition as a
+  // level across the chart, and before anything has gone out the card reads the plan alone
+  const planMode = snap.method === "plan";
+  const planStart = planMode && !!(snap.plan && snap.plan.state === "start");
+  const goal = planMode && snap.edition && snap.edition.total > 0 ? snap.edition.total : null;
   if (!s.pts.length) {
     return <Card wide title={W.trajTitle}><div className="empty-state">No {W.stepWord}-by-{W.stepWord} series yet</div></Card>;
   }
@@ -86,7 +91,7 @@ export default function Trajectory({ snap, vs = "target" }) {
     // no shaped path on an older snapshot: a straight line to the close
     if (!proj.some((v, i) => i > todayIdx && has(v))) proj[N] = s.proj;
   }
-  const top = Math.max(1, ...[actual, target, bm, proj].filter(Boolean).flat().filter(has));
+  const top = Math.max(1, goal || 0, ...[actual, target, bm, proj].filter(Boolean).flat().filter(has));
   const ax = niceAxis(top);
 
   const planToday = s.exp, bmToday = hasBm ? s.bmExp : null;
@@ -104,23 +109,25 @@ export default function Trajectory({ snap, vs = "target" }) {
       + (!W.tl && projPct !== null && projPct > 100 ? " · demand beyond the sellout cannot convert" : "");
 
   const series = [
-    ...(target ? [{ name: "Target", color: COL.LIGHT, w: 2, vals: target }] : []),
+    ...(goal ? [{ name: "Target", color: COL.INK, w: 1.5, da: "1 4", vals: pts.map(() => goal) }] : []),
+    ...(target ? [{ name: planMode ? "Plan" : "Target", color: COL.LIGHT, w: 2, vals: target }] : []),
     ...(bm ? [{ name: "Benchmark", color: COL.INK, w: 1.5, da: "1 4", vals: bm }] : []),
     ...(proj ? [{ name: "Projected", color: COL.IND, w: 1.5, da: "4 4", vals: proj }] : []),
     { name: W.secured, color: COL.IND, w: 2, area: true, vals: actual },
   ];
   const legend = [
-    { n: W.secured, v: fmt(s.now), k: lk(COL.IND), tip: nowTip },
-    ...(proj ? [{ n: "Projected", v: fmt(s.proj), k: lk(COL.IND, "dashed"), tip: projTip }] : []),
-    ...(target ? [{ n: "Target", v: fmt(s.target), k: lk(COL.LIGHT), tip: `${fmt(planToday)} target by ${W.stepWord} ${day} · ${fmt(s.target)} at the ${W.closeWord}` }] : []),
+    ...(planStart ? [] : [{ n: W.secured, v: fmt(s.now), k: lk(COL.IND), tip: nowTip }]),
+    ...(proj && !planStart ? [{ n: "Projected", v: fmt(s.proj), k: lk(COL.IND, "dashed"), tip: projTip }] : []),
+    ...(goal ? [{ n: "Target", v: fmt(goal), k: lk(COL.INK, "dotted"), tip: "The target: the edition" }] : []),
+    ...(target ? [{ n: planMode ? "Plan" : "Target", v: fmt(s.target), k: lk(COL.LIGHT), tip: `${fmt(planToday)} ${planMode ? "in the plan" : "target"} by ${W.stepWord} ${day} · ${fmt(s.target)} at the ${W.closeWord}` }] : []),
     ...(bm ? [{ n: "Benchmark", v: fmt(s.bm), k: lk(COL.INK, "dotted"), tip: `${fmt(bmToday)} benchmark by ${W.stepWord} ${day} · ${fmt(s.bm)} at the ${W.closeWord}: the median of the matched basket` }] : []),
   ];
-  const aside = complete ? "final" : `${W.stepWord} ${day} of ${of}`;
+  const aside = planStart ? "before the first piece goes out" : complete ? "final" : `${W.stepWord} ${day} of ${of}`;
   return (
     <Card wide title={W.trajTitle} aria={`${W.trajTitle}: cumulative ${W.unit} by ${W.stepWord}`}>
-      <Head v={fmt(nowVal)} u={W.unit}
+      <Head v={planStart ? fmt(s.target) : fmt(nowVal)} u={planStart ? `${W.unit} expected by the close` : W.unit}
         deltas={[
-          targeted ? vsDelta(nowVal, planToday, "target", `${fmt(nowVal)} against the ${fmt(planToday)} the target expects by ${W.stepWord} ${day}`) : null,
+          targeted && !planStart ? vsDelta(nowVal, planToday, planMode ? "plan by today" : "target", `${fmt(nowVal)} against the ${fmt(planToday)} the ${planMode ? "plan" : "target"} expects by ${W.stepWord} ${day}`) : null,
           hasBm ? vsDelta(nowVal, bmToday, "benchmark", `${fmt(nowVal)} against the basket's ${fmt(bmToday)} by ${W.stepWord} ${day}`) : null,
         ]}
         aside={aside} asideTip={showProj ? projTip : nowTip} />
@@ -133,7 +140,7 @@ export default function Trajectory({ snap, vs = "target" }) {
           const ahead = !has(actual[i]) && proj && has(proj[i]);
           return [
             { n: ahead ? "Projected" : W.secured, v: has(actual[i]) ? fmt(actual[i]) : ahead ? fmt(proj[i]) : "–", k: lk(COL.IND, ahead ? "dashed" : "solid") },
-            ...(target && has(p.plan) ? [{ n: "Target", v: fmt(p.plan), k: lk(COL.LIGHT) }] : []),
+            ...(target && has(p.plan) ? [{ n: planMode ? "Plan" : "Target", v: fmt(p.plan), k: lk(COL.LIGHT) }] : []),
             ...(bm && has(p.bm) ? [{ n: "Benchmark", v: fmt(p.bm), k: lk(COL.INK, "dotted") }] : []),
           ];
         }}

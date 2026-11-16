@@ -2,12 +2,13 @@
 
 A second way to read a draw launch, built beside the campaign clock and replacing nothing.
 The clock (docs/METHODOLOGY.md 5 and 6) says how far along a launch should be by today.
-The plan model says what the launch's comms plan is worth: what has gone out, what is still
-to come, and how that compares with the plan a usual launch would still have ahead of it.
+The plan model says what the launch's comms plan is worth: what each email and post should
+bring, what has gone out, what is still to come, and what a change would add.
 
-**Where it stands (16 November 2026).** The feeds, the price list and the back-test are in
-the repository. Nothing is on a page yet, and nothing here is part of the hourly refresh.
-The page comes next, mockup first (section 7).
+**Where it stands (16 November 2026).** It is on the dashboard behind a switch. A live draw
+launch's page reads "Targets from: Time" by default, which is the clock's page unchanged;
+"Plan" lays the plan-based view over it (section 6), so the two can be compared before
+the plan becomes the default. The two feeds are pulled in the hourly refresh.
 
 ---
 
@@ -31,7 +32,13 @@ often a sign that the plan in Notion is incomplete).
 
 ## 2. The feeds
 
-Two new pulls, each run by hand for now.
+Two pulls, each part of the hourly refresh (`server/sheets.js`, after the artist-post log)
+and each runnable by hand. A failed pull leaves the previous file in place, is reported in
+the refresh's status and the log, and does not fail the refresh: the clock's page never
+reads these files. Together they add about a minute and a half to a refresh. The refresh
+reads only the plan rows going live from 120 days ago onwards (`NOTION_COMMS_DAYS`), which
+is every row a live launch's page can need; run by hand the pull reads the whole plan,
+which takes a few minutes and is what the back-test needs.
 
 **The comms plan (Notion).** `node server/commsPlan.js --write` reads the team's Comms
 database: one row per piece of comms (an email, a post, a story, an artist's post, a
@@ -65,8 +72,8 @@ on about one email row in ten.
 
 With the `crm.lists.read` scope on the HubSpot private app the same pull also writes
 `sources/hubspot_lists.csv` (each list's name and size, and the kind of audience its name
-says it is). On 16 November 2026 the token did not carry the scope, so the model reads an
-audience by its size only (section 6).
+says it is). The model does not read the names yet: it reads an audience by its size only
+(section 7).
 
 **Personal data.** Neither pull reads a person. The Notion pull has no case for people or
 email properties; the HubSpot pull keeps list ids and counts, and of contacts addressed one
@@ -115,7 +122,8 @@ a deliberate act, not a side effect of new data.
 ### 4.1 The unit: a quiet day
 
 Everything is priced in **quiet days**: an ordinary day after the announce with nothing
-going out is 1. A day before the announce is 0.10. The unit is the launch's own, so a big
+going out is 1. A day before the announce is next to nothing on its own: what comes then
+comes with the early access pieces. The unit is the launch's own, so a big
 launch's quiet day is bigger than a small one's, and the price list can be one list for
 every launch.
 
@@ -145,42 +153,67 @@ their reading (x0.65 to x1.31).
 
 ### 4.3 The price list
 
-What a piece of comms adds over its day and the two after (it fades to x0.40 the day after
-and x0.19 the day after that):
+What a piece of comms adds over its day and the days it is still felt. An email is felt
+for four more days (x0.42 the day after, then x0.28, x0.13 and x0.13); a post for one
+(x0.32):
 
 | Piece | Quiet days |
 | --- | --- |
-| Early access email, per 100 expected clicks | 4.7 |
-| Announce email, per 100 expected clicks | 1.7 |
-| Last chance email, per 100 expected clicks | 1.3 |
-| Sustain email, per 100 expected clicks | 0.9 |
-| Avant Arte IG post | 3.3 |
-| Avant Arte IG story or broadcast | 1.2 |
-| Other AA social (X, Insiders IG, TikTok, Discord) | 1.2 |
-| Artist IG post | 6.3 |
+| Early access email, per 100 expected clicks | 7.0 |
+| Announce email, per 100 expected clicks | 2.4 |
+| Last chance email, per 100 expected clicks | 2.0 |
+| Sustain email, per 100 expected clicks | 1.5 |
+| Avant Arte IG post | 3.0 |
+| Avant Arte IG story or broadcast | 1.3 |
+| Other AA social (X, Insiders IG, TikTok, Discord) | 0.9 |
+| Artist IG post | 6.0 |
 | Artist's other channels (their email, X, arte.bio) | 6.1 |
-| Partner post | 5.3 |
-| Artist IG story | 0.0 |
+| Partner post | 6.0 |
+| Artist IG story | 0.1 |
 
-The close day adds 0.6 on its own and the day before it 1.0: most of the last days' rush
+The close day adds 0.9 on its own and the day before it 1.1: most of the last days' rush
 is the last chance comms, not the date. So an announce email to the full list (about 2,000
-expected clicks) is worth about 35 quiet days, an early access email to 3,000 people about
-17, and a last chance email to 15,000 about 6.
+expected clicks) is worth about 50 quiet days, an early access email to 3,000 people about
+25, and a last chance email to 15,000 about 9.
 
 The weights are one set for every launch, none below zero, chosen to match each launch's
 day-by-day share of its own demand (`fit_prices`). Read them as rough. Pieces that go out
 on the same days share the credit between them and the fit cannot always tell them apart:
-the artist's story reads as nothing because it goes out beside the artist's post, and the
-partner post's price rests on few launches and on a channel check that shows little
-(section 3).
+the artist's story reads as next to nothing because it goes out beside the artist's post,
+and the partner post's price rests on few launches and on a channel check that shows
+little (section 3).
+
+**How long a piece is felt.** Until 16 November 2026 every piece was given its day and the
+two after. Read that way, a quarter of a typical launch's demand outside paid was left as
+baseline (what an ordinary day brings with nothing going out). The question was whether a
+longer tail is real or only moves baseline onto the pieces by another name, so the price
+list was refitted with longer tails, each launch judged from the others:
+
+| A piece is felt for | Baseline's share of a launch | Day-to-day pattern explained | Typical miss on the final at 25, 50, 75% |
+| --- | --- | --- | --- |
+| Its day and 2 after, every piece (as it was) | 25% | 65.6% | 10%, 7%, 4% |
+| Email 4 after, post 1 after (kept) | 19% | 66.7% | 11%, 7%, 5% |
+| Email 6 after, post 1 after | 16% | 67.1% | 12%, 7%, 5% |
+| Email on a smooth fade over about ten days, post 1 after | 13% | 67.4% | 12%, 7%, 6% |
+| Its day and 9 after, every piece | 10% | 66.7% | 12%, 7%, 5% |
+
+Two things hold whichever way it is cut. A post is over by the next day: given more days,
+the fit sets them to nothing, for Avant Arte's posts and the artist's alike. An email is
+not: its third and fourth days after each still carry about an eighth of its first. Beyond
+that the fit gets no better and the forecast of what is still to come gets worse (at three
+quarters of the way through, a typical miss of 31% with the short tail, 37 to 38% with four days
+and 58% with the smooth fade), because a campaign is short enough that with a week-long
+tail every day is "after" something and the baseline cannot be told from the tail. So the
+rule kept is an email for four more days and a post for one. (The comparison was run once
+and is not kept as a script; `plan_backtest.py` fits the rule kept.)
 
 ### 4.4 A plan's value, and the usual plan left
 
 A launch's days are laid out with what goes out on each (`launch_days`) and priced
 (`day_values`). The value of the days after a point over the value of the days up to it is
 how much of the plan is still ahead (`remaining_ratio`). The **usual** figure at each point
-is the median over the 66 launches as they ran: 0.49 a quarter of the way from announce to
-close, 0.31 at halfway, 0.17 at three-quarters.
+is the median over the 66 launches as they ran: 0.43 a quarter of the way from announce to
+close, 0.27 at halfway, 0.15 at three-quarters.
 
 ### 4.5 The forecast
 
@@ -195,13 +228,15 @@ in full. The back-test keeps 0.5 (section 5), because the price list is rough. T
 held between x0.4 and x2.5.
 
 An example with round numbers. At halfway a launch has 180 units in and the clock says 120
-more. Its plan left is worth 0.23 of what it has run, where the usual is 0.31: three
+more. Its plan left is worth 0.20 of what it has run, where the usual is 0.27: three
 quarters of a usual plan, because no artist post is left and the last chance email is going
 narrow. `0.75 ^ 0.5 = 0.87`, so the forecast is `180 + 120 x 0.87 = 284`, against the
 clock's 300.
 
 This is the case the model exists for: a launch that is on the clock's pace so far, with
-less left in its plan than a usual launch has.
+less left in its plan than a usual launch has. The anchored forecast is the back-test's
+(section 5) and is on no page: the plan-based view (section 6) reads the plan alone, with
+no clock in it, which the owner chose on 16 November 2026 so that one page has one source.
 
 ### 4.6 Paid
 
@@ -223,78 +258,164 @@ after the point is not in it, and one already marked dropped is known to be. The
 come are the sends that did go, since only HubSpot knows an audience.
 
 **Day by day.** How much of the pattern of when demand arrives each explains: the clock
-41%, the plan 65%.
+41%, the plan 66%.
 
 **The final, from each point.** Typical miss either way on the final, then on what was
 still to come:
 
 | Read at | Clock | Plan alone | Anchored (0.5) |
 | --- | --- | --- | --- |
-| 2 days after announce | 11% and 29% | 17% and 42% | 13% and 33% |
-| 25% through | 11% and 39% | 10% and 37% | 11% and 38% |
-| 50% through | 9% and 41% | 7% and 40% | 7% and 37% |
-| 75% through | 4% and 34% | 5% and 30% | 4% and 37% |
-| 90% through | 4% and 40% | 4% and 40% | 4% and 35% |
+| 2 days after announce | 11% and 29% | 16% and 47% | 11% and 31% |
+| 25% through | 11% and 39% | 12% and 53% | 11% and 35% |
+| 50% through | 9% and 41% | 6% and 37% | 7% and 38% |
+| 75% through | 4% and 34% | 5% and 38% | 4% and 36% |
+| 90% through | 4% and 40% | 4% and 44% | 4% and 35% |
 
 **When the plan left is lighter or heavier than usual** (192 reads at 25, 50 and 75%):
 
 | Plan left against the usual | Reads | What came, against the clock's figure |
 | --- | --- | --- |
-| Under 0.8 | 58 | x0.77 |
-| 0.8 to 1.25 | 74 | x1.07 |
-| Over 1.25 | 60 | x1.32 |
+| Under 0.8 | 62 | x0.76 |
+| 0.8 to 1.25 | 66 | x1.09 |
+| Over 1.25 | 64 | x1.32 |
 
 **How to read it.**
 
 - The clock is already a good guess at the final total, because most launches run much the
-  same pattern of comms, so time stands in for the plan. Two days after the announce it is
-  the better of the two, and the plan alone should not be trusted that early.
+  same pattern of comms, so time stands in for the plan. Up to a quarter of the way in it
+  is the better of the two on the final (11% against 16%, then 11% against 12%); from
+  halfway the plan alone is level with it or better (6% against 9%).
 - The plan explains when demand arrives far better than the clock does, and it is the only
   one of the two that can say what a change is worth.
 - When the plan left differs from the usual, the launch lands where the plan says: about a
   quarter under the clock's figure when it is lighter, about a third over when heavier.
 - On average the anchored forecast is only a little better than the clock on what is still
-  to come (37% against 39% from a quarter of the way in), and the tables above move a few
+  to come (36% against 39% from a quarter of the way in), and the tables above move a few
   points either way from one strength to the next. The strength kept, 0.5, is the one whose
   neighbours on the grid miss least, as the cost curve's slope is kept (`etl/paid_cost.py`).
-- What is still to come is hard to call either way: a typical miss of 30 to 40%.
+- What is still to come is hard to call either way: a typical miss of 30 to 50%.
 
-## 6. Limits
+## 6. The plan-based view (the page)
+
+`etl/plan_view.py`, laid under `variants.plan` on a launch's page by the build
+(`with_direct_spread` in `etl/build.py`), and shown by the page's **Targets from** switch
+(`web/src/ReleasePage.jsx`): **Time** is the clock's page, unchanged and the default;
+**Plan** is this view. The choice is kept per browser. The switch is only on a page the
+build has read both ways.
+
+**Which launches.** A draw launch in its window, not a line of work and not a timed
+launch, with a campaign code, at least three emails and posts on file under it in the
+Notion plan, and at least one email sent or planned. Anything else keeps the clock's page
+alone and shows no switch.
+
+**One source for every card.** The build makes the page a third time, in the view with
+Direct spread over the other channels, reading for each channel group outside paid the
+plan's path where it would read the clock's curve: what the plan as set expected by each
+day and by today, and what is still to come. So the trajectory, the channel columns, the
+funnel table, the gap card, the email card and the forecast all move to the plan together,
+and paid, which keeps its own model, is sized against what the plan's comms leave to do.
+In this view the page has one reference, the plan, so the Compare to switch is off.
+
+**The plan as set.** Every plan row written by the day the launch's first piece went out
+counts, each as planned (a post at how often its family goes out, section 3), plus the
+emails. An email's plan is sized on the audience it went to, or for one still to come on
+the usual audience for its kind until HubSpot says otherwise: only HubSpot knows an
+audience, and only once it is set. A piece dropped later keeps its plan and lands at
+nothing, and its line says so.
+
+**The level.** The price list is in quiet days, so a plan needs to know how big a quiet
+day is for this launch before it has results: the median of the artist's last three
+launches when the artist has at least two on file, else the median of the launches the
+page is benchmarked on (when three have a size on file), else of every launch. The sizes
+are written by the back-test into `plan_prices.json` (`quiet`), so they are as old as its
+last run. The level is the weakest part of the view: one artist's last three launches can
+differ by a factor of two, and the range beside the headline before a launch starts
+("likely 195 to 301") is that spread and nothing finer.
+
+**How the launch is running.** Each channel's pull is what it has brought over what the
+plan as set expected of it by today, read once the plan expected at least 5 units of it,
+averaged half and half with the launch's pull across every channel and held between x0.3
+and x2.0. What is still to come is the plan's remaining pieces and baseline at that pull.
+The headline ("185 at the close, 15 short of the 200 target") is the plan as it stands
+with nothing changed: paid held at today's spend. What a change would add is the suggested
+actions'.
+
+**Credit by the day people entered.** What has come in is shared out between the pieces
+and the baseline by the day a person entered or bought, each channel scaled to the page's
+own count for it so the card adds up to every other card. The page's own daily series
+cannot be used for this: it dates a unit by its order, and a draw books its orders in
+batches days after the entries (Johnson Tsang's In Position booked 20 on 10 November, 20
+on 13 November and 16 on 16 November, from entries mostly made on the 9th), so read on
+those days the announce's units land on days with nothing going out and are called
+baseline. On each channel and day, what came in is split between the pieces felt that day
+and the baseline in proportion to what the plan put there. Emails sent on the same day are
+told apart by the clicks each got. A day's posts from one sender are one line. This is an
+estimate, not a measurement: nothing in the feeds ties a unit to a piece.
+
+**The card.** A bar per phase (early access, announce, sustain, last chance), one for the
+baseline and one for paid: in so far, still to come, and a tick where the plan put it,
+with the two figures beside it. A box beside the bars, the same height and scrolling
+inside, lists the pieces: every email and post with the one furthest behind its plan first
+(in date order before anything has gone out), or the phase picked, the baseline by
+channel, or paid by what is spent and still to spend.
+
+**Suggested actions in this view** are valued by the same price list, at the launch's
+level and at how the piece's channel is running: an email still to come sent to the full
+list or to a middle size (the full list is the widest send of the last 120 days), a
+sustain email when none is planned, a post from the artist, Avant Arte or a partner three
+days out, and the paid budget's step for tomorrow from the Spend levels card's own reading
+(`plan_changes.paid_change`). An email's range is the middle half of how past sends landed
+around their reading; a post's is x0.6 to x1.4. The clock's page keeps its own suggested
+actions (`etl/plan_changes.py`), which read what comparable launches did.
+
+`python3 tests/test_plan_view.py` holds the view to a hand-built launch: the rows adding up
+to the page's counts and each row's pieces to the row, and the credit going to the day
+people entered.
+
+## 7. Limits
 
 - **Groups of people.** The model reads an audience by its size. Which groups (artist
-  sign-ups, past buyers, related artists, Insiders) needs the lists' names, which need the
-  `crm.lists.read` scope; `listKind` in `server/emailAudiences.js` is ready to sort them.
-- **Units per email.** HubSpot gives clicks per email; units are known per day for email as
-  a whole. A send's units are its clicks times the launch's units per click.
-- **Same-day pieces share credit.** See 4.3. A price is what a day with that piece usually
-  brings, not proof of what the piece alone caused.
-- **Launches without a code.** A campaign with no code in Notion has no plan here, and a
-  funnel release is matched to a code by the feeds' own guess or by artist and launch day
-  (`match_campaign_codes`).
-- **Before the announce.** The model needs a level to start from. A quick try at predicting
-  a launch's demand from its price, edition size, artist tier and the artist's last launch
-  missed by 43% (typical, 64 launches predicted from earlier ones); edition size times the
-  usual demand per edition missed by 31%. So the simple rule stands until a model beats it,
-  and after the announce the launch's own response is the better guide anyway. (That study
-  is not kept as a script.)
-- **Thin history.** 66 launches. Every figure here should be re-read as launches close.
-- **Not in the refresh.** The two pulls are run by hand; a page will need them hourly.
+  sign-ups, past buyers, related artists, Insiders) needs the lists' names; the scope is
+  granted and `listKind` in `server/emailAudiences.js` is ready to sort them, but nothing
+  reads them yet.
+- **An email still to come has no audience.** Until HubSpot's draft says who it goes to,
+  the usual audience for its kind is assumed, and the view says so on the line.
+- **Units per piece are shared out, not measured.** See section 6. A price is what a day
+  with that piece usually brings, and a piece's "brought" is its share of its channel's
+  units on the days it was felt; neither is proof of what the piece alone caused. Units
+  that arrive after a piece is no longer felt are the baseline's.
+- **Same-day pieces share credit.** See 4.3.
+- **Launches without a code.** A campaign with no code in Notion has no plan here, and so
+  no switch on its page.
+- **Before the announce.** The level a plan starts from is rough (section 6). A quick try
+  at predicting a launch's demand from its price, edition size, artist tier and the
+  artist's last launch missed by 43% (typical, 64 launches predicted from earlier ones);
+  edition size times the usual demand per edition missed by 31%. After the announce the
+  launch's own response is the better guide, and the view leans on it.
+- **Early in a launch the plan alone is the weaker forecast.** Up to a quarter of the way
+  in, the clock calls the final better (section 5). The switch is there so the two can be
+  read side by side.
+- **The view is read with Direct spread.** The plan is priced on demand by channel group
+  with Direct shared out, which is the dashboard's default view.
+- **Thin history.** 66 launches. Every figure here should be re-read as launches close,
+  and the price list is only as fresh as the last run of the back-test.
 
-## 7. What comes next
+## 8. What comes next
 
-The page, as a mockup first (CLAUDE.md, "Mockup before live"). On a live draw launch:
+- The plan as the default, once the two have been compared on live launches.
+- An email's planned audience read from its HubSpot draft, and audiences read by who is in
+  them as well as how many.
+- The level a plan starts from, from more than the artist's last three launches.
+- The page before a launch's first piece goes out is built (the plan alone), but a launch
+  only has a page once its targets are set; the upcoming pages do not carry the plan yet.
 
-1. **What went out**: each piece with what it should have brought and what it brought.
-2. **Where the plan lands** against the target, with the clock underneath as a check.
-3. **What a change is worth**: a piece added, moved, widened or dropped, as a range in
-   units. This would replace the rough sizes on Suggested actions.
-
-And with it: the two pulls in the hourly refresh, and Suggested actions reading the full
-plan. Reading the artist-post log, it cannot see a planned email, so it may propose a send
-that is already planned.
-
-## 8. Log
+## 9. Log
 
 - **16 November 2026.** The brief (section 1). The first study on 64 launches, then the
-  feeds, the price list and the back-test as they stand here, on 66. The strength kept at
-  0.5. The HubSpot token did not carry `crm.lists.read`.
+  feeds, the price list and the back-test, on 66. The strength kept at 0.5.
+- **16 November 2026, later.** The owner chose one forecast built only from the plan, no
+  clock in the view, then a page mockup (the plan card as bars with a box of the pieces
+  beside them), then asked for it to be built behind a switch with the clock's page as the
+  default. With it: an email felt for four more days and a post for one (4.3); what came
+  in credited to the day people entered, after the mockup showed a draw's batched orders
+  landing on the baseline; the two feeds in the hourly refresh; `etl/plan_view.py`.

@@ -17,7 +17,7 @@ import TargetSetting from "./TargetSetting.jsx";
 import TLTargets from "./TLTargets.jsx";
 
 /* The Display menu: the settings that hold for every release. */
-function DisplayMenu({ directSpread, setDirectSpread, snap }) {
+function DisplayMenu({ directSpread, setDirectSpread, snap, planOn }) {
   const m = useMenu();
   const W = wordsOf(snap);
   const tip = W.tl
@@ -28,7 +28,7 @@ function DisplayMenu({ directSpread, setDirectSpread, snap }) {
       <button className="chip" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle}><Display />Display</button>
       <Menu open={m.open} onClose={m.close} style={{ top: 32, right: 0, width: 272, padding: 6 }}>
         <div className="dmh">Every release</div>
-        <div className="dm" title={tip}>Direct<Seg options={[["channel", "Channel", "Direct stays a channel of its own, as the feed attributes it"], ["spread", "Spread", tip]]} value={directSpread ? "spread" : "channel"} onChange={(v) => setDirectSpread(v === "spread")} label="Direct" /></div>
+        <div className="dm" title={tip}>Direct<Seg options={[["channel", "Channel", planOn ? "The plan-based view is read with Direct spread over the other channels" : "Direct stays a channel of its own, as the feed attributes it", !!planOn], ["spread", "Spread", tip]]} value={planOn || directSpread ? "spread" : "channel"} onChange={(v) => setDirectSpread(v === "spread")} label="Direct" /></div>
       </Menu>
     </span>
   );
@@ -113,6 +113,19 @@ function CompareSwitch({ snap, vs, onChange }) {
   );
 }
 
+/* Which method the page's targets come from (docs/PLAN_MODEL.md): the campaign
+ * clock, which is the default, or the launch's comms plan. Shown on a launch
+ * the build has read both ways; the choice is kept per browser. */
+function MethodSwitch({ value, onChange }) {
+  return (
+    <span className="cmp">Targets from
+      <Seg label="Targets from" value={value} onChange={onChange}
+        options={[["time", "Time", "Read every card against the campaign clock: how far along a launch should be by today"],
+          ["plan", "Plan", "Read every card against the comms plan: what each email, each post and the paid budget should bring"]]} />
+    </span>
+  );
+}
+
 /* The header's refresh button, beside the freshness line: starts a pull and
  * rebuild now (POST /api/refresh) instead of waiting for the hourly one. It
  * spins while any refresh runs, whoever started it, and the page reloads when
@@ -188,7 +201,7 @@ function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup }) {
   ));
 }
 
-export default function ReleasePage({ snap, snapError, actions, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
+export default function ReleasePage({ snap, snapError, actions, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, targetsFrom, setTargetsFrom, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
   const tab = route.tab || "overview";
   const setTab = (t) => setRoute({ ...route, tab: t, basket: false });
   const [horizon, setHorizon] = useState("today");
@@ -209,7 +222,11 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
   const variant = snap.variants && snap.variants.direct_spread;
   const lines = Array.isArray(snap.lines) && snap.lines.length && snap.variants && snap.variants.lines ? snap.lines : null;
   const lineVariant = lines && lineKey ? ((directSpread && snap.variants.lines_direct && snap.variants.lines_direct[lineKey]) || snap.variants.lines[lineKey] || null) : null;
-  const view = lineVariant ? { ...snap, ...lineVariant } : directSpread && variant ? { ...snap, ...variant } : snap;
+  // the plan-based view: the page as the build read it off the launch's comms plan (variants.plan, in the view
+  // with Direct spread), laid over the page when the switch says so. The clock's page is the default.
+  const planVariant = snap.variants && snap.variants.plan;
+  const planOn = targetsFrom === "plan" && !!planVariant && !lineVariant;
+  const view = lineVariant ? { ...snap, ...lineVariant } : planOn ? { ...snap, ...planVariant } : directSpread && variant ? { ...snap, ...variant } : snap;
   // on the All lines view, each line's own reading, for the cards that run per line (paid: an ad set per line)
   const lineViews = lines && !lineKey ? lines.map((l) => {
     const v = (directSpread && snap.variants.lines_direct && snap.variants.lines_direct[l.key]) || snap.variants.lines[l.key];
@@ -224,8 +241,9 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
   const f = freshness({ asOf: snap.asOf, partial: typeof snap.asOfFraction === "number" && snap.asOfFraction < 1, builtAt: snap.builtAt, st, emailThrough: snap.email && snap.email.feedThrough, funnelNote: snap.funnelNote });
   const showHorizon = targeted && !snap.catalogue && !snap.upcoming && !snap.complete && tab === "overview";
   const targetsWord = targeted ? "Targets" : "Set targets";
-  const vs = compareOf(snap, compareTo);
-  const showCompare = !!vs && !snap.catalogue && !snap.upcoming;
+  const vs = planOn ? "target" : compareOf(snap, compareTo);   // the plan-based view has one reference: the plan
+  const showCompare = !!vs && !snap.catalogue && !snap.upcoming && !planOn;
+  const showMethod = !!planVariant && !lineKey && !!setTargetsFrom;
   return (
     <main className="page">
       <header className="phead">
@@ -242,7 +260,7 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
         {tab === "targets" && <span id="phead-status" style={{ display: "inline-flex", alignItems: "center", gap: 8 }} />}
         {f && f.label && tab === "overview" && <span className="fresh" title={[f.detail, f.head, f.body].filter(Boolean).join(" · ")}>{f.warn ? "⚠ " : ""}{f.label}</span>}
         {tab === "overview" && onRefresh && <RefreshButton st={st} onRefresh={onRefresh} />}
-        {tab === "overview" && <DisplayMenu directSpread={directSpread} setDirectSpread={setDirectSpread} snap={snap} />}
+        {tab === "overview" && <DisplayMenu directSpread={directSpread} setDirectSpread={setDirectSpread} snap={snap} planOn={planOn} />}
       </header>
       {tab === "overview" && (
         <>
@@ -256,7 +274,12 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
             {snap.catalogue && <button className="chip"><Cal />Last 90 days</button>}
             {showHorizon && <HorizonChip horizon={horizon} onChange={setHorizon} closeLabel={W.closeLabel} />}
             {lines && <LineChip lines={lines} value={lineKey} onChange={setLineKey} />}
-            {showCompare && <CompareSwitch snap={snap} vs={vs} onChange={setCompareTo} />}
+            {(showMethod || showCompare) && (
+              <span className="cmps">
+                {showMethod && <MethodSwitch value={planOn ? "plan" : "time"} onChange={setTargetsFrom} />}
+                {showCompare && <CompareSwitch snap={snap} vs={vs} onChange={setCompareTo} />}
+              </span>
+            )}
           </div>
           <Overview snap={view} base={snap} actions={actions} vs={vs} lineViews={lineViews} horizon={snap.complete ? "close" : horizon} onSetup={() => setTab("targets")} onOpen={onOpen} />
         </>

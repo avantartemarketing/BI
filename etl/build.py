@@ -68,6 +68,7 @@ import pandas as pd
 import baskets
 import paid_cost   # the price of a paid entry as the plan reads it: the curve and its backtest (docs step 5)
 import plan_changes   # the Suggested actions card: what to add to or change in a live launch's comms plan (docs/METHODOLOGY.md)
+import plan_view      # the plan-based view of a live draw launch, laid under variants.plan (docs/PLAN_MODEL.md)
 import pricing
 import tl   # timed launches: the release model, the panel and the pages (docs/TL_SPEC.md)
 # The per-product sell-through rule (docs §6.3): the entries in hand allocated
@@ -738,6 +739,19 @@ def with_direct_spread(build, *args, **kwargs) -> dict:
     def diff(a: dict) -> dict:
         return {k: v for k, v in a.items() if k not in ("variants", "lines") and v != snap.get(k)}
     snap["variants"] = {"direct_spread": diff(alt)}
+    # a live draw launch with a comms plan on file is built a third way: on its plan's path in place of the
+    # clock's curve (etl/plan_view.py), in the view with Direct spread. The dashboard's switch lays it over the
+    # page; the clock's page stays the default. A failure here costs the page its plan view, never the page.
+    if build is build_release and not kwargs.get("line"):
+        try:
+            ov = plan_view.override({**snap, **snap["variants"]["direct_spread"]}, args[1], GROUP_OF, plan_view.context())
+            if ov:
+                pv = build(*args, **kwargs, direct_spread=True, plan_ov=ov["groups"])
+                plan_view.finish(pv, ov)
+                snap["variants"]["plan"] = diff(pv)
+        except Exception as e:  # noqa: BLE001 - the plan view never stops a page
+            snap["variants"].pop("plan", None)
+            print(f"plan view: {snap.get('id')}: not built ({type(e).__name__}: {str(e)[:200]})")
     # a release selling lines of work (docs/LINES_PLAN.md): each line's page
     # both ways too, under variants.lines[key] and variants.lines_direct[key],
     # and what the combined page says about each line (snap.lines[]) from
@@ -6223,8 +6237,13 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
                   people: pd.DataFrame | None = None,
                   full_through: date | None = None, seen: float = 1.0,
                   untracked_norms: dict | None = None, direct_spread: bool = False,
-                  direct_norm: dict | None = None, line: str | None = None) -> dict:
+                  direct_norm: dict | None = None, line: str | None = None,
+                  plan_ov: dict | None = None) -> dict:
     b = BENCH
+    # `plan_ov` is the plan-based view's path for each channel group outside paid (etl/plan_view.py override):
+    # where it is given, the group's expected path, its expected by today and what is still to come are the
+    # plan's, in place of the clock's curve. Paid keeps its own model, sized against what the plan leaves.
+    plan_ov = plan_ov or {}
     # a release handed in unresolved (a test, a script) is resolved here the way
     # main() resolves every configured release: its products, dates and
     # campaigns from the feeds and the typed inputs (resolve_release)
@@ -6676,6 +6695,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             w_g = curve_value(rcurves, og, UNIT_PLAN_CURVE, pdsa_now)   # the channel loop's w
             r_perf = min(max((now_g / (tgt_g * w_g)) if tgt_g * w_g > 0 else 1.0, 0.25), 2.5)
             fut_g = tgt_g * (1 - w_g) * (1 + w_g * (r_perf - 1))
+            if og in plan_ov:
+                fut_g = float(plan_ov[og]["fut"])
             organic_future += fut_g
             organic_groups[og] = (fut_g, w_g)
     # the organic course day by day (11 October 2026): each group's units
@@ -6687,6 +6708,9 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         for d in future_days:
             tot = 0.0
             for og, (fut_g, w_g) in organic_groups.items():
+                if og in plan_ov and d.isoformat() in plan_ov[og]["share"]:
+                    tot += fut_g * float(plan_ov[og]["share"][d.isoformat()])
+                    continue
                 cv = curve_value(rcurves, og, UNIT_PLAN_CURVE, pdsa_for(release, d))
                 tot += fut_g * (min(max((cv - w_g) / (1 - w_g), 0.0), 1.0) if 1 - w_g > 1e-9 else 1.0)
             organic_by_day[d] = tot
@@ -7195,6 +7219,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             # only in total (§4.1)
             bm_day = bm_tgt * cv
             plan = bm_day * kg.get(g, k) if bench else tgt * cv
+            if g in plan_ov and d.isoformat() in plan_ov[g]["plan"]:
+                plan = float(plan_ov[g]["plan"][d.isoformat()])
             row_out = {"date": d.isoformat(),
                        "actual": round(cum_u + e2o * cum_nc, 2) if d <= as_of else None,
                        "plan": round(plan, 2), "proj": None}
@@ -7209,6 +7235,10 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         exp = bm_exp * kg.get(g, k) if bench else tgt * w
         sess_w = paid_pace(pdsa_today) if g == "paid" else curve_value(rcurves, g, "sessions", pdsa_today)
         sess_exp = sess_tgt * sess_w
+        ovg = plan_ov.get(g)
+        if ovg:
+            exp = float(ovg["exp"])
+            sess_exp = sess_tgt * (exp / tgt) if tgt > 0 else sess_exp
         now = next((r["actual"] for r in reversed(daily) if r["actual"] is not None), 0.0)
         # Forward projection (docs §5.4): the remaining volume follows this channel's
         # HISTORIC entry-timed shape curve; its level scales with demonstrated performance
@@ -7227,10 +7257,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             r_perf = min(max((now / exp) if exp > 0 else 1.0, 0.25), 2.5)
             r_shrunk = 1 + w * (r_perf - 1)
             proj = now + tgt * (1 - w) * r_shrunk
+            if ovg:
+                proj = now + float(ovg["fut"])
             for d in daterange(full_through + timedelta(days=1), launch_end):
                 i = (d - window_start).days
                 cv = curve_value(rcurves, g, UNIT_PLAN_CURVE, pdsa_for(release, d))
                 frac = (cv - w) / (1 - w) if w < 1 else 1.0
+                if ovg and d.isoformat() in ovg["share"]:
+                    frac = float(ovg["share"][d.isoformat()])
                 if 0 <= i < len(daily):
                     daily[i]["proj"] = round(now + (proj - now) * max(min(frac, 1.0), 0.0), 2)
         # Three-factor decomposition: units = sessions x buyers-per-session x
@@ -7305,7 +7339,7 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
         channel = {
             "key": g, "name": spec["name"],
             "now": round(now, 1), "exp": round(exp, 1),
-            "proj": round(proj, 1), "target": round(tgt, 1),
+            "proj": round(proj, 1), "target": round(float(ovg["plan_total"]), 1) if ovg else round(tgt, 1),
             "parts": parts,
             "daily": daily,
         }

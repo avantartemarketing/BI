@@ -30,7 +30,7 @@ ANN, CLOSE = T("2026-09-01"), T("2026-09-25")     # 24 days from announce to clo
 # a click model small enough to work by hand: 5% at 3,000 people (exp(-3)), the rate falling with size
 COEF = np.zeros(len(P.CLICK_NAMES)); COEF[0] = -3.0; COEF[1] = -0.3
 PRICES = {"weights": {"em_announce": 2.0, "em_last_chance": 1.0, "pl_aa_post": 3.0, "pl_artist_post": 6.0},
-          "fade": [0.5, 0.25], "close_day": 4.0, "day_before": 2.0, "pre": 0.1,
+          "fade_email": [0.5, 0.25], "fade_posts": [0.5], "close_day": 4.0, "day_before": 2.0, "pre": 0.1,
           "usual": {"stage": [0.25, 0.5, 0.75], "ratio": [0.6, 0.3, 0.15]}, "gamma": 0.5}
 
 
@@ -140,14 +140,25 @@ def test_day_values():
     v = dict(zip(days["t"], P.day_values(days, PRICES)))
     close_to(v[-1], 0.1)                      # a day before the announce
     close_to(v[0], 1.0 + 3.0)                 # the announce: the baseline and the post
-    close_to(v[1], 1.0 + 3.0 * 0.5)           # the post fading
-    close_to(v[2], 1.0 + 3.0 * 0.25)
-    close_to(v[3], 1.0)
+    close_to(v[1], 1.0 + 3.0 * 0.5)           # the post fading: felt the next day
+    close_to(v[2], 1.0)                       # and no longer the day after that
     close_to(v[23], 1.0 + 6.0 + 2.0)          # the day before the close: the artist's post and the deadline
     close_to(v[24], 1.0 + 6.0 * 0.5 + 4.0)    # the close: the post fading and the deadline
-    close_to(P.action_value("pl_aa_post", 1.0, PRICES), 3.0 * 1.75)
+    close_to(P.action_value("pl_aa_post", 1.0, PRICES), 3.0 * 1.5)
     close_to(P.action_value("em_announce", 2.5, PRICES), 2.0 * 2.5 * 1.75)
     assert P.action_value("pl_artist_story", 1.0, PRICES) == 0.0      # a family the list gives no weight
+    # an email is felt for longer than a post: its own fade, over its own days
+    sends = sends_frame([("2026-09-01", "announce", np.exp(8.0))])
+    e = P.launch_days(ANN, CLOSE, sends, None, COEF)
+    amount = float(e.loc[e["t"] == 0, "em_announce"].iloc[0])
+    ev = dict(zip(e["t"], P.day_values(e, PRICES)))
+    close_to(ev[0], 1.0 + 2.0 * amount); close_to(ev[1], 1.0 + 2.0 * amount * 0.5); close_to(ev[2], 1.0 + 2.0 * amount * 0.25); close_to(ev[3], 1.0)
+    close_to(P.piece_values(e, PRICES, ["em_announce"])[P.LEAD_DAYS], 2.0 * amount)
+    close_to(P.base_values(e, PRICES)[P.LEAD_DAYS], 1.0)
+    # a price list written with one fade for every piece still reads
+    old = {**{k: v for k, v in PRICES.items() if not k.startswith("fade_")}, "fade": [0.5, 0.25]}
+    assert P.fade_of("em_announce", old) == [0.5, 0.25] and P.fade_of("pl_aa_post", old) == [0.5, 0.25]
+    close_to(P.action_value("pl_aa_post", 1.0, old), 3.0 * 1.75)
 
 
 def test_forecast():
@@ -197,7 +208,11 @@ def test_committed_prices():
     prices = P.load_prices()
     assert prices, "etl/plan_prices.json is missing: python3 etl/analysis/plan_backtest.py writes it"
     assert set(P.VALUE_COLS) <= set(prices["weights"]) and all(w >= 0 for w in prices["weights"].values())
-    assert len(prices["fade"]) == 2 and 0 <= prices["fade"][1] <= prices["fade"][0] <= 1
+    fe, fp = prices["fade_email"], prices["fade_posts"]
+    assert len(fe) == P.EMAIL_FADE_DAYS and len(fp) == P.POST_FADE_DAYS and all(0 <= x <= 1 for x in fe + fp) and fe[-1] <= fe[0]
+    assert abs(sum(prices["split"].values()) - 1.0) < 0.01 and all(v >= 0 for v in prices["split"].values())    # a quiet day over the page's channels
+    assert len(prices["quiet"]) >= 30 and all(r["quiet"] > 0 and r["artist"] for r in prices["quiet"])          # each launch's own level
+    assert prices["usual_audience"].get("announce", 0) > prices["usual_audience"].get("last_chance", 0) > 0
     assert 0.0 <= prices["gamma"] <= 1.0
     assert len(prices["clicks"]["coef"]) == len(P.CLICK_NAMES) and prices["clicks"]["names"] == P.CLICK_NAMES
     lo, hi = prices["clicks"]["spread"]

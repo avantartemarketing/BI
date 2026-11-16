@@ -35,6 +35,7 @@ import FramingForecast from "./modules/FramingForecast.jsx";
 import { TLSignupsOutcome } from "./TLPage.jsx";
 import Upcoming from "./modules/Upcoming.jsx";
 import PlanChanges from "./modules/PlanChanges.jsx";
+import PlanCard from "./modules/PlanCard.jsx";
 import "./cards.css";
 
 /* a section's heading, across both columns */
@@ -55,6 +56,9 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   const actionsOn = !isTL && !snap.line && (!!snap.planChanges || (!snap.complete && !snap.catalogue));
   const geoOn = !isTL && !!(snap.geo && (Array.isArray(snap.geo) ? snap.geo.length : (snap.geo.rows || []).length));
   const paidOn = !!snap.paid;
+  // the plan-based view (the page's switch, docs/PLAN_MODEL.md): the plan card leads, and before anything has
+  // gone out the page is the plan alone
+  const planStart = snap.method === "plan" && !!(snap.plan && snap.plan.state === "start");
   // the Spend levels card is on every draw launch with a paid block: without
   // a level from the build it says why there is none (12 November 2026)
   const levelsOn = !isTL && paidOn;
@@ -63,7 +67,8 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   return (
     <div className="body">
       <div className="grid2">
-        {actionsOn && <PlanChanges snap={snap} state={actions} />}
+        {snap.method === "plan" && snap.plan && <PlanCard snap={snap} />}
+        {actionsOn && !planStart && <PlanChanges snap={snap} state={actions} />}
         <Trajectory snap={snap} vs={vs} horizon={horizon} />
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}
@@ -71,13 +76,13 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
         {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
         {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
         {!isTL && snap.closeForecast && <SellThroughClose snap={snap} vs={vs} />}
-        {!preWindow && <Framing snap={snap} horizon={horizon} />}
+        {!preWindow && !planStart && <Framing snap={snap} horizon={horizon} />}
         {geoOn && <Geo snap={snap} />}
         {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}
-        <Sect>Channels and funnel</Sect>
-        <ChannelsVsTargets snap={snap} vs={vs} horizon={horizon} />
-        <FunnelTable snap={snap} vs={vs} />
-        {targeted && vs && <Waterfall snap={snap} vs={vs} horizon={horizon} />}
+        <Sect>{planStart ? "The plan by channel" : "Channels and funnel"}</Sect>
+        <ChannelsVsTargets snap={snap} vs={vs} horizon={planStart ? "close" : horizon} />
+        {!planStart && <FunnelTable snap={snap} vs={vs} />}
+        {targeted && vs && !planStart && <Waterfall snap={snap} vs={vs} horizon={horizon} />}
         {snap.email && <EmailFunnel snap={snap} vs={vs} />}
         {paidLines.length > 0 ? paidLines.map((l) => (
           <React.Fragment key={`paid:${l.key}`}>

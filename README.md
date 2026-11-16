@@ -13,7 +13,8 @@ docs/DATA_MODEL.md      the specification: target model, benchmarks, across-time
 docs/BENCHMARK_SPEC.md  the benchmark / target / stretch contract: basket medians, the even
                         uplift K, the snapshot additions, the drawing grammar
 docs/PLAN_MODEL.md      the plan model: a launch read by the comms that go out, built beside the
-                        clock and on no page yet (the feeds, the price list, the back-test)
+                        clock and on the launch page behind its Targets from switch (the feeds,
+                        the price list, the back-test, the plan-based view)
 etl/                    Python pipeline
   release_inputs.json     hand-entered launch inputs per release (the human decisions)
   benchmarks.json         frozen benchmark values (v1; recompute policy in docs §4)
@@ -33,6 +34,9 @@ etl/                    Python pipeline
   plan_model.py           the plan model: a launch's comms plan priced against a usual one
                           (docs/PLAN_MODEL.md); plan_prices.json is its price list and
                           plan_backtest.json its back-test, both written by analysis/plan_backtest.py
+  plan_view.py            the plan-based view of a live draw launch, laid under variants.plan on
+                          its page: the plan's path per channel, the plan card's rows and pieces,
+                          and suggested actions valued by the price list (docs/PLAN_MODEL.md 6)
   analysis/               one-off studies behind documented decisions (cpe_elasticity.py and
                           cpe_elasticity_challenge.py - the price of a bigger day,
                           cost_backtest.py - the standing backtest of the plan's cost per entry
@@ -54,7 +58,7 @@ data/
                           what the Suggested actions card proposes changes against
   notion_comms.csv        the team's full comms plan from Notion's Comms database, a line per
                           piece and campaign, and notion_comms_campaigns.csv, the campaigns' codes
-                          and dates (server/commsPlan.js, run by hand; "The plan model" below)
+                          and dates (server/commsPlan.js, in the hourly refresh; "The plan model" below)
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
@@ -627,10 +631,19 @@ means the "Not in the plan" email rule stays quiet, by design.
 ## The plan model
 
 A second reading of a draw launch, by the comms that go out, built beside the campaign clock
-and replacing nothing: `docs/PLAN_MODEL.md` has what it is, what the history shows and how
-it scores against the clock. Nothing of it is on a page or in the hourly refresh yet.
+and replacing nothing: `docs/PLAN_MODEL.md` has what it is, what the history shows, how it
+scores against the clock and how the page reads it.
 
-Its two feeds are pulled by hand, with the tokens the dashboard already uses:
+**On the dashboard** it sits behind a switch. A live draw launch's page has **Targets from**
+at the right of its chips: **Time** is the clock's page, unchanged and the default; **Plan**
+lays the plan-based view over it (the build's `variants.plan`, from `etl/plan_view.py`):
+a plan card first (a bar per phase with the emails and posts inside), and every other card
+read against the plan's path instead of the clock's curve. The switch is only on a launch
+the build has read both ways: a draw in its window with targets set, a campaign code and a
+plan on file in Notion. The choice is kept per browser.
+
+Its two feeds are pulled in the hourly refresh (`server/sheets.js`), with the tokens the
+dashboard already uses, and can be run by hand:
 
 ```
 node server/commsPlan.js --write        # Notion's Comms database -> data/notion_comms.csv, data/notion_comms_campaigns.csv
@@ -638,16 +651,22 @@ node server/emailAudiences.js --write   # HubSpot emails with their lists -> sou
 python3 etl/analysis/plan_backtest.py   # the price list and the back-test -> etl/plan_prices.json, etl/plan_backtest.json
 ```
 
-Either pull without `--write` prints what it would write. The Notion integration needs the
-Comms, Channels and Campaigns databases shared with it (`NOTION_COMMS_DB`,
-`NOTION_CHANNELS_DB` and `NOTION_CAMPAIGNS_DB` override their ids). The HubSpot token needs
-the Marketing Email read scope, and `crm.lists.read` as well for the lists' names
-(`sources/hubspot_lists.csv`); without it the audiences are still written and the status line
-says the names are unavailable. The back-test needs scipy, which the live build does not
-install; `etl/plan_model.py` itself needs only pandas. The three pulled files are ignored by
-git and hold no person: list ids and counts only. `python3 tests/test_plan_model.py` holds the
-model's parts to hand-built cases and `node tests/comms_plan.mjs` the two pulls to stand-ins
-for the APIs.
+Either pull without `--write` prints what it would write. In the refresh the Notion pull
+reads only the rows going live from 120 days ago onwards (`NOTION_COMMS_DAYS`), under a
+minute; by hand it reads the whole plan, which the back-test needs. A pull that fails in the refresh
+leaves the previous file in place and is reported in the refresh's status (`commsPlan`,
+`audiences`) and the log; it does not fail the refresh, and at worst the launch pages keep
+an older plan view or none. The Notion integration needs the Comms, Channels and Campaigns
+databases shared with it (`NOTION_COMMS_DB`, `NOTION_CHANNELS_DB` and `NOTION_CAMPAIGNS_DB`
+override their ids). The HubSpot token needs the Marketing Email read scope, and
+`crm.lists.read` as well for the lists' names (`sources/hubspot_lists.csv`); without it the
+audiences are still written and the status line says the names are unavailable. The back-test
+is run by hand and needs scipy, which the live build does not install; `etl/plan_model.py`
+and `etl/plan_view.py` need only pandas, and read the committed `etl/plan_prices.json`. The
+three pulled files are ignored by git and hold no person: list ids and counts only.
+`python3 tests/test_plan_model.py` holds the model's parts to hand-built cases,
+`python3 tests/test_plan_view.py` the page's view to a hand-built launch, and
+`node tests/comms_plan.mjs` the two pulls to stand-ins for the APIs.
 
 ## Signing in
 

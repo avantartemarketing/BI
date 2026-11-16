@@ -27,13 +27,17 @@ export default function ChannelsVsTargets({ snap, vs = "target", horizon = "toda
   const targeted = snap.targeted !== false || byBm;
   const complete = !!snap.complete;
   const today = horizon !== "close" && !complete;
-  const refWord = byBm ? "benchmark" : "target";
-  const RefName = byBm ? "Benchmark" : "Target";
+  // the plan-based view (docs/PLAN_MODEL.md): the reference is the plan's own figure for the channel, and
+  // before anything has gone out the columns are the plan alone
+  const planMode = snap.method === "plan";
+  const planStart = planMode && !!(snap.plan && snap.plan.state === "start");
+  const refWord = byBm ? "benchmark" : planMode ? "plan" : "target";
+  const RefName = byBm ? "Benchmark" : planMode ? "Plan" : "Target";
   const W = wordsOf(snap);
   const off = new Set((snap.benchmark && snap.benchmark.channelsOff) || []);
   const base = rows.map((c) => {
     const ref = !targeted ? 0 : byBm ? (today ? c.bmExp : c.bm) : (today ? c.exp : c.target);
-    return { key: c.key, name: c.name, parts: c.parts || [], bar: (today ? c.now : c.proj) ?? 0, target: ref ?? 0 };
+    return { key: c.key, name: c.name, parts: c.parts || [], bar: planStart ? 0 : (today ? c.now : c.proj) ?? 0, target: ref ?? 0 };
   });
   const pct = targeted && scale === "pct";
   const val = (v, t) => (pct ? (t > 0 ? (v / t) * 100 : 0) : v);
@@ -50,8 +54,8 @@ export default function ChannelsVsTargets({ snap, vs = "target", horizon = "toda
   if (!base.length) return <Card title={title} menu={menu}><div className="empty-state">No channel data yet</div></Card>;
   return (
     <Card title={title} menu={menu} aria={`${title} against ${refWord} ${when}`}>
-      <Head v={fmt(total)} u={W.unit}
-        deltas={[targeted ? vsDelta(total, totalT, refWord, `${fmt(total)} ${W.unit} ${today ? "to date" : "projected"} against the ${fmt(totalT)} ${refWord} ${when}`) : null]}
+      <Head v={fmt(planStart ? totalT : total)} u={planStart ? `${W.unit} in the plan` : W.unit}
+        deltas={[targeted && !planStart ? vsDelta(total, totalT, refWord, `${fmt(total)} ${W.unit} ${today ? "to date" : "projected"} against the ${fmt(totalT)} ${refWord} ${when}`) : null]}
         tip={targeted ? undefined : "No targets set, so the columns are the units alone"} />
       <ColChart H={250} L={pct ? 36 : 30} gw={0.4} ymax={ax.ymax} yticks={ax.ticks} yfmt={pct ? (t) => `${t}%` : kfmt}
         cats={base.map((r) => SHORT[r.key] || r.name)} rows={data} refName={RefName}

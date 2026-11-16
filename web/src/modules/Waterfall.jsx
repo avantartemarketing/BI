@@ -47,8 +47,9 @@ export default function Waterfall({ snap, vs = "target", horizon = "today" }) {
   const outcome = (isToday ? view.actual : view.projection) ?? 0;
   const hasBm = vs === "benchmark" && !!snap.benchmark && has(view.benchmark) && Array.isArray(view.stepsBm);
   const ref = hasBm ? view.benchmark : target;
-  const refWord = hasBm ? "benchmark" : "target";
-  const RefName = hasBm ? "Benchmark" : "Target";
+  const planToday = snap.method === "plan" && isToday;   // the plan-based view: today's gap is to the plan by today, at the close to the target
+  const refWord = hasBm ? "benchmark" : planToday ? "plan" : "target";
+  const RefName = hasBm ? "Benchmark" : planToday ? "Plan" : "Target";
   const cardTitle = `Gap to ${refWord}`;
   const drivers = ((hasBm ? view.stepsBm : view.steps) || []).map((s) => [s.key === "oversubscribed" ? "Beyond sellout" : s.label, s.value ?? 0]);
   const cw = by === "channels" ? channelWalk(snap, { today: isToday, ref: hasBm ? "benchmark" : "target" }) : null;

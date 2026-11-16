@@ -213,21 +213,37 @@ async function notionPost(url, token, body) {
 }
 
 /* Every row of a database, or of one created-time slice of it. */
-async function queryAll(db, token, filter) {
-  const rows = [];
-  let cursor;
+/* Every row of a database, a page at a time, handed to `each` as it is read,
+ * and how many there were. The comms plan is some 13,000 rows and this runs
+ * inside the server in the hourly refresh, whose heap is small: no more than
+ * one page of raw rows is held at a time. */
+async function queryEach(db, token, filter, each) {
+  let cursor, n = 0;
   do {
     const body = { page_size: 100, ...(filter ? { filter } : {}), ...(cursor ? { start_cursor: cursor } : {}) };
     const res = await notionPost(`${API}/databases/${db}/query`, token, body);
-    rows.push(...(res.results || []));
+    for (const row of res.results || []) { each(row); n++; }
     cursor = res.has_more ? res.next_cursor : null;
   } while (cursor);
+  return n;
+}
+
+async function queryAll(db, token, filter) {
+  const rows = [];
+  await queryEach(db, token, filter, (row) => rows.push(row));
   return rows;
 }
 
-async function fetchCommsPlan(today = new Date().toISOString().slice(0, 10)) {
+/* `opts.days` reads only the rows going live from that many days ago onwards
+ * (one query on the Live Date, a fraction of the plan): what the hourly
+ * refresh asks for, since a live launch's page needs its own weeks and no
+ * more. Without it the whole plan is read, in slices of the rows' created
+ * time, which is what the back-test needs and takes a few minutes. */
+async function fetchCommsPlan(today = new Date().toISOString().slice(0, 10), opts = {}) {
   const token = process.env.NOTION_TOKEN;
   if (!token) return null;
+  const days = Number(opts.days) > 0 ? Math.round(Number(opts.days)) : 0;
+  const liveSince = days ? new Date(Date.parse(today + "T00:00:00Z") - days * 864e5).toISOString().slice(0, 10) : null;
   const channels = new Map();
   for (const row of await queryAll(CHANNELS_DB, token)) {
     const p = row.properties || {};
@@ -238,29 +254,40 @@ async function fetchCommsPlan(today = new Date().toISOString().slice(0, 10)) {
     const c = campaignRow(row);
     if (c) campaigns.set(row.id, c);
   }
-  const seen = new Map();   // row id -> row: a row on a slice's edge is read once
+  // row id -> the row's lines, or why it has none: a row on a slice's edge is
+  // read once, and each row is boiled down as it arrives (queryEach)
+  const seen = new Map();
   let capped = false;
-  for (const [from, to] of slices(today)) {
-    const part = await queryAll(COMMS_DB, token, { and: [
-      { timestamp: "created_time", created_time: { on_or_after: from } },
-      { timestamp: "created_time", created_time: { before: to } },
-    ] });
-    if (part.length >= QUERY_CAP) capped = true;
-    for (const row of part) seen.set(row.id, row);
+  const keep = (row) => {
+    if (seen.has(row.id)) return;
+    const got = commsRows(row, channels, campaigns);
+    seen.set(row.id, got.length ? got : (value((row.properties || {})["Live Date"]) ? "loose" : "undated"));
+  };
+  if (liveSince) {
+    const n = await queryEach(COMMS_DB, token, { property: "Live Date", date: { on_or_after: liveSince } }, keep);
+    if (n >= QUERY_CAP) capped = true;
+  } else {
+    for (const [from, to] of slices(today)) {
+      const n = await queryEach(COMMS_DB, token, { and: [
+        { timestamp: "created_time", created_time: { on_or_after: from } },
+        { timestamp: "created_time", created_time: { before: to } },
+      ] }, keep);
+      if (n >= QUERY_CAP) capped = true;
+    }
   }
   const lines = [];
   let undated = 0, loose = 0;
-  for (const row of seen.values()) {
-    const got = commsRows(row, channels, campaigns);
-    if (!got.length) { if (!value((row.properties || {})["Live Date"])) undated++; else loose++; }
-    lines.push(...got);
+  for (const got of seen.values()) {
+    if (got === "undated") undated++;
+    else if (got === "loose") loose++;
+    else lines.push(...got);
   }
   lines.sort((a, b) => (a.campaign_code + a.date + a.channel + a.name).localeCompare(b.campaign_code + b.date + b.channel + b.name));
   const camps = [...campaigns.values()].sort((a, b) => a.code.localeCompare(b.code));
   return {
     csv: csv(HEADER, lines),
     campaignsCsv: csv(CAMPAIGNS_HEADER, camps.map((c) => ({ campaign_code: c.code, release: c.release, announce: c.announce, launch: c.launch, mechanic: c.mechanic, status: c.status, tier: c.tier }))),
-    rows: seen.size, lines: lines.length, undated, loose, capped,
+    rows: seen.size, lines: lines.length, undated, loose, capped, liveSince,
     campaigns: camps.length, channels: channels.size,
     codes: new Set(lines.map((l) => l.campaign_code)).size,
     through: lines.reduce((m, l) => (l.date > m ? l.date : m), ""),
@@ -269,9 +296,9 @@ async function fetchCommsPlan(today = new Date().toISOString().slice(0, 10)) {
 
 /* Fetch and write the two files; returns a status string. A pull that reads
  * nothing leaves the files as they are. */
-async function refreshCommsPlan() {
+async function refreshCommsPlan(opts = {}) {
   if (!process.env.NOTION_TOKEN) return "comms plan off (no NOTION_TOKEN)";
-  const out = await fetchCommsPlan();
+  const out = await fetchCommsPlan(undefined, opts);
   if (!out.lines) throw new Error(`the comms plan read ${out.rows} rows and none with a live date and a campaign code - not overwriting`);
   for (const [file, text] of [[OUT, out.csv], [CAMPAIGNS_OUT, out.campaignsCsv]]) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -281,12 +308,16 @@ async function refreshCommsPlan() {
   return summary(out);
 }
 
-const summary = (out) => `comms plan ${out.lines} lines for ${out.codes} campaigns, dated to ${out.through} `
+const summary = (out) => `comms plan ${out.lines} lines for ${out.codes} campaigns, dated ${out.liveSince ? "from " + out.liveSince + " " : ""}to ${out.through} `
   + `(${out.rows} rows read; ${out.undated} with no live date, ${out.loose} on no campaign with a code; `
   + `${out.campaigns} campaigns with a code, ${out.channels} channels)`
   + (out.capped ? `; A SLICE HIT THE ${QUERY_CAP}-ROW CAP, rows are missing: shorten SLICE_MONTHS` : "");
 
-module.exports = { fetchCommsPlan, refreshCommsPlan, value, familyOf, hubspotId, timeOf, campaignRow, commsRows, slices, csv, summary,
+/* How far back the hourly refresh reads the plan (server/sheets.js): the days
+ * of plan a live launch's page can need, with room to spare. */
+const REFRESH_DAYS = Math.max(30, Number(process.env.NOTION_COMMS_DAYS) || 120);
+
+module.exports = { fetchCommsPlan, refreshCommsPlan, REFRESH_DAYS, value, familyOf, hubspotId, timeOf, campaignRow, commsRows, slices, csv, summary,
   HEADER, CAMPAIGNS_HEADER, OUT, CAMPAIGNS_OUT };
 
 if (require.main === module) {

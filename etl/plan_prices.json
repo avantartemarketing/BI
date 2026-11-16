@@ -1,25 +1,510 @@
 {
  "weights": {
-  "em_early_access": 2.9323355424494997,
-  "em_announce": 1.074513304833587,
-  "em_sustain": 0.5688872466027785,
-  "em_last_chance": 0.808675151334866,
-  "em_other": 0.09836758174752618,
-  "pl_aa_post": 2.0381238570946856,
-  "pl_aa_story": 0.7342802741901976,
-  "pl_aa_social_other": 0.7337413374464394,
-  "pl_artist_post": 3.922128938184933,
-  "pl_artist_story": 6.737524600051306e-09,
-  "pl_artist_other": 3.8137563272706254,
-  "pl_partner": 3.3122274596838244
+  "em_early_access": 3.569773671112537,
+  "em_announce": 1.2256577057120173,
+  "em_sustain": 0.7828617974762316,
+  "em_last_chance": 0.9988107485355032,
+  "em_other": 0.14999076240151346,
+  "pl_aa_post": 2.265198542385586,
+  "pl_aa_story": 1.0087874682934734,
+  "pl_aa_social_other": 0.6656297497472958,
+  "pl_artist_post": 4.547914660999119,
+  "pl_artist_story": 0.03859779585372807,
+  "pl_artist_other": 4.599099252673675,
+  "pl_partner": 4.541596731362611
  },
- "fade": [
-  0.40302793827481437,
-  0.1943019464603593
+ "fade_email": [
+  0.4183800213369003,
+  0.27843212163335535,
+  0.13253842213750228,
+  0.13446627907411632
  ],
- "close_day": 0.6248854308846337,
- "day_before": 0.9718573850937465,
- "pre": 0.09518149064791576,
+ "fade_posts": [
+  0.3247071590925153
+ ],
+ "close_day": 0.8694323689835506,
+ "day_before": 1.076425210474471,
+ "pre": 1.3261034266401437e-09,
+ "baseline_share": 0.1931,
+ "split": {
+  "aa_email": 0.4215,
+  "aa_social": 0.1039,
+  "referral_artist": 0.0715,
+  "organic_search": 0.3285,
+  "direct_other": 0.0746
+ },
+ "quiet": [
+  {
+   "name": "Paul Insect \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Paul Insect",
+   "close": "2024-07-30",
+   "quiet": 0.6296,
+   "demand": 70.0
+  },
+  {
+   "name": "Slawn \u00b7 Ugly Bastard \u00b7 2024 Q3",
+   "artist": "Slawn",
+   "close": "2024-08-08",
+   "quiet": 1.4839,
+   "demand": 74.4
+  },
+  {
+   "name": "Antony Micallef \u00b7 Portrait of Francis Bacon \u00b7 2024 Q3",
+   "artist": "Antony Micallef",
+   "close": "2024-08-27",
+   "quiet": 1.1192,
+   "demand": 62.4
+  },
+  {
+   "name": "Johnson Tsang \u00b7 The Moment \u00b7 2024 Q4",
+   "artist": "Johnson Tsang",
+   "close": "2024-10-09",
+   "quiet": 2.1252,
+   "demand": 184.6
+  },
+  {
+   "name": "Yoon Hyup \u00b7 City Fountain \u00b7 2024 Q3",
+   "artist": "Yoon Hyup",
+   "close": "2024-10-09",
+   "quiet": 0.6431,
+   "demand": 37.6
+  },
+  {
+   "name": "Ai Weiwei \u00b7 To Be Looked At... \u00b7 2024 Q4",
+   "artist": "Ai Weiwei",
+   "close": "2024-11-04",
+   "quiet": 1.2522,
+   "demand": 225.2
+  },
+  {
+   "name": "TIDE \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "TIDE",
+   "close": "2024-11-04",
+   "quiet": 0.3674,
+   "demand": 43.2
+  },
+  {
+   "name": "Woo Kuk Won \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Woo Kuk Won",
+   "close": "2024-11-19",
+   "quiet": 2.2492,
+   "demand": 214.6
+  },
+  {
+   "name": "Miwa Komatsu \u00b7 White and Black Guiding Yamainu-sama \u00b7 2024 Q4",
+   "artist": "Miwa Komatsu",
+   "close": "2024-11-20",
+   "quiet": 0.6661,
+   "demand": 56.8
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Multiple \u00b7 2024 Q4",
+   "artist": "Ai Weiwei",
+   "close": "2024-12-10",
+   "quiet": 1.0258,
+   "demand": 175.4
+  },
+  {
+   "name": "Claire Tabouret \u00b7 Paysage d\u2019Int\u00e9rieur (printemps) \u00b7 2024 Q4",
+   "artist": "Claire Tabouret",
+   "close": "2024-12-11",
+   "quiet": 0.5207,
+   "demand": 48.2
+  },
+  {
+   "name": "Will Cotton \u00b7 The Cowgirl \u00b7 2025 Q1",
+   "artist": "Will Cotton",
+   "close": "2025-02-14",
+   "quiet": 0.597,
+   "demand": 56.0
+  },
+  {
+   "name": "George Condo \u00b7 Fashion Model \u00b7 2025 Q1",
+   "artist": "George Condo",
+   "close": "2025-02-18",
+   "quiet": 0.6235,
+   "demand": 56.8
+  },
+  {
+   "name": "Taku Obata \u00b7 B BOY JUSHI \u00b7 2025 Q1",
+   "artist": "Taku Obata",
+   "close": "2025-02-21",
+   "quiet": 2.6237,
+   "demand": 185.4
+  },
+  {
+   "name": "Jammie Holmes \u00b7 Fred \u00b7 2025 Q1",
+   "artist": "Jammie Holmes",
+   "close": "2025-03-04",
+   "quiet": 0.5868,
+   "demand": 55.8
+  },
+  {
+   "name": "Hajime Sorayama \u00b7 Untitled \u00b7 2025 Q2",
+   "artist": "Hajime Sorayama",
+   "close": "2025-04-07",
+   "quiet": 1.4594,
+   "demand": 244.2
+  },
+  {
+   "name": "Harland Miller \u00b7 York So Good They Named It Once \u00b7 2025 Q2",
+   "artist": "Harland Miller",
+   "close": "2025-04-14",
+   "quiet": 0.3305,
+   "demand": 40.0
+  },
+  {
+   "name": "Other World \u00b7 Dogs of War \u00b7 2025 Q2",
+   "artist": "Other World",
+   "close": "2025-04-15",
+   "quiet": 0.4373,
+   "demand": 33.6
+  },
+  {
+   "name": "Yoon Hyup \u00b7 Summer in San Sebastian \u00b7 2025 Q3",
+   "artist": "Yoon Hyup",
+   "close": "2025-07-08",
+   "quiet": 1.2851,
+   "demand": 245.0
+  },
+  {
+   "name": "Dominique Fung \u00b7 Handheld Fan \u00b7 2025 Q3",
+   "artist": "Dominique Fung",
+   "close": "2025-07-22",
+   "quiet": 0.5009,
+   "demand": 33.6
+  },
+  {
+   "name": "Antony Micallef \u00b7 Self Portrait with Yellow Lake and Magenta \u00b7 2025 Q3",
+   "artist": "Antony Micallef",
+   "close": "2025-07-29",
+   "quiet": 0.3618,
+   "demand": 51.8
+  },
+  {
+   "name": "James Jarvis \u00b7 Hang in there! \u00b7 2025 Q3",
+   "artist": "James Jarvis",
+   "close": "2025-07-29",
+   "quiet": 0.9789,
+   "demand": 106.0
+  },
+  {
+   "name": "Katherine Bradford \u00b7 Swing Over Pool \u00b7 2025 Q3",
+   "artist": "Katherine Bradford",
+   "close": "2025-08-12",
+   "quiet": 1.103,
+   "demand": 81.8
+  },
+  {
+   "name": "Johnson Tsang \u00b7 Remembrance \u00b7 2025 Q3",
+   "artist": "Johnson Tsang",
+   "close": "2025-08-14",
+   "quiet": 0.7296,
+   "demand": 89.2
+  },
+  {
+   "name": "Harland Miller \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "Harland Miller",
+   "close": "2025-09-30",
+   "quiet": 0.7163,
+   "demand": 163.8
+  },
+  {
+   "name": "Maurizio Cattelan \u00b7 We are the Revolution \u00b7 2025 Q4",
+   "artist": "Maurizio Cattelan",
+   "close": "2025-10-24",
+   "quiet": 5.8395,
+   "demand": 831.2
+  },
+  {
+   "name": "Alex Katz \u00b7 Ada Ada \u00b7 2025 Q4",
+   "artist": "Alex Katz",
+   "close": "2025-10-30",
+   "quiet": 0.4554,
+   "demand": 138.2
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Multiple \u00b7 2025 Q4",
+   "artist": "Ai Weiwei",
+   "close": "2025-11-17",
+   "quiet": 0.8769,
+   "demand": 162.4
+  },
+  {
+   "name": "Judy Chicago \u00b7 Reincarnation Triptych \u00b7 2025 Q4",
+   "artist": "Judy Chicago",
+   "close": "2025-11-25",
+   "quiet": 0.2154,
+   "demand": 46.6
+  },
+  {
+   "name": "Joakim Ojanen \u00b7 The dance we dance when we are together \u00b7 2026 Q1",
+   "artist": "Joakim Ojanen",
+   "close": "2026-01-22",
+   "quiet": 0.3028,
+   "demand": 28.2
+  },
+  {
+   "name": "Johnson Tsang \u00b7 Work in Progress \u00b7 2026 Q1",
+   "artist": "Johnson Tsang",
+   "close": "2026-01-23",
+   "quiet": 1.3467,
+   "demand": 207.4
+  },
+  {
+   "name": "Ferrari Sheppard \u00b7 Put Some Red On It \u00b7 2026 Q1",
+   "artist": "Ferrari Sheppard",
+   "close": "2026-01-29",
+   "quiet": 0.6312,
+   "demand": 59.4
+  },
+  {
+   "name": "Lee Ufan \u00b7 Dialogue \u00b7 2026 Q1",
+   "artist": "Lee Ufan",
+   "close": "2026-01-30",
+   "quiet": 1.3215,
+   "demand": 174.8
+  },
+  {
+   "name": "Maurizio Cattelan \u00b7 Window \u00b7 2026 Q1",
+   "artist": "Maurizio Cattelan",
+   "close": "2026-02-20",
+   "quiet": 2.1999,
+   "demand": 323.0
+  },
+  {
+   "name": "Jean-Michel Othoniel \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Jean-Michel Othoniel",
+   "close": "2026-03-03",
+   "quiet": 0.5308,
+   "demand": 53.0
+  },
+  {
+   "name": "Jeff Koons \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Jeff Koons",
+   "close": "2026-03-17",
+   "quiet": 0.8881,
+   "demand": 240.2
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Arm \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Ai Weiwei",
+   "close": "2026-04-22",
+   "quiet": 0.6246,
+   "demand": 124.6
+  },
+  {
+   "name": "Maurizio Cattelan \u00b7 La Nona Ora \u00b7 2026 Q2",
+   "artist": "Maurizio Cattelan",
+   "close": "2026-04-23",
+   "quiet": 1.7443,
+   "demand": 331.0
+  },
+  {
+   "name": "Maurizio Cattelan \u00b7 THERAPY \u00b7 2026 Q2",
+   "artist": "Maurizio Cattelan",
+   "close": "2026-05-05",
+   "quiet": 1.5148,
+   "demand": 233.4
+  },
+  {
+   "name": "Eddie Martinez \u00b7 Olive Garden \u00b7 2026 Q2",
+   "artist": "Eddie Martinez",
+   "close": "2026-05-22",
+   "quiet": 0.5094,
+   "demand": 79.6
+  },
+  {
+   "name": "Takashi Murakami \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Takashi Murakami",
+   "close": "2026-05-27",
+   "quiet": 5.3405,
+   "demand": 1589.6
+  },
+  {
+   "name": "Anni and Josef Albers \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Anni and Josef Albers",
+   "close": "2026-05-28",
+   "quiet": 2.3848,
+   "demand": 536.8
+  },
+  {
+   "name": "Cindy Sherman \u00b7 Untitled \u00b7 2026 Q2",
+   "artist": "Cindy Sherman",
+   "close": "2026-06-10",
+   "quiet": 1.6269,
+   "demand": 401.4
+  },
+  {
+   "name": "Johnson Tsang \u00b7 Alliance \u00b7 2026 Q2",
+   "artist": "Johnson Tsang",
+   "close": "2026-06-11",
+   "quiet": 0.739,
+   "demand": 84.0
+  },
+  {
+   "name": "Felipe Pantone \u00b7 Subtractive Variability Dimensional 13 AA \u00b7 2026 Q2",
+   "artist": "Felipe Pantone",
+   "close": "2026-06-19",
+   "quiet": 0.3431,
+   "demand": 52.8
+  },
+  {
+   "name": "Miwa Komatsu \u00b7 Three Guardians: Gatekeeping the Heat and Cold \u00b7 2026 Q2",
+   "artist": "Miwa Komatsu",
+   "close": "2026-06-23",
+   "quiet": 0.3703,
+   "demand": 65.2
+  },
+  {
+   "name": "Urs Fischer \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Urs Fischer",
+   "close": "2026-06-25",
+   "quiet": 0.4268,
+   "demand": 70.6
+  },
+  {
+   "name": "Hank Willis Thomas \u00b7 \u201cSuccess is no accident.\u201d \u00b7 2026 Q2",
+   "artist": "Hank Willis Thomas",
+   "close": "2026-06-30",
+   "quiet": 1.3195,
+   "demand": 160.8
+  },
+  {
+   "name": "Zeng Fanzhi \u00b7 Rainbow (Mask Series 1997 no.8) \u00b7 2026 Q3",
+   "artist": "Zeng Fanzhi",
+   "close": "2026-07-22",
+   "quiet": 0.6208,
+   "demand": 108.6
+  },
+  {
+   "name": "Yoon Hyup \u00b7 Ambre Roulette \u00b7 2026 Q3",
+   "artist": "Yoon Hyup",
+   "close": "2026-07-23",
+   "quiet": 0.7685,
+   "demand": 118.8
+  },
+  {
+   "name": "Jaume Plensa \u00b7 UTOPIA \u00b7 2026 Q3",
+   "artist": "Jaume Plensa",
+   "close": "2026-07-29",
+   "quiet": 0.2602,
+   "demand": 48.0
+  },
+  {
+   "name": "Backside works. \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Backside works.",
+   "close": "2026-07-30",
+   "quiet": 0.7117,
+   "demand": 106.4
+  },
+  {
+   "name": "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Piet Mondrian Estate",
+   "close": "2026-08-18",
+   "quiet": 2.6247,
+   "demand": 615.4
+  },
+  {
+   "name": "James Jean \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "James Jean",
+   "close": "2026-08-20",
+   "quiet": 1.386,
+   "demand": 300.2
+  },
+  {
+   "name": "Parra \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Parra",
+   "close": "2026-08-21",
+   "quiet": 1.09,
+   "demand": 214.4
+  },
+  {
+   "name": "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Zeng Fanzhi",
+   "close": "2026-08-26",
+   "quiet": 0.2724,
+   "demand": 36.8
+  },
+  {
+   "name": "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Tschabalala Self",
+   "close": "2026-09-01",
+   "quiet": 0.8999,
+   "demand": 44.2
+  },
+  {
+   "name": "Salvador Dali Estate \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Salvador Dali Estate",
+   "close": "2026-09-11",
+   "quiet": 2.4255,
+   "demand": 427.8
+  },
+  {
+   "name": "Glenn Ligon \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Glenn Ligon",
+   "close": "2026-09-17",
+   "quiet": 0.5675,
+   "demand": 113.6
+  },
+  {
+   "name": "Julian Schnabel \u00b7 Multiple \u00b7 2026 Q3",
+   "artist": "Julian Schnabel",
+   "close": "2026-09-25",
+   "quiet": 0.6539,
+   "demand": 102.0
+  },
+  {
+   "name": "Robert Longo \u00b7 Untitled (Sandy, from the series \u201cMen in the Cities\u201d) \u00b7 2026 Q3",
+   "artist": "Robert Longo",
+   "close": "2026-09-29",
+   "quiet": 0.3471,
+   "demand": 60.0
+  },
+  {
+   "name": "Andy Warhol Estate \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Andy Warhol Estate",
+   "close": "2026-09-30",
+   "quiet": 1.6365,
+   "demand": 424.0
+  },
+  {
+   "name": "David Wojnarowicz \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "David Wojnarowicz",
+   "close": "2026-10-23",
+   "quiet": 0.889,
+   "demand": 144.0
+  },
+  {
+   "name": "Loie Hollowell \u00b7 Mother's Milk \u00b7 2026 Q4",
+   "artist": "Loie Hollowell",
+   "close": "2026-10-26",
+   "quiet": 0.3913,
+   "demand": 43.6
+  },
+  {
+   "name": "Roy Lichtenstein Estate \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Roy Lichtenstein Estate",
+   "close": "2026-10-29",
+   "quiet": 8.3384,
+   "demand": 1317.4
+  },
+  {
+   "name": "Cai Guo-Qiang \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Cai Guo-Qiang",
+   "close": "2026-10-30",
+   "quiet": 0.5489,
+   "demand": 106.8
+  }
+ ],
+ "usual_audience": {
+  "announce": 11731.5,
+  "early_access": 2634.5,
+  "insiders": 164.0,
+  "last_chance": 5698.0,
+  "other": 2138.0,
+  "sustain": 15541.5
+ },
  "asOf": "2026-11-16",
  "launches": 66,
  "launchDays": 2717,
@@ -46,25 +531,25 @@
    0.95
   ],
   "ratio": [
-   0.7755714920788563,
-   0.6448342690863784,
-   0.5821890134777874,
-   0.5362498096261661,
-   0.4908038114831802,
-   0.46017719211638763,
-   0.4340503409168265,
-   0.3820402607598489,
-   0.34404387984637097,
-   0.3055203126402275,
-   0.2806729996820063,
-   0.24072973293954913,
-   0.20946007285570412,
-   0.18637184856283157,
-   0.16919421314548727,
-   0.14753997964392185,
-   0.1270148049211679,
-   0.11087504217786073,
-   0.03663230266852077
+   0.7839446765210769,
+   0.5938262520159334,
+   0.5149502104005996,
+   0.4685850828077098,
+   0.42633556360469305,
+   0.3878751317209088,
+   0.3652798960102043,
+   0.3320756378633329,
+   0.30860084478386246,
+   0.27406232407968206,
+   0.24601911949176897,
+   0.20559096204911834,
+   0.19276580488596023,
+   0.1764887224534174,
+   0.15486007259397233,
+   0.13625149223278812,
+   0.12078449493538801,
+   0.10346487778553509,
+   0.034702004000756806
   ],
   "n": [
    66,

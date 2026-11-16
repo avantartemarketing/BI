@@ -114,7 +114,8 @@ export default function PlanChanges({ snap, state }) {
   const all = [...(pc.changes || []), ...(pc.more || [])];
   const todo = all.filter((c) => !states[c.key]);
   const done = all.filter((c) => states[c.key]);
-  const shown = more ? todo : todo.slice(0, 3);
+  const cap = snap.method === "plan" ? 4 : 3;   // the plan-based view shows four, so the paid budget sits beside the comms
+  const shown = more ? todo : todo.slice(0, cap);
   const toCome = pc.planToCome || [];
 
   const save = (c, state, quiet) => {

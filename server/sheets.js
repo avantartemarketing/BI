@@ -433,6 +433,27 @@ async function refresh({ full = false } = {}) {
       console.error("sheets: " + out.notion);
     }
 
+    // The plan-based view's two feeds (docs/PLAN_MODEL.md): the Notion comms
+    // plan row by row, and the HubSpot emails with their audiences. A failed
+    // pull leaves the previous file in place and costs the launch pages their
+    // plan view at worst (the clock's page never reads these), so it is
+    // reported here and in the log and does not fail the refresh.
+    try {
+      const comms = require("./commsPlan");
+      out.commsPlan = await comms.refreshCommsPlan({ days: comms.REFRESH_DAYS });   // the recent and coming rows: the whole plan takes minutes and only the back-test needs it
+      if (!out.commsPlan.startsWith("comms plan off")) updated = true;
+    } catch (e) {
+      out.commsPlan = "comms plan failed: " + String((e && e.message) || e).slice(0, 300);
+      console.error("sheets: " + out.commsPlan);
+    }
+    try {
+      out.audiences = await require("./emailAudiences").refreshAudiences();
+      if (!out.audiences.startsWith("email audiences off")) updated = true;
+    } catch (e) {
+      out.audiences = "email audiences failed: " + String((e && e.message) || e).slice(0, 300);
+      console.error("sheets: " + out.audiences);
+    }
+
     // Airtable's Pipeline table: every product's edition, price, target
     // economics and dates, which the Target setting tab reads per release
     // (etl/pull_airtable.py). Off without a token; a failed pull leaves the

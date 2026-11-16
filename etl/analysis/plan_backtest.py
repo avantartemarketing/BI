@@ -199,14 +199,31 @@ def click_backtest(S: pd.DataFrame, folds) -> dict:
 
 # ---------------------------------------------------------------- the price list
 K = len(P.VALUE_COLS)
+NE, NP = P.EMAIL_FADE_DAYS, P.POST_FADE_DAYS      # the days after its own that an email, and a post, is still felt
+NF = NE + NP
+EM = [i for i, c in enumerate(P.VALUE_COLS) if c.startswith("em_")]
+PO = [i for i in range(K) if i not in EM]
+
+
+def parts(d: dict, th: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """A launch's days as the price list `th` reads them: what each brings
+    with nothing going out, and what the pieces add (each on its own day and,
+    fading, on the days after: an email's days and a post's fitted apart)."""
+    X, t, L = d["X"], d["t"], d["L"]
+    act = X.copy()
+    for lag in range(1, NE + 1):
+        if lag < len(X):
+            act[lag:, EM] += th[K + lag - 1] * X[:-lag, EM]
+    for lag in range(1, NP + 1):
+        if lag < len(X):
+            act[lag:, PO] += th[K + NE + lag - 1] * X[:-lag, PO]
+    base = np.where(t >= 0, 1.0, th[K + NF + 2]) + th[K + NF] * (t == L) + th[K + NF + 1] * (t == L - 1)
+    return base, act @ th[:K]
 
 
 def mu(d: dict, th: np.ndarray) -> np.ndarray:
-    X, t, L = d["X"], d["t"], d["L"]
-    act = X.copy()
-    act[1:] += th[K] * X[:-1]
-    act[2:] += th[K + 1] * X[:-2]
-    return np.where(t >= 0, 1.0, th[K + 4]) + act @ th[:K] + th[K + 2] * (t == L) + th[K + 3] * (t == L - 1)
+    base, pieces = parts(d, th)
+    return base + pieces
 
 
 def fit_prices(panel: dict, keys, start=None) -> np.ndarray:
@@ -219,14 +236,53 @@ def fit_prices(panel: dict, keys, start=None) -> np.ndarray:
             m = mu(d, th)
             out.append(d["y"] / d["y"].sum() - m / m.sum())
         return np.concatenate(out)
-    th0 = np.r_[np.full(K, 0.5), 0.3, 0.1, 1.0, 1.0, 0.2] if start is None else start
-    hi = np.r_[np.full(K, 1e3), 1.0, 1.0, 1e3, 1e3, 5.0]
-    return least_squares(resid, th0, bounds=(np.zeros(K + 5), hi), x_scale="jac", max_nfev=400).x
+    th0 = np.r_[np.full(K, 0.5), 0.4 * 0.5 ** np.arange(NE), 0.4 * 0.5 ** np.arange(NP), 1.0, 1.0, 0.2] if start is None else start
+    hi = np.r_[np.full(K, 1e3), np.ones(NF), 1e3, 1e3, 5.0]
+    th0 = np.minimum(np.maximum(th0, 1e-6), hi - 1e-6)
+    return least_squares(resid, th0, bounds=(np.zeros(K + NF + 3), hi), x_scale="jac", max_nfev=400).x
 
 
 def as_prices(th: np.ndarray) -> dict:
-    return {"weights": {c: float(w) for c, w in zip(P.VALUE_COLS, th[:K])}, "fade": [float(th[K]), float(th[K + 1])],
-            "close_day": float(th[K + 2]), "day_before": float(th[K + 3]), "pre": float(th[K + 4])}
+    return {"weights": {c: float(w) for c, w in zip(P.VALUE_COLS, th[:K])},
+            "fade_email": [float(x) for x in th[K:K + NE]], "fade_posts": [float(x) for x in th[K + NE:K + NF]],
+            "close_day": float(th[K + NF]), "day_before": float(th[K + NF + 1]), "pre": float(th[K + NF + 2])}
+
+
+def quiet_days(d: dict) -> np.ndarray:
+    """A launch's days after the announce with nothing going out and nothing still felt."""
+    e_on = (d["X"][:, EM].sum(axis=1) > 0).astype(float)
+    p_on = (d["X"][:, PO].sum(axis=1) > 0).astype(float)
+    near = (P.lagged(e_on, [1.0] * NE) + P.lagged(p_on, [1.0] * NP)) > 0
+    return (~near) & (d["t"] >= 0)
+
+
+# the page's channel groups (etl/build.py DISPLAY_GROUPS) against the demand groups read here
+PAGE_GROUPS = {"aa_email": "email", "aa_social": "aa_social", "referral_artist": "artist", "organic_search": "search", "direct_other": "referrals"}
+
+
+def quiet_split(panel: dict) -> dict:
+    """How a quiet day's demand splits over the page's channel groups, Direct
+    left out (the page's default view shares it over the others)."""
+    tot = {g: 0.0 for g in PAGE_GROUPS}
+    for d in panel.values():
+        q = quiet_days(d)
+        for g, k in PAGE_GROUPS.items():
+            tot[g] += float(d["G"][k][q].sum())
+    s = sum(tot.values())
+    return {g: round(v / s, 4) for g, v in tot.items()} if s > 0 else {}
+
+
+def quiet_sizes(panel: dict, th: np.ndarray) -> list[dict]:
+    """How big a quiet day was on each launch, in demand units: its demand
+    over its plan's value. What a new launch's plan is sized on before it has
+    results of its own (etl/plan_view.py)."""
+    rows = []
+    for name, d in panel.items():
+        v = float(mu(d, th).sum())
+        if v > 0:
+            rows.append({"name": name, "artist": name.split(" \u00b7 ")[0], "close": str(pd.Timestamp(d["close"]).date()),
+                         "quiet": round(float(d["y"].sum()) / v, 4), "demand": round(float(d["y"].sum()), 1)})
+    return sorted(rows, key=lambda r: r["close"])
 
 
 def curve_of(d: dict) -> np.ndarray:
@@ -334,12 +390,15 @@ def main() -> None:
     prices = as_prices(th_all)
     usual = usual_table(panel, names, th_all)
     print(f"\n{len(names)} draw launches with emails and a plan on file, {sum(len(d['t']) for d in panel.values())} launch-days")
-    print("the price list, in quiet days (an ordinary day after the announce with nothing going out = 1), over a piece's day and the two after:")
+    print(f"the price list, in quiet days (an ordinary day after the announce with nothing going out = 1), over a piece's day and the days it is still felt "
+          f"(an email {NE} more, a post {NP}):")
     for c in P.VALUE_COLS:
         unit = f"per {P.CLICKS_REF:.0f} expected clicks" if c.startswith("em_") else "each"
         print(f"  {c:20s} {P.action_value(c, 1.0, prices):6.2f}  {unit}")
-    print(f"  fades to x{prices['fade'][0]:.2f} the day after and x{prices['fade'][1]:.2f} the day after that; "
-          f"the close day adds {prices['close_day']:.1f} and the day before {prices['day_before']:.1f}; a day before the announce is {prices['pre']:.2f}")
+    print("  an email fades to " + ", ".join(f"x{x:.2f}" for x in prices["fade_email"]) + " on the days after; a post to " + ", ".join(f"x{x:.2f}" for x in prices["fade_posts"])
+          + f"; the close day adds {prices['close_day']:.1f} and the day before {prices['day_before']:.1f}; a day before the announce is {prices['pre']:.2f}")
+    base_share = [float(b.sum() / (b.sum() + a.sum())) for b, a in (parts(panel[n], th_all) for n in names)]
+    print(f"  with nothing going out (the baseline): {np.median(base_share):.0%} of a launch's demand outside paid, the median launch")
 
     history = history_checks(panel)
     print("\ndoes demand follow what goes out? (days with the comms going out or the day after -> the share of the demand that arrives on them)")
@@ -416,7 +475,9 @@ def main() -> None:
     print(f"\nreads at 25, 50 and 75%: remaining plan under 0.8 of the usual ({lean['lighter']['n']}): what came was x{lean['lighter']['came_over_clock']:.2f} the clock's figure; "
           f"within 0.8 to 1.25 ({lean['usual']['n']}): x{lean['usual']['came_over_clock']:.2f}; over 1.25 ({lean['heavier']['n']}): x{lean['heavier']['came_over_clock']:.2f}")
 
-    prices.update({"asOf": str(as_of), "launches": len(names), "launchDays": int(sum(len(d["t"]) for d in panel.values())),
+    prices.update({"baseline_share": round(float(np.median(base_share)), 4), "split": quiet_split(panel), "quiet": quiet_sizes(panel, th_all),
+                   "usual_audience": {k: float(v) for k, v in S.groupby("kind")["delivered"].median().items()},
+                   "asOf": str(as_of), "launches": len(names), "launchDays": int(sum(len(d["t"]) for d in panel.values())),
                    "usual": usual, "gamma": gamma, "reliability": {k: round(v, 3) for k, v in sorted(reliability.items())},
                    "clicks": {"names": P.CLICK_NAMES, "coef": [float(c) for c in coef], "spread": clicks["spread"], "sends": int(len(S)),
                               "launches": int(len(s_launches)), "pull_weight": 1.0},

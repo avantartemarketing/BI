@@ -10,7 +10,8 @@ this launch's plan is the usual one. This module prices the plan itself:
                    nothing going out = 1): emails by kind and by the clicks a
                    send of that kind and size usually gets, Avant Arte's posts
                    and stories, the artist's, a partner's; how fast a piece
-                   fades over the two days after; the deadline's own pull.
+                   fades (an email over the four days after it, a post over
+                   the next day); the deadline's own pull.
                    Fitted on every past draw launch with a plan on file, not
                    on a basket (etl/analysis/plan_backtest.py writes
                    etl/plan_prices.json; recomputing it is a deliberate act).
@@ -52,7 +53,8 @@ PRICES_PATH = ROOT / "etl" / "plan_prices.json"
 LEAD_DAYS = 14          # how far before the announce a launch's plan is read (the early access days)
 ENTRY_RATE = 0.8        # an eligible entry unit counted as the page counts it (docs/METHODOLOGY.md 1)
 MIN_DELIVERED = 100     # a send to fewer than this is a test or a hand-picked note, and is not priced
-FADE_DAYS = 2           # a piece of comms is felt on its day and the two after
+EMAIL_FADE_DAYS = 4     # an email is felt on its day and the four after (the back-test: longer tails fit no better)
+POST_FADE_DAYS = 1      # a post is felt on its day and the next
 CLICKS_REF = 100.0      # an email's value is priced per this many expected clicks
 
 # the kinds of marketing email, read off a send's name (email_kind)
@@ -333,29 +335,54 @@ def load_prices(path: pathlib.Path | str | None = None) -> dict | None:
         return None
 
 
+def fade_of(col: str, prices: dict) -> list[float]:
+    """How much of a piece is still felt on each day after its own: an email's
+    days and a post's days are fitted apart. A price list written before that
+    (one `fade` for every piece) still reads."""
+    key = "fade_email" if col.startswith("em_") else "fade_posts"
+    return [float(x) for x in (prices.get(key) if prices.get(key) is not None else prices.get("fade") or [])]
+
+
+def lagged(x: np.ndarray, fade: list[float]) -> np.ndarray:
+    """A day-by-day series with each day's amount still felt, fading, on the days after it."""
+    out = np.asarray(x, dtype=float).copy()
+    for lag, f in enumerate(fade, 1):
+        if lag < len(out) and f:
+            out[lag:] += f * np.asarray(x, dtype=float)[:-lag]
+    return out
+
+
+def piece_values(days: pd.DataFrame, prices: dict, cols: list[str] | None = None) -> np.ndarray:
+    """What the pieces in `cols` (every piece when None) bring each day, in
+    quiet days: each on its own day and, fading, on the days after."""
+    out = np.zeros(len(days))
+    for c in (VALUE_COLS if cols is None else cols):
+        w = float(prices["weights"].get(c, 0.0))
+        if w:
+            out += w * lagged(days[c].to_numpy(dtype=float), fade_of(c, prices))
+    return out
+
+
+def base_values(days: pd.DataFrame, prices: dict) -> np.ndarray:
+    """What a day brings with nothing going out, in quiet days: 1 from the
+    announce on, `pre` before it, and the deadline's own pull on the last two days."""
+    t = days["t"].to_numpy()
+    L = int(days["L"].iloc[0])
+    return np.where(t >= 0, 1.0, float(prices["pre"])) + float(prices["close_day"]) * (t == L) + float(prices["day_before"]) * (t == L - 1)
+
+
 def day_values(days: pd.DataFrame, prices: dict) -> np.ndarray:
     """Each day's value in quiet days: the baseline (1 from the announce on,
     `pre` before it), what goes out that day and what still lingers from the
-    two days before, and the deadline's own pull on the last two days."""
-    w = prices["weights"]
-    beta = np.array([float(w.get(c, 0.0)) for c in VALUE_COLS])
-    X = days[VALUE_COLS].to_numpy(dtype=float)
-    k = [1.0, float(prices["fade"][0]), float(prices["fade"][1])]
-    act = X * k[0]
-    for lag in (1, 2):
-        if len(X) > lag:
-            act[lag:] += k[lag] * X[:-lag]
-    t = days["t"].to_numpy()
-    L = int(days["L"].iloc[0])
-    base = np.where(t >= 0, 1.0, float(prices["pre"]))
-    return base + act @ beta + float(prices["close_day"]) * (t == L) + float(prices["day_before"]) * (t == L - 1)
+    days before, and the deadline's own pull on the last two days."""
+    return base_values(days, prices) + piece_values(days, prices)
 
 
 def action_value(col: str, amount: float, prices: dict) -> float:
-    """What one piece of comms adds over its day and the two after, in quiet
-    days: `amount` posts of a family, or an email's expected clicks per
-    CLICKS_REF."""
-    return float(prices["weights"].get(col, 0.0)) * float(amount) * (1.0 + float(prices["fade"][0]) + float(prices["fade"][1]))
+    """What one piece of comms adds over its day and the days it is still
+    felt, in quiet days: `amount` posts of a family, or an email's expected
+    clicks per CLICKS_REF."""
+    return float(prices["weights"].get(col, 0.0)) * float(amount) * (1.0 + sum(fade_of(col, prices)))
 
 
 def remaining_ratio(values, t, cut: int) -> float | None:
