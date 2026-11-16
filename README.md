@@ -12,6 +12,8 @@ docs/DATA_MODEL.md      the specification: target model, benchmarks, across-time
                         paid model, draw-entry semantics, metric map, data-quality register
 docs/BENCHMARK_SPEC.md  the benchmark / target / stretch contract: basket medians, the even
                         uplift K, the snapshot additions, the drawing grammar
+docs/PLAN_MODEL.md      the plan model: a launch read by the comms that go out, built beside the
+                        clock and on no page yet (the feeds, the price list, the back-test)
 etl/                    Python pipeline
   release_inputs.json     hand-entered launch inputs per release (the human decisions)
   benchmarks.json         frozen benchmark values (v1; recompute policy in docs §4)
@@ -28,6 +30,9 @@ etl/                    Python pipeline
   release_features.py     one row per release from the daily funnel (data/app/release_features.csv)
   paid_cost.py            the price of a paid entry as the plan reads it: the cost curve and the
                           leave-one-out backtest that picks its slope on every build (step 5)
+  plan_model.py           the plan model: a launch's comms plan priced against a usual one
+                          (docs/PLAN_MODEL.md); plan_prices.json is its price list and
+                          plan_backtest.json its back-test, both written by analysis/plan_backtest.py
   analysis/               one-off studies behind documented decisions (cpe_elasticity.py and
                           cpe_elasticity_challenge.py - the price of a bigger day,
                           cost_backtest.py - the standing backtest of the plan's cost per entry
@@ -35,7 +40,9 @@ etl/                    Python pipeline
                           projection_backtest.py - the range on the projection at close, writes
                           etl/projection_backtest.json which build.py reads,
                           tier_curve_probe.py, release_clusters.py - the baskets of comparables,
-                          price_probe.py - whether price belongs in the basket; it does)
+                          price_probe.py - whether price belongs in the basket; it does,
+                          plan_backtest.py - the plan model's price list and its standing
+                          back-test against the clock)
 data/
   units_by_country.csv    units paid per release by the country the order ships to (counts
                           only; the Orders by country card), pulled with the orders pair
@@ -45,6 +52,9 @@ data/
   notion_campaigns.csv    the campaign dates and the marketing lead per release, from the same log (live)
   notion_plan.csv         the comms plan row by row (date, channel, title), from the same log (live);
                           what the Suggested actions card proposes changes against
+  notion_comms.csv        the team's full comms plan from Notion's Comms database, a line per
+                          piece and campaign, and notion_comms_campaigns.csv, the campaigns' codes
+                          and dates (server/commsPlan.js, run by hand; "The plan model" below)
   release_clusters.csv    every release's campaign window, features, basket and edition pricing
                           (docs/RELEASE_CLUSTERS.md; pricing columns in docs/DATA_MODEL.md 4a.2½)
   release_pricing.csv     one row per Airtable product record: price (EUR), units, launch type,
@@ -613,6 +623,31 @@ Environment on Render wins over the default, so one left at `admins` has to be c
 removed there. The refresh status line's Notion part says how many plan rows it read
 and how many of them are emails ("plan N rows (M email)"): a plan with no email rows
 means the "Not in the plan" email rule stays quiet, by design.
+
+## The plan model
+
+A second reading of a draw launch, by the comms that go out, built beside the campaign clock
+and replacing nothing: `docs/PLAN_MODEL.md` has what it is, what the history shows and how
+it scores against the clock. Nothing of it is on a page or in the hourly refresh yet.
+
+Its two feeds are pulled by hand, with the tokens the dashboard already uses:
+
+```
+node server/commsPlan.js --write        # Notion's Comms database -> data/notion_comms.csv, data/notion_comms_campaigns.csv
+node server/emailAudiences.js --write   # HubSpot emails with their lists -> sources/email_audiences.csv
+python3 etl/analysis/plan_backtest.py   # the price list and the back-test -> etl/plan_prices.json, etl/plan_backtest.json
+```
+
+Either pull without `--write` prints what it would write. The Notion integration needs the
+Comms, Channels and Campaigns databases shared with it (`NOTION_COMMS_DB`,
+`NOTION_CHANNELS_DB` and `NOTION_CAMPAIGNS_DB` override their ids). The HubSpot token needs
+the Marketing Email read scope, and `crm.lists.read` as well for the lists' names
+(`sources/hubspot_lists.csv`); without it the audiences are still written and the status line
+says the names are unavailable. The back-test needs scipy, which the live build does not
+install; `etl/plan_model.py` itself needs only pandas. The three pulled files are ignored by
+git and hold no person: list ids and counts only. `python3 tests/test_plan_model.py` holds the
+model's parts to hand-built cases and `node tests/comms_plan.mjs` the two pulls to stand-ins
+for the APIs.
 
 ## Signing in
 

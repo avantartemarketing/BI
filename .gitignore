@@ -19,6 +19,9 @@ data/notion_campaigns.csv
 # the plan row by row, from the same pull, and the ticks and dismissals on the Suggested actions card (server/planChanges.js)
 data/notion_plan.csv
 data/plan_changes.json
+# the Notion comms plan and its campaigns, pulled by hand for the plan model (server/commsPlan.js, docs/PLAN_MODEL.md)
+data/notion_comms.csv
+data/notion_comms_campaigns.csv
 data/app/derived/
 data/inputs.saved.json
 data/email_content.csv

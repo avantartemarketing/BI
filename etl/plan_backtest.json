@@ -1,0 +1,367 @@
+{
+ "asOf": "2026-11-16",
+ "launches": 66,
+ "names": [
+  "Ai Weiwei \u00b7 Arm \u00b7 Multiple \u00b7 2026 Q2",
+  "Ai Weiwei \u00b7 Multiple \u00b7 2024 Q4",
+  "Ai Weiwei \u00b7 Multiple \u00b7 2025 Q4",
+  "Ai Weiwei \u00b7 To Be Looked At... \u00b7 2024 Q4",
+  "Alex Katz \u00b7 Ada Ada \u00b7 2025 Q4",
+  "Andy Warhol Estate \u00b7 Multiple \u00b7 2026 Q4",
+  "Anni and Josef Albers \u00b7 Multiple \u00b7 2026 Q2",
+  "Antony Micallef \u00b7 Portrait of Francis Bacon \u00b7 2024 Q3",
+  "Antony Micallef \u00b7 Self Portrait with Yellow Lake and Magenta \u00b7 2025 Q3",
+  "Backside works. \u00b7 Multiple \u00b7 2026 Q3",
+  "Cai Guo-Qiang \u00b7 Multiple \u00b7 2026 Q4",
+  "Cindy Sherman \u00b7 Untitled \u00b7 2026 Q2",
+  "Claire Tabouret \u00b7 Paysage d\u2019Int\u00e9rieur (printemps) \u00b7 2024 Q4",
+  "David Wojnarowicz \u00b7 Multiple \u00b7 2026 Q4",
+  "Dominique Fung \u00b7 Handheld Fan \u00b7 2025 Q3",
+  "Eddie Martinez \u00b7 Olive Garden \u00b7 2026 Q2",
+  "Felipe Pantone \u00b7 Subtractive Variability Dimensional 13 AA \u00b7 2026 Q2",
+  "Ferrari Sheppard \u00b7 Put Some Red On It \u00b7 2026 Q1",
+  "George Condo \u00b7 Fashion Model \u00b7 2025 Q1",
+  "Glenn Ligon \u00b7 Multiple \u00b7 2026 Q3",
+  "Hajime Sorayama \u00b7 Untitled \u00b7 2025 Q2",
+  "Hank Willis Thomas \u00b7 \u201cSuccess is no accident.\u201d \u00b7 2026 Q2",
+  "Harland Miller \u00b7 Multiple \u00b7 2025 Q3",
+  "Harland Miller \u00b7 York So Good They Named It Once \u00b7 2025 Q2",
+  "James Jarvis \u00b7 Hang in there! \u00b7 2025 Q3",
+  "James Jean \u00b7 Multiple \u00b7 2026 Q3",
+  "Jammie Holmes \u00b7 Fred \u00b7 2025 Q1",
+  "Jaume Plensa \u00b7 UTOPIA \u00b7 2026 Q3",
+  "Jean-Michel Othoniel \u00b7 Multiple \u00b7 2026 Q1",
+  "Jeff Koons \u00b7 Multiple \u00b7 2026 Q1",
+  "Joakim Ojanen \u00b7 The dance we dance when we are together \u00b7 2026 Q1",
+  "Johnson Tsang \u00b7 Alliance \u00b7 2026 Q2",
+  "Johnson Tsang \u00b7 Remembrance \u00b7 2025 Q3",
+  "Johnson Tsang \u00b7 The Moment \u00b7 2024 Q4",
+  "Johnson Tsang \u00b7 Work in Progress \u00b7 2026 Q1",
+  "Judy Chicago \u00b7 Reincarnation Triptych \u00b7 2025 Q4",
+  "Julian Schnabel \u00b7 Multiple \u00b7 2026 Q3",
+  "Katherine Bradford \u00b7 Swing Over Pool \u00b7 2025 Q3",
+  "Lee Ufan \u00b7 Dialogue \u00b7 2026 Q1",
+  "Loie Hollowell \u00b7 Mother's Milk \u00b7 2026 Q4",
+  "Maurizio Cattelan \u00b7 La Nona Ora \u00b7 2026 Q2",
+  "Maurizio Cattelan \u00b7 THERAPY \u00b7 2026 Q2",
+  "Maurizio Cattelan \u00b7 We are the Revolution \u00b7 2025 Q4",
+  "Maurizio Cattelan \u00b7 Window \u00b7 2026 Q1",
+  "Miwa Komatsu \u00b7 Three Guardians: Gatekeeping the Heat and Cold \u00b7 2026 Q2",
+  "Miwa Komatsu \u00b7 White and Black Guiding Yamainu-sama \u00b7 2024 Q4",
+  "Other World \u00b7 Dogs of War \u00b7 2025 Q2",
+  "Parra \u00b7 Multiple \u00b7 2026 Q3",
+  "Paul Insect \u00b7 Multiple \u00b7 2024 Q3",
+  "Piet Mondrian Estate \u00b7 Multiple \u00b7 2026 Q3",
+  "Robert Longo \u00b7 Untitled (Sandy, from the series \u201cMen in the Cities\u201d) \u00b7 2026 Q3",
+  "Roy Lichtenstein Estate \u00b7 Multiple \u00b7 2026 Q4",
+  "Salvador Dali Estate \u00b7 Multiple \u00b7 2026 Q3",
+  "Slawn \u00b7 Ugly Bastard \u00b7 2024 Q3",
+  "TIDE \u00b7 Multiple \u00b7 2024 Q4",
+  "Takashi Murakami \u00b7 Multiple \u00b7 2026 Q2",
+  "Taku Obata \u00b7 B BOY JUSHI \u00b7 2025 Q1",
+  "Tschabalala Self \u00b7 Multiple \u00b7 2026 Q3",
+  "Urs Fischer \u00b7 Multiple \u00b7 2026 Q2",
+  "Will Cotton \u00b7 The Cowgirl \u00b7 2025 Q1",
+  "Woo Kuk Won \u00b7 Multiple \u00b7 2024 Q4",
+  "Yoon Hyup \u00b7 Ambre Roulette \u00b7 2026 Q3",
+  "Yoon Hyup \u00b7 City Fountain \u00b7 2024 Q3",
+  "Yoon Hyup \u00b7 Summer in San Sebastian \u00b7 2025 Q3",
+  "Zeng Fanzhi \u00b7 Multiple \u00b7 2026 Q3",
+  "Zeng Fanzhi \u00b7 Rainbow (Mask Series 1997 no.8) \u00b7 2026 Q3"
+ ],
+ "pattern": {
+  "clock": 0.408,
+  "plan": 0.653
+ },
+ "cuts": {
+  "2 days after announce": {
+   "n": 66,
+   "clock": {
+    "final": 0.10991739993331645,
+    "to_come": 0.2921567794632371
+   },
+   "plan": {
+    "final": 0.1711101221012756,
+    "to_come": 0.4202560460807851
+   },
+   "anchored_0.0": {
+    "final": 0.10991739993331645,
+    "to_come": 0.2921567794632371
+   },
+   "anchored_0.25": {
+    "final": 0.1174934112296315,
+    "to_come": 0.3046642097594411
+   },
+   "anchored_0.5": {
+    "final": 0.13109960801146098,
+    "to_come": 0.33135185002939704
+   },
+   "anchored_0.75": {
+    "final": 0.1327525807685715,
+    "to_come": 0.39284271252013414
+   },
+   "anchored_1.0": {
+    "final": 0.1566018734896793,
+    "to_come": 0.4078797235527867
+   }
+  },
+  "25% through": {
+   "n": 66,
+   "clock": {
+    "final": 0.11118391865472377,
+    "to_come": 0.3918101084875053
+   },
+   "plan": {
+    "final": 0.10304047321237286,
+    "to_come": 0.3737382451994673
+   },
+   "anchored_0.0": {
+    "final": 0.11118391865472377,
+    "to_come": 0.3918101084875053
+   },
+   "anchored_0.25": {
+    "final": 0.11103033662705876,
+    "to_come": 0.36251761635977436
+   },
+   "anchored_0.5": {
+    "final": 0.11121692926366324,
+    "to_come": 0.37904289600140706
+   },
+   "anchored_0.75": {
+    "final": 0.09905291290152546,
+    "to_come": 0.33450480240734687
+   },
+   "anchored_1.0": {
+    "final": 0.09737897909770206,
+    "to_come": 0.41147528560453256
+   }
+  },
+  "50% through": {
+   "n": 66,
+   "clock": {
+    "final": 0.08568744874880052,
+    "to_come": 0.413679294066041
+   },
+   "plan": {
+    "final": 0.07269570984969859,
+    "to_come": 0.3980504704560601
+   },
+   "anchored_0.0": {
+    "final": 0.08568744874880052,
+    "to_come": 0.413679294066041
+   },
+   "anchored_0.25": {
+    "final": 0.07109972326584556,
+    "to_come": 0.40712828654965283
+   },
+   "anchored_0.5": {
+    "final": 0.06817881534417619,
+    "to_come": 0.3748271899632758
+   },
+   "anchored_0.75": {
+    "final": 0.06231334742216255,
+    "to_come": 0.354833477335611
+   },
+   "anchored_1.0": {
+    "final": 0.06586382662688794,
+    "to_come": 0.37380680169699626
+   }
+  },
+  "75% through": {
+   "n": 66,
+   "clock": {
+    "final": 0.04208810829712119,
+    "to_come": 0.3418978069587728
+   },
+   "plan": {
+    "final": 0.04693334558003863,
+    "to_come": 0.3010907125237475
+   },
+   "anchored_0.0": {
+    "final": 0.04208810829712119,
+    "to_come": 0.3418978069587728
+   },
+   "anchored_0.25": {
+    "final": 0.039884733759002096,
+    "to_come": 0.2864054495593844
+   },
+   "anchored_0.5": {
+    "final": 0.04294415589094119,
+    "to_come": 0.3684102745401374
+   },
+   "anchored_0.75": {
+    "final": 0.040005782406404226,
+    "to_come": 0.30878514242150507
+   },
+   "anchored_1.0": {
+    "final": 0.04487769168176818,
+    "to_come": 0.377691574245945
+   }
+  },
+  "90% through": {
+   "n": 66,
+   "clock": {
+    "final": 0.04260623999529119,
+    "to_come": 0.40425253137663497
+   },
+   "plan": {
+    "final": 0.04009194146881466,
+    "to_come": 0.40145650592083115
+   },
+   "anchored_0.0": {
+    "final": 0.04260623999529119,
+    "to_come": 0.40425253137663497
+   },
+   "anchored_0.25": {
+    "final": 0.04212802804449638,
+    "to_come": 0.36396345711888006
+   },
+   "anchored_0.5": {
+    "final": 0.03753894771678761,
+    "to_come": 0.3548450952083746
+   },
+   "anchored_0.75": {
+    "final": 0.0386027355902298,
+    "to_come": 0.36723770014758506
+   },
+   "anchored_1.0": {
+    "final": 0.03987969628960044,
+    "to_come": 0.3596380386293241
+   }
+  }
+ },
+ "gamma": 0.5,
+ "gamma_scores": {
+  "0.0": 0.3879,
+  "0.25": 0.355,
+  "0.5": 0.3693,
+  "0.75": 0.3413,
+  "1.0": 0.3807
+ },
+ "against_usual": {
+  "lighter": {
+   "n": 58,
+   "came_over_clock": 0.769797495161964
+  },
+  "usual": {
+   "n": 74,
+   "came_over_clock": 1.071858347257896
+  },
+  "heavier": {
+   "n": 60,
+   "came_over_clock": 1.320544932313906
+  }
+ },
+ "history": {
+  "all comms": {
+   "launches": 66,
+   "days_on": 0.15139293508304336,
+   "days_near": 0.2764155527579082,
+   "demand_on": 0.534631916341113,
+   "demand_near": 0.7202339669372962,
+   "lift": 6.95
+  },
+  "email": {
+   "launches": 66,
+   "days_on": 0.08429669395284584,
+   "days_near": 0.1551831793215822,
+   "demand_on": 0.6006226509166399,
+   "demand_near": 0.7620292968927164,
+   "lift": 23.49553571428571
+  },
+  "aa_social": {
+   "launches": 40,
+   "days_on": 0.1020311516635473,
+   "days_near": 0.19849869974851225,
+   "demand_on": 0.38121488745747856,
+   "demand_near": 0.6043008742629787,
+   "lift": 6.0
+  },
+  "artist": {
+   "launches": 23,
+   "days_on": 0.08327235431162952,
+   "days_near": 0.16569219370424795,
+   "demand_on": 0.4821347587596936,
+   "demand_near": 0.6422780317652564,
+   "lift": 11.649358974358975
+  },
+  "partner": {
+   "launches": 9,
+   "days_on": 0.0777773663799024,
+   "days_near": 0.15026072633136842,
+   "demand_on": 0.1560908084163898,
+   "demand_near": 0.23782845061914828,
+   "lift": 1.3888888888888886
+  },
+  "all comms on direct": {
+   "launches": 60,
+   "days_on": 0.15312775646594534,
+   "days_near": 0.27992610599572026,
+   "demand_on": 0.31400081041015776,
+   "demand_near": 0.5319332637269056,
+   "lift": 2.035623767952689
+  },
+  "all comms on search": {
+   "launches": 45,
+   "days_on": 0.1578056874333269,
+   "days_near": 0.28607627352728576,
+   "demand_on": 0.2849242340101368,
+   "demand_near": 0.4926901247625615,
+   "lift": 1.7
+  }
+ },
+ "clicks": {
+  "all": {
+   "n": 433,
+   "miss": 0.5200284953667915,
+   "within30": 0.3233256351039261,
+   "miss_with_launch": 0.47223767915177467,
+   "within30_with_launch": 0.3464203233256351
+  },
+  "after_first_day": {
+   "n": 248,
+   "miss": 0.47050862880030947,
+   "within30": 0.3588709677419355,
+   "miss_with_launch": 0.3961577025666423,
+   "within30_with_launch": 0.39919354838709675
+  },
+  "by_kind": {
+   "early_access": {
+    "n": 25,
+    "miss": 0.4729690723380945,
+    "within30": 0.32,
+    "miss_with_launch": 0.3306409006828257,
+    "within30_with_launch": 0.44
+   },
+   "announce": {
+    "n": 128,
+    "miss": 0.47783549196309993,
+    "within30": 0.3671875,
+    "miss_with_launch": 0.3592968309515432,
+    "within30_with_launch": 0.4375
+   },
+   "sustain": {
+    "n": 16,
+    "miss": 0.5991787894317021,
+    "within30": 0.1875,
+    "miss_with_launch": 0.7101941701215548,
+    "within30_with_launch": 0.1875
+   },
+   "last_chance": {
+    "n": 57,
+    "miss": 0.37325530805666357,
+    "within30": 0.43859649122807015,
+    "miss_with_launch": 0.3807430186684611,
+    "within30_with_launch": 0.38596491228070173
+   },
+   "other": {
+    "n": 12,
+    "miss": 0.8745860345995211,
+    "within30": 0.25,
+    "miss_with_launch": 1.4122520158824352,
+    "within30_with_launch": 0.3333333333333333
+   }
+  }
+ },
+ "note": "typical miss = the median of |log(forecast / actual)| as a share; each launch predicted from the others (12 folds); the clock is the pooled median curve of the share of demand reached by each point between announce and close"
+}
