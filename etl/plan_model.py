@@ -140,7 +140,7 @@ def campaign_artist(release: object) -> str:
     """The artist a Notion campaign is named for: the words before the first
     separator of "Artist | Title", "Artist · Title" or "Artist - Title" (a
     hyphen inside a name, Jean-Michel, is no separator)."""
-    return re.split(r"\s*[|·]\s*|\s+[-–—]\s+", str(release or "").strip(), maxsplit=1)[0].strip()
+    return re.split(r"\s*[|\u00b7]\s*|\s+[-\u2013\u2014]\s+", str(release or "").strip(), maxsplit=1)[0].strip()
 
 
 # ---------------------------------------------------------------- feeds
