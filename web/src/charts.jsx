@@ -1,6 +1,7 @@
 /* The page's charts, one grammar for every card (the Linear redesign, October
  * 2026): a line chart with the actual as an area under its line, target and
- * benchmark as thinner lines; columns where the target is a dotted outline on
+ * benchmark as thinner lines, every line curving through its points
+ * (chartLine.mjs, 17 November 2026); columns where the target is a dotted outline on
  * a faint tint, a little wider than the indigo actual inside it, which simply
  * rises past the outline when over (5 November 2026), the benchmark a dotted
  * mark; horizontal bars, stacked or diverging, the diverging kind able to
@@ -14,6 +15,7 @@
  * past the middle. */
 import React, { useState } from "react";
 import { useBoxSize } from "./ui.jsx";
+import { line } from "./chartLine.mjs";
 
 export const COL = {
   IND: "#5e6ad2", DEEP: "#3f4bb0", MID: "#7c86dd", LIGHT: "#c3c8f2", OVER: "#a7aeec", PALE: "#eceefc",
@@ -43,15 +45,6 @@ const tipAt = (o, x, title, rows) => ({
 });
 const noTip = { on: false, s: {}, title: "", rows: [] };
 
-const line = (pts) => {
-  let d = "", on = false;
-  pts.forEach((p) => {
-    if (p == null) { on = false; return; }
-    d += (on ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
-    on = true;
-  });
-  return d;
-};
 const rr = (x, y, w, h, r) => {
   if (w <= 0.2) return "";
   r = Math.min(r, w / 2, h / 2);

@@ -22,6 +22,7 @@
 import React from "react";
 import { Card, Head, Loz, useBoxSize } from "../ui.jsx";
 import { LineChart, Keys, niceAxis, kfmt, COL, lk, sw } from "../charts.jsx";
+import { line, lineAt } from "../chartLine.mjs";
 import { fmt, fmtPct, fmtMoney, MINUS } from "../format.mjs";
 import { noLevels } from "./noLevels.mjs";
 import "../cards.css";
@@ -52,7 +53,9 @@ const H = 190, L = 40, R = 10, T = 14, B = 26;
 const HC = 250;
 
 /* a daily spend's place on the curve, as a fractional index between the
- * points either side of it, and the profit there; null off the curve */
+ * points either side of it, and the profit there, read off the line as it is
+ * drawn (it curves between its points, chartLine.mjs) so a mark sits on it;
+ * null off the curve */
 function onCurve(curve, daily, key = "profit") {
   if (!has(daily) || curve.length < 2) return null;
   if (daily < curve[0].daily || daily > curve[curve.length - 1].daily) return null;
@@ -60,11 +63,15 @@ function onCurve(curve, daily, key = "profit") {
     const a = curve[k], c = curve[k + 1];
     if (daily >= a.daily && daily <= c.daily) {
       const f = c.daily > a.daily ? (daily - a.daily) / (c.daily - a.daily) : 0;
-      return { i: k + f, v: (a[key] ?? 0) + f * ((c[key] ?? 0) - (a[key] ?? 0)) };
+      return { i: k + f, v: key === "daily" ? daily : lineAt(curve.map((p) => p[key] ?? 0), k + f) };
     }
   }
   return null;
 }
+
+/* the range behind the line: along its top edge and back along its bottom,
+ * each curved as the line is */
+const bandOf = (top, bottom) => `${line(top)}L${line(bottom.reverse()).slice(1)}Z`;
 
 /* The band, the drop line, the dots, the ring and their labels, drawn in
  * the same pixels the line chart measures (the plot's width, H high). The
@@ -172,7 +179,7 @@ export default function SpendLevels({ snap }) {
   // ----- the band, the marks and their labels -----
   const banded = curve.some((p) => has(p.lo) && has(p.hi));
   const bandPath = banded
-    ? curve.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p.hi ?? p.profit).toFixed(1)}`).join("") + curve.map((p, i) => `L${x(i).toFixed(1)} ${y(p.lo ?? p.profit).toFixed(1)}`).reverse().join("") + "Z"
+    ? bandOf(curve.map((p, i) => [x(i), y(p.hi ?? p.profit)]), curve.map((p, i) => [x(i), y(p.lo ?? p.profit)]))
     : null;
   const recPt = onCurve(curve, rec);
   const todayPt = today !== null && today > 0 ? onCurve(curve, today) : null;
@@ -291,7 +298,7 @@ function Cautious({ lv, curve, title, boxRef, W }) {
   // ----- the range, the marks and their labels -----
   const banded = curve.some((p) => has(p.p10) && has(p.p90));
   const bandPath = banded
-    ? curve.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p.p90 ?? p.median).toFixed(1)}`).join("") + curve.map((p, i) => `L${x(i).toFixed(1)} ${y(p.p10 ?? p.median).toFixed(1)}`).reverse().join("") + "Z"
+    ? bandOf(curve.map((p, i) => [x(i), y(p.p90 ?? p.median)]), curve.map((p, i) => [x(i), y(p.p10 ?? p.median)]))
     : null;
   const zero = ymin < 0 ? `M${L} ${(y(0) + 0.5).toFixed(1)}H${W - R}` : null;
   const recPt = onCurve(curve, rec, "median");
