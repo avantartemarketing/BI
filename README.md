@@ -1087,10 +1087,11 @@ TL state), the dates, the window length on a timed launch, the lead, Last 90 day
 catalogue work, the horizon (Today or At close) on a live targeted release, and All lines on a
 release selling two lines. The cards sit in a two-column grid (`Overview.jsx`), every chart
 drawn by `charts.jsx` (line, column, bar, horizontal bar and waterfall charts with a hover
-readout and a key under each; a line curves through its points where it used to turn a corner
-at each, 17 November 2026, and between two points never leaves the heights they span, so a
-running total never dips and the hover dot still sits on the line: `chartLine.mjs`,
-`node tests/chart_line.mjs`), each card with a figure, its unit and its deltas in the head
+readout and a key under each; a line bends at its points where it used to turn a sharp corner
+at each, half way to a full curve, the gentler of the two the owner was shown on 17 November
+2026, and between two points never leaves the heights they span, so a running total never
+dips and the hover dot still sits on the line: `chartLine.mjs`, `node tests/chart_line.mjs`),
+each card with a figure, its unit and its deltas in the head
 and its own options behind a ⋯ menu:
 
 - **Unit trajectory** (Signup trajectory on a timed launch before its window): secured

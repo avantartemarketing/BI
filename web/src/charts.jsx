@@ -1,7 +1,7 @@
 /* The page's charts, one grammar for every card (the Linear redesign, October
  * 2026): a line chart with the actual as an area under its line, target and
- * benchmark as thinner lines, every line curving through its points
- * (chartLine.mjs, 17 November 2026); columns where the target is a dotted outline on
+ * benchmark as thinner lines, every line bending at its points where it
+ * turned a sharp corner (chartLine.mjs, 17 November 2026); columns where the target is a dotted outline on
  * a faint tint, a little wider than the indigo actual inside it, which simply
  * rises past the outline when over (5 November 2026), the benchmark a dotted
  * mark; horizontal bars, stacked or diverging, the diverging kind able to

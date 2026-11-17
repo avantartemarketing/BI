@@ -1,11 +1,12 @@
 /* The line a line chart draws through its points (web/src/chartLine.mjs): it
- * curves through each point without a corner, passes through every one,
- * never leaves the heights two neighbours span (a running total never dips,
- * a level run stays level), keeps a straight stretch the straight line it
- * always was, leaves a gap at a null, and lineAt reads the height of the
- * same curve between two points.  node tests/chart_line.mjs */
+ * bends at each point, the corner it used to turn there softened by BEND,
+ * passes through every one, never leaves the heights two neighbours span (a
+ * running total never dips, a level run stays level), keeps a straight
+ * stretch the straight line it always was, leaves a gap at a null, and
+ * lineAt reads the height of the same line between two points.
+ *   node tests/chart_line.mjs */
 import assert from "node:assert";
-import { line, lineAt } from "../web/src/chartLine.mjs";
+import { line, lineAt, BEND } from "../web/src/chartLine.mjs";
 
 /* a path back as its pieces, each with the point it starts from:
  * [{ c: "M" | "L" | "C", from: [x, y], n: [numbers] }] */
@@ -26,6 +27,9 @@ const at = (b, t) => [0, 1].map((k) => (1 - t) ** 3 * b[0][k] + 3 * (1 - t) ** 2
 const TS = Array.from({ length: 21 }, (_, i) => i / 20);
 // the path is written to a tenth of a pixel, so a pixel reading is good to about that
 const NEAR = 0.15;
+
+assert.ok(BEND > 0 && BEND <= 1, `the line bends, and no further than the full curve: ${BEND}`);
+const slope = (a, b) => (b[1] - a[1]) / (b[0] - a[0]);
 
 // ---- a straight stretch is the line it always was
 assert.strictEqual(line([[0, 0], [10, 5]]), "M0.0 0.0L10.0 5.0", "two points: a straight line");
@@ -59,14 +63,16 @@ function holds(vals, name) {
     }
     // a level stretch is drawn level
     if (vals[i] === vals[i - 1]) assert.strictEqual(s.c, "L", `${name}: the level stretch into point ${i} stays level`);
-    // no corner at a point inside the run: the line leaves it the way it arrived
+    // the corner at a point inside the run is softened: of the turn the straight lines made there, 1 - BEND is left
     if (i < segs.length - 1) {
       const next = cubic(segs[i + 1]);
-      const arrive = Math.atan2(b[3][1] - b[2][1], b[3][0] - b[2][0]), leave = Math.atan2(next[1][1] - next[0][1], next[1][0] - next[0][0]);
-      assert.ok(Math.abs(arrive - leave) < 0.03, `${name}: no corner at point ${i} (${arrive.toFixed(3)} in, ${leave.toFixed(3)} out)`);
+      const arrive = slope(b[2], b[3]), leave = slope(next[0], next[1]);
+      const corner = slope(pts[i], pts[i + 1]) - slope(pts[i - 1], pts[i]);
+      assert.ok(Math.abs(leave - arrive - (1 - BEND) * corner) <= 0.02 * (1 + Math.abs(arrive) + Math.abs(leave)),
+        `${name}: the corner at point ${i} is softened by ${BEND} (a turn of ${(leave - arrive).toFixed(3)} against the straight lines' ${corner.toFixed(3)})`);
     }
   });
-  // lineAt reads the same curve: a mark placed with it sits on the line as drawn
+  // lineAt reads the same line: a mark placed with it sits on the line as drawn
   for (let k = 0; k < vals.length - 1; k++) {
     const b = cubic(segs[k + 1]);
     for (const t of [0.2, 0.5, 0.8]) {
@@ -76,7 +82,7 @@ function holds(vals, name) {
     assert.strictEqual(lineAt(vals, k), vals[k], `${name}: lineAt at a point is the point`);
   }
   assert.ok(Math.abs(lineAt(vals, vals.length - 1) - vals[vals.length - 1]) < 1e-9, `${name}: lineAt at the last point is the point`);
-  // drawn backwards (the far edge of a band) it is the same curve
+  // drawn backwards (the far edge of a band) it is the same line
   const back = parse(line(pts.slice().reverse()));
   for (let k = 1; k < segs.length; k++) {
     const f = cubic(segs[k]), r = cubic(back[segs.length - k]);
@@ -91,7 +97,7 @@ function holds(vals, name) {
 // ---- a running total in steps (a launch's secured units by day): never a dip, the level days level
 const total = [15, 20.4, 20.4, 29, 30, 30.2, 35.7, 38.6, 40.7, 40.8, 40.8, 42, 42, 42, 43];
 const drawn = holds(total, "a running total");
-assert.ok(drawn.some((s) => s.c === "C"), "the days that rise are curved");
+assert.ok(drawn.some((s) => s.c === "C"), "the days that rise are bent");
 for (let i = 0; i <= (total.length - 1) * 20; i++) {
   assert.ok(lineAt(total, (i + 1) / 20) >= lineAt(total, i / 20) - 1e-9 || i === (total.length - 1) * 20, "a running total never dips between its days");
 }
