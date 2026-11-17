@@ -149,8 +149,8 @@ def test_qualifies():
     old = pd.concat([c["comms"], c["comms"].assign(campaign_code="TestArtist_Old_25", date=c["comms"]["date"] - pd.Timedelta(days=300))], ignore_index=True)
     assert V.override(page(campaignCode="TestArtist_Old_25"), at, GROUP_OF, dict(c, comms=old))["meta"]["code"] == CODE
     # ... and a launch tagged two ways keeps the emails sent under the page's own code beside the plan under Notion's
-    two = dict(c, aud=c["aud"].assign(code="TESTARTIST_LE_26"))
-    sent = V.override(page(campaignCode="TESTARTIST_LE_26"), at, GROUP_OF, two)["work"]["sends"]
+    two = dict(c, aud=c["aud"].assign(code="OtherTag_LE_26", name=c["aud"]["name"].str.replace(CODE, "OtherTag_LE_26")))
+    sent = V.override(page(campaignCode="OtherTag_LE_26"), at, GROUP_OF, two)["work"]["sends"]
     assert int((~sent["planned"]).sum()) == 2 and V.override(page(), at, GROUP_OF, two)["work"]["sends"]["planned"].all()
     # a live draw launch that cannot have the view says why
     assert "no campaign code" in V.override(page(campaignCode=None, artist="Somebody Else"), at, GROUP_OF, c)["skip"]

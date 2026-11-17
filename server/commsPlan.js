@@ -15,8 +15,10 @@
  *       campaign_code, release, date, time, channel, channel_type, family,
  *       phase, status, name, hubspot_id, make_ready, created, edited
  *   data/notion_comms_campaigns.csv  one line per campaign in the Campaigns
- *       database that has a code: campaign_code, release, announce, launch,
- *       mechanic, status, tier
+ *       database and code of it: campaign_code, release, announce, launch,
+ *       mechanic, status, tier. A campaign with no code of its own (none
+ *       before mid-2024) is filed under a stand-in, "notion:" and its page id,
+ *       and found by its name and days; Make-Ready's campaigns are left out
  *
  * Three databases are read, each in full: Channels (46 rows, a channel's name
  * and type), Campaigns (the campaign code, which a plan row reaches through
@@ -44,7 +46,7 @@ const CHANNELS_DB = process.env.NOTION_CHANNELS_DB || "4db5a73a-5fa2-4288-935a-0
 const CAMPAIGNS_DB = process.env.NOTION_CAMPAIGNS_DB || "33a7c7b3-58be-4401-a0ad-0698d6331d6b";
 const NOTION_VERSION = "2022-06-28";
 const API = process.env.NOTION_API || "https://api.notion.com/v1";
-const FIRST_SLICE = "2023-01-01";   // nothing in Comms was created before this
+const FIRST_SLICE = "2023-01-01";   // nothing in Comms was created before this (its first row is of 8 September 2023)
 const SLICE_MONTHS = 3;             // a slice holds about 1,100 rows at 2026's pace, far under the 10,000 cap
 const QUERY_CAP = 10000;
 
@@ -126,15 +128,30 @@ function timeOf(live, postTime) {
 }
 const flat = (v) => (Array.isArray(v) ? v.flat(Infinity).filter((x) => x !== null && x !== "" && x !== undefined) : (v === null || v === undefined || v === "" ? [] : [v]));
 
-/* One campaign of the Campaigns database, or null when it has no code: the
- * code is what every other feed joins on. */
+/* The key a campaign with no code of its own is filed under: its page, so its
+ * plan is kept and the plan model can find it by the artist it is named for
+ * and the days it ran (etl/plan_model.py plan_campaign). The Campaign Code
+ * field was not filled in before mid-2024, and the plan goes back to September
+ * 2023: read by code alone, 96 campaigns' plans were left out, and with them
+ * every launch before May 2024. */
+const STAND_IN = "notion:";
+const standIn = (id) => STAND_IN + String(id || "").replace(/-/g, "").slice(0, 12);
+
+/* One campaign of the Campaigns database, or null for one of Make-Ready's
+ * (another business's, with codes of its own) and for a blank row. `codes` are
+ * the codes the field holds, since one campaign can run under two
+ * ("LeeUfan_From_25,LeeUfan_LE_26"), or its stand-in when it holds none;
+ * `code` is the first, and `coded` says whether it is a code of its own. */
 function campaignRow(row) {
   const p = row.properties || {};
-  const code = String(value(p["Campaign Code"]) || "").trim();
-  if (!code) return null;
+  if (value(p["Make Ready"])) return null;
+  const own = String(value(p["Campaign Code"]) || "").split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+  const release = String(value(p["Release"]) || "").trim();
+  if (!own.length && !release) return null;
+  const codes = own.length ? [...new Set(own)] : [standIn(row.id)];
   return {
-    id: row.id, code,
-    release: value(p["Release"]) || "",
+    id: row.id, code: codes[0], codes, coded: own.length > 0,
+    release,
     announce: day(value(p["Formula Announce"])),
     launch: day(value(p["Launch Date Formula"])),
     mechanic: [...new Set(flat(value(p["◒ Launch mechanic"])).map(String))].sort().join("; "),
@@ -144,9 +161,9 @@ function campaignRow(row) {
 }
 
 /* A plan row as the lines it writes: one per campaign it belongs to (a bundle
- * email belongs to several), none when it has no live date or belongs to no
- * campaign with a code. `channels` and `campaigns` are the two lookups by
- * page id. */
+ * email belongs to several) and per code of that campaign, none when it has
+ * no live date or belongs to no campaign read (campaignRow). `channels` and
+ * `campaigns` are the two lookups by page id. */
 function commsRows(row, channels, campaigns) {
   const p = row.properties || {};
   const live = value(p["Live Date"]);
@@ -164,7 +181,7 @@ function commsRows(row, channels, campaigns) {
   const out = [];
   for (const id of flat(value(p["Campaign"]))) {
     const c = campaigns.get(id);
-    if (c) out.push({ campaign_code: c.code, release: c.release, ...base });
+    if (c) for (const code of c.codes || [c.code]) out.push({ campaign_code: code, release: c.release, ...base });
   }
   return out;
 }
@@ -284,11 +301,14 @@ async function fetchCommsPlan(today = new Date().toISOString().slice(0, 10), opt
   }
   lines.sort((a, b) => (a.campaign_code + a.date + a.channel + a.name).localeCompare(b.campaign_code + b.date + b.channel + b.name));
   const camps = [...campaigns.values()].sort((a, b) => a.code.localeCompare(b.code));
+  // a line per code, so a campaign under two codes is found by either
+  const campLines = camps.flatMap((c) => (c.codes || [c.code]).map((code) => ({ campaign_code: code, release: c.release, announce: c.announce, launch: c.launch, mechanic: c.mechanic, status: c.status, tier: c.tier })))
+    .sort((a, b) => a.campaign_code.localeCompare(b.campaign_code));
   return {
     csv: csv(HEADER, lines),
-    campaignsCsv: csv(CAMPAIGNS_HEADER, camps.map((c) => ({ campaign_code: c.code, release: c.release, announce: c.announce, launch: c.launch, mechanic: c.mechanic, status: c.status, tier: c.tier }))),
+    campaignsCsv: csv(CAMPAIGNS_HEADER, campLines),
     rows: seen.size, lines: lines.length, undated, loose, capped, liveSince,
-    campaigns: camps.length, channels: channels.size,
+    campaigns: camps.length, uncoded: camps.filter((c) => c.coded === false).length, channels: channels.size,
     codes: new Set(lines.map((l) => l.campaign_code)).size,
     through: lines.reduce((m, l) => (l.date > m ? l.date : m), ""),
   };
@@ -299,7 +319,7 @@ async function fetchCommsPlan(today = new Date().toISOString().slice(0, 10), opt
 async function refreshCommsPlan(opts = {}) {
   if (!process.env.NOTION_TOKEN) return "comms plan off (no NOTION_TOKEN)";
   const out = await fetchCommsPlan(undefined, opts);
-  if (!out.lines) throw new Error(`the comms plan read ${out.rows} rows and none with a live date and a campaign code - not overwriting`);
+  if (!out.lines) throw new Error(`the comms plan read ${out.rows} rows and none with a live date and a campaign - not overwriting`);
   for (const [file, text] of [[OUT, out.csv], [CAMPAIGNS_OUT, out.campaignsCsv]]) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file + ".tmp", text);
@@ -309,15 +329,15 @@ async function refreshCommsPlan(opts = {}) {
 }
 
 const summary = (out) => `comms plan ${out.lines} lines for ${out.codes} campaigns, dated ${out.liveSince ? "from " + out.liveSince + " " : ""}to ${out.through} `
-  + `(${out.rows} rows read; ${out.undated} with no live date, ${out.loose} on no campaign with a code; `
-  + `${out.campaigns} campaigns with a code, ${out.channels} channels)`
+  + `(${out.rows} rows read; ${out.undated} with no live date, ${out.loose} on no campaign read; `
+  + `${out.campaigns} campaigns, ${out.uncoded || 0} of them with no code of their own, ${out.channels} channels)`
   + (out.capped ? `; A SLICE HIT THE ${QUERY_CAP}-ROW CAP, rows are missing: shorten SLICE_MONTHS` : "");
 
 /* How far back the hourly refresh reads the plan (server/sheets.js): the days
  * of plan a live launch's page can need, with room to spare. */
 const REFRESH_DAYS = Math.max(30, Number(process.env.NOTION_COMMS_DAYS) || 120);
 
-module.exports = { fetchCommsPlan, refreshCommsPlan, REFRESH_DAYS, value, familyOf, hubspotId, timeOf, campaignRow, commsRows, slices, csv, summary,
+module.exports = { fetchCommsPlan, refreshCommsPlan, REFRESH_DAYS, value, familyOf, hubspotId, timeOf, campaignRow, commsRows, slices, csv, summary, standIn, STAND_IN,
   HEADER, CAMPAIGNS_HEADER, OUT, CAMPAIGNS_OUT };
 
 if (require.main === module) {

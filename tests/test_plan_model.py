@@ -55,19 +55,20 @@ def test_names():
     # a code may carry its year in full
     assert P.code_of("", "271026_CUS_AiWeiwei_Lego_2026 - Early Access (LE)") == "AiWeiwei_Lego_2026"
     assert P.code_of("AiWeiwei_Lego_2026", "anything") == "AiWeiwei_Lego_2026"
-    # ... and a code with no year to find by its shape is on no send by reading: such a send is the campaign's
-    # when its name or HubSpot's campaign spells the code out, and a send with a code of its own stays where it is
+    # ... and a code with no year to find by its shape is on no send by reading: a send is a campaign's when its name
+    # or HubSpot's campaign spells the code out, in any case; the name counts where the two disagree
     assert P.code_of("FerrariSh_LE_Repeat26", "061126_CUS_FerrariSh_LE_Repeat26 - Early Access (LE)") is None
     names = [("061126_CUS_FerrariSh_LE_Repeat26 - Early Access (LE)", "FerrariSh_LE_Repeat26"), ("101126_GEN_FerrariSh_LE_Repeat26 - Announcement (LE)", ""),
              ("150126_GEN_FerrariSh_LE_26 - Announcement (LE)", "FerrariSh_LE_26"), ("101126_GEN_FerrariSh_LE_Repeat264 - Announcement", ""),
              ("091126_GEN_FerrariSh_LE_Repeat26 - Microsite", "CindySher_LE_26")]
     aud = pd.DataFrame([{"name": n, "campaign": c, "code": P.code_of(c, n), "type": P.email_type(n), "kind": P.email_kind(n), "went": True, "delivered": 5000.0,
                          "day": pd.Timestamp("2026-11-10"), "ts": pd.Timestamp("2026-11-10 14:00") + pd.Timedelta(minutes=i)} for i, (n, c) in enumerate(names)])
-    assert list(P.carries_code(aud, "FerrariSh_LE_Repeat26")) == [True, True, False, False, False]
-    assert list(P.carries_code(aud, "ferrarish_le_repeat26")) == [True, True, False, False, False]      # typed in another case
+    assert list(P.carries_code(aud, "FerrariSh_LE_Repeat26")) == [True, True, False, False, True]
+    assert list(P.carries_code(aud, "ferrarish_le_repeat26")) == [True, True, False, False, True]       # typed in another case
     assert list(P.carries_code(aud, "FerrariSh_LE_26")) == [False, False, True, False, False]
-    assert len(P.marketing_sends(aud, "FerrariSh_LE_Repeat26", "2026-11-01", "2026-11-30")) == 2
-    assert len(P.marketing_sends(aud.drop(columns=["campaign"]), "FerrariSh_LE_Repeat26", "2026-11-01", "2026-11-30")) == 2
+    assert list(P.carries_code(aud, "CindySher_LE_26")) == [False, False, False, False, True]           # ... and its campaign's, in that launch's own days
+    assert len(P.marketing_sends(aud, "FerrariSh_LE_Repeat26", "2026-11-01", "2026-11-30")) == 3
+    assert len(P.marketing_sends(aud.drop(columns=["campaign"]), "FerrariSh_LE_Repeat26", "2026-11-01", "2026-11-30")) == 3
 
 
 def test_plan_state():
@@ -218,6 +219,62 @@ def test_match_codes():
     assert pd.isna(out.at["Nobody", "campaign_code"])
     none = P.match_campaign_codes(launches, campaigns.iloc[0:0])
     assert pd.isna(none.set_index("artist").at["Kukwon Woo", "campaign_code"])
+
+
+def test_plan_campaign():
+    """A launch's plan is found under its own code, else the campaign whose code answers to the artist and the
+    launch day, else the campaign named for the artist that ran in its days: Notion's campaigns had no code before
+    mid-2024, and the plan goes back to September 2023."""
+    assert [P.campaign_artist(r) for r in ("George Condo · Three Silkscreens", "Miwa Komatsu  | The Entity Stirs", "Johnson Tsang - Open The Right Mind",
+                                           "Jean-Michel Othoniel - Multiple", "LY | LUV Somewhere New ", "JR")] == ["George Condo", "Miwa Komatsu", "Johnson Tsang", "Jean-Michel Othoniel", "LY", "JR"]
+    assert P._fold("José Parlá") == P._fold("Jose Parla") == "joseparla"
+    campaigns = pd.DataFrame([
+        {"campaign_code": "notion:condo2024", "release": "George Condo · Three Silkscreens", "launch": pd.NaT},
+        {"campaign_code": "GeorgeCondo_Model_25", "release": "George Condo - Fashion Model", "launch": T("2025-02-10")},
+        {"campaign_code": "PietParra_Repeat_24", "release": "Piet Parra - Print", "launch": T("2024-12-20")},      # its launch day is weeks off the funnel's close
+        {"campaign_code": "LeeUfan_From_25", "release": "Lee Ufan - From Point", "launch": T("2025-06-26")},
+        {"campaign_code": "LeeUfan_LE_26", "release": "Lee Ufan - From Point", "launch": T("2025-06-26")},          # one campaign under two codes
+        {"campaign_code": "notion:twinA", "release": "Twin Artist | One", "launch": pd.NaT}, {"campaign_code": "notion:twinB", "release": "Twin Artist | Two", "launch": pd.NaT},
+        {"campaign_code": "notion:newsletter", "release": "Monthly newsletter", "launch": pd.NaT}])
+    def rows(code, first, n):
+        return [{"campaign_code": code, "date": T(first) + pd.Timedelta(days=i), "family": "email" if i % 3 == 0 else "aa_post", "status": "Live"} for i in range(n)]
+    comms = pd.DataFrame(rows("notion:condo2024", "2024-02-15", 12) + rows("GeorgeCondo_Model_25", "2025-01-15", 9) + rows("PietParra_Repeat_24", "2024-10-01", 10)
+                         + rows("LeeUfan_From_25", "2025-05-22", 8) + rows("LeeUfan_LE_26", "2025-05-22", 8) + rows("notion:twinA", "2026-03-01", 6) + rows("notion:twinB", "2026-03-02", 5)
+                         + rows("notion:newsletter", "2024-02-01", 30))
+    find = lambda artist, a, c, own=None: P.plan_campaign(artist, a, c, comms, campaigns, own=own)
+    assert find("George Condo", "2024-02-01", "2024-03-20") == ("notion:condo2024", "name")              # no code of its own: by name and days
+    assert find("George Condo", "2025-01-01", "2025-02-10") == ("GeorgeCondo_Model_25", "code")          # the artist's later launch: its own campaign
+    assert find("George Condo", "2025-01-01", "2025-02-10", own="GeorgeCondo_Model_25") == ("GeorgeCondo_Model_25", "own")
+    assert find("George Condo", "2024-02-01", "2024-03-20", own="GeorgeCondo_Model_25") == ("notion:condo2024", "name")   # a page's code with no plan in these days gives way
+    assert find("Parra", "2024-09-20", "2024-10-24") == ("PietParra_Repeat_24", "name")                  # a code not built on the name as the funnel spells it
+    assert find("Lee Ufan", "2025-05-08", "2025-06-26") == ("LeeUfan_From_25", "code") or find("Lee Ufan", "2025-05-08", "2025-06-26")[1] == "name"
+    assert find("Lee Ufan", "2025-05-08", "2025-06-20")[0] == "LeeUfan_From_25"                          # one campaign under two codes is one answer, not two
+    assert find("Twin Artist", "2026-02-20", "2026-03-20") == (None, "two campaigns named for the artist ran in these days")
+    assert find("Nobody Here", "2024-02-01", "2024-03-20")[0] is None
+    assert find("George Condo", "2023-01-01", "2023-02-01")[0] is None                                   # named for the artist, but not in these days
+
+
+def test_launch_sends():
+    """A launch's emails: by its codes; and on a launch run before codes were written into names, the HubSpot
+    campaign whose sends fall on the plan's email days, with the sends that name the artist."""
+    def mail(name, campaign, day, delivered=5000.0):
+        return {"name": name, "campaign": campaign, "code": P.code_of(campaign, name), "type": P.email_type(name), "kind": P.email_kind(name), "went": True, "delivered": delivered,
+                "day": T(day), "ts": T(day) + pd.Timedelta(hours=14)}
+    standing = [mail(f"{m:02d}0124_GEN_NEWSLETTER - Live & launching", "NEWSLETTER", f"2024-{m:02d}-22") for m in range(1, 9)]
+    aud = pd.DataFrame(standing + [
+        mail("220224_GEN_CONDOPRINT - Announcement", "CONDOPRINT", "2024-02-22", 51713.0),
+        mail("220224_CUS_DEEKARIPPL - Announcement", "DEEKARIPPL", "2024-02-22", 12538.0),               # another launch announcing the same day
+        mail("230224_INS_INSIDERSEA - General Insiders (George Condo)", "INSIDERSEA", "2024-02-23", 500.0),
+        mail("280626_CUS_CONDOPRINT - Message from the director (purchasers)", "CONDOPRINT", "2026-06-28", 238.0),   # one more send years on
+        mail("150125_CUS_GeorgeCondo_Model_25 - Announcement", "GeorgeCondo_Model_25", "2025-01-15", 22000.0)])
+    plan = pd.DataFrame([{"date": T("2024-02-15"), "family": "email", "status": "Live"}, {"date": T("2024-02-22"), "family": "email", "status": "Live"},
+                         {"date": T("2024-02-22"), "family": "aa_post", "status": "Live"}])
+    got = P.launch_sends(aud, [None, "notion:condo2024"], "2024-02-01", "2024-03-20", artist="George Condo", plan=plan)
+    assert sorted(got["campaign"]) == ["CONDOPRINT", "INSIDERSEA"], list(got["name"])                    # its own campaign by the day and its name; the insiders' send by the artist's name
+    assert len(P.launch_sends(aud, ["GeorgeCondo_Model_25"], "2025-01-01", "2025-02-10", artist="George Condo", plan=plan)) == 1   # a code that finds its sends needs no more
+    assert P.launch_sends(aud, [None], "2024-02-01", "2024-03-20", artist="Somebody Else", plan=plan).empty   # two campaigns sent that day and neither is named for the artist
+    assert P.launch_sends(aud, [None], "2024-02-01", "2024-03-20", artist="George Condo", plan=None)["campaign"].tolist() == ["INSIDERSEA"]   # no plan to line up with: the named sends alone
+    assert P.launch_sends(aud.iloc[0:0], ["X_LE_26"], "2024-02-01", "2024-03-20").empty
 
 
 def test_committed_prices():

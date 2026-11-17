@@ -25,6 +25,8 @@ the repo root after the feeds are in place (README, "The plan model"):
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import pathlib
 import sys
@@ -56,14 +58,28 @@ PAID = set(build.DISPLAY_GROUPS["paid"]["channels"])
 
 # ---------------------------------------------------------------- the panel
 def launches_table(at: pd.DataFrame, as_of, aud: pd.DataFrame, campaigns: pd.DataFrame) -> pd.DataFrame:
-    """Every release in the funnel with a campaign window and a code: the
-    funnel's own clock first, the committed panel's dates where it has none,
-    then the Notion campaign's; the code from the feeds, else from Notion."""
-    content, posts = build.load_content(), build.load_artist_posts()
-    codes = build.known_codes(build.load_emails(), content, posts)
+    """Every release in the funnel with a campaign window: the funnel's own
+    clock first, the committed panel's dates where it has none, then the
+    Notion campaign's. Its code is the build's own reading (the release's
+    orders, its Airtable launch, else a guess: build.source_campaign_codes)
+    and can be none: a launch run before codes were in use (to mid-2024) has
+    its plan and its emails found by the artist's name and its days
+    (plan_model.plan_campaign, launch_sends). Until 16 November 2026 a launch
+    needed a code here, and Notion's campaigns one of their own, which left
+    out every launch before May 2024 and those whose code the guess missed."""
+    emails, content, posts, spend = build.load_emails(), build.load_content(), build.load_artist_posts(), build.load_spend()
+    codes = build.known_codes(emails, content, posts)
     codes |= {c for c in aud["code"].dropna().unique() if build._CODE_RE.match(c)} if len(aud) else set()
     codes |= {c for c in campaigns["campaign_code"] if build._CODE_RE.match(str(c))}
-    L = pd.DataFrame(build.discover_releases(at, as_of, codes))
+    records = build.discover_releases(at, as_of, codes)
+    raw = build.feed_codes(emails, content, posts, spend) | {str(c) for c in campaigns["campaign_code"] if not str(c).startswith(P.STAND_IN)}
+    raw |= {str(c).strip() for c in aud["campaign"].dropna().unique() if str(c).strip()} if len(aud) and "campaign" in aud.columns else set()
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            build.source_campaign_codes(records, codes, build.load_launches(), spend, raw=raw)
+    except Exception as e:  # noqa: BLE001 - the guesses stand
+        print(f"warning: campaign codes from the orders and Airtable failed ({e}) - the guesses stand")
+    L = pd.DataFrame(records)
     panel = pd.read_csv(ROOT / "data" / "release_clusters.csv", usecols=["release_name", "announce", "close"]).rename(
         columns={"announce": "ann_panel", "close": "close_panel"})
     L = L.merge(panel, on="release_name", how="left")
@@ -81,8 +97,7 @@ def launches_table(at: pd.DataFrame, as_of, aud: pd.DataFrame, campaigns: pd.Dat
 
     L[["announce", "close", "dates_from"]] = L.apply(lambda r: pd.Series(dates(r)), axis=1)
     L["launch_end"] = L["close"]
-    L = P.match_campaign_codes(L, campaigns)
-    L = L[L["announce"].notna() & L["campaign_code"].notna() & (L["campaign_code"] != "")].copy()
+    L = L[L["announce"].notna() & L["close"].notna()].copy()
     L["announce"], L["close"] = pd.to_datetime(L["announce"]), pd.to_datetime(L["close"])
     L["days"] = (L["close"] - L["announce"]).dt.days
     return L[(L["days"] >= 5) & (L["days"] <= 75)].reset_index(drop=True)
@@ -115,27 +130,54 @@ def group_demand(at: pd.DataFrame, name: str, announce, close) -> dict:
     return out
 
 
+def launch_feeds(r, aud, comms, campaigns) -> tuple:
+    """A launch's plan rows and emails in its days, with the Notion campaign
+    they were found under and how (plan_model.plan_campaign)."""
+    start = r["announce"] - pd.Timedelta(days=P.LEAD_DAYS)
+    own = r["campaign_code"] if isinstance(r["campaign_code"], str) and r["campaign_code"] else None
+    key, how = P.plan_campaign(r["artist"], start, r["close"], comms, campaigns, own=own)
+    plan = comms[(comms["campaign_code"] == key) & (comms["date"] >= start) & (comms["date"] <= r["close"])] if key else comms.iloc[0:0]
+    sends = P.launch_sends(aud, [own, key], start, r["close"], artist=r["artist"], plan=plan)
+    return plan, sends, own, key, how
+
+
+SKIPPED: dict = {}     # why each launch with a window is not in the panel (build_panel), for the run's own account
+
+
 def build_panel(at, as_of, aud, comms, campaigns, coef) -> dict:
     """name -> {t, L, y, X (as it ran), G (demand by checked group), sends, plan, announce, close}."""
     L = launches_table(at, as_of, aud, campaigns)
     out = {}
+    SKIPPED.clear()
     for _, r in L.iterrows():
         if r["close"] + pd.Timedelta(days=build.UNITS_GRACE_DAYS) >= pd.Timestamp(as_of):
+            SKIPPED[r["release_name"]] = "still open"
             continue
         y = daily_demand(at, r["release_name"], r["announce"], r["close"])
         if y.sum() < MIN_DEMAND:
+            SKIPPED[r["release_name"]] = "under 25 units of demand outside paid"
             continue
-        sends = P.marketing_sends(aud, r["campaign_code"], r["announce"] - pd.Timedelta(days=P.LEAD_DAYS), r["close"])
-        plan = comms[(comms["campaign_code"] == r["campaign_code"])
-                     & (comms["date"] >= r["announce"] - pd.Timedelta(days=P.LEAD_DAYS)) & (comms["date"] <= r["close"])]
+        plan, sends, own, key, how = launch_feeds(r, aud, comms, campaigns)
         went = plan[plan["status"].isin(P.WENT) & plan["family"].isin(P.POST_FAMILIES + ["email"])]
         if sends.empty or len(went) < MIN_PLAN_ROWS:
+            SKIPPED[r["release_name"]] = ("no plan found in Notion" if not key else "fewer than 5 plan rows that went out" if len(went) < MIN_PLAN_ROWS else "no launch email found")
             continue
         days = P.launch_days(r["announce"], r["close"], sends, plan, coef)
         out[r["release_name"]] = {"t": days["t"].to_numpy(), "L": int(r["days"]), "y": y.to_numpy(dtype=float),
                                   "X": days[P.VALUE_COLS].to_numpy(dtype=float), "G": group_demand(at, r["release_name"], r["announce"], r["close"]),
                                   "sends": sends, "plan": plan,
-                                  "announce": r["announce"], "close": r["close"], "code": r["campaign_code"]}
+                                  "announce": r["announce"], "close": r["close"], "code": own or key, "plan_key": key, "found": how, "artist": r["artist"]}
+    # two releases run as one campaign (an edition and its hand-finished run) share one plan: the plan is read
+    # against the larger, since read against each it would be asked to explain the same comms twice
+    by_key: dict = {}
+    for n, d in out.items():
+        by_key.setdefault(d["plan_key"], []).append(n)
+    for key, names in by_key.items():
+        names.sort(key=lambda n: -float(out[n]["y"].sum()))
+        for n in names[1:]:
+            if out[n]["announce"] <= out[names[0]]["close"] and out[names[0]]["announce"] <= out[n]["close"]:
+                SKIPPED[n] = f"shares its plan with {names[0]}"
+                del out[n]
     return out
 
 
@@ -144,9 +186,10 @@ def sends_table(at, as_of, aud, campaigns) -> pd.DataFrame:
     """Every launch email that went out on a launch with a window, whether or
     not the launch has a plan on file: the click model needs sends, not plans."""
     L = launches_table(at, as_of, aud, campaigns)
+    comms = P.load_comms()
     rows = []
     for _, r in L.iterrows():
-        s = P.marketing_sends(aud, r["campaign_code"], r["announce"] - pd.Timedelta(days=P.LEAD_DAYS), r["close"])
+        _, s, _, _, _ = launch_feeds(r, aud, comms, campaigns)
         s = s[s["clicked"] >= 3]
         if s.empty:
             continue

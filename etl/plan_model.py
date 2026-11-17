@@ -40,6 +40,7 @@ import json
 import os
 import pathlib
 import re
+import unicodedata
 
 import numpy as np
 import pandas as pd
@@ -125,6 +126,23 @@ def _norm(s: object) -> str:
     return re.sub(r"[^a-z0-9]", "", str(s or "").lower())
 
 
+def _fold(s: object) -> str:
+    """Letters and digits in lower case with the accents taken off, so José
+    Parlá in the funnel and Jose Parla in Notion are one name."""
+    return re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode().lower())
+
+
+# a Notion campaign with no code of its own is filed under its page (server/commsPlan.js standIn)
+STAND_IN = "notion:"
+
+
+def campaign_artist(release: object) -> str:
+    """The artist a Notion campaign is named for: the words before the first
+    separator of "Artist | Title", "Artist · Title" or "Artist - Title" (a
+    hyphen inside a name, Jean-Michel, is no separator)."""
+    return re.split(r"\s*[|·]\s*|\s+[-–—]\s+", str(release or "").strip(), maxsplit=1)[0].strip()
+
+
 # ---------------------------------------------------------------- feeds
 def load_comms(path: pathlib.Path | str | None = None) -> pd.DataFrame:
     """The Notion plan row by row (server/commsPlan.js writes it): empty when
@@ -174,20 +192,72 @@ def load_audiences(path: pathlib.Path | str | None = None) -> pd.DataFrame:
 
 def carries_code(aud: pd.DataFrame, code: str) -> pd.Series:
     """Which emails are a campaign's: those the code is read off (code_of), and
-    those no code can be read off whose HubSpot campaign or own name spells
-    this one out. A code is typed, and not every one ends in a year a reader
-    can find by its shape (FerrariSh_LE_Repeat26): read by shape alone, that
-    launch's four sends were on no launch. Only a send with no code of its own
-    is taken this way, so one send stays on one campaign."""
+    those whose own name or HubSpot campaign spells the code out, in any case.
+    A code is typed. Not every one ends in a year a reader can find by its
+    shape (FerrariSh_LE_Repeat26: read by shape alone, that launch's four
+    sends were on no launch); a send's name and its HubSpot campaign can
+    disagree, and the name is the one typed for the send
+    (040425_CUS_FerrariSh_Iris_25 under the campaign FerrariSh_Iirs_25,
+    050325_CUS_MiwaKomat_Innocent_25 under MiwaKomatsu_HF_Print_25, where
+    code_of reads the campaign's); and the case drifts (PietParra_repeat_24).
+    A send whose name spells one launch's code and whose campaign another's is
+    both's by this reading, and a launch only takes sends in its own days."""
     mine = aud["code"] == code
-    loose = aud["code"].isna()
-    if loose.any():
-        pat = re.compile(r"(?<![A-Za-z0-9])" + re.escape(str(code)) + r"(?![A-Za-z0-9])", re.I)
-        text = aud.loc[loose, "name"].astype(str)
-        if "campaign" in aud.columns:
-            text = text + " | " + aud.loc[loose, "campaign"].astype(str)
-        mine = mine | text.map(lambda s: bool(pat.search(s))).reindex(aud.index, fill_value=False)
-    return mine
+    pat = re.compile(r"(?<![A-Za-z0-9])" + re.escape(str(code)) + r"(?![A-Za-z0-9])", re.I)
+    text = aud["name"].astype(str)
+    if "campaign" in aud.columns:
+        text = text + " | " + aud["campaign"].astype(str)
+    return mine | text.map(lambda s: bool(pat.search(s)))
+
+
+def plan_campaign(artist: object, start, close, comms: pd.DataFrame, campaigns: pd.DataFrame | None, own: str | None = None,
+                  days: int = 4) -> tuple[str | None, str]:
+    """The Notion campaign a launch's plan is filed under, and how it was
+    found, tried in this order:
+
+    own    the launch's own code, when the plan has rows under it in the
+           launch's days (`start` to `close`);
+    code   the campaign whose code begins with the artist's name and whose
+           launch day is within `days` of the close (match_campaign_codes);
+    name   the campaign named for the artist (campaign_artist) with the most
+           plan rows in the launch's days, when no other campaign named for
+           the artist has half as many. This finds a campaign with no code of
+           its own (none had one before mid-2024, and the plan goes back to
+           September 2023) and one whose code is not built on the artist's
+           name as the funnel spells it (PietParra_Repeat_24 for Parra).
+
+    (None, why) when nothing answers; a `code` match with no rows in these
+    days is still returned, so the caller can say which campaign has no plan."""
+    start, close = pd.Timestamp(start), pd.Timestamp(close)
+    win = comms[(comms["date"] >= start) & (comms["date"] <= close)]
+    if own and (win["campaign_code"] == own).any():
+        return own, "own"
+    by_code = None
+    if campaigns is not None and len(campaigns):
+        got = match_campaign_codes(pd.DataFrame([{"release_name": "", "artist": artist, "campaign_code": None, "launch_end": str(close.date())}]),
+                                   campaigns[~campaigns["campaign_code"].astype(str).str.startswith(STAND_IN)], days=days)["campaign_code"].iloc[0]
+        by_code = got if isinstance(got, str) and got else None
+        if by_code and (win["campaign_code"] == by_code).any():
+            return by_code, "code"
+        a = _fold(artist)
+        if a:
+            names = campaigns.drop_duplicates("campaign_code")
+            who = names["release"].map(lambda r: _fold(campaign_artist(r)))
+            fits = names[(who == a) | who.map(lambda w: len(w) >= 5 and len(a) >= 5 and (a in w or w in a))]
+            rows = win[win["campaign_code"].isin(set(fits["campaign_code"]))]
+            if len(rows):
+                # a campaign under two codes writes its rows under each: count a campaign once, by its name
+                release = dict(zip(fits["campaign_code"], fits["release"].map(_fold)))
+                n = rows.groupby("campaign_code").size()
+                per = n.groupby(n.index.map(release)).max().sort_values(ascending=False)
+                if len(per) > 1 and per.iloc[1] * 2 > per.iloc[0]:
+                    return None, "two campaigns named for the artist ran in these days"
+                codes = sorted(c for c in n.index if release.get(c) == per.index[0])
+                coded = [c for c in codes if not c.startswith(STAND_IN)]
+                return (coded or codes)[0], "name"
+    if by_code:
+        return by_code, "code"
+    return None, "no campaign answers to the artist and these days"
 
 
 def marketing_sends(aud: pd.DataFrame, code: str, start, end) -> pd.DataFrame:
@@ -198,6 +268,54 @@ def marketing_sends(aud: pd.DataFrame, code: str, start, end) -> pd.DataFrame:
     m = (carries_code(aud, code) & aud["type"].isin(["GEN", "CUS", "INS"]) & (aud["kind"] != "after") & aud["went"]
          & (aud["delivered"] >= MIN_DELIVERED) & (aud["day"] >= pd.Timestamp(start)) & (aud["day"] <= pd.Timestamp(end)))
     return aud[m].sort_values("ts").reset_index(drop=True)
+
+
+GENERIC_MONTHS = 6    # a HubSpot campaign with sends in this many months is a standing one (NEWSLETTER, INSIDERSEA), not a launch's;
+#                       counted in months, not from first send to last: a launch's campaign can get one more send years on (CONDOPRINT)
+
+
+def launch_sends(aud: pd.DataFrame, codes, start, end, artist: object = "", plan: pd.DataFrame | None = None) -> pd.DataFrame:
+    """A launch's emails that went out in its days: those carrying any of its
+    codes (marketing_sends); and where none does, as on a launch run before a
+    code was written into an email's name (220224_GEN_CONDOPRINT - Announcement,
+    230224_CUS_EMXIEGLION - Announcement (Emily Xie)), the sends of the one
+    HubSpot campaign whose send days line up with the plan's email days,
+    with the sends that name the artist. A campaign lines up when a send of
+    it went on a day the plan has an email, and either its key begins a word
+    of the artist's name (CONDOPRINT, DEEKARIPPL, BALDSATIRE: two launches
+    often announce on one day, so the day alone does not say whose it is) or
+    it answers two of the plan's days and no other campaign as many. `plan`
+    is the launch's plan rows."""
+    empty = pd.DataFrame(columns=list(aud.columns) if aud is not None else [])
+    if aud is None or aud.empty:
+        return empty
+    frames = [marketing_sends(aud, c, start, end) for c in dict.fromkeys(str(c) for c in (codes or []) if c and not str(c).startswith(STAND_IN))]
+    frames = [f for f in frames if len(f)]
+    if frames:
+        return pd.concat(frames).drop_duplicates(subset=["name", "ts"]).sort_values("ts").reset_index(drop=True)
+    cand = aud[aud["type"].isin(["GEN", "CUS", "INS"]) & (aud["kind"] != "after") & aud["went"] & (aud["delivered"] >= MIN_DELIVERED)
+               & (aud["day"] >= pd.Timestamp(start)) & (aud["day"] <= pd.Timestamp(end))]
+    if cand.empty:
+        return empty
+    a = _fold(artist)
+    named = cand["name"].map(lambda n: len(a) >= 5 and a in _fold(n))
+    best = None
+    days = set(pd.to_datetime(plan.loc[(plan["family"] == "email") & plan["status"].isin(WENT), "date"]).dt.normalize()) if plan is not None and len(plan) else set()
+    if days and "campaign" in aud.columns:
+        key = cand["campaign"].astype(str).str.strip()
+        dated = aud[aud["day"] > pd.Timestamp("2000-01-01")]
+        months = dated.groupby(dated["campaign"].astype(str).str.strip())["day"].agg(lambda s: s.dt.to_period("M").nunique())
+        ok = cand[(key != "") & ~key.isin(set(months[months >= GENERIC_MONTHS].index))]
+        score = ok.groupby(ok["campaign"].astype(str).str.strip())["day"].agg(lambda s: len(days & set(s))).sort_values(ascending=False)
+        stems = {w[:4] for w in re.split(r"[^a-z0-9]+", unicodedata.normalize("NFKD", str(artist or "")).encode("ascii", "ignore").decode().lower()) if len(w) >= 4}
+        score = score[score >= 1]
+        named_keys = [k for k in score.index if any(s in _fold(k) for s in stems)]
+        if len(named_keys) == 1:
+            best = str(named_keys[0])
+        elif not named_keys and len(score) and score.iloc[0] >= 2 and (len(score) == 1 or score.iloc[1] < score.iloc[0]):
+            best = str(score.index[0])
+    mine = named | ((cand["campaign"].astype(str).str.strip() == best) if best else False)
+    return cand[mine].sort_values("ts").reset_index(drop=True) if mine.any() else empty
 
 
 def match_campaign_codes(launches: pd.DataFrame, campaigns: pd.DataFrame, days: int = 4) -> pd.DataFrame:

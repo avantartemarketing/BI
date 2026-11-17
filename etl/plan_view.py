@@ -208,29 +208,22 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
     start = ann - pd.Timedelta(days=P.LEAD_DAYS)
     if today < start:
         return None
-    # the campaign's code: the page's own when the plan has rows under it in the launch's days, else the Notion
-    # campaign that answers to the artist and the launch day (a launch the funnel could not give a code still has
-    # its plan in Notion, and a page's guessed code can be the artist's last launch's)
-    all_comms, own = ctx["comms"], code
-    if not code or not ((all_comms["campaign_code"] == code) & (all_comms["date"] >= start) & (all_comms["date"] <= close)).any():
-        found = P.match_campaign_codes(pd.DataFrame([{"release_name": name, "artist": page.get("artist"), "campaign_code": None, "launch_end": str(close.date())}]),
-                                       ctx.get("campaigns"))
-        got = found["campaign_code"].iloc[0]
-        if isinstance(got, str) and got:
-            code = got
+    # the Notion campaign the plan is filed under: the page's own code when the plan has rows under it in the
+    # launch's days, else the campaign that answers to the artist by its code and launch day, else by its name and
+    # the days it ran (plan_model.plan_campaign): a launch the funnel could not give a code still has its plan in
+    # Notion, a page's guessed code can be the artist's last launch's, and a Notion campaign can have no code
+    own = code
+    code, how = P.plan_campaign(page.get("artist"), start, close, ctx["comms"], ctx.get("campaigns"), own=own)
     if not code:
-        return {"skip": "no campaign code, and no Notion campaign answers to the artist and launch day"}
+        return {"skip": (f"no plan on file in Notion under {own}, and " if own else "no campaign code, and ") + how}
     coef, rel = pr["clicks"]["coef"], pr.get("reliability") or P.DEFAULT_RELIABILITY
     frac = float(page.get("asOfFraction") or 1.0)
     comms, aud = ctx["comms"], ctx["aud"]
 
-    sends = P.marketing_sends(aud, code, start, close)
-    if own and own != code:
-        # one launch tagged two ways (the plan under Notion's code, the sends under the page's own): its emails are both's
-        more = P.marketing_sends(aud, own, start, close)
-        if len(more):
-            sends = pd.concat([sends, more]).drop_duplicates(subset=["name", "ts"]).sort_values("ts").reset_index(drop=True)
     plan = comms[(comms["campaign_code"] == code) & (comms["date"] >= start) & (comms["date"] <= close)].copy()
+    # one launch tagged two ways (the plan under Notion's code, the sends under the page's own) keeps both's emails;
+    # one with no code in its emails' names has them found by the plan's days and the artist's name
+    sends = P.launch_sends(aud, [code, own], start, close, artist=page.get("artist"), plan=plan)
     plan = plan[plan["family"].isin(P.POST_FAMILIES + ["email"])]
     live = plan[~plan["status"].isin(P.DROPPED)]
     emails_planned = live[(live["family"] == "email") & (live["date"] >= today)]

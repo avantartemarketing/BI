@@ -80,8 +80,15 @@ const camp = (id, release, code, extra = {}) => ({ id, properties: { Release: ti
   "Formula Announce": formula("2026-09-21"), "Launch Date Formula": formula("2026-10-15"), "◒ Launch mechanic": rollup(sel("Draw"), sel("Draw")),
   Status: status("7. In Flight"), "Content Tier": sel("Programme"), ...extra } });
 assert.deepEqual(C.campaignRow(camp("c1", "Maurizio Cattelan - Horse", "MaurizioCatt_HorseLE_26")),
-  { id: "c1", code: "MaurizioCatt_HorseLE_26", release: "Maurizio Cattelan - Horse", announce: "2026-09-21", launch: "2026-10-15", mechanic: "Draw", status: "7. In Flight", tier: "Programme" });
-assert.equal(C.campaignRow(camp("c9", "Liu Xiaodong - TBC", "")), null);          // no code: nothing joins on it
+  { id: "c1", code: "MaurizioCatt_HorseLE_26", codes: ["MaurizioCatt_HorseLE_26"], coded: true, release: "Maurizio Cattelan - Horse", announce: "2026-09-21", launch: "2026-10-15", mechanic: "Draw", status: "7. In Flight", tier: "Programme" });
+// no code of its own (none before mid-2024, and the plan goes back to September 2023): kept under a stand-in, its page
+const older = C.campaignRow(camp("166e6526-5ca2-80a0-8bc9-f239feb76e2d", "George Condo · Three Silkscreens", ""));
+assert.deepEqual([older.code, older.codes, older.coded, older.release], ["notion:166e65265ca2", ["notion:166e65265ca2"], false, "George Condo · Three Silkscreens"]);
+// one campaign under two codes is found by either
+assert.deepEqual(C.campaignRow(camp("c7", "Lee Ufan - From Point", "LeeUfan_From_25,LeeUfan_LE_26")).codes, ["LeeUfan_From_25", "LeeUfan_LE_26"]);
+// Make-Ready's campaigns are another business's, and a blank row is nothing
+assert.equal(C.campaignRow(camp("c8", "MRE - Capsule", "", { "Make Ready": check(true) })), null);
+assert.equal(C.campaignRow(camp("c9", "", "")), null);
 const channels = new Map([["ch_email", { name: "AA Email", type: "AA CRM" }], ["ch_post", { name: "IG Main · Post", type: "AA Social" }]]);
 const campaigns = new Map([["c1", { code: "Catt_LE_26", release: "Cattelan" }], ["c2", { code: "Longo_LE_26", release: "Longo" }]]);
 const row = (id, props, created = "2026-08-20T10:00:00.000Z") => ({ id, created_time: created, last_edited_time: "2026-09-22T08:00:00.000Z", properties: props });
@@ -94,6 +101,10 @@ const bundle = row("r2", { Name: title("Bundle"), "Live Date": when("2026-09-17"
 assert.deepEqual(C.commsRows(bundle, channels, campaigns).map((r) => [r.campaign_code, r.time, r.family]), [["Catt_LE_26", "4pm", "aa_post"], ["Longo_LE_26", "4pm", "aa_post"]]);
 assert.deepEqual(C.commsRows(row("r3", { Name: title("No date"), Channel: rel("ch_post"), Campaign: rel("c1") }), channels, campaigns), []);
 assert.deepEqual(C.commsRows(row("r4", { Name: title("No campaign"), "Live Date": when("2026-09-17"), Channel: rel("ch_post"), Campaign: rel() }), channels, campaigns), []);
+// a row of a campaign under two codes is written under each, one of a campaign with none under its stand-in
+const two = new Map([["c7", { code: "LeeUfan_From_25", codes: ["LeeUfan_From_25", "LeeUfan_LE_26"], release: "Lee Ufan" }], ["c5", older]]);
+assert.deepEqual(C.commsRows(row("r6", { Name: title("Announce"), "Live Date": when("2026-09-17"), Channel: rel("ch_post"), Campaign: rel("c7", "c5") }), channels, two).map((r) => r.campaign_code),
+  ["LeeUfan_From_25", "LeeUfan_LE_26", "notion:166e65265ca2"]);
 
 // ---- the slices a full read is made in
 const sl = C.slices("2026-11-16", "2026-01-01", 3);
@@ -135,7 +146,9 @@ globalThis.fetch = async (u, init) => {
 const out = await C.fetchCommsPlan("2026-11-16");
 assert.equal(out.rows, 3);
 assert.equal(out.lines, 4);                                   // the bundle writes two lines
-assert.equal(out.campaigns, 2);                               // the campaign with no code is not one
+assert.equal(out.campaigns, 3);                               // the campaign with no code is kept, under its stand-in
+assert.equal(out.uncoded, 1);
+assert.equal(out.campaignsCsv.trim().split("\n").length, 4);  // a header and a line per code
 assert.equal(out.codes, 2);
 assert.equal(out.capped, false);
 assert.equal(out.through, "2026-10-01");

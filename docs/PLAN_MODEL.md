@@ -45,9 +45,9 @@ database: one row per piece of comms (an email, a post, a story, an artist's pos
 partner's) with the day it goes live, its channel, the campaign phase and a status. Read on
 16 November 2026 it held 12,850 rows, live dates from September 2023 onwards, written a
 median of 27 days before they go live, so it is the plan and the record at once. The pull
-writes `data/notion_comms.csv` (7,100 lines for 195 campaigns: the rows with a live date
-on a campaign that has a code) and `data/notion_comms_campaigns.csv` (the campaigns' codes
-and dates). `server/notion.js`, which the dashboard already runs, reads a different
+writes `data/notion_comms.csv` (10,406 lines for 324 campaigns on 17 November 2026: the
+rows with a live date on a campaign, Make-Ready's left out) and
+`data/notion_comms_campaigns.csv` (the campaigns' codes, names and dates). `server/notion.js`, which the dashboard already runs, reads a different
 database as it is set up in this repository: the artist-post log, which holds what artists
 posted and none of the emails or Avant Arte's own posts (run on 16 November 2026 it read
 663 rows, none of them an email).
@@ -58,9 +58,15 @@ Three things about that pull worth knowing:
   rows' created time and joined by row id; the status line says if a slice ever reaches the cap.
 - A plan row reaches its campaign code through its Campaign relation and the Campaigns
   database. The rollup of the code on the plan row itself comes back empty from the API.
-- 4,804 dated rows are on no campaign with a code (Make-Ready, older campaigns, and rows
-  tied to no campaign at all), and are left out. A launch whose campaign has no code in
-  Notion has no plan here.
+- A campaign need not have a code. The Campaign Code field was not filled in before
+  mid-2024, and 259 of the 462 campaigns read have none. Until 17 November 2026 the pull
+  kept only campaigns with a code, which silently left out every launch before May 2024
+  (and the owner was told, wrongly, that the plan began then). A campaign with no code is
+  now filed under a stand-in, `notion:` and its page id, and found by the artist it is
+  named for and the days it ran (`plan_model.plan_campaign`, section 6). A campaign
+  holding two codes (`LeeUfan_From_25,LeeUfan_LE_26`) is written under each. Make-Ready's
+  campaigns, which are another business's, and rows on no campaign at all are left out
+  (1,783 dated rows).
 
 **Email audiences (HubSpot).** `node server/emailAudiences.js --write` reads the marketing
 emails again and keeps what `server/hubspot.js` does not: the lists each email was
@@ -304,25 +310,37 @@ still to come:
 build has read both ways.
 
 **Which launches.** A draw launch in its window with targets set, not a timed launch,
-with a campaign code, at least three emails and posts on file under it in the Notion plan,
-and at least one email sent or planned. Anything else keeps the clock's page alone and
-shows no switch. The build's closing lines name the launches that have the view and, for a
+with a plan found in Notion (below), at least three emails and posts on file in it, and
+at least one email sent or planned. Anything else keeps the clock's page alone and shows
+no switch. The build's closing lines name the launches that have the view and, for a
 live draw launch with targets that has none, why (`plan views: 4 - ...; without one:
 <id> (no plan on file in Notion under <code>)`), and the refresh's log carries that line.
 
-The code is the page's own when the Notion plan has rows under it in the launch's days,
-else the Notion campaign's whose code begins with the artist's name and whose launch day
-is within four days of the page's close (`plan_model.match_campaign_codes`; two campaigns
-with different codes answering is no answer). The page's own code can be a guess, and a
-guess can be the artist's last launch's: Ferrari Sheppard's All Blues ran under
-`FerrariSh_LE_Repeat26` while its page carried `FerrariSh_LE_26`, January's.
+The plan is found (`plan_model.plan_campaign`) under the page's own code when the Notion
+plan has rows under it in the launch's days; else under the campaign whose code begins
+with the artist's name and whose launch day is within four days of the page's close
+(`match_campaign_codes`; two campaigns with different codes answering is no answer); else
+under the campaign named for the artist ("Artist | Title", "Artist - Title") with the most
+plan rows in the launch's days, when no other campaign named for the artist has half as
+many. The last finds a campaign with no code of its own and one whose code is not built on
+the artist's name as the funnel spells it (`PietParra_Repeat_24` for Parra). The page's
+own code can be a guess, and a guess can be the artist's last launch's: Ferrari Sheppard's
+All Blues ran under `FerrariSh_LE_Repeat26` while its page carried `FerrariSh_LE_26`,
+January's.
 
 A code is read off an email's name with its year as two digits or in full
 (`AntonyMic_LE_26`, `AiWeiwei_Lego_2026`); until 16 November 2026 only two digits were
 read, so a launch coded with the full year had its emails on no launch. A code that ends
-in no year at all (`FerrariSh_LE_Repeat26`) cannot be read by its shape, so a send with no
-code of its own is the campaign's when its name or HubSpot's campaign spells that code out
-(`plan_model.carries_code`). A send with a code of its own stays on that campaign.
+in no year at all (`FerrariSh_LE_Repeat26`) cannot be read by its shape, so a send is the
+campaign's when its name or HubSpot's campaign spells the code out, in any case
+(`plan_model.carries_code`). A send's name and its HubSpot campaign can disagree
+(`040425_CUS_FerrariSh_Iris_25` under the campaign `FerrariSh_Iirs_25`), and the name is
+the one typed for the send. A launch run before codes were written into names
+(`220224_GEN_CONDOPRINT - Announcement`) has its sends found through its plan
+(`launch_sends`): the one HubSpot campaign with a send on a day the plan has an email
+whose key begins a word of the artist's name, with the sends that name the artist. A
+HubSpot campaign with sends in six or more months is a standing one (NEWSLETTER,
+INSIDERSEA) and is never a launch's.
 
 **A launch selling lines of work** (docs/LINES_PLAN.md: Ai Weiwei's prints beside his toy
 bricks) is read as one launch, on its combined page: one email and one post reach one
@@ -421,8 +439,13 @@ the view to its combined page.
   units on the days it was felt; neither is proof of what the piece alone caused. Units
   that arrive after a piece is no longer felt are the baseline's.
 - **Same-day pieces share credit.** See 4.3.
-- **Launches without a code.** A campaign with no code in Notion has no plan here, and so
-  no switch on its page.
+- **Launches the matching misses.** A launch has no plan here when no Notion campaign
+  answers to its code or its artist in its days, and no emails when neither its code nor
+  its plan finds them. Of the closed draw launches in the funnel with 25 units of demand
+  outside paid, 91 are read and 17 are not: 7 with no plan found (three of them before
+  the Notion plan begins), 6 whose plan has fewer than five rows that went out (its first
+  months held emails only), 3 with no email found (HubSpot's record begins on 13 November
+  2023), and one that shares its plan with a larger release.
 - **Before the announce.** The level a plan starts from is rough (section 6). A quick try
   at predicting a launch's demand from its price, edition size, artist tier and the
   artist's last launch missed by 43% (typical, 64 launches predicted from earlier ones);
@@ -433,11 +456,33 @@ the view to its combined page.
   read side by side.
 - **The view is read with Direct spread.** The plan is priced on demand by channel group
   with Direct shared out, which is the dashboard's default view.
-- **Thin history.** 66 launches. Every figure here should be re-read as launches close,
+- **Thin history.** 66 launches in the committed fit, 91 on file. Every figure here should be re-read as launches close,
   and the price list is only as fresh as the last run of the back-test.
 
 ## 8. What comes next
 
+- **The price list on the wider history, with the level rule.** The back-test now reads 91
+  launches from November 2023 (it read 66 from May 2024, for want of the campaigns with no
+  code). The committed `plan_prices.json` is still the 66-launch fit: re-fitted alone, more
+  artists reach two launches on file and today's level rule (the artist's last three)
+  takes over for them, which the level test below shows is the weakest reading (Ferrari
+  Sheppard's plan would rise by 46%). The re-fit and the level rule go in together, on
+  the owner's go-ahead.
+- **The level a plan starts from** (tested 17 November 2026, each launch read only from
+  the launches closed before it announced; typical miss on the plan's size). On the 91
+  launches (74 scored): today's rule 57%, the eight launches nearest in edition size and
+  price 46%, a blend 46%. Where the artist had two or more earlier launches (11): today's
+  rule 78%, similar launches 22%, the blend 20%. First launches (47): 51%, one in three off
+  by double or half. On the wider draw record, demand outside paid, 87 scored: 48%, 42%,
+  42%; two or more earlier (12): 51%, 20%, 14%. An artist's follow-up launch ran at x0.56
+  of the median of their earlier ones (25 follow-ups), so their own record flatters. The
+  blend: half the similar launches, half the artist's last three marked down by that
+  figure, when the artist has two or more; else similar launches alone. With one earlier
+  launch the artist's record made it worse. Edition size carries most of it, price a
+  little; the artist's tier, the early access audience and the plan's own size gave no
+  reliable gain. A launch's own days settle it quickly: with similar launches, the typical
+  miss is 31% on the morning of the announce (a fifth of the demand is in), 18% at the end
+  of the announce day and 14% a day later.
 - The plan as the default, once the two have been compared on live launches.
 - An email's planned audience read from its HubSpot draft, and audiences read by who is in
   them as well as how many.
@@ -467,3 +512,11 @@ the view to its combined page.
   their Notion campaigns, and showed a third way a code is written: Ferrari Sheppard's
   ends in no year, so its four sends were missing from its plan card for one refresh
   until a send with no code was matched on the code written out.
+- **17 November 2026.** The owner asked why only 66 launches were read, and then whether the
+  Notion plan did not go back further than May 2024. It does, to September 2023: the pull
+  had kept only campaigns with a code, and codes begin in mid-2024. The pull now keeps
+  every campaign, a launch finds its plan by its artist and days where there is no code,
+  and its emails through the plan where their names carry none; the back-test's launches
+  take their codes as the build does. 91 launches are read in place of 66. Alongside: the
+  level test (section 8), asked for as "test a blend" and a plan for artists with no past
+  release.
