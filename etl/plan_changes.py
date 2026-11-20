@@ -434,7 +434,7 @@ def changes_for(snap: dict, history: dict, plan_rows: list[dict] | None, pool: s
                 lead = (f"{'One full-list email' if len(wide_sends) == 1 else f'{len(wide_sends)} full-list emails'} so far"
                         + (f", {_pct(1 - big_opened)} unopened" if big_opened is not None and len(wide_sends) == 1 else "") + ". ") if wide_sends else ""
                 change = {
-                    "key": "email.last_chance.widen", "lever": "le_email_lastchance_widen_audience", "channel": "Email",
+                    "key": "email.last_chance.widen", "lever": "le_email_lastchance_widen_audience", "channel": "Email", "reach": "list",
                     "date": (lc_planned["date"] if lc_planned else close - timedelta(days=1) if days_left >= 1 else close).isoformat(),
                     "units": _units(qw[0] - base, qw[1] - base, upc, room) if qw else None,
                     "reason": f"{lead}{b['words']} closed with a wide send.",
@@ -478,7 +478,7 @@ def changes_for(snap: dict, history: dict, plan_rows: list[dict] | None, pool: s
             found.append({
                 "key": "email.announce.resend", "kind": "add", "lever": "le_email_announce_resend_nonopeners",
                 "title": "Re-send to non-openers", "note": f"{_pct(open_rate)} opened, {_pct(q_open[1])} is usual",
-                "channel": "Email", "date": (as_of + timedelta(days=1)).isoformat(),
+                "channel": "Email", "date": (as_of + timedelta(days=1)).isoformat(), "people": int(round(unopened)),
                 "units": _units(q[0] * unopened, q[2] * unopened, upc, room) if q else None,
                 "reason": f"{int(round(unopened)):,} people have not opened the biggest send.",
             })
@@ -495,6 +495,7 @@ def changes_for(snap: dict, history: dict, plan_rows: list[dict] | None, pool: s
                     "lever": "le_email_sustain_deepdive" if deep else "le_email_sustain_bundle",
                     "title": "Deep-dive email" if deep else "Bundle email to full list",
                     "note": "Not in the plan" if emails_logged else "None sent so far", "channel": "Email",
+                    **({} if deep else {"reach": "list"}),
                     "date": min(as_of + timedelta(days=2), close - timedelta(days=MID_BEFORE_CLOSE)).isoformat(),
                     "units": _units(q[0], q[1], upc, room) if q else None,
                     "reason": (("Email visits are entering less often than planned. " if deep else "Email visits are behind plan. ")

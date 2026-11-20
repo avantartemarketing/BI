@@ -69,6 +69,7 @@ import baskets
 import paid_cost   # the price of a paid entry as the plan reads it: the curve and its backtest (docs step 5)
 import plan_changes   # the Suggested actions card: what to add to or change in a live launch's comms plan (docs/METHODOLOGY.md)
 import plan_view      # the plan-based view of a live draw launch, laid under variants.plan (docs/PLAN_MODEL.md)
+import list_load      # the list's load: the cap and the scale a suggested general send is held to (docs/METHODOLOGY.md)
 import pricing
 import tl   # timed launches: the release model, the panel and the pages (docs/TL_SPEC.md)
 # The per-product sell-through rule (docs §6.3): the entries in hand allocated
@@ -8929,6 +8930,45 @@ def write_page(path: pathlib.Path, snap: dict) -> None:
     path.write_text(json.dumps(snap, indent=1))
 
 
+def settle_list(as_of: date) -> None:
+    """The list's load laid over the suggestions of every launch in flight (etl/list_load.py): the cap on
+    general sends in a week and the scale that says which launch a busy week's goes to. It runs once the pages
+    are on disk, because the ranking is across launches: every page with suggestions is read back, settled with
+    the others and written again when it changed (a one-release build settles its page against the others as
+    they stand). A failure here leaves the pages as they were written, and says so."""
+    try:
+        aud, comms = list_feeds()
+        ctx = list_load.read(aud, comms, as_of) if aud is not None and len(aud) else None
+        pages = []
+        for path in sorted((APP / "releases").glob("*.json")):
+            try:
+                doc = json.loads(path.read_text())
+            except (OSError, ValueError):
+                continue
+            if isinstance(doc, dict) and (isinstance(doc.get("planChanges"), dict) or isinstance(((doc.get("variants") or {}).get("plan") or {}).get("planChanges"), dict)):
+                pages.append((path, doc, json.dumps([doc.get("planChanges"), ((doc.get("variants") or {}).get("plan") or {}).get("planChanges")], sort_keys=True)))
+        held = list_load.settle([doc for _, doc, _ in pages], ctx, shown=(plan_changes.MAX_SHOWN, plan_view.SHOWN))
+        for path, doc, before in pages:
+            if json.dumps([doc.get("planChanges"), ((doc.get("variants") or {}).get("plan") or {}).get("planChanges")], sort_keys=True) != before:
+                path.write_text(json.dumps(doc, indent=1))
+        if ctx:
+            wk = list_load.summary(ctx)["week"]
+            print(f"list load: {str(wk['state']).replace('_', ' ')} at {wk['load']:.1f} emails a person a week over four weeks; {wk['general']} general send(s) this week "
+                  f"({wk['sent']} gone, {wk['planned']} planned) of {list_load.CAP}; {held} suggestion(s) held on {len(pages)} launch page(s)")
+        else:
+            print("list load: no list on file, the suggestions stand as built")
+    except Exception as e:  # noqa: BLE001 - the list's rule never stops a build
+        print(f"list load: not settled ({type(e).__name__}: {str(e)[:200]})")
+
+
+def list_feeds():
+    """The HubSpot emails and the Notion plan the list's load is read from: the plan view's own, loaded once."""
+    ctx = plan_view.context() or {}
+    if ctx.get("aud") is not None and ctx.get("comms") is not None:
+        return ctx["aud"], ctx["comms"]
+    return plan_view.P.load_audiences(), plan_view.P.load_comms()
+
+
 def guard_page(failures: list, rid: str, fn) -> bool:
     """Run one page's build. On any error the page is skipped, (id, error) is
     kept for the summary and False comes back, so one page's failure never
@@ -9192,6 +9232,7 @@ def main(only: str | None = None):
               + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
                  if bmk else ""))
         patch_index(snap, as_of)
+        settle_list(as_of)
         mark("release")
         print("timing: " + " | ".join(f"{label} {secs:.1f}s" for label, secs in marks)
               + f" | total {time.perf_counter() - t_start:.1f}s")
@@ -9310,6 +9351,7 @@ def main(only: str | None = None):
     index = sort_index(index)
     (APP / "index.json").write_text(json.dumps(
         {"asOf": as_of.isoformat(), "releases": index}, indent=1))
+    settle_list(as_of)
     # the draw panel as the picker's candidate rows (baskets.candidate_rows),
     # so the server serves a file rather than starting a python process per
     # open of the picker

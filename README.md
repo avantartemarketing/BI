@@ -617,6 +617,13 @@ and the setting keep that name. The rules and how a size is worked out are in
 `docs/METHODOLOGY.md` 7d and `docs/DATA_MODEL.md` 8a; `python3 tests/test_plan_changes.py`
 holds each rule to a hand-built launch.
 
+An email to half the list or more (a general send) is held to the list's load, across every
+launch at once (`etl/list_load.py`, run by the build once the pages are written): never more
+than three general sends in a week, gone and planned together, and on a busy list only the
+launch with the most at stake is offered one. What the rule holds sits under Held back on the
+card with its reason. The cap, the scale's two steps and the half are constants at the top of
+the module; `python3 tests/test_list_load.py` holds each rule to a hand-built case.
+
 Accepting or dismissing a change is kept by `server/planChanges.js` in `plan_changes.json`
 beside the decision log (so on the persistent disk with it; `PLAN_CHANGES_PATH` names another
 place). Nothing is written to Notion or Meta. `node tests/plan_changes_route.mjs` runs the routes.

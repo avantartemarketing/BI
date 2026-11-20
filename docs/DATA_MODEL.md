@@ -2560,6 +2560,51 @@ ones with no estimate. `key` is stable per rule (`email.last_chance.widen`,
 `artist.post.unseen`, `artist.last_chance.add`), which is what a tick is saved against.
 `lever` is the id in the marketing team's lever playbook.
 
+**The list's load** (`etl/list_load.py`; `settle_list` in the build). The rule of docs
+7d is laid over the block once the pages are on disk, because its ranking is across
+launches: every page under `releases/` with a `planChanges` (its own, and its
+`variants.plan`'s) is read back, settled with the others and written again when it changed.
+A one-release build settles its page against the others as they stand. The feeds are the
+plan view's own (`sources/email_audiences.csv`, `data/notion_comms.csv`); with no list on
+file (under `MIN_LIST`, 20,000) the blocks stand as built. A failure is printed and leaves
+the pages as written.
+
+| Constant | Value | What it is |
+|---|---|---|
+| `CAP` | 3 | general sends in a week, gone and planned together |
+| `NORMAL_TO`, `BUSY_TO` | 2.0, 2.5 | emails a person a week over four weeks: the usual load to the first, busy to the second, very busy past it |
+| `GENERAL_SHARE` | 0.5 | an email to this share of the list or more is a general send |
+| `FULL_LIST_DAYS` | 120 | the list is the widest marketing send of these last days |
+| `PLANNED_SHARE` | 0.7 | what a planned general send counts in the load, in emails a person |
+| `BASE_WEEKS` | 12 | the email a week brings beside its general sends: the median of these last weeks (0.3 with under four) |
+
+A marketing send is one that went to 100 people or more and is not `TRNS`, `AUT` or `TEST`.
+A planned general send (`planned_general`) is a Notion row of family `email`, not dropped,
+dated today or later, whose name reads as an announcement (`plan_model.email_kind`) or as a
+timed launch's email to the people outside its flow (`Non-flow`, not an early access); a
+flow's own announcement is not one. One a campaign a week. A row dated today stops counting
+once an email of its campaign has gone today. A week's `pp` is its deliveries over the list,
+plus `PLANNED_SHARE` a planned general send, plus the base for the days still to come; its
+`load` is the mean of its `pp` and the three weeks' before.
+
+A suggested email says who it goes to: `people` (the plan view's emails, the re-send to
+non-openers) or `reach: "list"` (the wide last chance send, the bundle email). One with
+neither is of unknown reach and is not held to the rule. A launch's stake is the larger
+shortfall of its two readings (`hero`, `variants.plan.hero`: `target - projected`, nothing
+within 3% of the target) times `economics.unitPrice`. Per week, the launches asking for a
+general send are taken in the order of their stakes, and the week's room (`CAP` less its
+count; one at most when busy; none when very busy) is given out one a launch.
+
+The block gains `list` (`asOf`, `size`, `cap`, `normalTo`, `busyTo`, and `week` and `next`:
+`{start, general, sent, planned, names[], load, state}` with `state` one of `normal`,
+`busy`, `very_busy`), `held[]` (the changes the rule held, off `changes` and `more`) and
+`order[]` (the keys as the build ranked them, so a page settled again starts from what the
+build suggested). A change let through carries `general {nth, cap, week}`; a held one
+`held` (the reason, a sentence) and `heldBy`: `cap` (the week holds `CAP` already), `load`
+(the scale), `course` (the page reads on course) or `launch` (the launch's second in a
+week). The build's log carries one line: the state and the load, the week's count against
+the cap, and how many suggestions were held on how many pages.
+
 **Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed, by,
 at}}}` in `plan_changes.json` beside the decision log; `by` is the signed-in address's part
 before the @. `GET /api/releases/:id/plan-changes` returns `{visible, states}` and the card

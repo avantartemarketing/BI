@@ -1026,6 +1026,49 @@ so when the recent launches stand in, only those whose biggest send was
 between half and twice this launch's are read. A change with too little
 behind it says "No estimate" rather than guess.
 
+**The list's load.** An email to everyone always looks like the biggest win on
+its own page, and the email history prices no cost for it: a send does no
+worse for the list having been emailed that week, and the list's response has
+more than halved in two years while the list more than doubled, which the
+history cannot tell apart. So the cost is held as a rule the team sets, read
+across every launch at once (`etl/list_load.py`):
+
+- A **general send** is an email to half the list or more. The list is the
+  widest send of the last 120 days.
+- **The count** for a week is the general sends that have gone (HubSpot) and
+  those still in a launch's plan (Notion): a launch's announcement, and a timed
+  launch's email to the people outside its flow. One a launch a week. The plan
+  names an email and not who it goes to, and launches that share a bundle each
+  list their own, so the count of what is to come runs high: about three in
+  four planned general sends went as their own (16 weeks to November 2026).
+  The card names the sends it counted.
+- **The load** is emails a person a week over four weeks: the week a
+  suggestion falls in and the three before it. What has gone is counted in
+  deliveries; a planned general send counts 0.7 of an email a person, and the
+  days still to come take the usual targeted email of the last twelve weeks.
+- **The scale.** Up to 2.0 emails a person a week the list is at its usual
+  load, and any launch that is short can be offered a general send. Up to 2.5
+  it is busy, and only the launch with the most at stake that week is offered
+  one: the units it is heading to fall short by, times the price of a unit.
+  Past 2.5 none is.
+- **The cap.** Never more than 3 general sends in a week, gone and planned
+  together, whatever the load.
+- One general send a week for a launch, and none for a launch on course.
+
+A general send the rule lets through says which of the week's it would be
+("General send 3 of 3"). One it does not sits under **Held back** with the
+reason in a line and what it was worth; it can still be accepted, except in a
+week at the cap. Emails to fewer than half the list, posts and paid are
+untouched. The card's first line gives the list's state, this week's count
+against the cap and the load, and opens to the sends counted this week and
+next.
+
+The four figures (the cap, the two steps of the scale, the half) are the
+team's to set. For scale: in 2026 the list had a median 2.05 emails a person
+a week (a quarter of weeks over 2.4, the busiest 3.5; over four weeks, 1.6 to
+2.1 in the middle half and never over 2.6), and its weeks held no general
+send 6 times, one 14 times, two 21 times, three 4 times and four once.
+
 **Accept and Dismiss** are a record on the dashboard (who, and when), undone
 from the card's menu. Nothing is written to the plan in Notion or to Meta. A
 change stops being proposed by itself once the send appears in HubSpot, the
