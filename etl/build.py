@@ -8930,12 +8930,13 @@ def write_page(path: pathlib.Path, snap: dict) -> None:
     path.write_text(json.dumps(snap, indent=1))
 
 
-def settle_list(as_of: date) -> None:
+def settle_list(as_of: date) -> str:
     """The list's load laid over the suggestions of every launch in flight (etl/list_load.py): the cap on
     general sends in a week and the scale that says which launch a busy week's goes to. It runs once the pages
     are on disk, because the ranking is across launches: every page with suggestions is read back, settled with
     the others and written again when it changed (a one-release build settles its page against the others as
-    they stand). A failure here leaves the pages as they were written, and says so."""
+    they stand). A failure here leaves the pages as they were written, and says so. What it found comes back
+    as one line, which the full build prints among its closing lines so the refresh's log carries it."""
     try:
         aud, comms = list_feeds()
         ctx = list_load.read(aud, comms, as_of) if aud is not None and len(aud) else None
@@ -8953,12 +8954,11 @@ def settle_list(as_of: date) -> None:
                 path.write_text(json.dumps(doc, indent=1))
         if ctx:
             wk = list_load.summary(ctx)["week"]
-            print(f"list load: {str(wk['state']).replace('_', ' ')} at {wk['load']:.1f} emails a person a week over four weeks; {wk['general']} general send(s) this week "
-                  f"({wk['sent']} gone, {wk['planned']} planned) of {list_load.CAP}; {held} suggestion(s) held on {len(pages)} launch page(s)")
-        else:
-            print("list load: no list on file, the suggestions stand as built")
+            return (f"list load: {str(wk['state']).replace('_', ' ')} at {wk['load']:.1f} emails a person a week over four weeks; {wk['general']} general send(s) this week "
+                    f"({wk['sent']} gone, {wk['planned']} planned) of {list_load.CAP}; {held} suggestion(s) held on {len(pages)} launch page(s)")
+        return "list load: no list on file, the suggestions stand as built"
     except Exception as e:  # noqa: BLE001 - the list's rule never stops a build
-        print(f"list load: not settled ({type(e).__name__}: {str(e)[:200]})")
+        return f"list load: not settled ({type(e).__name__}: {str(e)[:200]})"
 
 
 def list_feeds():
@@ -9232,7 +9232,7 @@ def main(only: str | None = None):
               + (f" benchmark={bmk['units']} (x{bmk['k']}, {bmk['basket']['id']} n={bmk['basket']['n']})"
                  if bmk else ""))
         patch_index(snap, as_of)
-        settle_list(as_of)
+        print(settle_list(as_of))
         mark("release")
         print("timing: " + " | ".join(f"{label} {secs:.1f}s" for label, secs in marks)
               + f" | total {time.perf_counter() - t_start:.1f}s")
@@ -9351,7 +9351,7 @@ def main(only: str | None = None):
     index = sort_index(index)
     (APP / "index.json").write_text(json.dumps(
         {"asOf": as_of.isoformat(), "releases": index}, indent=1))
-    settle_list(as_of)
+    list_note = settle_list(as_of)
     # the draw panel as the picker's candidate rows (baskets.candidate_rows),
     # so the server serves a file rather than starting a python process per
     # open of the picker
@@ -9421,6 +9421,8 @@ def main(only: str | None = None):
         print(f"plan views: {len(PLAN_VIEWS)} - " + (", ".join(PLAN_VIEWS[:8]) + (f" and {len(PLAN_VIEWS) - 8} more" if len(PLAN_VIEWS) > 8 else "")
                                                      if PLAN_VIEWS else "no live draw launch with targets set and a plan on file")
               + ("; without one: " + "; ".join(f"{rid} ({why})" for rid, why in PLAN_SKIPS[:8]) if PLAN_SKIPS else ""))
+    # the list's load and what it held (settle_list), on a line the refresh's log carries
+    print(list_note)
     # the pages that did not build, on one line the refresh status reads
     # (server/sheets.js parseBuildSummary): the id and the error, the first
     # five in full
