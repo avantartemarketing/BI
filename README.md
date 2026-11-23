@@ -1117,7 +1117,7 @@ and its own options behind a ⋯ menu:
 - **Sell-through**: one table across the page, a row per work and the release last: paid, drafts, likely winners, total sold, the target to date and the gap to it, the target at close, the edition, sell-through, framing, and the forecast units and share at the close under the paid assumption a dropdown picks (recommended, today's spend held, none). Above the two bar cards it sums up
 - **Sell-through by product**: a row per work, paid, drafts and the draw's forecast
   conversions on the edition (docs §6.3; the allocation rule and the Incomplete data stamp are
-  as before); ⋯ holds Post to Slack.
+  as before; before a draw opens the rows are the works the orders name); ⋯ holds Post to Slack.
 - **Framing** (docs §6.4): the share of prints framed, buyers and entrants as bars with the
   basket's rate as a tick.
 - **Email funnel**: open rate, click rate, release page to product page (when the release

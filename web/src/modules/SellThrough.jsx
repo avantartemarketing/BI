@@ -150,7 +150,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
       {incomplete.length > 0 && (
         <Loz kind="warm" tip={`Not in the feed yet: ${incomplete.join(", ")}. ${incomplete.includes("orders table")
           ? "The orders table has no lines for this launch yet, so its units are the feed's purchase events and the launch is one row."
-          : incomplete.includes("products") ? "The event feed has no draws for this release yet, so the release is one row. The rows by product appear after the next data refresh."
+          : incomplete.includes("products") ? "No draw entries have reached the feed for this release and no work has a sale yet, so the release is one row. The rows by product appear when a work has its first sale or the draw's entries arrive."
           : "Sales the draw cannot name a product for are split by edition size inside the paid segment until the sales feed carries the product."}`}>Incomplete data</Loz>
       )}
       {mismatch && (

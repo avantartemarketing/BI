@@ -1935,12 +1935,30 @@ They are split across the products by edition size (by eligible
 entrants until every edition is typed), carried per product as `soldAssumed`, drawn inside the
 sold segment and named as an estimate in its popup. The snapshot lists what is still missing in
 `sellthrough.incomplete` (`sales by product` and `draft orders` until every draw is named;
-`products` when the feed has no draws at all) and the card wears an **Incomplete data** stamp
-over the rows while the list is not empty; `soldSource` says which rule the sold figures came
+`products` when the feed has no draws and the orders name no work, below) and the card wears an
+**Incomplete data** stamp over the rows while the list is not empty; `soldSource` says which rule the sold figures came
 from (`orders`, `purchases`, `winners`). The release-level `sellthrough.drafts`,
 `unitsPaidOrders` and `ordersAsOf` come from the orders feed whenever it has the release,
 draws or no draws, and `ordersByProduct` and `drawProducts` ride on the snapshot so a save
 re-runs the same rule on the server.
+
+**No draw in the feed** (23 November 2026). A release selling before its draw opens - the
+private room, an advisor's pre-sale - or one that never ran a draw has no draws to make rows
+from, and used to be one row named for the release. Its works are in the orders feed all the
+same, so the rows are those works: every title with a unit paid or a draft out, on the orders'
+own paid units and drafts (`attach_orders` with no draw to name, `soldSource` `orders`,
+nothing in `incomplete`), no likely winners, and the units still to come spread by demand and
+held to each work's room (`split_future`). A work nothing has sold on has no row until its
+first sale or draft. Two cases stay one row with the stamp: no work with a sale or a draft
+yet, and entries in hand whose draws the event feed does not carry yet, which have no work to
+be counted on. The Pejac release was the case: 21 paid and 2 drafts across four works in the
+private room, shown as one row "Multiple" until its draw opened.
+
+A work's Airtable edition is found by its Shopify title. Where Shopify names a work by its
+bare title and Airtable by a bracketed variant ("BARBED WIRE" beside "Barbed Wire [Standard
+Print Edition]" and "[Special Print Edition]"), the bare title reads the one variant the
+release's other titles do not already name; with two variants left over it gets no edition
+(`product_editions`, `siblings`).
 
 `etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
 release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,

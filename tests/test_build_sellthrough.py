@@ -183,5 +183,66 @@ check(st["edition"] == 900, f"the whole edition on the block: {st['edition']}")
 check(build.edition_total(release) == 300 and build.edition_total({**release, "edition_total": 200}) == 300, "no total, or one below the target, means the target")
 check(build.edition_total({"edition_size": None}) is None, "no edition size, no total")
 
+# 9. no draw in the event feed (a release selling in the private room before
+#    its draw opens, the Pejac page of 23 November 2026): the rows are the
+#    works the orders feed names, on its own paid units and drafts
+build._PRODUCTS_FEED = {}
+build._ORDERS_FEED = {NAME: {
+    "products": {"Wire": {"unitsPaid": 2, "drafts": 0, "listPrice": 2800, "edition": 80},
+                 "Wire [Special]": {"unitsPaid": 7, "drafts": 1, "listPrice": 3700, "edition": 20},
+                 "Trip": {"unitsPaid": 4, "drafts": 0, "listPrice": 1800, "edition": 80},
+                 "Trip [Special]": {"unitsPaid": 8, "drafts": 1, "listPrice": 3000, "edition": 20},
+                 "Poster": {"unitsPaid": 0, "drafts": 0, "listPrice": 20, "edition": 500}},
+    "draws": {}, "drafts": 2.0, "unitsPaid": 21.0, "asOf": "2026-11-21",
+}}
+pre = {"edition_size": 200}
+st = build.sellthrough_block(pre, NAME, units_sold=21, unconverted=0, inventory_left=179, future_entries=100)
+got = [(p["name"], p["sold"], p["drafts"], p["edition"]) for p in st.get("products") or []]
+check(got == [("Wire", 2, 0, 80), ("Wire [Special]", 7, 1, 20), ("Trip", 4, 0, 80), ("Trip [Special]", 8, 1, 20)],
+      f"a row per work the orders name, none for a work with nothing sold: {got}")
+check(st["incomplete"] == [] and st["soldSource"] == "orders" and st["draws"] == [] and st["patterns"] == [],
+      f"nothing is missing: {st.get('incomplete')}, {st.get('soldSource')}")
+check(st["sold"] == 21 and st["drafts"] == 2 and st["soldPredicted"] == 0 and st["editionMismatch"] is False,
+      f"the headline is the rows' sum: {st['sold']}, {st['drafts']}, {st['soldPredicted']}")
+check(abs(sum(p["futurePredicted"] for p in st["products"]) - 100) < 0.2 and abs(st["pct"] - 123 / 200) < 1e-3,
+      f"the units still to come are spread over the works: {[p['futurePredicted'] for p in st['products']]}, pct {st['pct']}")
+check(all(p["futurePredicted"] <= p["edition"] - p["sold"] - p["drafts"] + 0.05 for p in st["products"]), "each held to its room")
+# entries in hand but no draws to place them on (the event feed behind the
+# funnel's): one row and the stamp, as before
+st = build.sellthrough_block(pre, NAME, units_sold=21, unconverted=50, inventory_left=179, future_entries=100)
+check("products" not in st and st["incomplete"] == ["products"] and st["soldPredicted"] == 40.0, f"entries in hand keep the release one row: {st}")
+# nothing sold or drafted on any work yet: one row
+build._ORDERS_FEED[NAME]["products"] = {"Poster": {"unitsPaid": 0, "drafts": 0, "listPrice": 20, "edition": 500}}
+st = build.sellthrough_block(pre, NAME, units_sold=0, unconverted=0, inventory_left=200, future_entries=100)
+check("products" not in st and st["incomplete"] == ["products"], "no work with a sale, no rows")
+build._ORDERS_FEED = {}
+
+# 10. the edition of a work Shopify names by its bare title and Airtable by a
+#     bracketed variant: the variant the release's other titles leave over
+import csv  # noqa: E402
+import tempfile  # noqa: E402
+with tempfile.TemporaryDirectory() as d:
+    data = pathlib.Path(d)
+    with open(data / "release_pricing.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["airtable_id", "artist", "title", "release", "edition_size", "launch_date", "quarter"])
+        w.writeheader()
+        for i, (title, ed) in enumerate([("Barbed Wire [Special Print Edition]", 20), ("Barbed Wire [Standard Print Edition]", 80),
+                                         ("Mind Trip [Red]", 30), ("Mind Trip [Blue]", 40), ("Mind Trip [Green]", 50)]):
+            w.writerow({"airtable_id": i, "artist": "Test Artist", "title": title, "release": "TestLE26", "edition_size": ed,
+                        "launch_date": "2026-12-18", "quarter": "2026 Q4"})
+    keep = build.DATA, build._PRODUCT_EDITIONS
+    build.DATA, build._PRODUCT_EDITIONS = data, None
+    try:
+        ed = build.product_editions()
+        REL4 = "Test Artist · Multiple · 2026 Q4"
+        sib = ["BARBED WIRE", "BARBED WIRE [Special Print Edition]", "MIND TRIP", "MIND TRIP [Red]"]
+        check(ed(REL4, "BARBED WIRE [Special Print Edition]", sib) == 20, "a title Airtable has reads its own row")
+        check(ed(REL4, "BARBED WIRE", sib) == 80, f"the bare title reads the variant left over: {ed(REL4, 'BARBED WIRE', sib)}")
+        check(ed(REL4, "BARBED WIRE") is None, "two variants and no sibling to tell them apart: no edition")
+        check(ed(REL4, "MIND TRIP", sib) is None, "two variants left over: no edition")
+        check(ed(REL4, "Something Else", sib) is None, "no row, no edition")
+    finally:
+        build.DATA, build._PRODUCT_EDITIONS = keep
+
 print("ok: build sell-through block" if not failed else f"{failed} failure(s)")
 sys.exit(1 if failed else 0)

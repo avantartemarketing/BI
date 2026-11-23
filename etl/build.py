@@ -2945,6 +2945,8 @@ _ARTIST_STOP = {"the", "estate", "foundation", "studio", "of", "and"}
 # work its SKUs name (server/bigquery.js product_names): 'Problem Painting
 # (FISCH-PROB2)'
 _WORK_SUFFIX = re.compile(r"^(.+) \(([^()-]+-[^()-]+)\)$")
+# an Airtable title with its variant in brackets: 'Barbed Wire [Standard Print Edition]'
+_BRACKET_VARIANT = re.compile(r"^(.+?)\s*\[[^\[\]]+\]\s*$")
 
 
 def _artist_tokens(name) -> set[str]:
@@ -2958,11 +2960,16 @@ def product_editions():
     title the release's year and then its artist decide, so a reissued title
     finds its own row, and a title that stays ambiguous gets no edition. A
     work the orders feed names with its work code after a title it shares
-    with another work reads that title's rows."""
+    with another work reads that title's rows. A title Airtable only knows
+    with a bracketed variant after it (Shopify's 'BARBED WIRE' beside
+    Airtable's 'Barbed Wire [Standard Print Edition]' and '[Special Print
+    Edition]') reads the one variant the release's other titles (`siblings`)
+    do not already name; with two left over it gets no edition."""
     global _PRODUCT_EDITIONS
     if _PRODUCT_EDITIONS is not None:
         return _PRODUCT_EDITIONS
     by_title: dict[str, list] = {}
+    by_base: dict[str, list] = {}   # 'Title [Variant]' rows under the bare title
     path = DATA / "release_pricing.csv"
     if path.exists():
         try:
@@ -2976,16 +2983,26 @@ def product_editions():
                     continue
                 year = (str(r.launch_date) or str(r.quarter) or "")[:4]
                 by_title.setdefault(_norm(r.title), []).append((ed, year, _artist_tokens(r.artist)))
+                m = _BRACKET_VARIANT.match(str(r.title))
+                if m and _norm(m.group(1)):
+                    by_base.setdefault(_norm(m.group(1)), []).append((ed, year, _artist_tokens(r.artist), _norm(r.title)))
         except Exception as e:  # noqa: BLE001 - a broken pricing file must not stop the build
             print(f"warning: ignoring {path.name} for product editions: {e}")
 
-    def lookup(release_name: str, product_title: str):
+    def lookup(release_name: str, product_title: str, siblings=()):
         cands = by_title.get(_norm(product_title)) or []
         if not cands:
             # one of two works that share a title: Airtable's rows of that
             # title, one per work, give its edition where they agree
             m = _WORK_SUFFIX.match(str(product_title))
             cands = (by_title.get(_norm(m.group(1))) or []) if m else []
+        variants = False
+        if not cands:
+            # the bare title of a work Airtable lists by its variants: the
+            # variants the release's other titles do not name
+            taken = {_norm(t) for t in siblings or ()}
+            cands = [c for c in (by_base.get(_norm(product_title)) or []) if c[3] not in taken]
+            variants = True
         if not cands:
             return None
         parts = [x.strip() for x in str(release_name).split("·")]
@@ -2995,6 +3012,8 @@ def product_editions():
             cands = [c for c in cands if c[1] == year] or cands
         if len(cands) > 1 and artist:
             cands = [c for c in cands if c[2] & artist] or cands
+        if variants and len(cands) != 1:
+            return None   # two variants left over: which one the bare title is cannot be told
         return int(round(cands[0][0])) if len({c[0] for c in cands}) == 1 else None
     _PRODUCT_EDITIONS = lookup
     return lookup
@@ -3029,6 +3048,9 @@ def load_orders_feed() -> dict:
             df = None
         if df is not None:
             editions = product_editions()
+            titles_of: dict[str, list] = {}   # a release's titles, to tell a work's variants apart
+            for r in df.itertuples(index=False):
+                titles_of.setdefault(r.release, []).append(r.product_title)
             for r in df.itertuples(index=False):
                 rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None,
                                                   "campaignCode": None,
@@ -3061,7 +3083,7 @@ def load_orders_feed() -> dict:
                     "winnerDraftsLapsed": num(getattr(r, "units_winner_drafts_lapsed", 0)),
                     "refunded": num(r.units_refunded),
                     "fromDrafts": num(r.units_from_drafts), "privateRoom": num(r.units_private_room),
-                    "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title),
+                    "listPrice": price if price > 0 else None, "edition": editions(r.release, r.product_title, titles_of[r.release]),
                     "firstOrder": str(getattr(r, "first_order", "") or "") or None,
                     # the work's frame price (the median paid frame, euros), for its ratio to the print's
                     "framePrice": num(getattr(r, "frame_price_eur", "")) or None,
@@ -3734,7 +3756,7 @@ def orders_in_window(name: str, rows: pd.DataFrame | None, start: date, end: dat
     for t in titles:
         p = dict(base["products"].get(t) or {"drafts": 0.0, "draftCustomers": None, "entryDrafts": 0.0, "entrantDrafts": 0.0,
                                              "winnerDrafts": 0.0, "winnerDraftsLapsed": 0.0, "refunded": 0.0, "fromDrafts": 0.0,
-                                             "listPrice": None, "edition": product_editions()(name, t),
+                                             "listPrice": None, "edition": product_editions()(name, t, titles),
                                              "lastOrder": None, "lastDraft": None, "entrantPrints": 0.0, "entrantFrames": 0.0})
         r = per.loc[t] if t in per.index else None
         paid = float(r["units"]) if r is not None else 0.0
@@ -4169,7 +4191,9 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     and - where the event feed has the release's draws - the per-product
     block: products from the draws and what was typed for them, the entries
     in hand allocated by the max-quantity rule, sold units the feed can
-    attribute, and the shares. With products the headline figures
+    attribute, and the shares. A release with no draw in the feed and no
+    entries in hand takes its products from the orders feed instead, a row
+    per work with a unit paid or a draft out. With products the headline figures
     (soldPredicted, futureEntriesPredicted, pct) are the per-product
     calculation summed, so the card's rows and its headline are one sum.
 
@@ -4209,8 +4233,19 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     if bm_close is not None:
         st["benchmarkUnits"] = round(bm_close, 1)
     if not feed or not feed.get("draws"):
-        st["incomplete"] = ["products"]
-        return st
+        # no draw in the event feed. A release selling before its draw opens
+        # (the private room, an advisor's pre-sale) or one that never ran a
+        # draw still has its works in the orders feed, so the rows are those
+        # works: every title with a unit paid or a draft out, on the orders'
+        # own counts (attach_orders with no draw to name). Entries in hand
+        # without their draws (the event feed behind the funnel's) have no
+        # work to go to, so that release stays one row until the draws land.
+        works = {t: r for t, r in ((of or {}).get("products") or {}).items()
+                 if float(r.get("unitsPaid") or 0) > 0 or float(r.get("drafts") or 0) > 0}
+        if not works or sold_predicted > 0:
+            st["incomplete"] = ["products"]
+            return st
+        feed = {"draws": [], "patterns": []}
     # a draw the orders feed pairs with a product is named by it unless a
     # name was typed against its draw id (products_from_draws, attach_orders)
     products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition,
