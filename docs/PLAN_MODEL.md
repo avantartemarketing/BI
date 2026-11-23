@@ -418,7 +418,11 @@ days out, and the paid budget's step for tomorrow from the Spend levels card's o
 (`plan_changes.paid_changes`: the campaign's, or one per line of work on a launch that runs
 an ad set per line). An email's range is the middle half of how past sends landed
 around their reading; a post's is x0.6 to x1.4. The clock's page keeps its own suggested
-actions (`etl/plan_changes.py`), which read what comparable launches did.
+actions (`etl/plan_changes.py`), which read what comparable launches did. On both pages an
+email to half the list or more is held to the list's load (`etl/list_load.py`,
+docs/METHODOLOGY.md 7d): a cap on general sends in a week and a scale on how busy the list
+has been, read across every launch, so this view's emails each say how many people they go
+to (`people`).
 
 `python3 tests/test_plan_view.py` holds the view to a hand-built launch: the rows adding up
 to the page's counts and each row's pieces to the row, the credit going to the day people
@@ -520,3 +524,14 @@ the view to its combined page.
   take their codes as the build does. 91 launches are read in place of 66. Alongside: the
   level test (section 8), asked for as "test a blend" and a plan for artists with no past
   release.
+- **20 November 2026.** The owner noted that the suggestions almost always say to email
+  everyone when a launch is behind, with no thought for what else the list is getting or
+  what the release is worth. The email history was read for a cost and shows none in the
+  short run (a send does no worse in a busy week or a day after another, and launches in
+  busy weeks were no smaller, 74 launches), so an earlier reading of 8% fewer clicks an
+  extra email in the week before was withdrawn: it was the long decline in response
+  showing up. The team's own frequency test (four groups, December 2025 to March 2026)
+  read the same way: a quarter fewer emails, 6% more clicks on the same email two months
+  in, fewer clicks overall. The cost is therefore held as a rule the team sets and not a
+  price the model works out: `etl/list_load.py`, a cap on general sends in a week and a
+  scale on the list's four-week load, read across every launch (docs/METHODOLOGY.md 7d).

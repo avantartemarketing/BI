@@ -500,7 +500,7 @@ def changes(w: dict, page: dict) -> list[dict]:
                     continue
                 u = pe * level * (email_units(kind, n, t) - q0)
                 out.append({"key": f"email.{kind}.{str(s['day'].date())}.{int(n)}", "kind": "change", "title": title, "from": f"{int(round(n0, -2)):,}", "to": label, "channel": "Email",
-                            "date": str(s["day"].date()), "units": {"low": u * lo_m, "high": u * hi_m},
+                            "date": str(s["day"].date()), "people": int(round(n)), "units": {"low": u * lo_m, "high": u * hi_m},
                             "reason": f"No audience is set yet, so the usual {int(round(n0, -2)):,} people are assumed. To {'the full list' if label == 'Full list' else label + ' people'} "
                                       f"it should bring about {clicks_at(kind, n, t):,} clicks, and about {unsubs(n)} unsubscribes."})
     t_mid = min(int((today - ann).days) + MID_LEAD_DAYS, L - 4)
@@ -514,7 +514,7 @@ def changes(w: dict, page: dict) -> list[dict]:
                     continue
                 u = pe * level * email_units("sustain", n, t_mid)
                 out.append({"key": f"email.sustain.add.{int(n)}", "kind": "add", "title": label, "note": "Not in the plan", "channel": "Email", "date": str(mid_day.date()),
-                            "units": {"low": u * lo_m, "high": u * hi_m},
+                            "people": int(round(n)), "units": {"low": u * lo_m, "high": u * hi_m},
                             "reason": f"About {clicks_at('sustain', n, t_mid):,} clicks at how this launch's emails are running, and about {unsubs(n)} unsubscribes."})
         running = {"Artist": pa, "AA Social": ps, "Partner": pull_all}
         for col, label, chn in (("pl_artist_post", "Artist IG post", "Artist"), ("pl_aa_post", "AA IG post", "AA Social"), ("pl_partner", "Partner post", "Partner")):

@@ -19,13 +19,23 @@
  * Ask hands the question to the Agent, bottom right, with the change named
  * in it (an "agent:ask" event; Agent.jsx listens), so the card has no chat
  * of its own. "Plan as it stands" folds the plan's rows still to come under
- * the changes; it is there only when the plan is on file. */
+ * the changes; it is there only when the plan is on file.
+ *
+ * The list's load (etl/list_load.py, `planChanges.list`) is the strip above
+ * the rows: how busy the list is, and this week's general sends against the
+ * cap. It opens to the sends it counted, this week and next. A general send
+ * the rule lets through says which of the week's it would be; one it does not
+ * sits under "Held back" with the reason, where it can still be read and,
+ * unless the week is at the cap, accepted. */
 import React, { useEffect, useState } from "react";
 import { Card, Note } from "../ui.jsx";
 import { Agent as AgentIcon, Check, Chev, Undo } from "../icons.jsx";
 import { fmtDay } from "../format.mjs";
 
 const KIND = { add: "Add", change: "Change", drop: "Drop" };
+const LOAD = { normal: "List at its usual load", busy: "List busy", very_busy: "List very busy" };
+export const nth = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th"}`;
+const sends = (n) => `${n} general send${n === 1 ? "" : "s"}`;
 const DAY_MS = 86400000;
 const at = (iso) => new Date(String(iso).slice(0, 10) + "T00:00:00Z");
 
@@ -62,17 +72,19 @@ const named = (c) => `${KIND[c.kind] || "Change"} "${c.title}"${c.from ? ` from 
 /* what a row changes: the planned item's old value struck through, then what it becomes, or a word on why */
 const Detail = ({ c }) => (c.to ? <>{c.from ? <s>{c.from}</s> : null}<To />{c.to}</> : c.from && c.note ? <><s>{c.from}</s>{c.note}</> : c.note || "");
 
-function Row({ c, asOf, open, onOpen, onSet, artist }) {
+function Row({ c, asOf, open, onOpen, onSet, artist, week }) {
   const units = unitsWord(c.units);
   const size = units || savesWord(c.saves);
+  const capped = c.heldBy === "cap";   // a week at the cap takes no further general send: read, not accepted
+  const g = c.general;
   return (
-    <div className={`pc-row${open ? " open" : ""}`}>
+    <div className={`pc-row${open ? " open" : ""}${c.held ? " held" : ""}`}>
       <div className="pc-line">
-        <button className="pc-ring" aria-label={`Accept: ${named(c)}`} title="Accept" onClick={() => onSet(c, "accepted")} />
+        {capped ? <span className="pc-ring off" aria-hidden="true" /> : <button className="pc-ring" aria-label={`Accept: ${named(c)}`} title="Accept" onClick={() => onSet(c, "accepted")} />}
         <button className="pc-hit" aria-expanded={open} onClick={onOpen}>
           <span className={`pc-kind ${c.kind}`}>{KIND[c.kind] || "Change"}</span>
           <span className="pc-t">{c.title}</span>
-          <span className={`pc-d${c.to ? " to" : ""}`}><Detail c={c} /></span>
+          <span className={`pc-d${c.to ? " to" : ""}`}><span className="pc-dt"><Detail c={c} /></span>{g && <span className="pc-g" title={`It would be the list's ${nth(g.nth)} general send ${g.week === week ? "this" : "that"} week; the cap is ${g.cap}`}>General send {g.nth} of {g.cap}</span>}</span>
           <span className="pc-ch">{c.channel}</span>
           <span className="pc-day">{dayWord(c.date, asOf)}</span>
           <span className={`pc-u${units ? "" : size ? " save" : " none"}`}>{size || "No estimate"}</span>
@@ -81,15 +93,39 @@ function Row({ c, asOf, open, onOpen, onSet, artist }) {
       {open && (
         <div className="pc-open">
           <div className="pc-dd">{[c.to ? `${c.from ? `${c.from} to` : "To"} ${String(c.to).toLowerCase()}` : c.note, c.channel, dayWord(c.date, asOf)].filter(Boolean).join(" · ")}</div>
-          <div className="pc-why">{c.reason}</div>
+          {c.held && <div className="pc-why"><b>Held back.</b> {c.held}</div>}
+          <div className="pc-why">{c.reason}{g ? ` It would be the list's ${nth(g.nth)} general send ${g.week === week ? "this" : "that"} week; the cap is ${g.cap}.` : ""}</div>
           <div className="pc-acts">
-            <button className="sbtn prim" onClick={() => onSet(c, "accepted")}>Accept</button>
+            {!capped && <button className="sbtn prim" onClick={() => onSet(c, "accepted")}>{c.held ? "Accept anyway" : "Accept"}</button>}
             <button className="sbtn" onClick={() => onSet(c, "dismissed")}>Dismiss</button>
             <button className="sbtn" onClick={() => ask(`Suggested action on ${artist}: ${named(c)}. Why, and what is it based on?`)}><AgentIcon w={13} />Ask</button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/* the list's load: one line, opening to the general sends it counted this week and next */
+function ListLoad({ list, open, onOpen }) {
+  const w = list.week || {}, nx = list.next || {};
+  const named = (x) => ((x.names || []).length ? x.names.join(", ") : "None");
+  return (
+    <>
+      <button className={`pc-list ${w.state || ""}${open ? " on" : ""}`} aria-expanded={open} onClick={onOpen}>
+        <Chev />
+        <span className="pc-ls"><i />{LOAD[w.state] || "List"}</span>
+        <span className="pc-lw">{sends(w.general || 0)} this week, {list.cap} at most</span>
+        {w.load != null && <span className="pc-ll">{w.load.toFixed(1)} emails a person a week over four weeks</span>}
+      </button>
+      {open && (
+        <div className="pc-lopen">
+          <div><span>This week</span>{named(w)}</div>
+          <div><span>Next week</span>{named(nx)}{nx.general > list.cap ? `: ${nx.general}, over the cap of ${list.cap}` : ""}</div>
+          <div className="pc-lnote">A general send is an email to half the list or more, gone or still in a launch's plan. Up to {list.normalTo} emails a person a week, any launch that is short can have one. Up to {list.busyTo}, only the launch with the most at stake. Past that, none. Never more than {list.cap} in a week.</div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -105,18 +141,22 @@ export default function PlanChanges({ snap, state }) {
   const [handled, setHandled] = useState(false);
   const [plan, setPlan] = useState(false);
   const [note, setNote] = useState(null);
+  const [load, setLoad] = useState(false);   // the list's strip, opened
+  const [back, setBack] = useState(false);   // the held-back rows, opened
   useEffect(() => {
-    setSt(state || OPEN); setOpen(null); setMore(false); setHandled(false); setPlan(false); setNote(null);
+    setSt(state || OPEN); setOpen(null); setMore(false); setHandled(false); setPlan(false); setNote(null); setLoad(false); setBack(false);
   }, [id, state]);
   if (!st.visible) return null;
 
   const states = st.states || {};
   const all = [...(pc.changes || []), ...(pc.more || [])];
+  const held = (pc.held || []).filter((c) => !states[c.key]);
   const todo = all.filter((c) => !states[c.key]);
-  const done = all.filter((c) => states[c.key]);
+  const done = [...all, ...(pc.held || [])].filter((c) => states[c.key]);
   const cap = snap.method === "plan" ? 4 : 3;   // the plan-based view shows four, so the paid budget sits beside the comms
   const shown = more ? todo : todo.slice(0, cap);
   const toCome = pc.planToCome || [];
+  const week = pc.list && pc.list.week ? pc.list.week.start : null;   // this week's Monday, as the list's reading has it
 
   const save = (c, state, quiet) => {
     const before = states[c.key] || null;
@@ -135,9 +175,16 @@ export default function PlanChanges({ snap, state }) {
       right={<button className="sbtn" onClick={() => ask(`What actions do you suggest for ${artist}, and why?`)}><AgentIcon w={13} />Ask</button>}
       menu={done.length ? [{ label: handled ? "Hide accepted and dismissed" : "Show accepted and dismissed", onClick: () => setHandled(!handled) }] : null}>
       <div className="pc">
-        {shown.map((c) => <Row key={c.key} c={c} asOf={pc.asOf} artist={artist} open={open === c.key} onOpen={() => setOpen(open === c.key ? null : c.key)} onSet={save} />)}
+        {pc.list && <ListLoad list={pc.list} open={load} onOpen={() => setLoad(!load)} />}
+        {shown.map((c) => <Row key={c.key} c={c} asOf={pc.asOf} artist={artist} week={week} open={open === c.key} onOpen={() => setOpen(open === c.key ? null : c.key)} onSet={save} />)}
         {!todo.length && <div className="pc-none">{pc.status === "on_course" ? "On course. No suggested actions." : "No suggested actions"}</div>}
-        {todo.length > 3 && <button className="pc-fold" onClick={() => setMore(!more)}><Chev />{more ? "Fewer" : `${todo.length - 3} more`}</button>}
+        {todo.length > cap && <button className="pc-fold" onClick={() => setMore(!more)}><Chev />{more ? "Fewer" : `${todo.length - cap} more`}</button>}
+        {held.length > 0 && (
+          <>
+            <button className={`pc-fold${back ? " on" : ""}`} aria-expanded={back} onClick={() => setBack(!back)}><Chev />Held back: {sends(held.length)}</button>
+            {back && held.map((c) => <Row key={c.key} c={c} asOf={pc.asOf} artist={artist} week={week} open={open === c.key} onOpen={() => setOpen(open === c.key ? null : c.key)} onSet={save} />)}
+          </>
+        )}
         {handled && done.map((c) => {
           const s = states[c.key];
           return (
