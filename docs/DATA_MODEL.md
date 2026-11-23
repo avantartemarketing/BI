@@ -1213,7 +1213,9 @@ of §1.6 (`Target sell-through %`, `Artist profit per unit`, `AA profit per unit
 share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`, `Commission Type`)
 plus the `Marketing lead`, `Revenue Commission %` (`artist_revenue_cut`) and `Artist type`
 (`artist_type`: `ESTATE`, `PHOTOGRAPHY` and the like, a lookup, for the framing study and the
-baskets), each pulled when the table has the field and left blank when it does not yet, with
+baskets) and the `Product page URL` (`product_page_url`, kept only as the work's path on the
+shop, `/products/...`: what tells apart works that share a title, docs/TL_SPEC.md §4b; every
+other link in the table is still dropped), each pulled when the table has the field and left blank when it does not yet, with
 `AIRTABLE_FIELD_<column>` naming a field spelled another way. The table carries some of these under its own names
 (`OPTIONAL_ALIASES`, 8 October 2026), tried after the name above: `AA split` is the AA profit
 share; `Profit per unit (excl paid ads)_marketing` and `Artist profit per unit (excl. paid

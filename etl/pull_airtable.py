@@ -168,6 +168,11 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     # what kind of artist the work's is (a lookup: "Estate", "Living artist"
     # and the like), for the framing study and the baskets, never a person
     ("Artist type", "artist_type"),
+    # the work's page on the shop: what tells apart works that share a title
+    # and a shop title (Marina Abramović's four Energy Hats, 23 November
+    # 2026), so a signup made from a page is counted for that page's work
+    # (etl/tl.py work_for_page). A page's link, never a person's
+    ("Product page URL", "product_page_url"),
 ]
 # The names the table actually carries these under (8 October 2026), tried
 # after the current name, the first the table has winning; an
@@ -198,6 +203,11 @@ NAME_COLS = {"marketing_lead", "project_manager"}
 # the project manager's Slack member ID, kept only in that shape
 SLACK_ID_COL = "pm_slack_id"
 SLACK_ID_RE = re.compile(r"^[UW][A-Z0-9]{8,}$")
+# the work's page on the shop, kept only as its path there ("/products/a-b"):
+# flatten drops every other link, and a link that is not a product page's
+# does not travel
+PAGE_PATH_COL = "product_page_url"
+PAGE_PATH_RE = re.compile(r"^(?:https?://[^/\s]+)?(/products/[a-z0-9][a-z0-9-]*)/?(?:[?#]\S*)?$", re.I)
 # a percentage field arrives as 0.4 or, typed as a number, as 40: read either
 PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion", "artist_revenue_cut"}
 # a money figure typed as text ("€450", "€1,250"): read for its number, in
@@ -457,6 +467,9 @@ def flatten(value, col: str, hits: list[int]) -> object:
         return text
     if col in MONEY_COLS:
         return money(text)
+    if col == PAGE_PATH_COL:
+        hit = PAGE_PATH_RE.match(text.strip())
+        return hit.group(1).lower() if hit else ""
     # rich text arrives as markdown: links to shared drives are not part of a
     # medium line, and neither is the markup around them
     text = re.sub(r"<?https?://\S+>?", "", text)

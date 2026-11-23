@@ -214,6 +214,24 @@ works = [{"name": "Untitled (Dream House 1)", "airtable_id": "1"}, {"name": "Unt
 check(tl.work_for_page("Untitled [Dream House 5] by Gregory Crewdson", "/products/gregory-crewdson-untitled-dream-house-5", works)["airtable_id"] == "5", "a page title keys its work")
 check(tl.work_for_page("", "/products/bisa-butler-be-mine", works)["airtable_id"] == "9", "the slug keys the work when the title is missing")
 check(tl.work_for_page("Something Else by Somebody", "/products/somebody-something-else", works) is None, "a page no work fits keys nothing")
+# works sharing a title and a shop title (Marina Abramović's four Energy Hats, 23 November 2026): the page
+# Airtable names for each tells them apart; without it the choice cannot be made and nothing is keyed,
+# where the first work listed used to take every signup
+hats = [{"name": "Energy Hat (Eyes Closed)", "airtable_id": "3320", "page_path": "marina-abramovic-energy-hat-eyes-closed-yellow"},
+        {"name": "Energy Hat (Eyes Closed)", "airtable_id": "3319", "page_path": "marina-abramovic-energy-hat-eyes-closed-red"},
+        {"name": "Energy Hat (Eyes Open)", "airtable_id": "3239", "page_path": "marina-abramovic-energy-hat-eyes-open-yellow"},
+        {"name": "Energy Hat (Eyes Open)", "airtable_id": "2943", "page_path": "marina-abramovic-energy-hat-eyes-open-red"}]
+for w in hats:
+    check(tl.work_for_page("Energy Hat by Marina Abramović", "/products/" + w["page_path"], hats)["airtable_id"] == w["airtable_id"], f"a page Airtable names keys its own work ({w['page_path']})")
+bare = [{k: v for k, v in w.items() if k != "page_path"} for w in hats]
+check(tl.work_for_page("Energy Hat by Marina Abramović", "/products/marina-abramovic-energy-hat-eyes-open-red", bare) is None, "works no page tells apart are not keyed to the first listed")
+check(sorted(w["airtable_id"] for w in tl.works_for_page("Energy Hat by Marina Abramović", "/products/marina-abramovic-energy-hat-eyes-open-red", bare)) == ["2943", "3239"], "and share the page's signups between the ones its address fits")
+pair = [{"name": "Pensamiento nube", "airtable_id": "1"}, {"name": "Autorretrato en tarde rosa", "airtable_id": "2"}, {"name": "Orilla", "airtable_id": "3"}]
+check(sorted(w["airtable_id"] for w in tl.works_for_page("Pensamiento nube & Autorretrato en tarde rosa by Tomás Sánchez", "/products/tomas-sanchez-pensamiento-nube-autorretrato-en-tarde-rosa", pair)) == ["1", "2"], "a page selling two works as a pair is for both")
+check(tl.works_for_page("Something Else by Somebody", "/products/somebody-something-else", pair) == [], "and a page no work fits is for none")
+two = [{"name": "Vase (Blue)", "airtable_id": "1"}, {"name": "Vase (Red)", "airtable_id": "2"}]
+check(tl.work_for_page("Vase by Somebody", "/products/somebody-vase-red", two)["airtable_id"] == "2", "the slug picks between works one shop title fits")
+check(tl.page_slug("https://avantarte.com/products/a-b/?x=1") == "a-b" and tl.page_slug("/products/A-B") == "a-b" and tl.page_slug("") is None and tl.page_slug(None) is None, "a page's slug from its link or its path")
 # the panel's forecast measures and the basket's medians are rates a launch can have
 pnl = pd.read_csv(tl.PANEL)
 check({"signup_order_rate_prod", "signup_order_rate_rel", "units_su", "units_nonsu", "ppo_su", "nonsu_units_paid", "signup_order_rate_prod_aa_email"} <= set(pnl.columns), "the panel carries the forecast's measures")

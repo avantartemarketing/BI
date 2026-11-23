@@ -232,6 +232,16 @@ units(p, h)             = signup-led units(p, h) + w(p) x non-signup units(h)
 sell-through(p, h)      = units(p, h) / edition(p); the band is units x FORECAST_BAND (0.63 to 1.62)
 ```
 
+A signup's page is matched to its work (`etl/tl.py work_for_page`) first by the page Airtable
+names for the work (its `Product page URL`), then by the page's title against the works' names,
+then by the words of the page's address; where one shop title fits several works the address
+picks between them, and the works it cannot separate share the page's signups equally (a page
+selling two works as a pair is for both); a page no work fits leaves its signups unkeyed, spread
+over every work.
+Until 23 November 2026 the first work listed took them: Marina Abramović's four Energy Hats
+(two titles, each in red and yellow, all four under the shop title "Energy Hat") read as one
+work with every signup and three with none.
+
 The rates are the basket's medians by channel and kind (a product subscription is a work's own
 notify-me and converts at about twice a release subscription's rate: 18.9% against 9.6% in the
 median completed launch); a rate typed on the Target setting tab stands in for both. The pieces per

@@ -27,6 +27,13 @@ def test_cells() -> None:
     assert pa.flatten("claud@example.com", "pm_slack_id", hits) == ""
     assert hits[0] == 0, "the ID rule drops it before the address scan counts it"
     assert pa.flatten("call 0044 7700 900123", "medium", hits) == "" and hits[0] == 1, "the address scan still runs elsewhere"
+    # a work's page on the shop travels as its path there and nothing else
+    assert pa.flatten("https://avantarte.com/products/marina-abramovic-energy-hat-eyes-open-red", "product_page_url", hits) == "/products/marina-abramovic-energy-hat-eyes-open-red"
+    assert pa.flatten("https://avantarte.com/products/A-Work/?utm_source=x", "product_page_url", hits) == "/products/a-work"
+    assert pa.flatten("/products/a-work", "product_page_url", hits) == "/products/a-work"
+    assert pa.flatten("https://admin.shopify.com/store/shop/products/123", "product_page_url", hits) == "", "a link that is not a product page's does not travel"
+    assert pa.flatten("ask claud@example.com", "product_page_url", hits) == "" and pa.flatten("-6%", "product_page_url", hits) == ""
+    assert pa.flatten("https://example.com/a", "medium", hits) == "", "links are still dropped everywhere else"
     print("cells: ok")
 
 

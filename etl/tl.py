@@ -375,29 +375,65 @@ def load_signup_products() -> dict[str, pd.DataFrame]:
     return {n: g for n, g in f.groupby("release")}
 
 
-def work_for_page(page_title: str | None, page_path: str | None, works: list[dict]) -> dict | None:
-    """The work a product page is for: the page title's own part (before the
-    ' by Artist' the shop appends) against the works' names, equal or one
-    inside the other; else the slug's words, when they cover most of a name.
-    None when no work fits, and those signups are spread over the works."""
+def page_slug(link) -> str | None:
+    """A product page's own part of its link or path, lowercased:
+    'https://avantarte.com/products/a-b?x=1' and '/products/a-b' both 'a-b'."""
+    text = str(link or "").strip().lower()
+    if not text or text in ("nan", "none"):
+        return None
+    text = re.split(r"[?#]", text, maxsplit=1)[0].rstrip("/")
+    return text.rsplit("/", 1)[-1] or None
+
+
+def works_for_page(page_title: str | None, page_path: str | None, works: list[dict]) -> list[dict]:
+    """The work or works a product page is for. First the page Airtable names
+    for the work (its Product page URL, `page_path` on the work), which is
+    the only thing that tells apart works sharing a title and a shop title.
+    Then the page title's own part (before the ' by Artist' the shop appends)
+    against the works' names, equal or one inside the other; else the slug's
+    words, when they cover most of a name. Where more than one work fits the
+    title, the slug's words pick between them, and the works they cannot
+    separate are all returned: a page selling two works as a pair is for
+    both, and its signups are shared between them. Empty when no work fits,
+    and those signups are spread over every work. Until 23 November 2026 the
+    first work listed took the lot, so four works under one shop title read
+    as one with every signup and three with none."""
+    slug_key = page_slug(page_path)
+    if slug_key:
+        own = [w for w in works if w.get("page_path") and w.get("page_path") == slug_key]
+        if len(own) == 1:
+            return own
+    slug = set(pricing.norm(str(page_path or "").replace("/products/", "").replace("-", " ")).split())
+
+    def by_slug(pool: list[dict], floor: float) -> list[dict]:
+        scored = []
+        for w in pool:
+            toks = set(pricing.norm(str(w.get("name") or "")).split())
+            if toks:
+                scored.append((len(toks & slug) / len(toks), w))
+        if not scored:
+            return []
+        top = max(sc for sc, _ in scored)
+        return [w for sc, w in scored if sc == top] if top >= floor else []
+
     title = str(page_title or "").split(" | ")[0]
     title = re.sub(r"\s+by\s+[^|]+$", "", title, flags=re.IGNORECASE)
     key = pricing.norm(title)
     if key:
-        for w in works:
-            wk = pricing.norm(str(w.get("name") or ""))
-            if wk and (wk == key or key in wk or wk in key):
-                return w
-    slug = set(pricing.norm(str(page_path or "").replace("/products/", "").replace("-", " ")).split())
-    best, score = None, 0.0
-    for w in works:
-        toks = set(pricing.norm(str(w.get("name") or "")).split())
-        if not toks:
-            continue
-        sc = len(toks & slug) / len(toks)
-        if sc > score:
-            best, score = w, sc
-    return best if score >= 0.6 else None
+        named = [(w, pricing.norm(str(w.get("name") or ""))) for w in works]
+        equal = [w for w, wk in named if wk and wk == key]
+        fits = equal or [w for w, wk in named if wk and (key in wk or wk in key)]
+        if len(fits) == 1:
+            return fits
+        if len(fits) > 1:
+            return by_slug(fits, 0.0) or fits
+    return by_slug(works, 0.6)
+
+
+def work_for_page(page_title: str | None, page_path: str | None, works: list[dict]) -> dict | None:
+    """The one work a product page is for, None when none fits or several do."""
+    got = works_for_page(page_title, page_path, works)
+    return got[0] if len(got) == 1 else None
 
 
 def _orders_rows(orders: dict | None, name: str) -> pd.DataFrame | None:
@@ -1858,6 +1894,7 @@ def _products(rec: dict) -> tuple[list[dict], dict]:
         fa = t.get("framing_available")
         framing = bool(fa) if fa is not None else (bool(p.get("framing_available")) if p.get("framing_available") is not None else p.get("framing_default") is not False)
         rows.append({"airtable_id": p.get("airtable_id"), "name": p.get("name"), "edition": edition,
+                     "page_path": page_slug(p.get("product_page_url")),
                      "units_target": over("units_target"), "unit_price": over("unit_price"),
                      "currency": t.get("currency") or p.get("currency") or "EUR", "framing_available": framing,
                      "frame_conversion": over("frame_conversion"), "frame_profit_per_unit": over("frame_profit_per_unit"),
@@ -2231,7 +2268,8 @@ def sell_forecast(cx: dict, channels: list[dict], profile: dict, targets: dict |
     release ones apart, at the basket's signup -> order rate for that channel
     and kind (the typed rate over both when one is typed), times the pieces a
     signup-led order takes. A product signup is keyed to its work by the
-    product page of its session (the pull); the keyed shares split the
+    product page of its session (the pull; a page for several works shares
+    its signups between them, works_for_page); the keyed shares split the
     release signups and the unkeyed product ones pro rata. Non-signup units:
     the basket's median window units from buyers who never signed up, by
     channel, scaled by clip(signups over the basket's, 0.5 to 2) ** FORECAST_BETA,
@@ -2258,18 +2296,20 @@ def sell_forecast(cx: dict, channels: list[dict], profile: dict, targets: dict |
     if sp is not None and len(sp):
         rows = sp[sp["pre"] & sp["is_prod"] & sp["has_page"] & (sp["day"] <= cx["as_of"])]
         for r in rows.itertuples(index=False):
-            w = work_for_page(r.page_title, r.page_path, works)
-            if w is None:
+            for_page = works_for_page(r.page_title, r.page_path, works)
+            if not for_page:
                 unmatched += float(r.signups)
                 continue
             g = r.group if r.group in GROUPS else None
             n = float(r.signups)
-            if g is None:   # untracked keyed signups: spread over the channels as the signups are
-                tot = sum(su_g.values()) or 1.0
-                for gg in GROUPS:
-                    keyed[id(w)][gg] += n * su_g[gg] / tot
-            else:
-                keyed[id(w)][g] += n
+            for w in for_page:   # a page for several works (a pair, a set): shared between them
+                part = n / len(for_page)
+                if g is None:   # untracked keyed signups: spread over the channels as the signups are
+                    tot = sum(su_g.values()) or 1.0
+                    for gg in GROUPS:
+                        keyed[id(w)][gg] += part * su_g[gg] / tot
+                else:
+                    keyed[id(w)][g] += part
             keyed_total += n
     unkeyed_g = {g: max(prod_g[g] - sum(keyed[id(w)][g] for w in works), 0.0) for g in GROUPS}
     # the works' shares: the keyed signups', else the units target's (else the edition's)

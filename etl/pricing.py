@@ -598,7 +598,7 @@ PRODUCT_NUMERIC = ("edition_size", "units_target", "unit_price", "target_sellthr
                    "artist_revenue_cut", "frame_conversion", "frame_profit_per_unit", "frame_price")
 PRODUCT_TEXT = ("airtable_id", "project_code", "title", "release", "currency", "framing", "launch_type",
                 "edition_type", "product_type", "price_status", "launch_date", "announce_date",
-                "private_room_date", "marketing_lead", "deal_type")
+                "private_room_date", "marketing_lead", "deal_type", "product_page_url")
 _RECORDS: tuple[float, pd.DataFrame, pd.DataFrame] | None = None   # (mtime, records, launches)
 
 
