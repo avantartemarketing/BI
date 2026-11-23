@@ -25,6 +25,10 @@ for (const source of ["signup pages", "units target"]) {
 assert.ok(near(tlForecastRows(snap("signup pages")).rows[0].signups, 75));
 // the target to date follows the units target: 40 of 60
 assert.ok(near(tlForecastRows(snap("signup pages")).rows[0].targetToDate, 80 * 40 / 60));
+// a work whose name another carries has the line that tells them apart; the others have none
+const twins = snap("signup pages");
+twins.sellForecast.open.works = [{ ...works[0], name: "Hat", line: "Red" }, { ...works[1], name: "Hat", line: "Yellow" }, { ...works[1], key: "c", name: "Other" }];
+assert.deepStrictEqual(tlForecastRows(twins).rows.map((r) => r.line), ["Red", "Yellow", null]);
 // nothing to forecast against: no rows
 assert.deepStrictEqual(tlForecastRows({ hero: { now: 5 } }), { rows: [], all: null });
 console.log("tl_forecast_rows: ok");

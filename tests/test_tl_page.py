@@ -223,6 +223,10 @@ hats = [{"name": "Energy Hat (Eyes Closed)", "airtable_id": "3320", "page_path":
         {"name": "Energy Hat (Eyes Open)", "airtable_id": "2943", "page_path": "marina-abramovic-energy-hat-eyes-open-red"}]
 for w in hats:
     check(tl.work_for_page("Energy Hat by Marina Abramović", "/products/" + w["page_path"], hats)["airtable_id"] == w["airtable_id"], f"a page Airtable names keys its own work ({w['page_path']})")
+lines = tl.work_lines(hats)
+check([lines.get(id(w)) for w in hats] == ["Yellow", "Red", "Yellow", "Red"], f"works sharing a name are told apart by what their pages do not share ({[lines.get(id(w)) for w in hats]})")
+check(tl.work_lines([{"name": "A", "page_path": "x-a"}, {"name": "B", "page_path": "x-b"}]) == {}, "works with names of their own have no second line")
+check(tl.work_lines([{"name": "A", "page_path": "x-a-dark-blue"}, {"name": "A", "page_path": "x-a-red"}, {"name": "A"}]).values().__len__() == 2, "a work with no page on file has none")
 bare = [{k: v for k, v in w.items() if k != "page_path"} for w in hats]
 check(tl.work_for_page("Energy Hat by Marina Abramović", "/products/marina-abramovic-energy-hat-eyes-open-red", bare) is None, "works no page tells apart are not keyed to the first listed")
 check(sorted(w["airtable_id"] for w in tl.works_for_page("Energy Hat by Marina Abramović", "/products/marina-abramovic-energy-hat-eyes-open-red", bare)) == ["2943", "3239"], "and share the page's signups between the ones its address fits")

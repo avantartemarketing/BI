@@ -389,6 +389,31 @@ def page_slug(link) -> str | None:
     return text.rsplit("/", 1)[-1] or None
 
 
+def work_lines(works: list[dict]) -> dict[int, str]:
+    """What tells apart works that share a name, by `id(work)`: the words of
+    each one's page address that the others of that name do not have ("Red"
+    and "Yellow" for two Energy Hat (Eyes Closed) at ...-eyes-closed-red and
+    ...-eyes-closed-yellow). Only for works whose name another carries, and
+    only where the addresses differ; a work with no page on file has none."""
+    by_name: dict[str, list[dict]] = {}
+    for w in works:
+        by_name.setdefault(pricing.norm(str(w.get("name") or "")), []).append(w)
+    out: dict[int, str] = {}
+    for key, same in by_name.items():
+        if not key or len(same) < 2:
+            continue
+        toks = {id(w): [t for t in str(w.get("page_path") or "").split("-") if t] for w in same}
+        for w in same:
+            others = [set(toks[id(o)]) for o in same if o is not w and toks[id(o)]]
+            if not toks[id(w)] or not others:
+                continue
+            shared = set.intersection(*others)
+            own = [t for t in toks[id(w)] if t not in shared]
+            if own:
+                out[id(w)] = " ".join(t.capitalize() for t in own)
+    return out
+
+
 def works_for_page(page_title: str | None, page_path: str | None, works: list[dict]) -> list[dict]:
     """The work or works a product page is for. First the page Airtable names
     for the work (its Product page URL, `page_path` on the work), which is
@@ -2369,6 +2394,7 @@ def sell_forecast(cx: dict, channels: list[dict], profile: dict, targets: dict |
     bm_non = profile.get("nonsu_units_by_group") or {}
     bm_non_untracked = float(profile.get("nonsu_units_untracked") or 0.0)
     lo_c, hi_c = FORECAST_PERF_CLIP
+    lines = work_lines(works)   # a second line under a name two works share
 
     def horizon(key):
         # the scale from today's signups to the horizon's, per channel, and the
@@ -2393,7 +2419,7 @@ def sell_forecast(cx: dict, channels: list[dict], profile: dict, targets: dict |
             non = sh * non_total
             units = su + non
             edition, target = _num(w.get("edition")), _num(w.get("units_target"))
-            works_out.append({"key": str(w.get("airtable_id") or slugify(str(w.get("name") or "work"))), "name": w.get("name"), "edition": edition, "target": target,
+            works_out.append({"key": str(w.get("airtable_id") or slugify(str(w.get("name") or "work"))), "name": w.get("name"), "line": lines.get(id(w)), "edition": edition, "target": target,
                               "keyed": round(sum(keyed[id(w)].values()), 1), "share": round(sh, 4),
                               "su": round(su, 1), "non": round(non, 1), "units": round(units, 1),
                               "lo": round(units * FORECAST_BAND[0], 1), "hi": round(units * FORECAST_BAND[1], 1),

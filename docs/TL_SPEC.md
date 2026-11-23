@@ -302,6 +302,10 @@ there is more than one work. It adds no model: every figure is one the page alre
 | Target | the units target |
 | Forecast | total sales over the units target: a timed launch has no edition to sell through, so its target is the measure |
 
+Where two works carry the same name, each has a second line under it that tells them apart: the
+words of its page's address the other does not have (`etl/tl.py work_lines`, `line` on the
+forecast's works: "Red" and "Yellow" under Marina Abramović's two Energy Hat (Eyes Closed)).
+
 A work's signups are the ones keyed to it by product page plus its share of the rest; under the
 keyed minimum, its share of the units target. Its target to date is the release's on its share of
 the units target. The works add up to the release's row (`tests/tl_forecast_rows.mjs`).

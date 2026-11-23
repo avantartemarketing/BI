@@ -8,7 +8,9 @@
  * work's signups are the ones keyed to it by product page plus its share of
  * the rest (release signups and product ones without a page); under the
  * keyed minimum, its share of the units target. Its target by today is the
- * release's on its share of the units target, else on the same share. */
+ * release's on its share of the units target, else on the same share. A
+ * work whose name another carries has a line that tells them apart (the
+ * build's, from each one's page: "Red", "Yellow"). */
 const has = (v) => v !== null && v !== undefined && Number.isFinite(v);
 
 export function tlForecastRows(snap) {
@@ -29,7 +31,7 @@ export function tlForecastRows(snap) {
     const frac = byPage ? ((w.keyed || 0) + (w.share || 0) * rest) / pool : (w.share || 0);
     const tShare = targetSum > 0 && has(w.target) ? w.target / targetSum : (w.share || 0);
     return {
-      key: w.key || w.name, name: w.name,
+      key: w.key || w.name, name: w.name, line: w.line || null,
       signups: has(now) ? now * frac : null,
       targetToDate: has(targetNow) ? targetNow * tShare : null,
       forecastSignups: has(projected) ? projected * frac : null,
