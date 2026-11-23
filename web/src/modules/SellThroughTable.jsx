@@ -20,7 +20,7 @@ import React, { useState } from "react";
 import { Card, Loz, Menu, MenuItem, Note, useMenu } from "../ui.jsx";
 import { fmt, fmtPct, fmtMoney } from "../format.mjs";
 import { wordsOf } from "../vocab.mjs";
-import { namesTitle, shownNames } from "../workGroups.mjs";
+import { namesTitle, shownNames, pickByName } from "../workGroups.mjs";
 import { Caret, Slack } from "../icons.jsx";
 import "../cards.css";
 
@@ -64,10 +64,13 @@ export function tableRows(snap, mode = "recommended") {
   const framing = ((snap.framing || {}).works || []);
   const econ = ((snap.economics || {}).products || []);
   const lines = !snap.line && Array.isArray(snap.lines) && snap.lines.length > 1 ? snap.lines : null;
+  // a work is paired with its forecast, framing and target by name, never with
+  // the figures of the row beside it whose name starts with its own (pickByName)
+  const names = (st.products || []).map((p) => p.name);
   const rows = (st.products || []).map((p) => {
-    const w = works.find((x) => namesTitle(x.name, p.name)) || {};
-    const f = framing.find((x) => namesTitle(p.name, x.name)) || null;
-    const e = econ.find((x) => namesTitle(x.name, p.name)) || null;
+    const w = pickByName(works, p.name, names) || {};
+    const f = pickByName(framing, p.name, names);
+    const e = pickByName(econ, p.name, names);
     const li = lines ? lines.findIndex((l) => (l.products || []).some((n) => namesTitle(n, p.name))) : -1;
     return {
       key: p.key || p.name, name: p.name, line: li >= 0 ? lines[li].name : null, color: li >= 0 ? LINE_COLORS[li % LINE_COLORS.length] : "var(--ind)",

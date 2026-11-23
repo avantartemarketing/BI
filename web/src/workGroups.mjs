@@ -11,6 +11,24 @@ export function namesTitle(name, title) {
   return !!a && !!b && (a === b || (a.length >= 4 && b.length >= 4 && (b.startsWith(a) || a.startsWith(b))));
 }
 
+/* The one of `items` that is the work `name` names: the item of the same
+ * name (case aside), else the one item whose name starts it or that it
+ * starts, leaving out the items that are another row's own name (`others`,
+ * the names of the rows beside it). So "BARBED WIRE" beside "BARBED WIRE
+ * [Special Print Edition]" never reads the Special's figures, and finds
+ * Airtable's "Barbed Wire [Standard Print Edition]" because the Special is
+ * its sibling's. Null when none or several are left. */
+export function pickByName(items, name, others = [], nameOf = (x) => x && x.name) {
+  const low = (v) => String(v || "").trim().toLowerCase();
+  const n = low(name);
+  if (!n) return null;
+  const exact = items.find((x) => low(nameOf(x)) === n);
+  if (exact) return exact;
+  const taken = new Set(others.map(low).filter((o) => o !== n));
+  const near = items.filter((x) => namesTitle(nameOf(x), name) && !taken.has(low(nameOf(x))));
+  return near.length === 1 ? near[0] : null;
+}
+
 /* rows named "Base (Variant)" or "Base - Variant" with one shared base: that
  * base and each row's variant by its key, or null when the names are not of
  * that shape */

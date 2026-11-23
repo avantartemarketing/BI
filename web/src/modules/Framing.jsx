@@ -20,7 +20,7 @@ import React from "react";
 import { Card, Head } from "../ui.jsx";
 import { HBarChart, COL, sw, lk } from "../charts.jsx";
 import { fmt, fmtPct } from "../format.mjs";
-import { namesTitle, shownNames } from "../workGroups.mjs";
+import { namesTitle, shownNames, pickByName } from "../workGroups.mjs";
 
 const has = (v) => v !== null && v !== undefined;
 const MAX = 22;
@@ -75,7 +75,7 @@ export default function Framing({ snap, horizon = "today" }) {
   const unit = onHead || (!paidWorks.length && head) ? `prints${close ? " at close" : ""}` : paidWorks.length || rate !== null ? "paid prints" : tl ? "prints on orders not yet paid" : "prints pre-authorised";
   const labels = axisNames(works);
   const rows = works.map((w, i) => {
-    const paid = onHead ? paidWorks.find((x) => namesTitle(w.name, x.name)) : null;
+    const paid = onHead ? pickByName(paidWorks, w.name, works.map((x) => x.name)) : null;
     return { name: w.name, label: labels[i], v: w.rate * 100, n: `${fmt(w.frames)} of ${fmt(w.prints)} ${unit}`,
       tip: paid && Math.round(paid.prints) !== Math.round(w.prints) ? [{ n: "Paid so far", v: `${fmt(paid.frames)} of ${fmt(paid.prints)} · ${fmtPct(paid.rate)}`, k: { width: 8, flex: "0 0 8px" } }] : [] };
   });
