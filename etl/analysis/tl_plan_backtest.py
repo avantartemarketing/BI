@@ -18,14 +18,19 @@ what the activity explains that the campaign clock and the basket do not:
      the window's emails, its paid spend and the launch's signups added.
 
 Every launch is read from the others (1, 3: left out of the fit; 2, 4: only the launches
-that opened before it announced). It writes nothing: the figures are printed, and
-docs/PLAN_MODEL.md records them. Needs the Notion plan read in full and the HubSpot
-audiences (README, "The plan model"); run from the repo root:
-    python3 etl/analysis/tl_plan_backtest.py [--comms data/notion_comms.csv --campaigns data/notion_comms_campaigns.csv]
+that opened before it announced). The figures are printed, and docs/PLAN_MODEL.md records
+them. With --write it also writes etl/tl_plan_prices.json, what etl/tl_plan.py reads to lay
+a timed launch's plan-based view: the price list of reading 1 fitted on every launch, how a
+quiet day's signups split over the page's channels, each launch's level, the usual audience
+of each kind of email, and how much dearer a launch's later paid signups have been than its
+earlier ones at each point of the span (reading 3). Needs the Notion plan read in full and
+the HubSpot audiences (README, "The plan model"); run from the repo root:
+    python3 etl/analysis/tl_plan_backtest.py [--write] [--comms data/notion_comms.csv --campaigns data/notion_comms_campaigns.csv]
 """
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 import sys
 import warnings
@@ -47,6 +52,10 @@ SIZED_FROM = pd.Timestamp("2024-06-01")    # readings 2 and 4: launches with a y
 MIN_SIGNUPS = 25.0                         # a launch with fewer signups outside paid says nothing about shape
 NEAR = 8                                   # the similar launches a reading is taken from
 PARTWAY = (0.25, 0.5, 0.75)
+PRICES_OUT = ROOT / "etl" / "tl_plan_prices.json"
+ORGANIC = ["aa_email", "aa_social", "referral_artist", "organic_search", "direct_other"]     # the page's channel groups outside paid
+UP_FRACS = [round(0.1 * i, 1) for i in range(1, 10)]
+MIN_SUPPORT = 10                           # a kind of piece seen on fewer launch-days than this is given no price
 
 
 def miss(pred, actual) -> tuple[float, int]:
@@ -96,6 +105,7 @@ def signup_panel(d: dict) -> tuple[dict, dict]:
         days = pd.date_range(ann - pd.Timedelta(days=P.LEAD_DAYS), opn)
         g = d["signups"][(d["signups"]["release"] == name) & (d["signups"]["day"] <= opn)]
         y = g[~g["group"].isin(["paid", "untracked"])].groupby("day")["signups"].sum().reindex(days).fillna(0.0)
+        by_group = {k: g[g["group"] == k].groupby("day")["signups"].sum().reindex(days).fillna(0.0).to_numpy(dtype=float) for k in ORGANIC}
         paid = g[g["group"] == "paid"].groupby("day")["signups"].sum().reindex(days).fillna(0.0)
         if y.sum() < MIN_SIGNUPS:
             skipped[name] = "under 25 signups outside paid"
@@ -107,7 +117,7 @@ def signup_panel(d: dict) -> tuple[dict, dict]:
             continue
         ld = P.launch_days(ann, opn, sends, plan, d["coef"])
         out[name] = {"t": ld["t"].to_numpy(), "L": L, "y": y.to_numpy(dtype=float), "paid": paid.to_numpy(dtype=float), "X": ld[P.VALUE_COLS].to_numpy(dtype=float),
-                     "sends": sends, "plan": plan, "announce": ann, "close": opn, "code": code}
+                     "sends": sends, "plan": plan, "announce": ann, "close": opn, "code": code, "G": by_group}
     return out, skipped
 
 
@@ -164,6 +174,76 @@ def reading_1(panel: dict, d: dict) -> np.ndarray:
     return th_all
 
 
+def paid_rows(panel: dict, d: dict) -> dict:
+    """name -> a launch's paid signups and spend by day to its open, where both are on file."""
+    rows = {}
+    for n, x in panel.items():
+        sp = tl.code_spend(d["spend"], x["code"]) if x.get("code") else None
+        if sp is None or not len(sp):
+            continue
+        days = pd.date_range(x["announce"] - pd.Timedelta(days=P.LEAD_DAYS), x["close"])
+        e = sp.assign(day=pd.to_datetime(sp["spend_date"])).groupby("day")["spend"].sum().reindex(days).fillna(0.0).to_numpy(dtype=float)
+        if e.sum() >= 200 and x["paid"].sum() >= 50:
+            rows[n] = {"t": x["t"], "L": x["L"], "paid": x["paid"], "spend": e}
+    return rows
+
+
+def dearer(rows: list[dict], frac: float) -> list[float]:
+    """Over these launches, the cost of a paid signup after a point of the span against before it."""
+    ups = []
+    for o in rows:
+        oc = int(round(frac * o["L"]))
+        s0, e0, s1, e1 = o["paid"][o["t"] <= oc].sum(), o["spend"][o["t"] <= oc].sum(), o["paid"][o["t"] > oc].sum(), o["spend"][o["t"] > oc].sum()
+        if s0 >= 10 and s1 >= 10 and e0 > 0 and e1 > 0:
+            ups.append(float((e1 / s1) / (e0 / s0)))
+    return ups
+
+
+def write_prices(panel: dict, th: np.ndarray, d: dict) -> None:
+    """etl/tl_plan_prices.json: the price list and what the page's view needs beside it (the module's note)."""
+    names = sorted(panel)
+    # a kind of piece the launches hardly ran before their opens (a last chance email, a sustain email) has no
+    # price the fit can stand behind: it is given none, and the levels are read on the list as the page will use it
+    thin = [c for i, c in enumerate(P.VALUE_COLS) if sum(int((x["X"][:, i] > 0).sum()) for x in panel.values()) < MIN_SUPPORT]
+    th = th.copy()
+    for c in thin:
+        th[P.VALUE_COLS.index(c)] = 0.0
+    pr = B.as_prices(th)
+    pr["unpriced"] = thin
+    tot = {g: 0.0 for g in ORGANIC}
+    for x in panel.values():
+        q = B.quiet_days(x)
+        for g in ORGANIC:
+            tot[g] += float(x["G"][g][q].sum())
+    split = {g: round(v / sum(tot.values()), 4) for g, v in tot.items()}
+    quiet = []
+    for n in names:
+        x = panel[n]
+        v = float(B.mu(x, th).sum())
+        if v > 0:
+            quiet.append({"name": n, "artist": n.split(" \u00b7 ")[0], "close": str(pd.Timestamp(x["close"]).date()), "quiet": round(float(x["y"].sum()) / v, 4), "demand": round(float(x["y"].sum()), 1)})
+    sends = pd.concat([x["sends"] for x in panel.values()], ignore_index=True)
+    rows = list(paid_rows(panel, d).values())
+    up = {}
+    for f in UP_FRACS:
+        u = dearer(rows, f)
+        if len(u) >= 8:
+            up[str(f)] = {"x": round(float(np.median(u)), 3), "n": len(u)}
+    le = P.load_prices()
+    base = [float(b.sum() / (b.sum() + a.sum())) for b, a in (B.parts(panel[n], th) for n in names)]
+    as_of = max(pd.Timestamp(x["close"]) for x in panel.values())
+    pr.update({"baseline_share": round(float(np.median(base)), 4), "split": split, "quiet": sorted(quiet, key=lambda r: r["close"]),
+               "usual_audience": {k: float(v) for k, v in sends.groupby("kind")["delivered"].median().items()},
+               "reliability": {k: round(v, 3) for k, v in sorted(P.plan_reliability(d["comms"], as_of).items())},
+               "clicks": le["clicks"], "paid_up": up, "paid_launches": len(rows),
+               "asOf": str(as_of.date()), "launches": len(names), "launchDays": int(sum(len(x["t"]) for x in panel.values())),
+               "note": "etl/analysis/tl_plan_backtest.py --write; timed launches' signups outside paid from the announce to the sales open; "
+                       "quiet day = an ordinary day after the announce with nothing going out; clicks is the draw launches' click model (etl/plan_prices.json)"})
+    PRICES_OUT.write_text(json.dumps(pr, indent=1) + "\n")
+    print(f"\nwrote {PRICES_OUT.relative_to(ROOT)}: {len(names)} launches; a quiet day splits " + ", ".join(f"{g} {v:.0%}" for g, v in split.items())
+          + "; later paid signups cost " + ", ".join(f"x{v['x']:.2f} past {float(k):.0%}" for k, v in up.items() if k in ("0.2", "0.5", "0.8")))
+
+
 def near(pan: pd.DataFrame, i: int, need: str | None = None) -> pd.DataFrame:
     """The NEAR launches that opened before launch i announced, nearest it on size and price."""
     r = pan.iloc[i]
@@ -203,15 +283,7 @@ def reading_2(panel: dict, th: np.ndarray, pan: pd.DataFrame) -> None:
 
 
 def reading_3(panel: dict, d: dict) -> None:
-    rows = {}
-    for n, x in panel.items():
-        sp = tl.code_spend(d["spend"], x["code"]) if x.get("code") else None
-        if sp is None or not len(sp):
-            continue
-        days = pd.date_range(x["announce"] - pd.Timedelta(days=P.LEAD_DAYS), x["close"])
-        e = sp.assign(day=pd.to_datetime(sp["spend_date"])).groupby("day")["spend"].sum().reindex(days).fillna(0.0).to_numpy(dtype=float)
-        if e.sum() >= 200 and x["paid"].sum() >= 50:
-            rows[n] = {"t": x["t"], "L": x["L"], "paid": x["paid"], "spend": e}
+    rows = paid_rows(panel, d)
     names = sorted(rows)
 
     def curve(r):
@@ -226,12 +298,7 @@ def reading_3(panel: dict, d: dict) -> None:
             seen, spent, left = float(r["paid"][r["t"] <= tc].sum()), float(r["spend"][r["t"] <= tc].sum()), float(r["spend"][r["t"] > tc].sum())
             if seen < 10 or spent <= 0:
                 continue
-            ups = []
-            for o in others:
-                oc = int(round(frac * o["L"]))
-                s0, e0, s1, e1 = o["paid"][o["t"] <= oc].sum(), o["spend"][o["t"] <= oc].sum(), o["paid"][o["t"] > oc].sum(), o["spend"][o["t"] > oc].sum()
-                if s0 >= 10 and s1 >= 10 and e0 > 0 and e1 > 0:
-                    ups.append((e1 / s1) / (e0 / s0))
+            ups = dearer(others, frac)
             up = float(np.median(ups)) if len(ups) >= 5 else 1.0
             rec.append({"cut": frac, "final": float(r["paid"].sum()), "seen": seen, "clock": seen / max(float(np.interp(frac, B.GRID, usual)), 1e-6),
                         "spend": seen + left / ((spent / seen) * up), "up": up})
@@ -284,6 +351,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--comms")
     ap.add_argument("--campaigns")
+    ap.add_argument("--write", action="store_true")
     a = ap.parse_args()
     d = load(a.comms, a.campaigns)
     if d["aud"].empty or d["comms"].empty:
@@ -304,6 +372,8 @@ def main() -> None:
     reading_2(panel, th, pan)
     reading_3(panel, d)
     reading_4(pan, d)
+    if a.write:
+        write_prices(panel, th, d)
 
 
 if __name__ == "__main__":
