@@ -8941,9 +8941,14 @@ def settle_list(as_of: date) -> str:
         aud, comms = list_feeds()
         ctx = list_load.read(aud, comms, as_of) if aud is not None and len(aud) else None
         pages = []
-        for path in sorted((APP / "releases").glob("*.json")):
+        # the launches with targets set, and the timed launches gathering signups (their pages sit with the
+        # discovered ones until their inputs are saved; only one with suggestions is read whole)
+        for path in sorted((APP / "releases").glob("*.json")) + sorted(DERIVED.glob("*_tl.json")):
             try:
-                doc = json.loads(path.read_text())
+                text = path.read_text()
+                if '"planChanges"' not in text:
+                    continue
+                doc = json.loads(text)
             except (OSError, ValueError):
                 continue
             if isinstance(doc, dict) and (isinstance(doc.get("planChanges"), dict) or isinstance(((doc.get("variants") or {}).get("plan") or {}).get("planChanges"), dict)):
@@ -9210,6 +9215,7 @@ def main(only: str | None = None):
             (APP / "inputs.json").write_text(json.dumps(doc, indent=1))
         except (OSError, ValueError) as e:
             print(f"inputs.json: not updated for {only} ({e})")
+        print(settle_list(as_of))
         mark("release")
         print(f"{snap['id']}: {snap['tlState']} - {snap['tlLabel']}; signups {snap['hero']['now']:.0f} target {snap['hero']['target']}")
         print("timing: " + " | ".join(f"{label} {secs:.1f}s" for label, secs in marks) + f" | total {time.perf_counter() - t_start:.1f}s")

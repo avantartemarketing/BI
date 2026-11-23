@@ -74,6 +74,7 @@ import pandas as pd
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import pricing  # noqa: E402
+import tl_plan  # noqa: E402 - the plan-based view of a launch gathering signups (docs/PLAN_MODEL.md 10)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -2553,6 +2554,9 @@ def le_blocks(cx: dict) -> dict:
         tg, bm = tg_by.get(g), bm_by.get(g)
         kg[g] = (tg / bm) if (tg is not None and bm and bm > 0) else (k_all or 1.0)
     w = pace_now
+    # the plan-based view (etl/tl_plan.py): before the window a channel outside paid follows its plan's pieces in
+    # place of the pace, and paid the spend still to come in place of the share of the span gone by
+    plan_ov = (cx.get("plan_ov") or {}) if not in_window else {}
     channels, fbg = [], {}
     tot = {"now": 0.0, "exp": 0.0, "tg": 0.0, "proj": 0.0, "bm": 0.0, "bm_exp": 0.0}
     now_idx = day_no
@@ -2565,14 +2569,28 @@ def le_blocks(cx: dict) -> dict:
         exp = (tg * w) if tg is not None else None
         bm_exp = (bm * w) if bm is not None else None
         proj = _project(now_g, exp, tg, w, clock_complete)
+        ovg = plan_ov.get(g) if not clock_complete else None
+        if ovg is not None and g == "paid":
+            proj = now_g + float(ovg.get("toCome") or 0.0)
+        elif ovg is not None:
+            exp, proj = float(ovg["exp"]), now_g + float(ovg["fut"])
+        ahead_all = (of_n + 1) - (now_idx + frac_day)          # the days from now to the end of the track
         daily = []
         for i in range(len(steps)):
+            plan_i = (tg * pace[i]) if tg is not None else None
+            if ovg is not None and g != "paid":
+                plan_i = float(ovg["plan"].get(labels[i], plan_i if plan_i is not None else 0.0))
             row = {"date": labels[i], "actual": round(cum[i], 2) if seen_steps[i] else None,
-                   "plan": round(tg * pace[i], 2) if tg is not None else None, "proj": None}
+                   "plan": round(plan_i, 2) if plan_i is not None else None, "proj": None}
             if bm is not None:
                 row["bm"] = round(bm * pace[i], 2)
             if i > now_idx and not clock_complete:
-                frac = ((pace[i] - w) / (1 - w)) if w < 1 else 1.0
+                if ovg is not None and g == "paid":
+                    frac = (((i + 1) - (now_idx + frac_day)) / ahead_all) if ahead_all > 0 else 1.0      # an even spend from here
+                elif ovg is not None:
+                    frac = float(ovg["share"].get(labels[i], 1.0))
+                else:
+                    frac = ((pace[i] - w) / (1 - w)) if w < 1 else 1.0
                 row["proj"] = round(now_g + (proj - now_g) * max(min(frac, 1.0), 0.0), 2)
             daily.append(row)
         # the two factors, sessions and the rate they convert at (held at the
@@ -2603,8 +2621,9 @@ def le_blocks(cx: dict) -> dict:
                       "contrib_buyers_bm": round(conversion_bm, 1), "contrib_per_buyer_bm": 0.0})
         fbg[g] = f
         sub = frame[frame["group"] == g] if (frame is not None and len(frame) and "group" in frame.columns) else None
+        tg_shown = float(ovg["plan_total"]) if (ovg is not None and g != "paid") else tg      # on the plan's path a channel's total is its plan's
         ch = {"key": g, "name": GROUP_NAMES[g], "now": round(now_g, 1), "exp": round(exp, 1) if exp is not None else None,
-              "proj": round(proj, 1), "target": round(tg, 1) if tg is not None else None,
+              "proj": round(proj, 1), "target": round(tg_shown, 1) if tg_shown is not None else None,
               "parts": _parts(sub, measure_col), "daily": daily, "off": g in off,
               "sessions": round(sess_g, 1), "rate": conv_act if sess_g > 0 else None,
               "bmSessions": bm_sess if has_bm else None, "bmRate": held if (has_bm and held > 0) else None,
@@ -2914,8 +2933,11 @@ def resolve_lead(inp: dict, airtable_lead: str | None, notion: dict | None, code
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
              as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None, email_bench: dict | None = None,
              content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None, signup_products: pd.DataFrame | None = None,
-             direct: dict | None = None, notion: dict | None = None) -> dict:
-    """The page snapshot of one TL (module docstring). `email_bench` is the
+             direct: dict | None = None, notion: dict | None = None, plan_ov: dict | None = None) -> dict:
+    """The page snapshot of one TL (module docstring). `plan_ov` builds the
+    plan-based view of a launch gathering signups (etl/tl_plan.py override):
+    each channel group's path by its plan's pieces, and paid's by the spend
+    still to come. `email_bench` is the
     run's email cohort (email_cohort), `content` the Emplifi post export and
     `artist_posts` the Notion post log, for the funnel's email and post rows;
     `notion` the log's campaign entries (the marketing lead, resolve_lead).
@@ -3173,7 +3195,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                            "spend_pre": spend_pre, "spend_win": spend_win, "sp": sp, "sales": sales, "win": win_cx,
                            "products": products, "econ": econ, "snap": snap, "code": code, "names": names,
                            "email_bench": email_bench, "content": content, "artist_posts": artist_posts, "paid_value": paid_value,
-                           "signup_products": signup_products,
+                           "signup_products": signup_products, "plan_ov": plan_ov,
                            "release": {"id": rec["id"], "release_name": name, "campaign_code": code, "launch_end": release_for_basket["launch_end"]}}))
     return snap
 
@@ -3304,6 +3326,28 @@ def build_all(ctx: dict) -> dict:
                                                       if k not in ("variants", "directShare", "sellForecast") and _json_safe(v) != _json_safe(snap.get(k))}}
             except Exception as e:  # noqa: BLE001 - the page stands without its spread view
                 out["failures"].append((f"{rec['id']} (Direct spread)", f"{type(e).__name__}: {e}"))
+        # a launch gathering signups with a comms plan on file is built a third way: on its plan's path, with paid
+        # read from the spend still to come (etl/tl_plan.py, docs/PLAN_MODEL.md 10). The page's Targets from switch
+        # lays it over the page; the clock's page stays the default. It is read as the feed attributes its channels,
+        # as the sell-through forecast is (docs 3b). A failure costs the page its plan view, never the page.
+        if snap.get("tlState") == "signups":
+            try:
+                pctx = tl_plan.context()
+                ov = tl_plan.override(snap, _rel_rows(series, rec["release_name"])[0], pctx) if (pctx and series) else None
+                if ov and ov.get("skip"):
+                    out.setdefault("plan_skips", []).append((rec["id"], str(ov["skip"])))
+                elif ov:
+                    pv = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen, orders_data,
+                                  email_bench=email_bench, content=content, artist_posts=artist_posts,
+                                  signup_products=signup_products.get(rec["release_name"]), notion=notion,
+                                  plan_ov={**ov["groups"], "paid": ov["paid"]})
+                    tl_plan.finish(pv, ov)
+                    snap.setdefault("variants", {})["plan"] = {k: v for k, v in pv.items()
+                                                               if k not in ("variants", "directShare") and _json_safe(v) != _json_safe(snap.get(k))}
+                    out.setdefault("plan_views", []).append(rec["id"])
+            except Exception as e:  # noqa: BLE001 - the plan view never stops a page
+                (snap.get("variants") or {}).pop("plan", None)
+                out.setdefault("plan_skips", []).append((rec["id"], f"it failed to build ({type(e).__name__}: {str(e)[:120]})"))
         where = (APP / "releases" if rec["id"] in configured or rec.get("inputs") else DERIVED) / f"{rec['id']}.json"
         if ctx.get("write", True):
             where.parent.mkdir(parents=True, exist_ok=True)

@@ -149,8 +149,10 @@ export default function PaidRoi({ snap }) {
   // the days a work fills (docs 7): the ETL names the work on that day's point
   const fullByStep = new Map(pathPts.filter((p) => Array.isArray(p.full) && p.full.length && p.s > (anchor ? anchor.s : -1)).map((p) => [p.s, p.full]));
 
-  // ----- the scale: the line, the path and the target, from zero -----
-  const vals = [...roiVals, ...projVals, P.target].filter(has);
+  // ----- the scale: the line, the path and the target, from zero. Without an ROI the line drawn is the cost of
+  // a unit, so the scale is the cost's own: on the ROI's scale it ran off the top of the card and over the page -----
+  const costVals = Array.from({ length: n }, (_, i) => { const p = byStep.get(i); return p && !p.partial && has(p.cost) ? p.cost : null; });
+  const vals = roiOk ? [...roiVals, ...projVals, P.target].filter(has) : costVals.filter(has);
   const ax = niceAxis(Math.max(0.5, ...vals) * 1.08);
   const spendTop = Math.max(1, ...pts.map((p) => p.spend), ...aheadBars.map((b) => b.v));
 
@@ -196,7 +198,7 @@ export default function PaidRoi({ snap }) {
     </>
   );
   const lineName = roiOk ? `ROI, ${winWords}` : `€ per ${unitWord}, ${winWords}`;
-  const lineVals = roiOk ? roiVals : Array.from({ length: n }, (_, i) => { const p = byStep.get(i); return p && !p.partial && has(p.cost) ? p.cost : null; });
+  const lineVals = roiOk ? roiVals : costVals;
   const hasLine = lineVals.some(has);
   const aheadWords = aheadLevel !== null ? `${fmtMoney(aheadLevel, 0)} a ${hours ? "hour" : "day"}` : null;
   // no key under the chart (12 November 2026): the hover names each line and
