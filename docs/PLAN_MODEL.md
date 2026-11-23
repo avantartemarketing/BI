@@ -487,6 +487,32 @@ the view to its combined page.
   reliable gain. A launch's own days settle it quickly: with similar launches, the typical
   miss is 31% on the morning of the announce (a fifth of the demand is in), 18% at the end
   of the announce day and 14% a day later.
+- **Timed launches** (read 23 November 2026, `etl/analysis/tl_plan_backtest.py`, on the 46
+  launches since September 2023 with a plan and emails on file, each read from the others).
+  The owner asked for the same approach on timed launches. A timed launch has two stages,
+  signups to its sales open and then units by the hour (docs/TL_SPEC.md 2), and the
+  activity that tells its launches apart is the paid budget, not the comms:
+  - Paid brings 68% of a launch's tracked signups at the median, and a launch sends four
+    marketing emails before its open, nearly all of them the announcement.
+  - Signups outside paid: the price list explains their day-to-day pattern (63% against the
+    clock's 41%) and forecasts their final count no better (two days after the announce the
+    clock is within 11% of it; they nearly all arrive with the announcement).
+  - Before a launch starts, its signups are told to within 172% from similar past launches,
+    47% from its paid budget at their cost a signup with their signups outside paid, and 42%
+    with its plan's comms in place of theirs (39% and 42% on the 34 with both).
+  - Paid signups part way through: the clock misses what is still to come by 53% at halfway
+    and 54% at three quarters; the spend still to come, at the launch's own cost a signup so
+    far marked up by how much dearer later signups have been (x1.8), by 31% and 23%. A
+    quarter of the way in the two read alike (49% and 45%). 37 launches with daily spend.
+  - The window: 44% of its units go to people who never signed up. Told from similar
+    launches they miss by 58%, with the window's paid spend by 45%, with the window's emails
+    by 55% (40 of 46 launches emailed 50,000 people or more, so the email tells them apart
+    no further).
+  So a timed launch's plan-based view would be led by the budget: signups at the open as
+  what has come in, the spend still to come at its cost, and the comms' pieces; then the
+  window's forecast with its non-signup half following the window's spend. Today every
+  channel on a timed launch's page, paid among them, is projected on the clock
+  (`etl/tl.py _project`). Not built: the shape of it is the owner's to settle first.
 - The plan as the default, once the two have been compared on live launches.
 - An email's planned audience read from its HubSpot draft, and audiences read by who is in
   them as well as how many.
@@ -535,3 +561,8 @@ the view to its combined page.
   in, fewer clicks overall. The cost is therefore held as a rule the team sets and not a
   price the model works out: `etl/list_load.py`, a cap on general sends in a week and a
   scale on the list's four-week load, read across every launch (docs/METHODOLOGY.md 7d).
+- **23 November 2026.** The owner asked whether the approach could be applied to timed
+  launches. Read on the launches closed so far before anything was built (section 8,
+  "Timed launches"): the comms explain the pattern of a timed launch's signups and little
+  of their number, and the paid budget is the activity that does, before the open and in
+  the window. `etl/analysis/tl_plan_backtest.py` holds the four readings.
