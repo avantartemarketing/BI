@@ -181,6 +181,10 @@ EMAIL_COHORT_MIN_DELIVERED = 100   # a launch's pre-window sends join the email 
 FORECAST_BETA = 0.2
 FORECAST_PERF_CLIP = (0.5, 2.0)
 FORECAST_MIN_KEYED = 20
+# The share of a launch's units that the signup target leaves to buyers who
+# never signed up is the basket's median, held under this: a basket whose
+# launches sold almost wholly without signups still asks for some
+NONSU_SHARE_MAX = 0.9
 FORECAST_BAND = (0.63, 1.62)  # a funnel rate over this (units, or signups, per session) is unread: its gap reads as conversion
 RECENT_MONTHS = 18          # a comparable that closed within this many months ranks first (the LE baskets' RECENT_MONTHS)
 NEAR = 4.0                  # a comparable within this multiple on every axis is near
@@ -1217,6 +1221,23 @@ def _median(rows: pd.DataFrame, col: str, positive: bool = False) -> float:
     return float(vals.median()) if len(vals) else 0.0
 
 
+def nonsu_share_of(units_su, units_nonsu) -> float | None:
+    """The share of a launch's units bought by people who never signed up,
+    None where the launch has neither kind on file."""
+    su, non = _num(units_su), _num(units_nonsu)
+    if su is None or non is None or su < 0 or non < 0 or su + non <= 0:
+        return None
+    return non / (su + non)
+
+
+def nonsu_share_median(rows: pd.DataFrame) -> float:
+    """The basket's median of that share, 0 where no member has it on file."""
+    if not len(rows) or "units_su" not in rows.columns or "units_nonsu" not in rows.columns:
+        return 0.0
+    vals = [v for v in (nonsu_share_of(a, b) for a, b in zip(rows["units_su"], rows["units_nonsu"])) if v is not None]
+    return float(np.median(vals)) if vals else 0.0
+
+
 def _median_shares(rows: pd.DataFrame, prefix: str) -> dict[str, float]:
     raw = {g: _median(rows, f"{prefix}{g}") for g in GROUPS}
     tot = sum(raw.values())
@@ -1299,6 +1320,9 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
         "nonsu_units_by_group": {g: _median(rows, f"nonsu_units_{g}") for g in GROUPS},
         "nonsu_units_untracked": _median(rows, "nonsu_units_untracked"),
         "nonsu_units": _median(rows, "units_nonsu"),
+        # the share of a launch's units bought by people who never signed up: what
+        # the signup target leaves out of the units the signups have to bring (tl_targets)
+        "nonsu_share": nonsu_share_median(rows),
         "ppo_su": _median(rows, "ppo_su", positive=True),
         "signups_prod_share": _median(rows, "signups_prod_share"),
         "paid_share_signups": ss["paid"], "paid_share_units": us["paid"],
@@ -1563,6 +1587,8 @@ def candidate_rows(panel: pd.DataFrame) -> list[dict]:
             "sessions": _num(r.get("sessions")) or 0.0, "paid_share": _num(r.get("sess_share_paid")) or 0.0,
             "signups": _num(r.get("signups")) or 0.0, "entries": _num(r.get("signups")) or 0.0,
             "signup_order_rate": _num(r.get("signup_order_rate")), "units_per_buyer": _num(r.get("purchases_per_order")) or 0.0,
+            # the share of its units bought without a signup, for the tab's live reading of the signup target
+            "nonsu_share": nonsu_share_of(r.get("units_su"), r.get("units_nonsu")),
             "cost_per_paid_unit": _num(r.get("cost_per_sale")), "cost_per_signup": _num(r.get("cost_per_signup")),
             "price": _num(r.get("unit_price_eur")) or 0.0, "edition_size": _num(r.get("edition_size")) or 0.0,
             "units_target": _num(r.get("units_target")), "early_access": bool(r.get("early_access")),
@@ -1689,7 +1715,13 @@ def tl_targets(inputs: dict | None, airtable_units_target: float | None, profile
     blended = (sum(shares[g] * by_g[g] for g in rated) / sum(rated.values())) if rated and sum(rated.values()) > 0 else 0.0
     s2o_src = "release" if s2o_typed and 0 < s2o_typed <= 1 else ("basket_mix" if blended > 0 else ("basket" if profile.get("signup_order_rate") else "none"))
     s2o = s2o_typed if s2o_typed and 0 < s2o_typed <= 1 else (blended or profile.get("signup_order_rate") or 0.0)
-    orders = units / ppo
+    # the signups have to bring only the units that signups bring: the basket's
+    # share of units bought by people who never signed up is left out. Until 23
+    # November 2026 every unit was asked of the signups, and the target read
+    # about 1.6 times the signups comparable launches gathered for what they sold
+    nonsu_share = min(max(float(profile.get("nonsu_share") or 0.0), 0.0), NONSU_SHARE_MAX)
+    signup_units = units * (1 - nonsu_share)
+    orders = signup_units / ppo
     signup_target = orders / s2o if s2o > 0 else None
     bm_signups = float(profile.get("signups") or 0.0)
     bm_by_group = {g: float(profile["signups_by_group"].get(g, 0.0)) for g in GROUPS}
@@ -1717,6 +1749,7 @@ def tl_targets(inputs: dict | None, airtable_units_target: float | None, profile
         "purchases_per_order": ppo, "purchases_per_order_source": "release" if ppo_typed else ("basket" if profile.get("purchases_per_order") else "default"),
         "signup_order_rate": s2o, "signup_order_rate_source": s2o_src, "signup_order_rate_by_group": {g: by_g.get(g, 0.0) for g in GROUPS},
         "signup_order_rate_median": profile.get("signup_order_rate") or 0.0,
+        "nonsignup_share": nonsu_share, "nonsignup_units": units - signup_units, "signup_units": signup_units,
         "orders_needed": orders, "signup_target": signup_target,
         "k": k, "stretch_from": weights, "stretch_typed": isinstance(inp.get("stretch_from"), dict) and any((_num(v) or 0) > 0 for v in inp["stretch_from"].values()),
         "signups_by_group": groups, "sessions_by_group": sessions,

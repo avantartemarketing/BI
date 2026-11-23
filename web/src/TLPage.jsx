@@ -19,7 +19,7 @@ export function TLSignupsOutcome({ snap, vs = "target" }) {
   const byBm = vs === "benchmark" && !!hero.benchmark;
   const rows = [
     { icon: <People />, l: "Signups before the open", v: fmt(pre), tip: "Every signup for the launch from the announce to the sales open" },
-    ...(!byBm && hero.target ? [{ icon: <Target />, l: "Signup target", v: fmt(hero.target), tip: "The pre-window signup target: the units target at the basket's signup to order rate" }] : []),
+    ...(!byBm && hero.target ? [{ icon: <Target />, l: "Signup target", v: fmt(hero.target), tip: "The pre-window signup target: the units target, less the share the basket's launches sold to buyers who never signed up, at the basket's signup to order rate" }] : []),
     ...(byBm ? [{ icon: <Bmk />, l: "Benchmark", v: fmt(hero.benchmark), tip: "The basket's median pre-window signups" }] : []),
     { icon: <People />, l: "Signups since the open", v: fmt(since), tip: "Signups made after the sales open" },
     { icon: <Basket w={14} />, l: "Signups that ordered", v: has(sg.converted) ? `${fmt(sg.converted)} · ${sg.total > 0 ? fmtPct(sg.converted / sg.total, 1) : "–"}` : "–", tip: "Signups the feed flags as converted, and their share of all signups" },

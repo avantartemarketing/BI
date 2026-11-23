@@ -130,11 +130,15 @@ PROFILE = {
 }
 for key in ("signups", "sessions", "units"):
     PROFILE[f"{key}_by_group"] = {g: PROFILE[f"share_{key}"][g] * PROFILE[key] for g in tl.GROUPS}
+NONSU_PROFILE = {**PROFILE, "nonsu_share": 0.4}
 cases = [
     {"name": "Airtable's target, the basket's rates", "inputs": {}, "airtable_units": 400.0, "launch_value": 300000.0},
     {"name": "typed over", "inputs": {"units_target": 500, "purchases_per_order": 1.1, "signup_order_rate": 0.09, "cost_per_signup": 5, "cost_per_purchase": 30}, "airtable_units": 400.0, "launch_value": 375000.0},
     {"name": "paid off, stretch on email", "inputs": {"channels_off": ["paid"], "stretch_from": {"aa_email": 1}}, "airtable_units": 400.0, "launch_value": 300000.0},
     {"name": "no target", "inputs": {}, "airtable_units": None, "launch_value": None},
+    {"name": "buyers who never signed up left out", "inputs": {}, "airtable_units": 400.0, "launch_value": 300000.0, "profile": NONSU_PROFILE},
+    {"name": "typed over, buyers who never signed up left out", "inputs": {"units_target": 500, "purchases_per_order": 1.1, "signup_order_rate": 0.09}, "airtable_units": 400.0, "launch_value": 375000.0, "profile": NONSU_PROFILE},
+    {"name": "a basket sold almost wholly without signups", "inputs": {}, "airtable_units": 400.0, "launch_value": 300000.0, "profile": {**PROFILE, "nonsu_share": 0.99}},
 ]
 # the live panel's baskets, when the build has written one
 panel_path = tl.PANEL
@@ -192,6 +196,18 @@ check(t2["signups_by_group"]["paid"] == 0 and t2["budget_pre"] is None and close
 check(close(t2["signups_by_group"]["aa_email"] - PROFILE["signups_by_group"]["aa_email"], t2["signup_target"] - sum(v for g, v in PROFILE["signups_by_group"].items() if g != "paid")),
       "the whole stretch lands on email when placed there")
 check(py_out[3] is None, "no units target: no targets")
+# the signups are asked only for the units signups bring (23 November 2026): the basket's share of
+# units bought by people who never signed up is left out, and a basket without the share asks as before
+check(t0["nonsignup_share"] == 0 and close(t0["signup_units"], 400), "a basket with no share on file asks the signups for every unit")
+t4, t5, t6 = py_out[4], py_out[5], py_out[6]
+check(close(t4["signup_units"], 400 * 0.6) and close(t4["nonsignup_units"], 400 * 0.4) and close(t4["orders_needed"], 400 * 0.6 / PROFILE["purchases_per_order"]),
+      "the signups bring the units target less the basket's non-signup share")
+check(close(t4["signup_target"], t0["signup_target"] * 0.6) and close(sum(t4["signups_by_group"].values()), t4["signup_target"]), "and the signup target falls by that share, the groups still adding up to it")
+check(close(t4["budget_pre"], t4["signups_by_group"]["paid"] * PROFILE["cost_per_signup"]) and close(t4["budget_window"], t0["budget_window"]), "the pre-window budget follows the signups; the window's follows the units, unmoved")
+check(close(t5["signup_target"], 500 * 0.6 / 1.1 / 0.09), "typed figures apply to the units left for the signups")
+check(close(t6["nonsignup_share"], tl.NONSU_SHARE_MAX) and t6["signup_target"] > 0, "the share is held under its cap, so the signups are always asked for something")
+check(tl.nonsu_share_of(600, 400) == 0.4 and tl.nonsu_share_of(0, 0) is None and tl.nonsu_share_of(None, 5) is None and tl.nonsu_share_of(float("nan"), 5) is None, "a launch's non-signup share, None without both kinds on file")
+check(close(tl.nonsu_share_median(pd.DataFrame({"units_su": [600, 500, 0, None], "units_nonsu": [400, 500, 0, 10]})), 0.45) and tl.nonsu_share_median(pd.DataFrame()) == 0.0, "the basket's median of it over the members that have it")
 
 # ---- the value of a paid signup (tl_economics, tl_paid_value): the works' profit and
 # framing figures, the basket's paid signup -> order rate and frames per print, the deal
@@ -272,7 +288,7 @@ for c, py, js in zip(paid_cases, py_paid, js_all["paid"]):
         check((a == b_) if isinstance(a, bool) else close(a, b_), f"paid value, {c['name']}: {k} python {a} js {b_}")
     check(py["signup_order_rate_source"] == js["signup_order_rate_source"] and py["frame_rate_source"] == js["frame_rate_source"] and py["aa_budget_share_assumed"] == js["aa_budget_share_assumed"],
           f"paid value, {c['name']}: the sources agree")
-KEYS = ["units_target", "purchases_per_order", "signup_order_rate", "orders_needed", "signup_target", "k", "paid_signups", "paid_units",
+KEYS = ["units_target", "purchases_per_order", "signup_order_rate", "nonsignup_share", "nonsignup_units", "signup_units", "orders_needed", "signup_target", "k", "paid_signups", "paid_units",
         "cost_per_signup", "cost_per_sale", "budget_pre", "budget_window", "budget_total", "budget_pct_of_launch_value", "sessions_needed"]
 for c, py, js in zip(cases, py_out, js_out):
     if py is None or js is None:

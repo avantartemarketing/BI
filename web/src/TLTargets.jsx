@@ -96,6 +96,7 @@ function tlLiveProfile(rows) {
     window_hours: positive(col("window_hours")), pre_days: positive(col("campaign_days")),
     early_access_share: n ? rows.filter((r) => r.early_access).length / n : 0,
     signup_order_rate: positive(col("signup_order_rate")), purchases_per_order: positive(col("units_per_buyer")),
+    nonsu_share: median(col("nonsu_share").filter((v) => v !== null)),
     share_signups: ss, share_sessions: sess, share_units: us,
     signups_by_group: byGroup(ss, signups), sessions_by_group: byGroup(sess, sessions), units_by_group: byGroup(us, units),
     conv: Object.fromEntries(GROUP_KEYS.map((g) => [g, positive(rows.map((r) => (r.convs || {})[g]))])),
@@ -420,7 +421,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
               <Group>Outcome</Group>
               <EditRow id="t-units" label="Units target" glyph={<Target />} value={releaseUnits ? String(releaseUnits) : ""} placeholder={airtableUnits ? fmt(airtableUnits) : "None"} tag={releaseUnits ? "Typed" : airtableUnits ? "Airtable" : ""} typed={!!releaseUnits}
                 tip="The launch's units target: Airtable's, summed over the ticked works, or typed here for the launch as a whole. The window is measured against it; the edition caps nothing." onCommit={numCommit("units_target", 0, 1e7)} />
-              <Prop label="Signup target" tip={T && T.signup_target ? `${fmt(T.units_target)} units ÷ ${fmt(T.purchases_per_order, 2)} an order ÷ ${fmtPct(T.signup_order_rate, 1)}${k ? ` · ×${fmt(k, 2)} the basket's median` : ""}` : "A units target and a basket are needed."}>
+              <Prop label="Signup target" tip={T && T.signup_target ? `${T.nonsignup_share > 0 ? `${fmt(T.units_target)} units, less the ${fmtPct(T.nonsignup_share, 0)} the basket's launches sold to buyers who never signed up, leaves ${fmt(T.signup_units)} for the signups to bring: ${fmt(T.signup_units)}` : `${fmt(T.units_target)} units`} ÷ ${fmt(T.purchases_per_order, 2)} an order ÷ ${fmtPct(T.signup_order_rate, 1)}${k ? ` · ×${fmt(k, 2)} the basket's median` : ""}` : "A units target and a basket are needed."}>
                 <Val ic={<Target />}>{T && T.signup_target ? fmt(T.signup_target) : "–"}</Val>
               </Prop>
               <Prop label="Benchmark" tip={BM ? "The basket's median signups before the open and units sold in the window, the channels not in plan set aside." : "Choose a basket first."}>
@@ -433,10 +434,10 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
 
               <Group>Conversion</Group>
               <EditRow id="t-s2o" label="Signup to order" glyph="→" value={pct1(inp.signup_order_rate)} placeholder={T && T.signup_order_rate > 0 ? `${pct1(T.signup_order_rate)}%` : "–"} tag={Number(inp.signup_order_rate) > 0 ? "Typed" : "Basket"} typed={Number(inp.signup_order_rate) > 0}
-                tip={`What share of the pre-window signups order in the window; it sets the signup target. ${T ? `Blank reads ${s2oWords[T.signup_order_rate_source]}${T.signup_order_rate_source === "basket_mix" ? `: ${CH.filter((g) => T.signup_order_rate_by_group[g.key] > 0).map((g) => `${g.name} ${fmtPct(T.signup_order_rate_by_group[g.key], 1)}`).join(", ")}` : ""}.` : "Choose a basket first."}`}
+                tip={`What share of the pre-window signups order in the window; with the units left for the signups to bring, it sets the signup target. ${T ? `Blank reads ${s2oWords[T.signup_order_rate_source]}${T.signup_order_rate_source === "basket_mix" ? `: ${CH.filter((g) => T.signup_order_rate_by_group[g.key] > 0).map((g) => `${g.name} ${fmtPct(T.signup_order_rate_by_group[g.key], 1)}`).join(", ")}` : ""}.` : "Choose a basket first."}`}
                 onCommit={numCommit("signup_order_rate", 0, 100, 100)} />
               <EditRow id="t-ppo" label="Per order" glyph="№" value={inp.purchases_per_order === null || inp.purchases_per_order === undefined ? "" : String(inp.purchases_per_order)} placeholder={profile && profile.purchases_per_order > 0 ? fmt(profile.purchases_per_order, 2) : "1.00"} tag={Number(inp.purchases_per_order) > 0 ? "Typed" : "Basket"} typed={Number(inp.purchases_per_order) > 0}
-                tip="How many pieces a buyer takes in one order: the units target over this is the orders needed. Blank is the basket's median." onCommit={numCommit("purchases_per_order", 0, 100)} />
+                tip="How many pieces a buyer takes in one order: the units the signups have to bring, over this, are the orders needed from them. Blank is the basket's median." onCommit={numCommit("purchases_per_order", 0, 100)} />
 
               <Group>Paid</Group>
               <CampaignsProp code={inp.campaign_code || sd.campaign_code || dv.campaign_code || ""} chosen={inp.campaign_names || []} all={meta.meta_campaigns} suggested={sourced.campaigns} asOf={snap.asOf} onChange={(names) => setInp({ ...inp, campaign_names: names })} />

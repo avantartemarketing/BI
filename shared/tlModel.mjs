@@ -46,6 +46,8 @@ export function legacyShares(raw, bm) {
   return out;
 }
 export const TL_CANNIBALISATION = 0.1;
+// the most of a launch's units the signup target leaves to buyers who never signed up (etl/tl.py NONSU_SHARE_MAX)
+export const NONSU_SHARE_MAX = 0.9;
 export const TL_PAID_SPLIT_PRE = 0.7;
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -152,7 +154,11 @@ export function tlTargets(inp, airtableUnits, profile, launchValue, b = {}) {
   const typedOk = s2oTyped > 0 && s2oTyped <= 1;
   const s2oSrc = typedOk ? "release" : blended > 0 ? "basket_mix" : num(profile.signup_order_rate) > 0 ? "basket" : "none";
   const s2o = typedOk ? s2oTyped : (blended || num(profile.signup_order_rate) || 0);
-  const orders = units / ppo;
+  // the signups bring only the units signups bring: the basket's share of
+  // units bought without a signup is left out (etl/tl.py tl_targets)
+  const nonsuShare = Math.min(Math.max(num(profile.nonsu_share), 0), NONSU_SHARE_MAX);
+  const signupUnits = units * (1 - nonsuShare);
+  const orders = signupUnits / ppo;
   const signupTarget = s2o > 0 ? orders / s2o : null;
   const bmSignups = num(profile.signups);
   const bmByGroup = byGroup(profile.signups_by_group, (_g, v) => v);
@@ -181,6 +187,7 @@ export function tlTargets(inp, airtableUnits, profile, launchValue, b = {}) {
     purchases_per_order: ppo, purchases_per_order_source: ppoTyped > 0 ? "release" : num(profile.purchases_per_order) > 0 ? "basket" : "default",
     signup_order_rate: s2o, signup_order_rate_source: s2oSrc, signup_order_rate_by_group: byGroup(byG, (_g, v) => v),
     signup_order_rate_median: num(profile.signup_order_rate),
+    nonsignup_share: nonsuShare, nonsignup_units: units - signupUnits, signup_units: signupUnits,
     orders_needed: orders, signup_target: signupTarget, k,
     stretch_from: weights,
     stretch_typed: !!(inp.stretch_from && typeof inp.stretch_from === "object" && Object.values(inp.stretch_from).some((v) => num(v) > 0)),

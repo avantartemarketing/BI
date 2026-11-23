@@ -149,7 +149,8 @@ window opens, whatever the person's existing subscription (as the TL funnel expo
 unique people (distinct account ids) is a secondary figure beside it.
 
 ```
-orders needed   = units target / purchases per order
+units from signups = units target x (1 - the basket's non-signup share)   (§7)
+orders needed   = units from signups / purchases per order
 signup target   = orders needed / signup -> order rate
 pace            = the basket's median cumulative share of pre-window signups at the same share
                   of each launch's own announce -> open span (the campaign clock)
@@ -383,7 +384,8 @@ unit, signups before the open where the LE reads units. It asks for:
   else typed (`resolve_lead`; the snapshot's `marketingLead` and `inputSources.marketing_lead`).
 
 ```
-orders needed         = units target / purchases per order
+units from signups    = units target x (1 - non-signup share)
+orders needed         = units from signups / purchases per order
 signup target         = orders needed / signup -> order rate
 sessions needed       = per channel: signups share / session -> signup rate
 pre-window budget     = paid share of signups x signup target x cost per signup
@@ -393,6 +395,29 @@ worth of a paid signup = worth of a paid sale x pieces per order x paid signup -
 cost at an ROI        = worth / (AA's share of the spend x ROI)
 in-window budget      = paid share of units x units target x cost per sale
 ```
+
+**The non-signup share** (23 November 2026) is the basket's median share of a launch's units
+bought by people who never signed up (`units_nonsu` over the two kinds, `nonsu_share` on the
+profile, held under 0.9; `nonsignup_share`, `nonsignup_units` and `signup_units` on the targets).
+The signup -> order rate is the orders the signups placed over the signups, so it only ever
+accounts for the units signups bring; until this date the sum asked the signups for every unit,
+and Marina Abramović's 1,600 units read as 16,530 signups, a third more than any launch has
+gathered. The window's budget still reads the whole units target. A basket with no share on file
+(a profile saved before this date) asks as before.
+
+What it was held to (`etl/analysis/tl_signup_target_backtest.py`, 35 launches closed since 2025
+with 300 or more signups and 100 or more units): each is taken off the panel, given the basket the
+live rule picks today, and the sum is asked how many signups the units it sold needed. Asking
+every unit of the signups read 1.64 times the signups the launch gathered at the median (a typical
+miss of 95%); less the non-signup share it reads 1.01 times (62%), and 1.03 against 1.67 on the 12
+that sold 600 or more. Two cautions. Signups are a loose guide to sales either way: the middle
+half of launches sits between 0.56 and 1.40 times the sum. And launches are gathering more signups
+for each sale than they did (the 23 closed since July 2025 turned 9.4% of signups into orders
+where their baskets read 12.4%), so on those the new sum reads 0.67 times what they gathered, as
+far under as the old one's 1.18 was over; a launch built on a large paid signup drive wants its
+signup -> order rate typed on the tab. A closed page is read against the basket it could have had
+at its close (§8), older launches that sold more without a signup, so past pages' signup targets
+fall further than live ones (`--at-close`: 0.54 against the old sum's 1.13).
 
 The frame take-up is the works' own (Airtable's or typed), else the basket's frames per print,
 else the last twelve months' frames per print in the band of each work's frame price against
