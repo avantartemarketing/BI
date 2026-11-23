@@ -43,7 +43,7 @@ export default function TLForecastTable({ snap }) {
     );
   };
   const rowTip = (r) => [
-    r.name,
+    r.line ? `${r.name} · ${r.line}` : r.name,
     byPage ? "Signups: the ones made from this work's page, plus its share of the signups that name no work" : "Signups: the release's, shared out by each work's units target (too few name a work so far)",
   ].join("\n");
   return (
@@ -58,7 +58,7 @@ export default function TLForecastTable({ snap }) {
           <tbody>
             {rows.map((r) => (
               <tr key={r.key} title={rows.length > 1 ? rowTip(r) : undefined}>
-                <td><span className="nmw"><span className="ldot" style={{ background: "var(--ind)" }} /><span className="nm2"><span className="n">{r.name}</span></span></span></td>
+                <td><span className="nmw"><span className="ldot" style={{ background: "var(--ind)" }} /><span className="nm2"><span className="n">{r.name}</span>{r.line && <span className="code">{r.line}</span>}</span></span></td>
                 {cells(rows.length > 1 ? r : { ...r, ...all, key: r.key, name: r.name })}
               </tr>
             ))}
