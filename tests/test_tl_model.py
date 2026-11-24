@@ -103,6 +103,31 @@ hourly = pd.DataFrame({"ts": pd.to_datetime(["2026-06-29T15:00:00Z", "2026-06-29
 d3 = tl.tl_dates(crewdson, {"feed_launch": "2026-06-30T17:00:00Z"}, None, EMPTY, hourly, NOW)
 check(d3["early_access"] == datetime(2026, 6, 29, 16, 0, tzinfo=UTC) and not d3["early_access_assumed"], f"Crewdson's early access began at 16:00Z the day before ({d3['early_access']})")
 check(d3["sales_open"] == d3["early_access"], "the sales window opens with the early access")
+# a private-room sale is the early access begun, whatever the hour sold: Matt DesLauriers' Serac (2026 Q4) took
+# three private-room pieces at 14:00Z the day before a 17:00Z open, three hours ahead of the hour expected, and
+# the page counted from 17:00Z read 3 units where the orders table held 7
+serac = {"launch_date": "2026-11-24", "launch_time": "2026-11-24T17:00:00.000Z", "tl_length": "48 hours"}
+serac_now = datetime(2026, 11, 24, 12, 0, tzinfo=UTC)
+lines = pd.DataFrame({"ts": pd.to_datetime(["2026-11-20T13:00:00Z", "2026-11-23T14:00:00Z", "2026-11-23T15:00:00Z", "2026-11-24T04:00:00Z", "2026-11-24T09:00:00Z", "2026-11-24T09:00:00Z"], utc=True),
+                      "status": ["awaiting", "paid", "paid", "paid", "paid", "awaiting"], "units": [2.0, 3.0, 1.0, 1.0, 1.0, 1.0],
+                      "units_private": [0.0, 3.0, 1.0, 1.0, 1.0, 0.0], "orders": [2.0, 3.0, 1.0, 1.0, 1.0, 1.0], "value": [650.0] * 6,
+                      "prints_offered": [2.0, 3.0, 1.0, 1.0, 1.0, 1.0], "frames": [0.0] * 6, "group": ["untracked"] * 6})
+d4 = tl.tl_dates(serac, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, serac_now)
+check(d4["early_access"] == datetime(2026, 11, 23, 17, 0, tzinfo=UTC) and d4["early_access_assumed"], "with no sales to go on, the early access is expected a day before the open")
+d5 = tl.tl_dates(serac, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, serac_now, lines)
+check(d5["early_access"] == datetime(2026, 11, 23, 14, 0, tzinfo=UTC) and not d5["early_access_assumed"], f"Serac's early access began with its first private-room sale ({d5['early_access']})")
+check(tl.window_from_orders(lines, d4["sales_open"], serac_now)["units"] == 3 and tl.window_from_orders(lines, d5["sales_open"], serac_now)["units"] == 7,
+      "the window counts the private-room sales made before the hour expected")
+d6 = tl.tl_dates(serac, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, datetime(2026, 11, 25, 12, 0, tzinfo=UTC), lines)
+check(d6["sales_open"] == d5["sales_open"], "and keeps them once the public window has opened, with no hour of five pieces before it")
+# a sale outside the private room, or a private-room line cancelled, starts nothing
+stray = lines.assign(units_private=0.0)
+gone = lines.assign(status=["awaiting", "cancelled", "refunded", "cancelled", "cancelled", "awaiting"])
+check(tl.early_access_from(EMPTY_H, d4["open"], stray) is None and tl.early_access_from(EMPTY_H, d4["open"], gone) is None,
+      "a lone sale outside the private room, or a private-room order cancelled, is not the early access")
+# the feed's own private-room purchases say it too, where the orders table has no lines for the launch
+feed_private = pd.DataFrame({"ts": pd.to_datetime(["2026-11-23T14:00:00Z", "2026-11-23T20:00:00Z"], utc=True), "units": [1.0, 2.0], "units_private": [1.0, 0.0], "group": ["untracked"] * 2})
+check(tl.early_access_from(feed_private, d4["open"]) == datetime(2026, 11, 23, 14, 0, tzinfo=UTC), "the feed's private-room purchases start the early access too")
 
 # ---- the campaign code
 activity = {"BisaButler_TL_26": (date(2026, 9, 16), date(2026, 9, 24)), "AiWeiwei_SelfPortrait_26": (date(2026, 1, 6), date(2026, 5, 6)),

@@ -328,7 +328,7 @@ benchmark       = the basket's median units at the same share of the window
 **The cards are the LE page's cards**, in the shared layout and in units, the page's clock
 running in hours from the sales open (`clock: {unit: "hour"}`; the day helpers in
 `web/src/format.mjs` read it, so a day of the LE page is an hour of the window, "Tue 30 Jun
-20:00 · hour 28"):
+20:00 · hour 31"):
 
 | LE card | On a timed launch inside its window |
 |---|---|
@@ -527,6 +527,23 @@ What the data showed on the way, and how the build reads it:
   30 June open). The window state begins with the first hour that sold five pieces or more
   within 36 hours of the open, the sales pace curve is measured from it, and a launch still
   to open expects an early access 24 hours before, said as expected.
+- **A private-room sale is the early access begun** (24 November 2026). The private room is
+  the early access, so the first hour within 36 hours of the open that holds a private-room
+  sale starts the window as an hour of five pieces does, whichever comes first: on the feed's
+  purchases, and on the orders table's paid and awaiting lines where it has the launch's
+  (`etl/tl.py early_access_from`). Until then a quiet early access was not seen at all. Matt
+  DesLauriers' Serac sold three private-room pieces at 14:00 UTC on 23 November, the day
+  before a 17:00 UTC open on Airtable's time (the feed dates its launch 14:00 UTC); no hour
+  reached five, so the window was counted from the hour expected, 17:00 UTC, and the page
+  read 3 units at noon on the 24th where the orders table held 7 (6 paid in the private
+  room, 1 awaiting payment). At the public open the expectation would have lapsed and the
+  page counted from the open, with none of them. On the panel 16 of the 75 completed
+  launches move: six whose early access had never been seen, their windows now opening 21
+  to 35 hours before the public open (Em Cooper's 2026 launch read 25 units where it sold
+  43; Grayson Perry's Magical Thinking counted 614 signups of its early-access day as
+  pre-window) and ten whose windows open 1 to 17 hours earlier (4 at the median) and hold
+  1 to 9 units more (Gregory Crewdson's 2026 window runs 75 hours, from 13:00 UTC on 29
+  June). The panel's medians hold: signup -> order 14.5%, 401 units, 1,036 signups.
 - **The feed's `launch_date` runs an hour late in summer time.** Against Airtable's
   `launch_time` and the sales bursts over the 2025-26 launches it reads 17:00Z where the
   launch was 16:00Z (18:00 Amsterdam) in CEST, and agrees in CET. The open is Airtable's
