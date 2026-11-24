@@ -280,7 +280,8 @@ cw = next((s for rid, s in replay.items() if "crewdson_multiple_2026" in rid), N
 check(cw is not None and cw["tlState"] == "window", "the replay finds Crewdson's 2026 launch in its window")
 if cw:
     check_page(cw, "crewdson replay (window)")
-    check(cw["clock"]["unit"] == "hour" and cw["clock"]["of"] == 72 and 27 <= cw["day"] <= 28, f"the window runs 72 hours from the early access, hour {cw['day']} at the replay")
+    # 75 hours: the private room sold its first pieces at 13:00Z on 29 June, three hours before the hour of five or more
+    check(cw["clock"]["unit"] == "hour" and cw["clock"]["of"] == 75 and 30 <= cw["day"] <= 31, f"the window runs 75 hours from the first private-room sale, hour {cw['day']} at the replay")
     check(cw["hero"]["now"] > cw["hero"]["expectedToday"] > 0 and cw["hero"]["projected"] > cw["hero"]["now"], "ahead of the pace, projected on")
     check(cw.get("sellthrough") and len(cw["sellthrough"]["products"]) >= 6 and cw.get("framing") and cw["framing"]["prints"] > 0, "the sell-through rows and the framing from the orders table")
     check(cw["unitsSource"] == "orders" and cw["paid"]["unit"] == "sale", "the window reads the orders table and prices a sale")

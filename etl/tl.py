@@ -29,8 +29,10 @@ launch date and window length, the feed's own launch timestamp and the sales:
   early access  the sales start about a day before the public open (the
           platform's "TL - Early access" stage, private-room orders): the
           first hour before the open, within 36 hours of it, that sold five
-          pieces or more; for a launch still to open, the open less 24 hours,
-          said to be expected
+          pieces or more or holds a private-room sale (one piece sold in the
+          private room is the early access begun, on the feed or the orders
+          table); for a launch still to open with neither, the open less 24
+          hours, said to be expected
   settle  the close plus TL_SETTLE_DAYS: drafts are paid and cancellations
           land, then the figures are final
 States: upcoming (before the announce), signups (announce to the sales open),
@@ -586,22 +588,37 @@ def infer_announce(daily: pd.DataFrame, open_dt: datetime) -> date | None:
     return hit.index.min() if len(hit) else None
 
 
-def early_access_from(hourly: pd.DataFrame, open_dt: datetime) -> datetime | None:
-    """The first hour before the open, within TL_EA_WITHIN_HOURS of it, that sold TL_EA_MIN_PIECES pieces or more."""
-    if hourly is None or not len(hourly):
-        return None
+def early_access_from(hourly: pd.DataFrame, open_dt: datetime, orders: pd.DataFrame | None = None) -> datetime | None:
+    """The first hour before the open, within TL_EA_WITHIN_HOURS of it, that
+    sold TL_EA_MIN_PIECES pieces or more, or that holds a private-room sale:
+    the private room is the early access, so one piece sold in it says it has
+    begun (the feed's purchases, and the orders table's paid and awaiting
+    lines where `orders` carries the launch's)."""
     lo = open_dt - timedelta(hours=TL_EA_WITHIN_HOURS)
-    win = hourly[(hourly["ts"] >= lo) & (hourly["ts"] < open_dt)]
-    if not len(win):
-        return None
-    by_hour = win.groupby("ts")["units"].sum().sort_index()
-    hit = by_hour[by_hour >= TL_EA_MIN_PIECES]
-    return hit.index.min().to_pydatetime() if len(hit) else None
+    hits = []
+    if hourly is not None and len(hourly):
+        win = hourly[(hourly["ts"] >= lo) & (hourly["ts"] < open_dt)]
+        if len(win):
+            by_hour = win.groupby("ts")["units"].sum().sort_index()
+            hit = by_hour[by_hour >= TL_EA_MIN_PIECES]
+            if len(hit):
+                hits.append(hit.index.min())
+            if "units_private" in win.columns:
+                private = win[win["units_private"] > 0]
+                if len(private):
+                    hits.append(private["ts"].min())
+    if orders is not None and len(orders):
+        private = orders[(orders["ts"] >= lo) & (orders["ts"] < open_dt) & orders["status"].isin(LIVE_STATUS) & (orders["units_private"] > 0)]
+        if len(private):
+            hits.append(private["ts"].min())
+    return min(hits).to_pydatetime() if hits else None
 
 
 def tl_dates(launch: dict | None, feed_row: dict | None, inputs: dict | None, daily: pd.DataFrame, hourly: pd.DataFrame,
-             now: datetime) -> dict:
-    """Every date of a TL and where each came from (module docstring)."""
+             now: datetime, orders: pd.DataFrame | None = None) -> dict:
+    """Every date of a TL and where each came from (module docstring).
+    `orders`: the launch's lines on the orders table, where it has them (the
+    early access is read off its private-room sales too)."""
     inp = inputs or {}
     feed_launch = (feed_row or {}).get("feed_launch") or None
     open_dt, open_src, open_note = open_from(launch, feed_launch, inp.get("window_open"))
@@ -635,7 +652,7 @@ def tl_dates(launch: dict | None, feed_row: dict | None, inputs: dict | None, da
     # the early access: seen in the sales, else expected a day before the open
     ea, ea_assumed = None, False
     if open_dt is not None:
-        ea = early_access_from(hourly, open_dt)
+        ea = early_access_from(hourly, open_dt, orders)
         if ea is None and now < open_dt:
             ea, ea_assumed = open_dt - timedelta(hours=TL_EA_HOURS), True
     sales_open = ea or open_dt
@@ -1123,7 +1140,7 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
             continue
         daily, hourly = _rel_rows(series, name)
         launch = matched.get(name)
-        d = tl_dates(launch, r, None, daily, hourly, now)
+        d = tl_dates(launch, r, None, daily, hourly, now, _orders_rows(orders_data, name))
         if d["open"] is None or d["settle"] is None or d["settle"] > now:
             continue   # still in flight or unsettled: not a comparable yet
         pre = _pre_window(daily, hourly, d["sales_open"])
@@ -1845,7 +1862,7 @@ def respread_targets(targets: dict | None, inputs: dict | None, profile: dict) -
 # ---------------------------------------------------------------- the TL releases
 
 def tl_releases(series: dict | None, launch_frame: pd.DataFrame | None, inputs: list[dict], as_of: date, now: datetime,
-                spend: pd.DataFrame | None = None, emails: pd.DataFrame | None = None) -> list[dict]:
+                spend: pd.DataFrame | None = None, emails: pd.DataFrame | None = None, orders_data: dict | None = None) -> list[dict]:
     """Every TL the dashboard lists: the feed's releases (matched to Airtable's
     timed launches) and the timed launches Airtable knows and the feed does
     not yet, within TL_UPCOMING_DAYS. Each record carries its name, id, the
@@ -1867,7 +1884,7 @@ def tl_releases(series: dict | None, launch_frame: pd.DataFrame | None, inputs: 
         inp = saved.get(name)
         rid = (inp or {}).get("id") or tl_id(name)
         daily, hourly = _rel_rows(series, name)
-        d = tl_dates(launch, r, inp, daily, hourly, now)
+        d = tl_dates(launch, r, inp, daily, hourly, now, _orders_rows(orders_data, name))
         if d["open"] is None:
             continue
         code = (inp or {}).get("campaign_code") or guess_tl_code(str(r["artist"]), d["open"], activity, taken_codes,
@@ -3278,7 +3295,7 @@ def build_all(ctx: dict) -> dict:
         tmp = CURVES.with_suffix(".tmp"); tmp.write_text(json.dumps(_json_safe({"asOf": as_of.isoformat(), "curves": curves}), separators=(",", ":"))); tmp.replace(CURVES)
         tmp = CANDIDATES.with_suffix(".tmp"); tmp.write_text(json.dumps(_json_safe({"asOf": as_of.isoformat(), "rows": candidate_rows(panel)}), indent=1)); tmp.replace(CANDIDATES)
     recs = tl_releases(series or {"releases": pd.DataFrame(columns=["release"]), "daily": pd.DataFrame(), "hourly": pd.DataFrame(), "by_release": {}, "hourly_by_release": {}},
-                       ctx.get("launch_frame"), ctx.get("inputs") or [], as_of, now, spend, emails)
+                       ctx.get("launch_frame"), ctx.get("inputs") or [], as_of, now, spend, emails, orders_data)
     only = ctx.get("only")
     configured = set(ctx.get("configured_ids") or [])
     for rec in recs:
