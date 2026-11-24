@@ -173,6 +173,22 @@ def _first_day(values: pd.Series | None):
     return days.min() if len(days) else pd.NaT
 
 
+def _private_sale(records: pd.DataFrame) -> pd.Series:
+    """Which records are a private sale (Airtable's launch type `Private`)."""
+    if "launch_type" not in records.columns:
+        return pd.Series(False, index=records.index)
+    return records["launch_type"].fillna("").astype(str).str.strip().str.lower() == "private"
+
+
+def _rode_ahead(records: pd.DataFrame, private: pd.Series) -> pd.Series:
+    """Which of one launch's records are a private sale that opened before
+    the day of its other works (launches): theirs is no close. A private
+    record on the day of the rest, or after it, is left as it was read."""
+    if private.all() or not private.any():
+        return pd.Series(False, index=records.index)
+    return private & (records["launch_date"] < records.loc[~private, "launch_date"].min())
+
+
 def _mode(values: pd.Series) -> str:
     got = values.dropna().astype(str)
     got = got[got != ""]
@@ -217,7 +233,18 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
     Staggered means within STAGGER_DAYS, draws on both days (an originals
     show or a timed edition under a draw's code is another launch,
     STAGGER_APART) and, where the later day's records carry an announce
-    date, one on or before the earlier close: campaigns that overlap."""
+    date, one on or before the earlier close: campaigns that overlap.
+
+    A private sale ahead of the draw is the same launch too (Pejac's two
+    special editions, sold privately from 12 November 2026 under the code of
+    the draw that closes 10 December: the orders file both under one release,
+    so read as two launches the page counted the specials' sales against the
+    draw's target alone). The day's records are all `Private`, the next day
+    under the code is not, and the sale opens no more than WINDOW_BEFORE_DAYS
+    before the draw's announce (its close where it carries no announce), the
+    reach the match gives early access. A private sale's day is the day it
+    opens, not a close: the launch's dates, closes, quarter and launch type
+    are read off its other records."""
     rec = records[records["launch_date"].notna()].copy()
     code = rec["release"].fillna("").astype(str).str.strip()
     day = rec["launch_date"].dt.strftime("%Y-%m-%d")
@@ -228,19 +255,25 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
                  else pd.Series("", index=rec.index))
     ann_all = (pd.to_datetime(rec["announce_date"], errors="coerce") if "announce_date" in rec.columns
                else pd.Series(pd.NaT, index=rec.index))
+    private_all = _private_sale(rec)
     coded = rec[code != ""].sort_values("launch_date")
     for (c, a), g in coded.groupby([code[coded.index], coded["artist_key"]], sort=False):
         start = prev_day = None
-        prev_apart = False
+        prev_apart = prev_private = False
         for d, gd in g.groupby("launch_date", sort=True):
             apart = 2 * int(kinds_all[gd.index].isin(STAGGER_APART).sum()) > len(gd)
             ann = ann_all[gd.index].min()
-            joins = (start is not None and (d - prev_day).days <= STAGGER_DAYS and not apart and not prev_apart
-                     and not (pd.notna(ann) and ann > prev_day))
+            private = bool(private_all[gd.index].all())
+            staggered = (start is not None and (d - prev_day).days <= STAGGER_DAYS
+                         and not (pd.notna(ann) and ann > prev_day))
+            # a private sale ahead of this day's draw: the same launch
+            ahead = (start is not None and prev_private and not private
+                     and prev_day >= (ann if pd.notna(ann) else d) - pd.Timedelta(days=WINDOW_BEFORE_DAYS))
+            joins = (staggered or ahead) and not apart and not prev_apart
             if not joins:
                 start = d
             rec.loc[gd.index, "launch_key"] = f"{c}@{start.strftime('%Y-%m-%d')}@{a}"
-            prev_day, prev_apart = d, apart
+            prev_day, prev_apart, prev_private = d, apart, private
     rows = []
     for key, g in rec.groupby("launch_key", sort=False):
         sized = g[~g["bundle"] & g["unit_price"].notna()]
@@ -262,6 +295,10 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
         # such record falls back to every record's dates
         dated = g[~g["bundle"]] if (~g["bundle"]).any() else g
         kinds = g["edition_type"].fillna("").astype(str).str.strip().str.upper()
+        # a private sale that rode in ahead of the draw sets none of the
+        # launch's dates: its day is the day the sale opens, not a close
+        rode = _rode_ahead(g, private_all[g.index])
+        lead = g[~rode]
         rows.append({
             "launch_key": key,
             "airtable_release": _mode(g["release"]) or "",
@@ -278,11 +315,11 @@ def launches(records: pd.DataFrame) -> pd.DataFrame:
             # the campaign ends with its last close; the first close and every
             # close ride beside it, and the quarter is the first close's, the
             # one the funnel names the release in
-            "launch_date": g["launch_date"].max(),
-            "first_launch_date": g["launch_date"].min(),
-            "closes": sorted({d.strftime("%Y-%m-%d") for d in g["launch_date"]}),
-            "quarter": quarter_of(g["launch_date"].min()),
-            "launch_type": _mode(g["launch_type"]), "edition_type": _mode(g["edition_type"]),
+            "launch_date": lead["launch_date"].max(),
+            "first_launch_date": lead["launch_date"].min(),
+            "closes": sorted({d.strftime("%Y-%m-%d") for d in lead["launch_date"]}),
+            "quarter": quarter_of(lead["launch_date"].min()),
+            "launch_type": _mode(lead["launch_type"]), "edition_type": _mode(g["edition_type"]),
             # how many records carry each edition type (OG, PE, TL, NFT ...), so
             # a launch of originals or timed editions can be told from a draw
             "edition_type_counts": {k: int(n) for k, n in kinds[kinds != ""].value_counts().items()},
@@ -731,6 +768,9 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
     ids = {s for s in _text(res.get("airtable_ids")).split("|") if s}
     got = records[records["airtable_id"].astype(str).str.replace(r"\.0$", "", regex=True).isin(ids)]
     got = got.sort_values(["bundle", "title"], kind="stable")
+    # a private sale that rode in ahead of the draw (launches): its works are
+    # the release's, and its day is the day the sale opens, not a close
+    rode = set(got.loc[_rode_ahead(got, _private_sale(got)), "airtable_id"].astype(str).str.replace(r"\.0$", "", regex=True))
     for r in got.itertuples(index=False):
         if bool(r.bundle):
             continue     # a set or an unsized record carries its parts' price, not an edition of its own
@@ -740,6 +780,9 @@ def release_products(release: dict, pricing_path: pathlib.Path | str | None = No
         for col in PRODUCT_NUMERIC:
             p[col] = _num_or_none(getattr(r, col, None))
         p["edition"] = int(round(p["edition_size"])) if p["edition_size"] and p["edition_size"] > 0 else None
+        p["private_sale_date"] = None
+        if p["airtable_id"] in rode:
+            p["private_sale_date"], p["launch_date"] = p.get("launch_date"), None
         # the target as a share of the edition: the field when it exists, else
         # the units target Airtable already holds, else the expected sell-through
         share = p["target_sellthrough"]

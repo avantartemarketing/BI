@@ -1258,7 +1258,18 @@ draw's code, `STAGGER_APART`, is another launch: Pejac's show on 13 November 202
 print draw on 18 December share a code) and, where the later day's records carry an announce
 date, one on or before the earlier close; the same code's wave months later is a launch of
 its own (a group show puts eight artists under one code; each artist's release is its own row
-in the panel). Bundles (a title with a set word - "Set of
+in the panel). **A private sale ahead of the draw** is the same launch too: a day whose records
+are all `Private` under the code, followed by a day that is not, opening no more than
+`WINDOW_BEFORE_DAYS` (45) before the draw's announce (its close where it carries no announce),
+the reach the match gives early access. Pejac's two special editions, ten each, were sold
+privately from 12 November 2026 under the code of the draw that closes 10 December, and the
+orders file all four works under one release; read as two launches the page set its target
+from the draw's 150 and counted the specials' sales against it (24 November 2026), where the
+launch is 170. A private sale's day is the day it opens, not a close, so the launch's dates,
+closes, quarter and launch type are read off its other records, and `release_products` hands
+the work on with `private_sale_date` and no `launch_date`: the page closes once, with the
+draw. A private record on the draw's own day or after it is read as before, and originals sold
+privately under a draw's code stay a launch of their own. Bundles (a title with a set word - "Set of
 4", "[Pair]", "[Quartet]", "[COMBINED PRODUCT]", a diptych or triptych - or any record without
 an edition size; a bracketed note alone, "[Special Print Edition]", "[OG painting - 1/5]", is
 not one) carry the sum of their parts and are left out, so
