@@ -544,6 +544,38 @@ What the data showed on the way, and how the build reads it:
   pre-window) and ten whose windows open 1 to 17 hours earlier (4 at the median) and hold
   1 to 9 units more (Gregory Crewdson's 2026 window runs 75 hours, from 13:00 UTC on 29
   June). The panel's medians hold: signup -> order 14.5%, 401 units, 1,036 signups.
+- **The early access is timed from when its email went, not from when the room opened** (24
+  November 2026, the owner's call). The room can sell a piece before anyone is told it is
+  open: William Mapan's (Un)confined sold one at 12:00 UTC on 23 November and its early
+  access email went at 14:00 UTC, so the reading above began its window two hours before
+  the early access. The window now opens on the hour the launch's first early access email
+  was sent (`early_access_email`): a batch email of its campaign whose name says early
+  access, within 36 hours of the open. Three things hold it to what the sends can say.
+  *Batch emails only.* HubSpot keeps a send time for an email sent once; for an automated
+  email, sent by a workflow, it keeps the time it was published, hours or days before it
+  went (Bisa Butler's "Early Access (TL Flow)": published 9 October 2026, sent on the 12th),
+  so the sends file carries each email's `Kind` (`server/hubspot.js`) and an automated email
+  times nothing. *An hour of five pieces before the batch email still starts the window*:
+  that burst is an early access email the file cannot time, the workflow's (Barry McGee's
+  2025 launch sold 32 pieces at 11:00 UTC, three hours before the insiders' batch email); a
+  lone private-room sale before the email does not. *With no email timed on file the sales
+  say it as before* (the hour of five pieces or the first private-room sale), which is every
+  launch whose early access went by workflow alone. Two launches sold together share their
+  emails and each email is filed under one code, so a launch reads the emails under its own
+  code and those named for the campaign its own are named for (the one "WillMatt_TL_26"
+  early access email, filed under Serac's code, times both). **No piece is left out for
+  having been sold before the email**: the orders table's lines made between the room's
+  first sale and the email are counted in the window's first hour (`tl_dates`
+  `count_from`, `window_from_orders`), so (Un)confined's clock starts at 14:00 UTC and its
+  window still holds the 10 pieces the orders table does. On the 75 completed launches 28
+  of the 39 since November 2024 carry a batch early access email, and it falls on the hour
+  the sales reading gave for all but two, whose windows open with the email and not with
+  the private-room sales a few hours ahead of it: Gregory Crewdson's 2026 launch (16:00 UTC
+  on 29 June again, where the reading above had moved it to 13:00) and Cleon Peterson's
+  Shame (16:00 UTC on 16 September 2025, from 12:00). Their units on the orders table stand
+  (2,870 and 200); the feed's own count of the window, which is not moved into the first
+  hour, reads 5 and 1 fewer (2,806 and 197). The panel's medians hold. The snapshot says which reading is
+  in force (`earlyAccessSource`: email, sales or expected).
 - **The feed's `launch_date` runs an hour late in summer time.** Against Airtable's
   `launch_time` and the sales bursts over the 2025-26 launches it reads 17:00Z where the
   launch was 16:00Z (18:00 Amsterdam) in CEST, and agrees in CET. The open is Airtable's

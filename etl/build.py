@@ -349,14 +349,18 @@ def load_emails() -> pd.DataFrame:
             "name": pd.Series(dtype=str), "sent_at": pd.Series(dtype="datetime64[ns]"),
             "campaign": pd.Series(dtype=str), "delivered": pd.Series(dtype=float),
             "opened": pd.Series(dtype=float), "clicked": pd.Series(dtype=float),
-            "unsubscribed": pd.Series(dtype=float), "email_type": pd.Series(dtype=str),
+            "unsubscribed": pd.Series(dtype=float), "email_type": pd.Series(dtype=str), "kind": pd.Series(dtype=str),
         })
     df = pd.read_csv(source_file("all_sent_emails.csv"))
     df = df.rename(columns={
         "Email Name": "name", "Send Date (Your time zone)": "sent_at",
         "Campaign": "campaign", "Delivered": "delivered", "Opened": "opened",
-        "Clicked": "clicked", "Unsubscribed": "unsubscribed"})
+        "Clicked": "clicked", "Unsubscribed": "unsubscribed", "Kind": "kind"})
     df["sent_at"] = pd.to_datetime(df["sent_at"])
+    # what the send date is (server/hubspot.js): a batch email went at it, an
+    # automated one was published at it and went when its workflow sent it;
+    # blank on a file from before the column, and then nothing is timed off it
+    df["kind"] = df["kind"].fillna("").astype(str).str.strip().str.lower() if "kind" in df.columns else ""
     def email_type(n):
         for t in ("GEN", "CUS", "INS", "TRNS", "AUT", "FREQ", "TEST"):
             if f"_{t}_" in n or n.startswith(f"{t}_"):

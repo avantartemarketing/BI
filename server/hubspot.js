@@ -3,7 +3,17 @@
  * Pulls every marketing email with its stats from the HubSpot API and rewrites
  * sources/all_sent_emails.csv in the shape the ETL already reads:
  *   Email Name, Send Date (Your time zone), Campaign, Delivered, Opened,
- *   Clicked, Unsubscribed
+ *   Clicked, Unsubscribed, Kind
+ *
+ * Kind says what the send date is. A `batch` email is sent once, at its send
+ * date, to the minute. An `automated` email is sent by a workflow, to each
+ * recipient when the workflow reaches them, and HubSpot keeps only when it was
+ * published: the morning of the launch's early access, or days before it
+ * (Bisa Butler's "Early Access (TL Flow)" was published on 9 October 2026 and
+ * went on the 12th). So a batch email's date says when it went, and an
+ * automated one's does not; the ETL times the early access from the first
+ * (etl/tl.py, etl/build.py). Blank on a row kept from a file written before
+ * the column existed.
  *
  * Campaign attribution, in order: the HubSpot campaign name is a known release
  * campaign_code; the code appears in the email name or the campaign name; the
@@ -137,6 +147,15 @@ function parseDate(raw) {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 const sendDate = (d) => d.toISOString().replace("T", " ").slice(0, 19);
+/* HubSpot's email type as the file's Kind: batch (BATCH_EMAIL), automated
+ * (AUTOMATED_EMAIL and its siblings), else blank: a LOCALTIME_EMAIL goes at
+ * one local hour around the world, so its date is no one instant either. */
+function emailKind(type) {
+  const t = String(type || "").toUpperCase();
+  if (t === "BATCH_EMAIL") return "batch";
+  if (t.startsWith("AUTOMATED")) return "automated";
+  return "";
+}
 
 const cell = (v) => {
   const s = String(v ?? "");
@@ -190,7 +209,8 @@ function readExisting() {
     if (!line.trim()) continue;
     const f = parseCsvLine(line);
     if (f.length < 7) continue;
-    rows.set(rowKey(f[0], f[1]), { sent: f[1], line: f.slice(0, 7).map(cell).join(",") });
+    // a row from before the Kind column: kept with none
+    rows.set(rowKey(f[0], f[1]), { sent: f[1], line: [...f.slice(0, 7), f[7] || ""].map(cell).join(",") });
   }
   return rows;
 }
@@ -235,7 +255,7 @@ async function fetchEmailsCsv(now = Date.now()) {
       const at = sendDate(d);
       pulled.set(rowKey(r.name || "", at), {
         sent: at,
-        line: [cell(r.name), at, cell(code), delivered, c.open ?? c.opened ?? 0, c.click ?? c.clicked ?? 0, c.unsubscribed ?? 0].join(","),
+        line: [cell(r.name), at, cell(code), delivered, c.open ?? c.opened ?? 0, c.click ?? c.clicked ?? 0, c.unsubscribed ?? 0, emailKind(r.type)].join(","),
       });
     }
     after = body.paging && body.paging.next && body.paging.next.after;
@@ -248,7 +268,7 @@ async function fetchEmailsCsv(now = Date.now()) {
   for (const row of pulled.values()) rows.push(row);
   rows.sort((a, b) => (a.sent < b.sent ? -1 : a.sent > b.sent ? 1 : 0));
   const through = rows[rows.length - 1].sent.slice(0, 10);
-  const header = "Email Name,Send Date (Your time zone),Campaign,Delivered,Opened,Clicked,Unsubscribed";
+  const header = "Email Name,Send Date (Your time zone),Campaign,Delivered,Opened,Clicked,Unsubscribed,Kind";
   return {
     csv: header + "\n" + rows.map((r) => r.line).join("\n") + "\n",
     rows: rows.length, pulled: pulled.size, kept, through, pages, capped, filtered,
@@ -271,4 +291,4 @@ async function refreshEmails() {
   return `hubspot ${out.rows} emails, sends through ${out.through} (${out.pulled} pulled, ${how}, ${out.kept} kept from the file${cap}); ${out.summary}`;
 }
 
-module.exports = { refreshEmails, fetchEmailsCsv, matchCampaign, campaignIndex, codesInUse, knownCampaignCodes, summarise, parseCsvLine, OUT };
+module.exports = { refreshEmails, fetchEmailsCsv, emailKind, matchCampaign, campaignIndex, codesInUse, knownCampaignCodes, summarise, parseCsvLine, OUT };
