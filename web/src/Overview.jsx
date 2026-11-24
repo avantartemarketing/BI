@@ -53,7 +53,8 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   const preWindow = isTL && (snap.tlState === "signups" || snap.tlState === "upcoming");
   const framingOn = !!(snap.framing && (snap.framing.prints > 0 || (snap.framing.works || []).length));
   // the Suggested actions card stays on a draw launch in flight with nothing to suggest, and says so
-  const actionsOn = !isTL && !snap.line && (!!snap.planChanges || (!snap.complete && !snap.catalogue));
+  // (a timed launch has the card on its plan-based view alone, where its suggestions are built)
+  const actionsOn = isTL ? (snap.method === "plan" && !!snap.planChanges) : !snap.line && (!!snap.planChanges || (!snap.complete && !snap.catalogue));
   const geoOn = !isTL && !!(snap.geo && (Array.isArray(snap.geo) ? snap.geo.length : (snap.geo.rows || []).length));
   const paidOn = !!snap.paid;
   // the plan-based view (the page's switch, docs/PLAN_MODEL.md): the plan card leads, and before anything has

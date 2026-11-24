@@ -23,12 +23,16 @@ function DisplayMenu({ directSpread, setDirectSpread, snap, planOn }) {
   const tip = W.tl
     ? "Spread shares Direct's sessions, signups and units out over the other channels in proportion, and reads the basket the same way"
     : "Spread shares Direct's sessions, entries and units out over the other channels in proportion, and reads the basket the same way";
+  // the plan-based view has one reading of Direct: spread on a draw launch, and on a timed launch as the feed
+  // attributes it, which is how its sales forecast is read (docs/TL_SPEC.md 3b)
+  const planChannel = !!planOn && !!W.tl;
+  const planSpread = !!planOn && !W.tl;
   return (
     <span style={{ position: "relative", display: "inline-flex" }}>
       <button className="chip" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle}><Display />Display</button>
       <Menu open={m.open} onClose={m.close} style={{ top: 32, right: 0, width: 272, padding: 6 }}>
         <div className="dmh">Every release</div>
-        <div className="dm" title={tip}>Direct<Seg options={[["channel", "Channel", planOn ? "The plan-based view is read with Direct spread over the other channels" : "Direct stays a channel of its own, as the feed attributes it", !!planOn], ["spread", "Spread", tip]]} value={planOn || directSpread ? "spread" : "channel"} onChange={(v) => setDirectSpread(v === "spread")} label="Direct" /></div>
+        <div className="dm" title={tip}>Direct<Seg options={[["channel", "Channel", planSpread ? "The plan-based view is read with Direct spread over the other channels" : "Direct stays a channel of its own, as the feed attributes it", planSpread], ["spread", "Spread", planChannel ? "A timed launch's plan-based view reads Direct as the feed attributes it, as its sales forecast does" : tip, planChannel]]} value={planChannel ? "channel" : planOn || directSpread ? "spread" : "channel"} onChange={(v) => setDirectSpread(v === "spread")} label="Direct" /></div>
       </Menu>
     </span>
   );

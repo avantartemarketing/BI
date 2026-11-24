@@ -126,6 +126,7 @@ def test_planned_general():
         plan_row("E_LE_26", "Ed Printer - Sheet", "2026-11-19", "Announcement", family="partner"),
         plan_row("F_LE_26", "Flo Weaver - Rug", "2026-11-10", "Announcement (LE)"),                    # before today: HubSpot's to say
         plan_row("A_LE_26", "Ada Artist - Work", "2026-11-24", "Announcement (LE) 2"),                 # the week after: counted again
+        plan_row("G_TL_26", "Gil Potter - Bowl", "2026-11-19", "Announcement (Re-send to exclusions)"),   # a re-send is not to the list
     ])
     got = LL.planned_general(c, none, TODAY)
     assert list(zip(got["campaign_code"], got["date"].dt.strftime("%m-%d"), got["label"])) == [

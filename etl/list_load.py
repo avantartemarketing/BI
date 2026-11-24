@@ -52,6 +52,7 @@ _NOT_MARKETING = {"TRNS", "AUT", "TEST"}
 _FLOW = re.compile(r"\bflow\b", re.I)
 _NON_FLOW = re.compile(r"\bnon[\s-]?flow\b", re.I)
 _NOW_LIVE = re.compile(r"\bnow\s*live\b", re.I)
+_RESEND = re.compile(r"re-?send|mop\s*-?up|non-?openers?|exclu", re.I)      # a re-send goes to the people the first one missed, not to the list
 _DAY = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
@@ -91,7 +92,7 @@ def planned_general(comms: pd.DataFrame, sent: pd.DataFrame, today) -> pd.DataFr
 
     The plan names an email and not who it goes to, so this is a reading by kind: a launch's announcement and
     a timed launch's email to the people outside its flow ("Non-flow") go to the list; an early access, a
-    sustain, a last chance, a flow's own email and a survey do not. One a launch a week: no launch has sent the
+    sustain, a last chance, a flow's own email, a re-send and a survey do not. One a launch a week: no launch has sent the
     list two in a week. A row dated today counts until an email of its launch has gone today. What has gone is
     never read here: its audience is HubSpot's to say. Read against what went, the plan runs about a quarter
     high (launches that share a bundle each plan their own announcement), which PLANNED_SHARE allows for in
@@ -110,6 +111,8 @@ def planned_general(comms: pd.DataFrame, sent: pd.DataFrame, today) -> pd.DataFr
         general = kind == "announce" or (kind == "other" and bool(_NON_FLOW.search(name)))
         if kind == "announce" and _FLOW.search(name) and not _NON_FLOW.search(name):
             general = False          # a flow's own announcement goes to the people signed up to it
+        if _RESEND.search(name):
+            general = False
         if not general or (code, week_of(r["date"])) in seen:
             continue
         if r["date"] == today and len(gone_today) and bool(P.carries_code(gone_today, code).any()):
@@ -212,11 +215,28 @@ def _short(hero: dict | None) -> float:
     return max(target - projected, 0.0)
 
 
+def _short_sales(forecast: dict | None) -> float:
+    """A timed launch gathering signups: the units its window is forecast to fall short of its units target by
+    (the sell-through forecast at the open); nothing within 3% of it."""
+    at_open = (forecast or {}).get("open") or {}
+    try:
+        target, units = float(at_open.get("target") or 0.0), float(at_open.get("units") or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+    return max(target - units, 0.0) if target and units < target * (1 - 0.03) else 0.0
+
+
 def stake_of(page: dict) -> float:
     """What a launch has at stake: the units it is heading to fall short of its target by, at the price of a
-    unit. The larger of its two readings, the clock's and the plan's; nothing on a launch on course by both."""
-    short = max(_short(page.get("hero")), _short(((page.get("variants") or {}).get("plan") or {}).get("hero")))
-    price = (page.get("economics") or {}).get("unitPrice") or (page.get("benchmark") or {}).get("price") or 1.0
+    unit. The larger of its two readings, the clock's and the plan's; nothing on a launch on course by both.
+    A timed launch before its window is read in the units its forecast leaves short, not in signups."""
+    plan = (page.get("variants") or {}).get("plan") or {}
+    if page.get("type") == "TL":
+        short = max(_short_sales(page.get("sellForecast")), _short_sales(plan.get("sellForecast")))
+        price = (page.get("economics") or {}).get("unit_price_eur") or (page.get("benchmark") or {}).get("price") or 1.0
+    else:
+        short = max(_short(page.get("hero")), _short(plan.get("hero")))
+        price = (page.get("economics") or {}).get("unitPrice") or (page.get("benchmark") or {}).get("price") or 1.0
     try:
         return short * float(price)
     except (TypeError, ValueError):

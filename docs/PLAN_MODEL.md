@@ -432,6 +432,80 @@ entered, a target under the edition, and a paid suggestion per line of work.
 `python3 tests/test_lines.py` builds a two-line release through the real build and holds
 the view to its combined page.
 
+## 6b. A timed launch's signups, read by the plan
+
+A timed launch gathering signups has the same switch (24 November 2026, `etl/tl_plan.py`).
+The window's hours stay on the clock: nothing is laid over a page once its sales have
+opened. The view has two halves, because the launches closed so far insist on it (section
+8, "Timed launches"): two thirds of a timed launch's signups are bought, and what tells one
+launch from another is its paid budget, not its comms.
+
+**Outside paid** it is section 6's own reading (`plan_view.override`, given the launch's
+kind) on a price list fitted to timed launches' signups, `etl/tl_plan_prices.json`
+(`etl/analysis/tl_plan_backtest.py --write`; 46 launches since September 2023, signups
+outside paid from the announce to the sales open). In quiet days: an announcement email
+3.05 for each 100 expected clicks, an early access email 1.90, an Avant Arte post 3.13, an
+artist's story 4.15 and post 1.05; a sustain or a last chance email, which the launches
+hardly ran before their opens, has no price (`unpriced`) and no line on the card. With
+nothing going out a launch takes 28% of its signups outside paid. A quiet day splits over
+the page's channels 15% email, 14% Avant Arte social, 15% artist, 15% search and 41%
+other. The clicks an email should bring are the draw launches' click model.
+
+- **The days** run from the announce to the sales open, and what came in is the launch's
+  own signups by day and channel from its feed, scaled to the page's count for each
+  channel (the page shares the signups with no channel over the others).
+- **The phases** are a timed launch's own: Announce (a piece up to a day after the
+  announce, the teasers before it among them), Sustain, and The open (a day or less
+  before the sales open).
+- **An email still to come** is a plan row that is not a flow's own email, which goes to
+  the people already signed up, nor a survey; its audience is the usual one for its kind.
+- **The level** is section 6's rule on the timed launches' levels: the artist's last
+  three timed launches when two or more are on file, else the page's basket, else every
+  launch.
+
+**Paid** is read from the spend and not the calendar (`paid_path`):
+
+```
+today's spend      = the mean of the last 3 full days with spend (none when the last full day had none)
+days to come       = the days to the open's day, with the rest of today
+cost of a signup   = the launch's own so far x how much dearer later signups have been at this point
+                     of its span (paid_up, about x1.8), once it has 30 paid signups and EUR 200 spent;
+                     until then the basket's cost a signup, with no mark-up
+paid still to come = today's spend x days to come / cost of a signup
+at the budget      = the pre-window budget left / cost of a signup, at budget left / days to come a day
+```
+
+The plan's line for paid stays the budget's, on the clock: its expected figure is paid's
+share of the signup target. The clock's own projection reads paid as it reads every
+channel, by the share of the span gone by, whatever is being spent
+(`etl/tl.py _project`), which is the reading this view changes most. On Marina
+Abramović's launch on the day it was built, six days into twenty-two: the clock projected
+3,324 signups at the open and this view 1,455, against a target of 6,683, with EUR 627 a
+day being spent of a budget whose own pace was EUR 2,722.
+
+**The page.** `etl/tl.py` builds the launch a third time on that path (`le_blocks`,
+`plan_ov`) and the blocks that differ ride under `variants.plan`, as a draw launch's do. It
+is read as the feed attributes its channels, not with Direct spread: the sell-through
+forecast reads that attribution whichever view the page is on (docs/TL_SPEC.md 3b), and on
+this view it follows the plan's signups at the open. A channel's total on this view is its
+plan's; the headline's target is the signup target.
+
+**Suggested actions** are on this view of a timed launch alone (the clock's page has
+none): the paid budget's own pace against today's spend, sized in the signups it adds by
+the open (a cut in the spend it saves; within a tenth of today's spend, nothing; the row
+says when spending that much faster may cost more a signup, so its size is the most it
+brings); an announcement still to come sent to the full list; a second announcement, to
+the list or to fewer, when no email is planned before the open's last days; and a post
+from the artist or Avant Arte. An email to half the list or more is held to the list's
+load as a draw launch's is (docs/METHODOLOGY.md 7d).
+
+**Limits.** The cost of a signup at a spend several times today's is not modelled. The
+window is not read by its plan: whether its paid spend tells its sales is not established
+(section 8). An email's audience is the usual one for its kind until it has gone.
+
+`python3 tests/test_tl_plan.py` holds the view's own parts to hand-built cases; a built
+page needs the timed launches' feeds, which a checkout does not carry.
+
 ## 7. Limits
 
 - **Groups of people.** The model reads an audience by its size. Which groups (artist
@@ -516,7 +590,8 @@ the view to its combined page.
   So a timed launch's plan-based view is led by the budget: signups at the open as what has
   come in, the spend still to come at its cost, and the comms' pieces. Until it, every
   channel on a timed launch's page, paid among them, was projected on the clock
-  (`etl/tl.py _project`). The window's forecast is left as it is.
+  (`etl/tl.py _project`). The window's forecast is left as it is. Built on 24 November
+  2026: section 6b.
 - The plan as the default, once the two have been compared on live launches.
 - An email's planned audience read from its HubSpot draft, and audiences read by who is in
   them as well as how many.
@@ -571,3 +646,9 @@ the view to its combined page.
   of their number, and the paid budget is the activity that does before the open; in the
   window its part did not hold from one day's feeds to the next. `etl/analysis/tl_plan_backtest.py`
   holds the four readings, and with `--write` the price list a plan-based view would read.
+- **24 November 2026.** The owner said go on a mockup of a timed launch's plan-based view
+  (Marina Abramović's Energy Hat, six days into twenty-two), and it went live: section 6b.
+  On the way the paid cost chart was found drawing its line on the ROI's scale, off the
+  card and across the page, and was given its own. The same day the owner asked why a
+  last chance email stood twice among a launch's suggested actions: it was one email at
+  two audiences, and is now one row that opens to the other.

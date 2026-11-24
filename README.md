@@ -678,6 +678,13 @@ three pulled files are ignored by git and hold no person: list ids and counts on
 `python3 tests/test_plan_view.py` the page's view to a hand-built launch, and
 `node tests/comms_plan.mjs` the two pulls to stand-ins for the APIs.
 
+A timed launch gathering signups has the view too (`etl/tl_plan.py`, docs/PLAN_MODEL.md 6b):
+its signups outside paid on a price list of their own, `etl/tl_plan_prices.json`, and paid
+read from the spend still to come. `python3 etl/analysis/tl_plan_backtest.py --write` re-fits
+that list (it needs the timed launches' feeds, the Notion plan read in full and the HubSpot
+audiences) and prints the readings behind it; `python3 tests/test_tl_plan.py` holds the
+view's own parts to hand-built cases.
+
 ## Signing in
 
 The app is behind **Sign in with Google**, restricted to the company Workspace domain.

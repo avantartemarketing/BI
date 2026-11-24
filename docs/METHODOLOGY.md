@@ -977,6 +977,11 @@ one list, never a fresh to-do list:
 A launch on course for its target gets no comms changes: the extra sends are
 better kept for a launch that needs them. Its paid change still shows.
 
+A timed launch gathering signups has the card on its plan-based view alone
+(docs/PLAN_MODEL.md 6b), sized in signups by the sales open: the paid
+budget's own pace against today's spend first, since paid is most of a timed
+launch's signups, then an announcement sent wider and a post.
+
 **What it reads.** Three things: the launch's own page (where it is heading,
 and whether AA Email is short on visits or on visits turning into entries),
 the plan (the rows the team logs in Notion, read every refresh) and the
@@ -1037,7 +1042,8 @@ across every launch at once (`etl/list_load.py`):
   widest send of the last 120 days.
 - **The count** for a week is the general sends that have gone (HubSpot) and
   those still in a launch's plan (Notion): a launch's announcement, and a timed
-  launch's email to the people outside its flow. One a launch a week. The plan
+  launch's email to the people outside its flow; a re-send is not one. One a
+  launch a week. The plan
   names an email and not who it goes to, and launches that share a bundle each
   list their own, so the count of what is to come runs high: about three in
   four planned general sends went as their own (16 weeks to November 2026).
@@ -1049,7 +1055,8 @@ across every launch at once (`etl/list_load.py`):
 - **The scale.** Up to 2.0 emails a person a week the list is at its usual
   load, and any launch that is short can be offered a general send. Up to 2.5
   it is busy, and only the launch with the most at stake that week is offered
-  one: the units it is heading to fall short by, times the price of a unit.
+  one: the units it is heading to fall short by, times the price of a unit (a
+  timed launch before its window: the units its sales forecast leaves short).
   Past 2.5 none is.
 - **The cap.** Never more than 3 general sends in a week, gone and planned
   together, whatever the load.

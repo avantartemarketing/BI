@@ -54,9 +54,10 @@ export function dayWord(iso, asOf) {
  * from nothing, and no estimate said as that */
 export function unitsWord(u) {
   if (!u || !(u.high >= 1)) return null;
-  if (u.low === u.high) return `+${u.high}`;
-  if (!(u.low >= 1)) return `Up to ${u.high}`;
-  return `+${u.low} to ${u.high}`;
+  const f = (v) => Math.round(v).toLocaleString("en-GB");
+  if (u.low === u.high) return `+${f(u.high)}`;
+  if (!(u.low >= 1)) return `Up to ${f(u.high)}`;
+  return `+${f(u.low)} to ${f(u.high)}`;
 }
 
 /* the arrow before what a planned item changes to */
@@ -175,7 +176,7 @@ export default function PlanChanges({ snap, state }) {
 
   return (
     <Card wide className="pcard" aria="Suggested actions"
-      title={<>Suggested actions{todo.length > 0 && <span className="pc-n">{todo.length}</span>}</>}
+      title={<>Suggested actions{todo.length > 0 && <span className="pc-n">{todo.length}</span>}{snap.type === "TL" && todo.length > 0 && <span className="pc-n">in signups by the open</span>}</>}
       right={<button className="sbtn" onClick={() => ask(`What actions do you suggest for ${artist}, and why?`)}><AgentIcon w={13} />Ask</button>}
       menu={done.length ? [{ label: handled ? "Hide accepted and dismissed" : "Show accepted and dismissed", onClick: () => setHandled(!handled) }] : null}>
       <div className="pc">
