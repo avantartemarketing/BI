@@ -269,6 +269,38 @@ def test_settled_twice_and_without_a_list():
     assert LL.settle([{"artist": "None"}], ctx) == 0 and LL.settle([], ctx) == 0
 
 
+def test_one_row_for_one_email():
+    """An email the build offers at two audiences is one row: the larger the rule leaves standing, the other
+    inside it; where the larger is held the smaller stands alone; and a page settled again reads the same."""
+    full = dict(email("e.lc.full", "2026-11-19", 6, people=LIST), same="e.lc")
+    mid = dict(email("e.lc.mid", "2026-11-19", 1, people=20000), same="e.lc")
+    other = dict(email("e.an.mid", "2026-11-20", 2, people=30000), same="e.an")          # the only one of its email left: a row as it was
+    ctx = ctx_with((1.0, 1.0, 1.0), planned_this=0)
+    one = page("Ada", 1000, 400, [full, POST, mid, other])
+    LL.settle([one], ctx)
+    b = one["planChanges"]
+    assert keys(b, "changes") == ["e.lc.full", "post.artist", "e.an.mid"] and b["more"] == []
+    assert [a["key"] for a in b["changes"][0]["alts"]] == ["e.lc.mid"] and b["changes"][0]["general"]["nth"] == 1
+    assert "alts" not in b["changes"][2]
+    first = copy.deepcopy(b)
+    LL.settle([one], ctx)
+    assert one["planChanges"] == first
+    # a very busy list holds the general send: the smaller stands, with nothing inside it
+    two = page("Ada", 1000, 400, [full, POST, mid])
+    LL.settle([two], ctx_with((3.2, 3.2, 3.2), planned_this=1))
+    b = two["planChanges"]
+    assert keys(b, "changes") == ["post.artist", "e.lc.mid"] and keys(b, "held") == ["e.lc.full"] and "alts" not in b["changes"][1]
+    # and the same page read later on a quiet list is one row again, the held one back in it
+    LL.settle([two], ctx)
+    b = two["planChanges"]
+    assert keys(b, "changes") == ["e.lc.full", "post.artist"] and [a["key"] for a in b["changes"][0]["alts"]] == ["e.lc.mid"] and b["held"] == []
+    # with no list on file the two are one row all the same
+    three = page("Ada", 1000, 400, [full, POST, mid])
+    LL.settle([three], None)
+    b = three["planChanges"]
+    assert keys(b, "changes") == ["e.lc.full", "post.artist"] and [a["key"] for a in b["changes"][0]["alts"]] == ["e.lc.mid"] and "list" not in b
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

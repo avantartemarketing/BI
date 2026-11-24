@@ -2615,7 +2615,10 @@ The block gains `list` (`asOf`, `size`, `cap`, `normalTo`, `busyTo`, and `week` 
 build suggested). A change let through carries `general {nth, cap, week}`; a held one
 `held` (the reason, a sentence) and `heldBy`: `cap` (the week holds `CAP` already), `load`
 (the scale), `course` (the page reads on course) or `launch` (the launch's second in a
-week). The build's log carries one line: the state and the load, the week's count against
+week). The plan-based view's two audiences for one email carry the same `same` (the email's
+kind and day; `email.sustain.add` for the sustain email it would add), and of those the rule
+leaves in the list the largest stands with the others under its `alts`, each a whole change
+(`one_each`); a page settled again has them back as suggestions of their own first. The build's log carries one line: the state and the load, the week's count against
 the cap, and how many suggestions were held on how many pages.
 
 **Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed, by,

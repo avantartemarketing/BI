@@ -18,7 +18,9 @@ apart), so it is held here as a rule the team sets, not a figure the model works
 settle() lays that over every live launch's suggestions at once, since the ranking is across launches. A
 general send it lets through says which of the week's it would be; one it does not is moved to the card's
 `held` list with the reason in a line, where the reader can still see what it was worth. A launch that is on
-course is offered no general send. Emails to fewer than half the list are left exactly as they were.
+course is offered no general send. Emails to fewer than half the list are left as they were, but for one thing:
+an email the build offers at two audiences is one row, the larger the rule leaves standing, with the other inside
+it as an alternative (one_each).
 
 The four figures are the team's to change (CAP, NORMAL_TO, BUSY_TO, GENERAL_SHARE). Pure functions over the
 two feeds and the pages' own blocks, so tests/test_list_load.py holds each rule to a hand-built case.
@@ -238,6 +240,26 @@ def _value(c: dict) -> float:
     return (float(u.get("low") or 0) + float(u.get("high") or 0)) / 2.0
 
 
+def one_each(changes: list[dict]) -> list[dict]:
+    """One row for one piece. The build offers an email still to come at more than one audience (the full list,
+    and about three times its usual one), each a suggestion of its own marked as the same email (`same`): read
+    as a list they looked like two things to do. The largest of those left stands, and the others ride inside it
+    as its alternatives (`alts`), in the order the build ranked them."""
+    best: dict = {}
+    for c in changes:
+        k = c.get("same")
+        if k and (k not in best or _value(c) > _value(best[k])):
+            best[k] = c
+    out = []
+    for c in changes:
+        k = c.get("same")
+        if not k or best[k] is c:
+            out.append(c)
+        else:
+            best[k].setdefault("alts", []).append(c)
+    return out
+
+
 def summary(ctx: dict) -> dict:
     """The list as the card's strip reads it: this week, and the week after."""
     def one(w):
@@ -260,7 +282,9 @@ def settle(pages: list[dict], ctx: dict | None, shown=(3, 4)) -> int:
     live = [(p, bs) for p, bs in live if bs]
     for _, bs in live:
         for b, _n in bs:
-            every = (b.get("changes") or []) + (b.get("more") or []) + (b.get("held") or [])
+            every = []
+            for c in (b.get("changes") or []) + (b.get("more") or []) + (b.get("held") or []):
+                every += [c] + (c.pop("alts", None) or [])      # a row's alternatives are suggestions of their own again
             b["order"] = b.get("order") or [c.get("key") for c in every]
             rank = {k: i for i, k in enumerate(b["order"])}
             every.sort(key=lambda c: rank.get(c.get("key"), len(rank)))
@@ -327,10 +351,8 @@ def settle(pages: list[dict], ctx: dict | None, shown=(3, 4)) -> int:
     for _, bs in live:
         for b, n in bs:
             b["held"] = [c for c in b["changes"] if c.get("held")]
-            keep = [c for c in b["changes"] if not c.get("held")]
+            keep = one_each([c for c in b["changes"] if not c.get("held")])
             b["changes"], b["more"] = keep[:n], keep[n:]
             if brief:
                 b["list"] = brief
-            if not ctx:
-                b.pop("order", None)
     return held

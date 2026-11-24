@@ -418,7 +418,9 @@ days out, and the paid budget's step for tomorrow from the Spend levels card's o
 (`plan_changes.paid_changes`: the campaign's, or one per line of work on a launch that runs
 an ad set per line). An email's range is the middle half of how past sends landed
 around their reading; a post's is x0.6 to x1.4. The clock's page keeps its own suggested
-actions (`etl/plan_changes.py`), which read what comparable launches did. On both pages an
+actions (`etl/plan_changes.py`), which read what comparable launches did. The two sizes
+an email is offered at are one row on the card, the larger the list's load leaves standing
+with the other inside it (`etl/list_load.py one_each`). On both pages an
 email to half the list or more is held to the list's load (`etl/list_load.py`,
 docs/METHODOLOGY.md 7d): a cap on general sends in a week and a scale on how busy the list
 has been, read across every launch, so this view's emails each say how many people they go

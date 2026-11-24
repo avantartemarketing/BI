@@ -1059,7 +1059,10 @@ A general send the rule lets through says which of the week's it would be
 ("General send 3 of 3"). One it does not sits under **Held back** with the
 reason in a line and what it was worth; it can still be accepted, except in a
 week at the cap. Emails to fewer than half the list, posts and paid are
-untouched. The card's first line gives the list's state, this week's count
+untouched. An email the plan-based view offers at two audiences (the full
+list, and about three times its usual one) is one row, the larger the rule
+leaves standing, and opens to the other as an alternative: as two rows they
+read as two things to do (24 November 2026). The card's first line gives the list's state, this week's count
 against the cap and the load, and opens to the sends counted this week and
 next.
 
