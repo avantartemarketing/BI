@@ -31,7 +31,7 @@ assert.strictEqual(f.tone, "amber");
 assert.strictEqual(f.warn, false, "a current page is never red over the pipeline");
 assert.ok(f.label.includes("refresh failing since") && f.label.includes("yesterday"), f.label);
 assert.strictEqual(f.head, "This page is current, the refresh is failing");
-assert.ok(f.body.includes("will not move until that is fixed"), f.body);
+assert.ok(f.body.includes("will not update until that is fixed"), f.body);
 assert.ok(f.rows.some((r) => r.label === "ETL" && /File name too long/.test(r.value)), "the feed lines are the diagnosis");
 
 // a page whose data is days behind is red whatever the pipeline says

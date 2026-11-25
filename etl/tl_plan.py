@@ -182,7 +182,7 @@ def changes(w: dict, page: dict, paid: dict) -> list[dict]:
                  "date": tomorrow, "lever": "tl_paid_budget_pace"}
             lead = f"{_money(paid['budgetLeft'])} of the {_money(paid['budget'])} budget is left over {days_left} days, which is {_money(pace)} a day against today's {_money(spend_today)}"
             if pace > spend_today:
-                faster = " Spending this much faster may cost more a signup, so read this as the most it brings." if pace > 1.5 * spend_today else ""
+                faster = " Spending this much faster may cost more per signup, so this is the most it brings." if pace > 1.5 * spend_today else ""
                 c.update(units={"low": more, "high": more}, reason=f"{lead}; {cost}.{faster}")
             else:
                 c.update(units=None, saves=int(round((spend_today - pace) * paid["daysLeft"])), reason=f"{lead}: at today's spend the budget runs out before the open. About {int(round(-more))} fewer signups.")
@@ -205,8 +205,8 @@ def changes(w: dict, page: dict, paid: dict) -> list[dict]:
             clicks = int(round(P.expected_clicks("announce", full, t, L, coef, math.log(max(pe, 1e-6)))))
             out.append({"key": f"email.announce.{str(s['day'].date())}.{int(full)}", "kind": "change", "title": "Announcement email", "from": f"{int(round(n0, -2)):,}", "to": "Full list",
                         "channel": "Email", "date": str(s["day"].date()), "people": int(round(full)), "units": {"low": u * lo_m, "high": u * hi_m}, "lever": "plan",
-                        "reason": f"No audience is set yet, so the usual {int(round(n0, -2)):,} people are assumed. To the full list it should bring about {clicks:,} clicks, "
-                                  "read as a first announcement is: people who have already had one will answer less."})
+                        "reason": f"No audience is set, so the usual {int(round(n0, -2)):,} people are assumed. The full list should bring about {clicks:,} clicks, "
+                                  "fewer from people who have already had an announcement."})
     t_mid = min(int((today - ann).days) + V.MID_LEAD_DAYS, L - 2)
     if days_left >= V.MIN_DAYS_LEFT and t_mid > int((today - ann).days):
         mid_day = ann + pd.Timedelta(days=t_mid)
@@ -218,7 +218,7 @@ def changes(w: dict, page: dict, paid: dict) -> list[dict]:
                 clicks = int(round(P.expected_clicks("announce", n, t_mid, L, coef, math.log(max(pe, 1e-6)))))
                 out.append({"key": f"email.announce.add.{int(n)}", "kind": "add", "title": label, "note": "Not in the plan", "channel": "Email", "date": str(mid_day.date()),
                             "people": int(round(n)), "units": {"low": u * lo_m, "high": u * hi_m}, "lever": "plan",
-                            "reason": f"About {clicks:,} clicks at how this launch's emails are running. Read as a first announcement is: people who have already had one will answer less."})
+                            "reason": f"About {clicks:,} clicks at this launch's email rates, fewer from people who have already had an announcement."})
         running = {"Artist": pa, "AA Social": ps, "Partner": pull_all}
         for col, label, chn in (("pl_artist_story", "Artist IG story", "Artist"), ("pl_artist_post", "Artist IG post", "Artist"), ("pl_aa_post", "AA IG post", "AA Social")):
             u = running[chn] * level * P.action_value(col, 1.0, pr)
@@ -242,7 +242,7 @@ def finish(page: dict, ov: dict) -> None:
     if pc is not None:
         expected = float(pc.get("target") or paid.get("target") or 0.0)
         spend_word = f"{_money(paid['spendToday'])} a day to the open" if paid["spendToday"] > 0 else "Nothing being spent"
-        note = (f"A signup is read at {_money(paid['costNext'])} from here: {_money(paid['costSoFar'])} so far, and a launch's later signups have cost about {paid['dearer']:.1f} times its earlier ones"
+        note = (f"A signup is read at {_money(paid['costNext'])} from here: {_money(paid['costSoFar'])} so far, and later signups cost about {paid['dearer']:.1f} times earlier ones"
                 if paid["costSource"] == "own" else f"A signup is read at the basket's {_money(paid['costNext'])} until this launch has its own" if paid.get("costNext") else "")
         rows.append({"moment": V.PAID, "expected": expected, "in": paid["now"], "toCome": paid["toCome"], "note": note,
                      "pieces": [{"when": "", "name": f"{_money(paid['spent'])} spent so far", "who": "paid", "expected": float(pc.get("exp") or 0.0), "in": paid["now"], "toCome": 0.0},
@@ -263,7 +263,7 @@ def finish(page: dict, ov: dict) -> None:
     not_covered = round(max(target - tot["expected"], 0.0), 2) if against == "short" else 0.0
     if not_covered >= 0.5:
         rows.append({"moment": "Not covered", "expected": not_covered, "in": 0.0, "toCome": 0.0, "lands": 0.0, "pieces": [],
-                     "note": "What the plan as written leaves of the signup target, read against launches that drew this many."})
+                     "note": "The part of the signup target that nothing in the plan covers."})
     started = tot["in"] > 0 or w["today"] >= pd.Timestamp(w["first"])
     lands = tot["lands"] if started else tot["expected"]
     by_today = sum(float(c.get("exp") or 0.0) for c in page.get("channels") or [])
@@ -273,7 +273,7 @@ def finish(page: dict, ov: dict) -> None:
     lo, hi = ov["meta"]["organicRange"]
     paid_plan = float((pc or {}).get("target") or 0.0)
     basis = {"similar": f"the {ov['meta']['levelN']} timed launches that drew nearest this many signups at a similar price",
-             "artist": f"the artist's last {ov['meta']['levelN']} timed launches", "basket": f"the {ov['meta']['levelN']} launches the page is benchmarked on",
+             "artist": f"the artist's last {ov['meta']['levelN']} timed launches", "basket": f"the {ov['meta']['levelN']} benchmark launches",
              "all": "every past timed launch"}[ov["meta"]["levelBasis"]]
     page["method"] = "plan"
     page["plan"] = {"state": "live" if started else "start", "target": target, "expected": round(tot["expected"], 2), "in": round(tot["in"], 2), "toCome": round(tot["toCome"], 2),
@@ -282,8 +282,8 @@ def finish(page: dict, ov: dict) -> None:
                     "paidToday": round(paid["spendToday"], 2), "paidRecommended": round(paid["budgetPace"], 2) if paid.get("budgetPace") is not None else None,
                     "rows": rows, "pull": round(ov["meta"]["pullAll"], 3), "level": round(ov["meta"]["level"], 3), "levelBasis": ov["meta"]["levelBasis"],
                     "against": against, "notCovered": not_covered, "of": "signups", "similar": ov["meta"].get("similar"), "similarPaidShare": ov["meta"].get("similarPaidShare"),
-                    "notes": [f"What each email and post is expected to bring is sized on {basis}.", "Still to come follows how each channel is responding so far.",
-                              "Paid is read from the spend, not the calendar: today's spend held to the open, at what a signup will cost."]}
+                    "notes": [f"Each email and post is sized on {basis}.", "Still to come follows how each channel is responding so far.",
+                              "Paid is today's spend held to the open, at what a signup will cost."]}
     found = [dict(c, units=V._whole(c["units"]) if c.get("units") else None) for c in (changes(w, page, paid) if started else [])]
     found = [c for c in found if c["units"] or c.get("channel") == "Paid"]
     found.sort(key=lambda c: -(((c["units"]["low"] + c["units"]["high"]) / 2) if c["units"] else 0))

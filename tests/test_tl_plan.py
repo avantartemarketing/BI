@@ -105,7 +105,7 @@ def test_paid_suggestion():
     assert len(up) == 1 and up[0]["kind"] == "change" and up[0]["title"] == "Paid daily budget" and up[0]["channel"] == "Paid"
     assert up[0]["from"] == "€300" and up[0]["to"] == "€2,000" and up[0]["date"] == "2026-12-09" and up[0]["key"] == "paid.budget.2000"
     close_to(up[0]["units"]["low"], 141.7, 1e-6)
-    assert "€3,000 of the €5,000 budget is left" in up[0]["reason"] and "read at €18" in up[0]["reason"] and "may cost more a signup" in up[0]["reason"]
+    assert "€3,000 of the €5,000 budget is left" in up[0]["reason"] and "read at €18" in up[0]["reason"] and "may cost more per signup" in up[0]["reason"]
     hold = T.changes(work(), {}, {**base, "budgetPace": 320.0, "toCome": 25.0, "toComeAtBudget": 26.7})
     assert hold == []                                                           # within a tenth of today's spend
     cut = T.changes(work(), {}, {**base, "budgetPace": 100.0, "toCome": 25.0, "toComeAtBudget": 8.3})

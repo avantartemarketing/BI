@@ -67,7 +67,7 @@ export default function EmailFunnel({ snap, vs = "target" }) {
     ? <Head v={fmt(unitsNow)} u={`${W.unit} from email`} deltas={[byBm ? vsDelta(unitsNow, unitsExp, "benchmark", "Against the basket's AA Email units by today") : vsDelta(unitsNow, unitsExp, "plan", "Against the plan's AA Email units by today")]} tip={e.sends ? `${fmt(e.sends)} send${e.sends === 1 ? "" : "s"}` : undefined} />
     : null;
   if (!steps.length) {
-    return <Card title="Email funnel" aria="Email funnel">{head}<div className="empty-state">No sends on file for this release yet</div></Card>;
+    return <Card title="Email funnel" aria="Email funnel">{head}<div className="empty-state">No sends on file yet</div></Card>;
   }
   // the reference the bars are read against, as Funnel by channel reads it
   const refWord = byPlan ? "plan" : "basket";

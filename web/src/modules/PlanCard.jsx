@@ -58,16 +58,15 @@ export function planCheck(p) {
   const lo = Array.isArray(p.range) ? n(p.range[0]) : null, hi = Array.isArray(p.range) ? n(p.range[1]) : null;
   const cv = p.of === "conversions";  // ... read in signup conversions (web/src/conversions.mjs)
   const su = p.of === "signups" || cv;      // a timed launch before its window: the plan is for signups, and so is the target
-  const did = cv ? "drew about this many" : su ? "drew about this many signups" : "sold about this many";
-  const span = lo !== null ? ` Launches that ${did} at a similar price would have brought ${lo} to ${hi} with ${su ? "this plan" : "these comms"}.` : "";
+  const span = lo !== null ? ` Similar launches would have brought ${lo} to ${hi} with ${su ? "this plan" : "these comms"}.` : "";
   const gap = Math.round(p.notCovered || 0);
   const tg = `${n(p.target)} ${cv ? "conversion " : su ? "signup " : ""}target`;
   const lead = p.against === "in line" ? `The plan as written is in line with the ${tg}.`
-    : p.against === "short" ? `The plan as written is ${n(gap)} short of the ${tg}: it is lighter than the plans of launches that ${su ? "drew" : "sold"} this many.`
-      : `The plan as written is heavier than launches that ${su ? "drew" : "sold"} ${n(p.target)} have needed.`;
+    : p.against === "short" ? `The plan as written is ${n(gap)} short of the ${tg}: lighter than launches that ${su ? "drew" : "sold"} this many.`
+      : `The plan as written is heavier than launches that ${su ? "drew" : "sold"} ${n(p.target)} needed.`;
   const title = (name) => { const b = String(name || "").split(" \u00b7 "); return b.length > 2 ? `${b[1]} (${b[b.length - 1]})` : name; };
   const own = (p.ownRecord || []).filter((r) => r && r.edition > 0 && r.sold !== null && r.sold !== undefined);
-  const record = own.length ? "Earlier launches: " + own.map((r) => `${title(r.name)} sold ${n(r.sold)} of ${n(r.edition)}${r.cover ? `, entered for ${r.cover.toFixed(1)} times the edition` : ""}`).join("; ") + "." : null;
+  const record = own.length ? "Earlier launches: " + own.map((r) => `${title(r.name)} sold ${n(r.sold)} of ${n(r.edition)}${r.cover ? `, entries ${r.cover.toFixed(1)} times the edition` : ""}`).join("; ") + "." : null;
   return { kind: p.against, lead, span, record, similar: (p.similar || []).map((x) => String(x.name || "").split(" \u00b7 ")[0]) };
 }
 

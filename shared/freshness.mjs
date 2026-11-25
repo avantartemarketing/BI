@@ -95,10 +95,10 @@ export function freshness({ asOf, partial, builtAt, st, emailThrough, funnelNote
   let body;
   if (st === undefined) body = "Reading the refresh status.";
   else if (running && !st.at) body = `A refresh started ${new Date(st.runningSince).toLocaleTimeString()} is still running; the first one after a deploy takes several minutes.`;
-  else if (st === null || !st.at) body = "The dashboard has not been able to read the refresh status.";
+  else if (st === null || !st.at) body = "Could not read the refresh status.";
   else {
     body = `Last refresh attempt ${clock(st.at)}.`;
-    if (coreFailed) body += ` The hourly refresh has been failing since ${whenWords(st.failingSince || st.at, now)}, so this page will not move until that is fixed; the figures on it are from its last successful build.`;
+    if (coreFailed) body += ` The hourly refresh has been failing since ${whenWords(st.failingSince || st.at, now)}, so this page will not update until that is fixed.`;
     if (pagesFailed > 0) body += ` ${pagesFailed} page${pagesFailed === 1 ? "" : "s"} failed to build on the last refresh and kept ${pagesFailed === 1 ? "its" : "their"} previous figures` +
       (Array.isArray(st.etlFailedPages) && st.etlFailedPages.length ? `: ${st.etlFailedPages.join(", ")}.` : ".");
     if (running) body += ` A refresh started ${new Date(st.runningSince).toLocaleTimeString()} is running now.`;

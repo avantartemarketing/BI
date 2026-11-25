@@ -56,7 +56,7 @@ export default function ChannelsVsTargets({ snap, vs = "target", horizon = "toda
     <Card title={title} menu={menu} aria={`${title} against ${refWord} ${when}`}>
       <Head v={fmt(planStart ? totalT : total)} u={planStart ? `${W.unit} in the plan` : W.unit}
         deltas={[targeted && !planStart ? vsDelta(total, totalT, refWord, `${fmt(total)} ${W.unit} ${today ? "to date" : "projected"} against the ${fmt(totalT)} ${refWord} ${when}`) : null]}
-        tip={targeted ? undefined : "No targets set, so the columns are the units alone"} />
+        tip={targeted ? undefined : "No targets set: units only"} />
       <ColChart H={250} L={pct ? 36 : 30} gw={0.4} ymax={ax.ymax} yticks={ax.ticks} yfmt={pct ? (t) => `${t}%` : kfmt}
         cats={base.map((r) => SHORT[r.key] || r.name)} rows={data} refName={RefName}
         title={(i) => `${base[i].name}, ${when}`}

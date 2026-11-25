@@ -246,8 +246,8 @@ def _pct(x: float) -> str:
 
 # ---------------------------------------------------------------- paid
 PAID_STOP = {
-    "supply": ("Edition spoken for", "The edition is spoken for without paid, so a further entry buys nothing."),
-    "marginal": ("Next euro under 1.0", "Even the smallest day's next euro returns less than it costs."),
+    "supply": ("Edition spoken for", "The edition is spoken for without paid."),
+    "marginal": ("Next euro under 1.0", "Even the smallest spend returns less than it costs."),
     "zero_conversion_pause": ("No entries for 3 days", "Three days of spend have bought no entries."),
 }
 
@@ -300,7 +300,7 @@ def paid_change(levels: dict | None, as_of: date, close: date, line: dict | None
         return None
     u_to, u_now = _units_at(lv.get("rows"), level), _units_at(lv.get("rows"), today)
     delta = (u_to - u_now) if u_to is not None and u_now is not None else None
-    heading = f" {_money(level)} a day is the level it is heading for." if abs(level - step) >= 1 else ""
+    heading = f" It is heading for {_money(level)} a day." if abs(level - step) >= 1 else ""
     if today <= 0:
         return dict(base, key=f"{key}budget.{int(round(step))}", kind="add", title="Paid spend" + what, to=f"{_money(step)} a day",
                     units=({"low": int(round(delta)), "high": int(round(delta))} if delta is not None and round(delta) >= 1 else None),

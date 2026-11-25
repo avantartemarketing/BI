@@ -7759,16 +7759,16 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
 
         daily_assumed = (level if (level is not None and level != math.inf) else recommended) if (cost and not complete) else None
         rec_sc = scenario(sellthrough, fwd, daily_assumed, proj_u,
-                          "The projection runs at the recommended spend: the level at which the next euro returns what it costs, "
-                          "capped at the spend that sells out, reached from today's by steps of up to 30% a day.")
+                          "The recommended spend: where the next euro returns what it costs, "
+                          "capped at the spend that sells out, reached in steps of up to 30% a day.")
         scenarios = None
         if not complete and st_flat is not None and st_none is not None and cost:
             u_flat = spoken_for(st_flat) + float(st_flat.get("futureEntriesPredicted") or 0)
             u_none = spoken_for(st_none) + float(st_none.get("futureEntriesPredicted") or 0)
             scenarios = {
                 "recommended": rec_sc,
-                "current": scenario(st_flat, fwd_flat, s0, u_flat, "Today's daily spend held to the close, stopped where spending on would be wasted."),
-                "none": scenario(st_none, fwd_none, 0.0, u_none, "No more paid spend from now: the organic course alone."),
+                "current": scenario(st_flat, fwd_flat, s0, u_flat, "Today's spend held to the close, stopped where more would be wasted."),
+                "none": scenario(st_none, fwd_none, 0.0, u_none, "No more paid spend from now."),
             }
         close_forecast = {
             **rec_sc,

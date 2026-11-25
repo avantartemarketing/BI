@@ -22,8 +22,8 @@ function DisplayMenu({ directSpread, setDirectSpread, snap, planOn }) {
   const m = useMenu();
   const W = wordsOf(snap);
   const tip = W.tl
-    ? "Spread shares Direct's sessions, signups and units out over the other channels in proportion, and reads the basket the same way"
-    : "Spread shares Direct's sessions, entries and units out over the other channels in proportion, and reads the basket the same way";
+    ? "Spread shares Direct's sessions, signups and units over the other channels, in the basket too"
+    : "Spread shares Direct's sessions, entries and units over the other channels, in the basket too";
   // the plan-based view has one reading of Direct: spread on a draw launch, and on a timed launch as the feed
   // attributes it, which is how its sales forecast is read (docs/TL_SPEC.md 3b)
   const planChannel = !!planOn && !!W.tl;
@@ -33,7 +33,7 @@ function DisplayMenu({ directSpread, setDirectSpread, snap, planOn }) {
       <button className="chip" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle}><Display />Display</button>
       <Menu open={m.open} onClose={m.close} style={{ top: 32, right: 0, width: 272, padding: 6 }}>
         <div className="dmh">Every release</div>
-        <div className="dm" title={tip}>Direct<Seg options={[["channel", "Channel", planSpread ? "The plan-based view is read with Direct spread over the other channels" : "Direct stays a channel of its own, as the feed attributes it", planSpread], ["spread", "Spread", planChannel ? "A timed launch's plan-based view reads Direct as the feed attributes it, as its sales forecast does" : tip, planChannel]]} value={planChannel ? "channel" : planOn || directSpread ? "spread" : "channel"} onChange={(v) => setDirectSpread(v === "spread")} label="Direct" /></div>
+        <div className="dm" title={tip}>Direct<Seg options={[["channel", "Channel", planSpread ? "The Plan view always spreads Direct over the other channels" : "Direct stays its own channel", planSpread], ["spread", "Spread", planChannel ? "On a timed launch the Plan view keeps Direct as its own channel" : tip, planChannel]]} value={planChannel ? "channel" : planOn || directSpread ? "spread" : "channel"} onChange={(v) => setDirectSpread(v === "spread")} label="Direct" /></div>
       </Menu>
     </span>
   );
@@ -83,7 +83,7 @@ function HorizonChip({ horizon, onChange, closeLabel }) {
   const m = useMenu();
   return (
     <span style={{ position: "relative", display: "inline-flex" }}>
-      <button className="chip" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle} title="What every card reads: where the release is today, or the projection at the close">{horizon === "close" ? closeLabel : "Today"}<Caret /></button>
+      <button className="chip" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle} title="Show every card as of today, or projected to the close">{horizon === "close" ? closeLabel : "Today"}<Caret /></button>
       <Menu open={m.open} onClose={m.close} style={{ top: 30, left: 0, width: 200 }}>
         <MenuItem radio checked={horizon === "today"} onClick={() => { m.close(); onChange("today"); }}>Today</MenuItem>
         <MenuItem radio checked={horizon === "close"} onClick={() => { m.close(); onChange("close"); }}>{closeLabel}</MenuItem>
@@ -112,8 +112,8 @@ function CompareSwitch({ snap, vs, onChange }) {
   return (
     <span className="cmp">Compare to
       <Seg label="Compare to" value={vs} onChange={onChange}
-        options={[["target", "Target", t ? "Read every card against the targets set for this release" : "No targets set for this release", !t],
-          ["benchmark", "Benchmark", b ? "Read every card against the benchmark: the median of the matched basket of comparable launches" : "No comparable basket for this release", !b]]} />
+        options={[["target", "Target", t ? "Compare every card to this release's targets" : "No targets set", !t],
+          ["benchmark", "Benchmark", b ? "Compare every card to the benchmark: the median of comparable launches" : "No basket of comparable launches", !b]]} />
     </span>
   );
 }
@@ -125,8 +125,8 @@ function MethodSwitch({ value, onChange }) {
   return (
     <span className="cmp">Targets from
       <Seg label="Targets from" value={value} onChange={onChange}
-        options={[["time", "Time", "Read every card against the campaign clock: how far along a launch should be by today"],
-          ["plan", "Plan", "Read every card against the comms plan: what each email, each post and the paid budget should bring"]]} />
+        options={[["time", "Time", "Targets by the calendar: how far along a launch should be by today"],
+          ["plan", "Plan", "Targets from the comms plan: what each email, post and the paid budget should bring"]]} />
     </span>
   );
 }
@@ -155,7 +155,7 @@ function RefreshButton({ st, onRefresh }) {
   const clock = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   const title = failed ? "Could not start a refresh - try signing in again"
     : running ? `Refreshing since ${st.runningSince ? clock(st.runningSince) : "just now"}; this page reloads when it lands`
-    : "Refresh data now: pulls the latest from BigQuery and rebuilds the pages, a few minutes";
+    : "Refresh data now. Takes a few minutes";
   const go = () => {
     setBusy(true); setFailed(false);
     onRefresh().then((ok) => { if (!ok) { setFailed(true); setTimeout(() => setFailed(false), 6000); } }).finally(() => setBusy(false));
@@ -200,7 +200,7 @@ function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup }) {
   const noEvent = snap.untracked && snap.untracked.noEvent;
   if (noEvent && noEvent.high) {
     strips.push({ key: "coverage", icon: <Warn />, text: `${fmt(noEvent.count)} of ${fmt(noEvent.total)} units paid (${Math.round((noEvent.share || 0) * 100)}%) have no purchase event`,
-      sx: "They count on Untracked, shared out over the channels; the purchase tag may be missing on part of checkout" });
+      sx: "Counted as Untracked and shared over the channels. The purchase tag may be missing on part of checkout" });
   }
   if (snap.targeted === false && !snap.catalogue && !snap.upcoming) {
     strips.push({ key: "notargets", icon: <Ring />, text: "No targets yet", sx: "Showing actuals only", action: <button className="sbtn prim" onClick={onSetup}>Set targets</button> });
@@ -232,7 +232,7 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
         <header className="phead"><button className="ib menub" aria-label="Open the sidebar" onClick={onMenu}><Hamburger /></button><span className="crumb">{row ? nameOf(row).artist : "Release"}</span></header>
         <div style={{ padding: 40, color: "#6b6b6f", maxWidth: 520, lineHeight: 1.5 }}>
           {snapError ? (snapError.pending
-            ? <><b style={{ color: "#1b1b1c" }}>{row ? nameOf(row).artist : "This release"}</b> is listed but its page has not been built yet: the first data refresh after a deploy takes a few minutes. Try again shortly.</>
+            ? <><b style={{ color: "#1b1b1c" }}>{row ? nameOf(row).artist : "This release"}</b> is listed but its page is not built yet. Try again in a few minutes.</>
             : <>Could not load this release: {snapError.message}</>) : "Loading…"}
         </div>
       </main>

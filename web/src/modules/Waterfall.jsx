@@ -38,7 +38,7 @@ export default function Waterfall({ snap, vs = "target", horizon = "today" }) {
   if (!wf) {
     return (
       <Card title={vs === "benchmark" ? "Gap to benchmark" : "Gap to target"} menu={menu}>
-        <div className="empty-state">{snap.targeted === false ? "Needs targets: the gap reads against a target" : "No projection model yet"}</div>
+        <div className="empty-state">{snap.targeted === false ? "Needs targets" : "No projection yet"}</div>
       </Card>
     );
   }
@@ -61,10 +61,10 @@ export default function Waterfall({ snap, vs = "target", horizon = "today" }) {
   const closeWord = complete ? "Final" : "Projected";
   const whenWord = isToday ? W.toDate : `${closeWord} at the ${W.closeWord}`;
   const body = by === "channels"
-    ? `From the ${hasBm ? "benchmark, the basket's median," : "target"} each channel by its own ${W.unit} against its own ${refWord}, in the page's order; they add up to the release's demand, so on a sold-out release the last row, Beyond sellout, is the drop to the capped figure.`
+    ? `Each channel's ${W.unit} against its own ${refWord}${hasBm ? ", the basket's median" : ""}. On a sold-out release the last row, Beyond sellout, is demand the edition cannot hold.`
     : isToday
-      ? `Against the ${hasBm ? "benchmark, what launches like this one typically have by now," : "target"} the contributors sum exactly to the gap between it and the ${W.unit} ${W.securedLower} to date.`
-      : `Against the ${hasBm ? "benchmark, the basket's median at close," : "target"} the contributors sum exactly to the gap between it and the projection at close; demand beyond the sellout is the last row.`;
+      ? `What added to or took from the ${W.unit} ${W.securedLower} to date, against the ${hasBm ? "benchmark: what similar launches have by now" : "target"}. The rows add up to the gap.`
+      : `What adds to or takes from the projection at close, against the ${hasBm ? "benchmark: the basket's median at close" : "target"}. The rows add up to the gap; demand beyond the sellout is the last row.`;
   const signed = (v) => fmtSigned(Math.round(v));
   return (
     <Card title={<span title={body}>{cardTitle}</span>} aria={cardTitle} menu={menu}>
@@ -78,7 +78,7 @@ export default function Waterfall({ snap, vs = "target", horizon = "today" }) {
           title={(i) => steps[i][0]}
           rows2={(i) => [{ n: `${W.Unit} ${vals[i] >= 0 ? "added" : "lost"} against the ${refWord}`, v: `${signed(vals[i])} ${W.unit}`, k: sw(vals[i] >= 0 ? COL.IND : COL.ORANGE) }]}
           aria={`${cardTitle}: ${fmtSigned(net)} ${W.unit}; ${steps.map((s) => `${s[0]} ${fmtSigned(s[1])}`).join(", ")}`} />
-      ) : <div className="empty-state">No drivers to read yet</div>}
+      ) : <div className="empty-state">No drivers yet</div>}
     </Card>
   );
 }

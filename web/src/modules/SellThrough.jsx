@@ -94,22 +94,22 @@ export default function SellThrough({ snap, horizon = "today" }) {
   const preRateText = preRate === null ? null : `${Math.round(preRate * 100)}%`;
   const twoRates = preRateText !== null && preRateText !== rateText;
   const method = tl
-    ? "Paid is the orders table's paid lines in the window, by pieces. Awaiting payment is the orders raised in the window and not yet paid, pending and draft, which count as units sold until they lapse. Each row is a work against its units target, the bar running past the target where the work has sold more." + (close ? " Still to come is the projection's further units, spread over the works in proportion to their sales." : "")
-    : `Paid is units paid for. Drafts are orders raised but not yet paid, including the orders advisors have out for winners; they take room like a sale. Draw winners (estimate) are the people still in the draw, counted at ${rateText}${twoRates ? `, or at ${preRateText} where they entered as a pre-order and their card is already authorised` : ""}. Winners who have not paid are not counted: the order sent after a failed payment is in Drafts for 72 hours, and after that it is out. A draw round's winners whose claim the order feed has not caught up with yet still count, at the pre-order rate, until their orders land${finite(st.claimsInFlight) && st.claimsInFlight > 0 ? ` (${fmt(st.claimsInFlight)} landing now)` : ""}. Someone who entered more products than they want is counted on the number they want, on the priciest of them with room first, which is how the allocator awards them.` + (close ? " Still to come is the projection's further entrants, taken to look like those so far and placed where there is room." : "");
+    ? "Paid is pieces on orders paid in the window. Awaiting payment is orders raised in the window and not yet paid; they count as sold until they lapse. Each bar is a work against its units target." + (close ? " Still to come is the forecast's further units, shared out by sales so far." : "")
+    : `Paid is units paid for. Drafts are orders raised but not yet paid; they take room like a sale. Draw winners (estimate) are the people still in the draw, counted at ${rateText}${twoRates ? `, or ${preRateText} for pre-orders` : ""}. Winners who have not paid are not counted; an order sent after a failed payment stays in Drafts for 72 hours. Winners whose orders have not landed yet still count, at the pre-order rate${finite(st.claimsInFlight) && st.claimsInFlight > 0 ? ` (${fmt(st.claimsInFlight)} landing now)` : ""}. Someone who entered more products than they want counts for the number they want, the priciest with room first.` + (close ? " Still to come is the forecast's further entrants, placed where there is room." : "");
   const salesWindow = snap.unitsSource === "orders" ? snap.salesWindow || null : null;
   const outside = salesWindow ? st.unitsOutsideWindow || null : null;
   const dayText = (iso) => fmtDay(new Date(iso + "T00:00:00Z"));
   const alloc = st.allocation || null;
   const moved = fromFeed ? st.products.filter((p) => (p.flexible ?? 0) > 0) : [];
   const paidTip = [
-    ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [`${fmt(st.attributedSold ?? 0)} named by product, ${fmt(st.unattributedSold)} estimated: the draw feed only names the product of a sale that came through a draw win; the rest is split across the products by edition size`] : []),
-    ...(salesWindow ? [`Counted ${dayText(salesWindow.start)} to ${dayText(salesWindow.end)} from the orders table`] : []),
+    ...(fromFeed && (st.unattributedSold ?? 0) > 0 ? [`${fmt(st.attributedSold ?? 0)} named by product, ${fmt(st.unattributedSold)} estimated: a sale outside a draw win names no product, so those are split by edition size`] : []),
+    ...(salesWindow ? [`Counted ${dayText(salesWindow.start)} to ${dayText(salesWindow.end)}`] : []),
     ...(outside && outside.before > 0 ? [`Paid earlier, not counted: ${fmt(outside.before)}`] : []),
     ...(outside && outside.after > 0 ? [`Paid after the window shut, not counted: ${fmt(outside.after)}`] : []),
     ...(outside && outside.pending > 0 ? [`Paid since ${dayText(salesWindow.end)}, counts on the next refresh: ${fmt(outside.pending)}`] : []),
   ].join("\n") || "Units paid for";
   const draftsTip = [
-    tl ? "Orders raised in the window and not yet paid, pending and draft, by pieces: they count as units sold until they lapse" : "Draft orders raised but not yet paid. They take room like a sale. The order an advisor sends a winner after a failed payment counts for 72 hours; unpaid after that, it is out",
+    tl ? "Orders raised in the window and not yet paid. They count as sold until they lapse" : "Orders raised but not yet paid. They take room like a sale. An order sent to a winner after a failed payment counts for 72 hours",
     ...(winnerDraftsAll > 0 ? [`Of which winners' claims under 72 hours old: ${fmt(winnerDraftsAll)}`] : []),
     ...(winnerDraftsLapsedAll > 0 ? [`Winners' claims unpaid after 72 hours, not counted: ${fmt(winnerDraftsLapsedAll)}`] : []),
   ].join("\n");
@@ -149,12 +149,12 @@ export default function SellThrough({ snap, horizon = "today" }) {
     <>
       {incomplete.length > 0 && (
         <Loz kind="warm" tip={`Not in the feed yet: ${incomplete.join(", ")}. ${incomplete.includes("orders table")
-          ? "The orders table has no lines for this launch yet, so its units are the feed's purchase events and the launch is one row."
-          : incomplete.includes("products") ? "The event feed has no draws for this release yet, so the release is one row. The rows by product appear after the next data refresh."
-          : "Sales the draw cannot name a product for are split by edition size inside the paid segment until the sales feed carries the product."}`}>Incomplete data</Loz>
+          ? "No order lines for this launch yet, so units come from purchase events and the launch is one row."
+          : incomplete.includes("products") ? "No draws in the feed for this release yet, so it is one row until the next refresh."
+          : "Sales with no product named are split by edition size until the sales feed names it."}`}>Incomplete data</Loz>
       )}
       {mismatch && (
-        <Loz kind="warm" tip={`The works' editions add up to ${fmt(st.editionSum)}, the release's edition is ${fmt(edition)}. The head and the room left read the release's; each row reads its own work's. One of the two is wrong: check them on the Targets tab.`}>editions add to {fmt(st.editionSum)}</Loz>
+        <Loz kind="warm" tip={`The works' editions add up to ${fmt(st.editionSum)}, the release's edition is ${fmt(edition)}. The head uses the release's. Check them on the Targets tab.`}>editions add to {fmt(st.editionSum)}</Loz>
       )}
     </>
   );
@@ -221,7 +221,7 @@ export default function SellThrough({ snap, horizon = "today" }) {
         { n: "Paid", k: sw(SEG.paid), tip: `${fmt(sold)} paid\n${paidTip}` },
         ...(draftsAll !== null && draftsAll > 0 ? [{ n: tl ? "Awaiting payment" : "Drafts", k: sw(SEG.drafts), tip: `${fmt(draftsAll)} ${tl ? "awaiting payment" : "drafts"}\n${draftsTip}` }] : []),
         ...(!tl ? [{ n: "Likely winners", k: sw(SEG.winners), tip: `${fmt(inHandAll)} draw winners (estimate)\n${inHandTip}` }] : []),
-        ...(close && futureAll > 0 ? [{ n: "Still to come", k: sw(SEG.future), tip: `${fmt(futureAll)}: the projection's further units, spread over the products with room left` }] : []),
+        ...(close && futureAll > 0 ? [{ n: "Still to come", k: sw(SEG.future), tip: `${fmt(futureAll)} more forecast, placed where there is room` }] : []),
         ...(tl ? [{ n: "Target", k: { width: 2, height: 11, flex: "0 0 2px", background: COL.INK } }] : []),
       ]} />
       <Note text={note ? note.text : ""} bad={note ? note.bad : false} onClose={() => setNote(null)} />

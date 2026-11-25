@@ -63,8 +63,8 @@ export default function Framing({ snap, horizon = "today" }) {
     ...(ent ? [`${tl ? "Awaiting payment" : f.entrantsLabel || "Entrants"}: ${fmt(ent.frames)} of ${fmt(ent.prints)} ${tl ? "prints on orders not yet paid" : "prints pre-authorised"} · ${fmtPct(ent.rate ?? 0)}`] : []),
   ];
   const headTip = [head
-    ? `Frames on the prints the sell-through counts ${close ? "at close" : "today"}: paid, awaiting payment and expected from the draw. A frame per print at most.`
-    : "Frames bought with the prints sold, over the prints a frame was on offer for", ...(head ? readings : [])].join("\n");
+    ? `Frames on the prints counted ${close ? "at close" : "today"}: paid, awaiting payment and expected from the draw.`
+    : "Frames sold, over the prints a frame was offered on", ...(head ? readings : [])].join("\n");
   // a bar per work: on the head's units where the forecast has the works, else on the paid prints
   const fcWorks = head ? (f.forecast.products || []).map((r) => ({ name: r.name, ...(r[at] || {}) })).filter((w) => w.prints > 0 && has(w.rate)) : [];
   const onHead = fcWorks.length > 0;

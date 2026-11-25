@@ -1391,8 +1391,8 @@ def similar_desc(members: list[str], reach: float | None, on: tuple[str, ...], s
         return near + "."
     if reach > SCALE_MISMATCH_FACTOR:
         return (f"{near}. Nothing on file is close to it: the furthest of the eight is "
-                f"x{reach:,.1f} away, so the benchmark is what the nearest launches on record "
-                f"reached and the uplift says how far past them this edition is being asked to go.")
+                f"x{reach:,.1f} away, so the benchmark is what the nearest launches reached "
+                f"and the uplift is how far past them this edition has to go.")
     return f"{near} - all within x{reach:,.1f} of it."
 
 
