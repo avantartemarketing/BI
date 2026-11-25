@@ -55,7 +55,7 @@ const TABLES = {
   email_sends: {
     dir: "sources", file: "all_sent_emails.csv",
     grain: "marketing email send",
-    about: "HubSpot marketing sends: email name, send date, campaign, delivered, opened, clicked, unsubscribed (counts only).",
+    about: "HubSpot marketing sends: email name, send date, campaign, delivered, opened, clicked, unsubscribed (counts only), and kind (batch: sent once at the send date; automated: sent by a workflow, the date is when it was published).",
   },
   release_clusters: {
     dir: "data", file: "release_clusters.csv",

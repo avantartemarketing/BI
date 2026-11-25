@@ -27,10 +27,17 @@ launch date and window length, the feed's own launch timestamp and the sales:
           TL_ANNOUNCE_LEAD days of the open; else 24 days before the open,
           said to be assumed
   early access  the sales start about a day before the public open (the
-          platform's "TL - Early access" stage, private-room orders): the
-          first hour before the open, within 36 hours of it, that sold five
-          pieces or more; for a launch still to open, the open less 24 hours,
-          said to be expected
+          platform's "TL - Early access" stage, private-room orders), when
+          the early access email goes: the hour the first batch early access
+          email under the launch's campaign code was sent, within 36 hours of
+          the open (early_access_email), or an earlier hour that sold five
+          pieces or more, which is an early access email HubSpot keeps no
+          send time for (an automated one, sent by a workflow). The room
+          opening is not the judge: a piece sold in the private room before
+          the email starts nothing. With no email timed on file, the sales
+          say it as before: the first hour that sold five pieces or holds a
+          private-room sale; for a launch still to open with none of these,
+          the open less 24 hours, said to be expected
   settle  the close plus TL_SETTLE_DAYS: drafts are paid and cancellations
           land, then the figures are final
 States: upcoming (before the announce), signups (announce to the sales open),
@@ -74,6 +81,7 @@ import pandas as pd
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import pricing  # noqa: E402
+import tl_plan  # noqa: E402 - the plan-based view of a launch gathering signups (docs/PLAN_MODEL.md 6b)
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -472,9 +480,18 @@ def _orders_rows(orders: dict | None, name: str) -> pd.DataFrame | None:
     return g if g is not None and len(g) else None
 
 
-def window_from_orders(rows: pd.DataFrame, sales_open: datetime, until: datetime) -> dict:
+def window_from_orders(rows: pd.DataFrame, sales_open: datetime, until: datetime, count_from: datetime | None = None) -> dict:
     """What the orders table says of a window: the lines made from the sales
-    open to `until`, units paid plus awaiting, the rest counted apart."""
+    open to `until`, units paid plus awaiting, the rest counted apart. With
+    `count_from` before the sales open (tl_dates: the room sold a piece before
+    the early access email went), the lines made in between are the window's
+    too, counted in its first hour: the email starts the clock, and no piece
+    the launch sold is left out for having been sold ahead of it."""
+    if count_from is not None and count_from < sales_open:
+        ahead = (rows["ts"] >= count_from) & (rows["ts"] < sales_open)
+        if ahead.any():
+            rows = rows.copy()
+            rows.loc[ahead, "ts"] = pd.Timestamp(sales_open)
     win = rows[(rows["ts"] >= sales_open) & (rows["ts"] < until)]
     live = win[win["status"].isin(LIVE_STATUS)]
     paid = win[win["status"] == "paid"]
@@ -586,22 +603,89 @@ def infer_announce(daily: pd.DataFrame, open_dt: datetime) -> date | None:
     return hit.index.min() if len(hit) else None
 
 
-def early_access_from(hourly: pd.DataFrame, open_dt: datetime) -> datetime | None:
-    """The first hour before the open, within TL_EA_WITHIN_HOURS of it, that sold TL_EA_MIN_PIECES pieces or more."""
-    if hourly is None or not len(hourly):
+# an email that is the early access: by its name, as the Notion log's rows are read (server/notion.js STAGE_RE.early_access)
+EA_EMAIL_RE = re.compile(r"early[\s/-]*(?:exclusive|excl\.?|vip)?[\s/-]*access|exclusive[\s-]?access|private[\s-]?room|priority access", re.I)
+
+
+def _email_token(name: object) -> str:
+    """The campaign an email names itself for: what stands before " - ", less
+    the send date and the type the name starts with ("231126_CUS_", "AUT_"):
+    WillMatt_TL_26 for "AUT_WillMatt_TL_26 - Early Access for PP (TL Non-flow)"."""
+    head = re.split(r"\s-\s", str(name or ""), maxsplit=1)[0]
+    return re.sub(r"^\s*(?:\d{6}_)?\s*(?:(?:GEN|CUS|INS|TRNS|AUT|FREQ|TEST)_)?\s*", "", head).strip().lower()
+
+
+def early_access_email(emails: pd.DataFrame | None, code: str | None, open_dt: datetime) -> datetime | None:
+    """The hour the launch's early access email went: the first batch email
+    of its campaign whose name says early access, sent within
+    TL_EA_WITHIN_HOURS before the open, on the hour it fell in (the sales are
+    counted by the hour, and the hour of the email is the hour of its first
+    sales). Batch emails only: an automated email is sent by a workflow and
+    its date on file is the day it was published, hours or days before it
+    went (server/hubspot.js Kind), so a file without the column times
+    nothing. The campaign's emails are the ones under its code and the ones
+    named for the campaign those are named for: two launches sold together
+    share their emails, and each email is filed under one code (Matt
+    DesLauriers' Serac and William Mapan's (Un)confined, 24 November 2026:
+    one "WillMatt_TL_26" early access email, filed under Serac's code, and
+    (Un)confined read its early access off a private-room sale two hours
+    before it). None when no such email is on file."""
+    if emails is None or not len(emails) or not code or not {"campaign", "sent_at", "name", "kind"} <= set(emails.columns):
         return None
+    lo, hi = open_dt - timedelta(hours=TL_EA_WITHIN_HOURS), open_dt
+    sent_at = pd.to_datetime(emails["sent_at"], errors="coerce", utc=True)
+    mine = emails["campaign"].astype(str).str.strip() == str(code)
+    if not mine.any():
+        return None
+    # the campaign names the code's emails carry around the launch
+    near = mine & (sent_at >= open_dt - timedelta(days=TL_ANNOUNCE_LEAD)) & (sent_at <= open_dt + timedelta(days=7))
+    tokens = {t for t in emails.loc[near, "name"].map(_email_token) if t}
+    cand = emails[(emails["kind"].astype(str) == "batch") & (sent_at >= lo) & (sent_at < hi)]
+    if not len(cand):
+        return None
+    cand = cand[cand["name"].astype(str).str.contains(EA_EMAIL_RE)]
+    cand = cand[(cand["campaign"].astype(str).str.strip() == str(code)) | cand["name"].map(_email_token).isin(tokens)]
+    sent = sent_at[cand.index].dropna()
+    return sent.min().floor("h").to_pydatetime() if len(sent) else None
+
+
+def early_access_from(hourly: pd.DataFrame, open_dt: datetime, orders: pd.DataFrame | None = None, private: bool = True) -> datetime | None:
+    """The early access as the sales say it: the first hour before the open,
+    within TL_EA_WITHIN_HOURS of it, that sold TL_EA_MIN_PIECES pieces or
+    more, or that holds a private-room sale (the feed's purchases, and the
+    orders table's paid and awaiting lines where `orders` carries the
+    launch's). With `private` off, the hour of five pieces alone: beside an
+    early access email on file a lone private-room sale starts nothing
+    (tl_dates)."""
     lo = open_dt - timedelta(hours=TL_EA_WITHIN_HOURS)
-    win = hourly[(hourly["ts"] >= lo) & (hourly["ts"] < open_dt)]
-    if not len(win):
-        return None
-    by_hour = win.groupby("ts")["units"].sum().sort_index()
-    hit = by_hour[by_hour >= TL_EA_MIN_PIECES]
-    return hit.index.min().to_pydatetime() if len(hit) else None
+    hits = []
+    if hourly is not None and len(hourly):
+        win = hourly[(hourly["ts"] >= lo) & (hourly["ts"] < open_dt)]
+        if len(win):
+            by_hour = win.groupby("ts")["units"].sum().sort_index()
+            hit = by_hour[by_hour >= TL_EA_MIN_PIECES]
+            if len(hit):
+                hits.append(hit.index.min())
+            if private and "units_private" in win.columns:
+                private_rows = win[win["units_private"] > 0]
+                if len(private_rows):
+                    hits.append(private_rows["ts"].min())
+    if private and orders is not None and len(orders):
+        private_rows = orders[(orders["ts"] >= lo) & (orders["ts"] < open_dt) & orders["status"].isin(LIVE_STATUS) & (orders["units_private"] > 0)]
+        if len(private_rows):
+            hits.append(private_rows["ts"].min())
+    return min(hits).to_pydatetime() if hits else None
 
 
 def tl_dates(launch: dict | None, feed_row: dict | None, inputs: dict | None, daily: pd.DataFrame, hourly: pd.DataFrame,
-             now: datetime) -> dict:
-    """Every date of a TL and where each came from (module docstring)."""
+             now: datetime, orders: pd.DataFrame | None = None, emails: pd.DataFrame | None = None, code: str | None = None) -> dict:
+    """Every date of a TL and where each came from (module docstring).
+    `orders`: the launch's lines on the orders table, where it has them (the
+    early access is read off its private-room sales too). `emails` and
+    `code`: the sends on file and the launch's campaign code, where it has
+    one: the early access is timed from its early access email (the code is
+    guessed from the open and the announce, so a caller without one reads the
+    dates first and again with it, dated_with_code)."""
     inp = inputs or {}
     feed_launch = (feed_row or {}).get("feed_launch") or None
     open_dt, open_src, open_note = open_from(launch, feed_launch, inp.get("window_open"))
@@ -632,21 +716,37 @@ def tl_dates(launch: dict | None, feed_row: dict | None, inputs: dict | None, da
         notes.append(f"the announce date on file ({ann.isoformat()}) is not before the open; {TL_ASSUMED_PRE_DAYS} days before it assumed")
         ann = open_dt.date() - timedelta(days=TL_ASSUMED_PRE_DAYS)
         ann_src, assumed = "assumed", True
-    # the early access: seen in the sales, else expected a day before the open
-    ea, ea_assumed = None, False
+    # the early access: from when its email went (24 November 2026: the email
+    # is the judge, not the room opening), else seen in the sales, else
+    # expected a day before the open
+    ea, ea_assumed, ea_src, seen = None, False, None, None
     if open_dt is not None:
-        ea = early_access_from(hourly, open_dt)
+        sent = early_access_email(emails, code, open_dt)
+        seen = early_access_from(hourly, open_dt, orders)
+        if sent is not None:
+            # an hour of five pieces before the batch email is an early access
+            # email too, the workflow's, which HubSpot keeps no send time for
+            # (Barry McGee, 2025 Q1: 32 pieces at 11:00Z, the insiders' batch
+            # at 14:05Z); a lone private-room sale before the email is not
+            burst = early_access_from(hourly, open_dt, orders, private=False)
+            ea, ea_src = (burst, "sales") if burst is not None and burst < sent else (sent, "email")
+        else:
+            ea = seen
+            ea_src = "sales" if ea is not None else None
         if ea is None and now < open_dt:
-            ea, ea_assumed = open_dt - timedelta(hours=TL_EA_HOURS), True
+            ea, ea_assumed, ea_src = open_dt - timedelta(hours=TL_EA_HOURS), True, "expected"
     sales_open = ea or open_dt
+    # where the pieces are counted from: the sales open, or the room's first
+    # sale where that came before the email (window_from_orders)
+    count_from = min(seen, sales_open) if seen is not None and sales_open is not None else sales_open
     settle = close_dt + timedelta(days=TL_SETTLE_DAYS) if close_dt else None
     airtable_open_dt, _ = _airtable_open(launch)
     feed_dt = _ts(feed_launch)
     return {
         "announce": ann, "announce_source": ann_src, "announce_assumed": assumed,
         "open": open_dt, "open_source": open_src, "hours": hours, "hours_source": len_src,
-        "close": close_dt, "early_access": ea, "early_access_assumed": ea_assumed, "sales_open": sales_open,
-        "settle": settle, "notes": notes,
+        "close": close_dt, "early_access": ea, "early_access_assumed": ea_assumed, "early_access_source": ea_src, "sales_open": sales_open,
+        "count_from": count_from, "settle": settle, "notes": notes,
         # the readings beside the one in force, for the drift notes on the tab
         "readings": {
             "announce": {"typed": _iso(_day(inp.get("announce_date"))), "airtable": _iso(airtable_announce(launch, open_dt)),
@@ -658,6 +758,16 @@ def tl_dates(launch: dict | None, feed_row: dict | None, inputs: dict | None, da
                       "airtable_end": _iso(_day((launch or {}).get("tl_end_date")))},
         },
     }
+
+
+def dated_with_code(d: dict, code: str | None, emails: pd.DataFrame | None, *args, **kwargs) -> dict:
+    """A launch's dates read again with its campaign code, so the early access
+    is timed from its early access email: `d` is tl_dates' first reading (the
+    code is guessed from its open and announce), `args` what it was handed.
+    The same reading back when there is no code or no email to time it by."""
+    if not code or emails is None or d.get("open") is None or early_access_email(emails, code, d["open"]) is None:
+        return d
+    return tl_dates(*args, **kwargs, emails=emails, code=code)
 
 
 def state_of(d: dict, now: datetime) -> str:
@@ -1123,9 +1233,14 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
             continue
         daily, hourly = _rel_rows(series, name)
         launch = matched.get(name)
-        d = tl_dates(launch, r, None, daily, hourly, now)
+        d = tl_dates(launch, r, None, daily, hourly, now, _orders_rows(orders_data, name))
         if d["open"] is None or d["settle"] is None or d["settle"] > now:
             continue   # still in flight or unsettled: not a comparable yet
+        # the launch's code, guessed from its open and announce, and the dates
+        # read again with it: the early access from when its email went
+        code = guess_tl_code(str(r["artist"]), d["open"], activity, taken_codes, titles=f"{(launch or {}).get('titles') or ''} {r.get('title') or ''}",
+                             airtable_code=(launch or {}).get("airtable_release"), announce=d["announce"])
+        d = dated_with_code(d, code, emails, launch, r, None, daily, hourly, now, _orders_rows(orders_data, name))
         pre = _pre_window(daily, hourly, d["sales_open"])
         signups = float(pre["signups"].sum()) if len(pre) else 0.0
         if signups < TL_PANEL_MIN_SIGNUPS:
@@ -1142,7 +1257,7 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
         multiple_share = (float(r["buyers_multiple"]) / float(r["buyers_unique"])) if _num(r.get("buyers_unique")) else float("nan")
         units_source = "feed"
         if o_rows is not None:
-            o = window_from_orders(o_rows, d["sales_open"], d["settle"])
+            o = window_from_orders(o_rows, d["sales_open"], d["settle"], d.get("count_from"))
             if o["units"] > 0:
                 units, ug, units_source = o["units"], o["by_group"], "orders"
                 if o["prints_offered_paid"] >= 20:
@@ -1176,8 +1291,6 @@ def panel_frame(series: dict, timed: pd.DataFrame, spend: pd.DataFrame | None, e
         s2o_g = {g: (conv_g[g] / sg[g] if sg[g] >= RATE_MIN_SIGNUPS else float("nan")) for g in GROUPS}
         converted = float(pre["signups_converted"].sum()) if len(pre) and "signups_converted" in pre.columns else float("nan")
         untracked_share = sg.get("untracked", 0.0) / signups if signups > 0 else 0.0
-        code = guess_tl_code(str(r["artist"]), d["open"], activity, taken_codes, titles=f"{(launch or {}).get('titles') or ''} {r.get('title') or ''}",
-                             airtable_code=(launch or {}).get("airtable_release"), announce=d["announce"])
         if code:
             taken_codes.add(code)
         sp = code_spend(spend, code)
@@ -1845,7 +1958,7 @@ def respread_targets(targets: dict | None, inputs: dict | None, profile: dict) -
 # ---------------------------------------------------------------- the TL releases
 
 def tl_releases(series: dict | None, launch_frame: pd.DataFrame | None, inputs: list[dict], as_of: date, now: datetime,
-                spend: pd.DataFrame | None = None, emails: pd.DataFrame | None = None) -> list[dict]:
+                spend: pd.DataFrame | None = None, emails: pd.DataFrame | None = None, orders_data: dict | None = None) -> list[dict]:
     """Every TL the dashboard lists: the feed's releases (matched to Airtable's
     timed launches) and the timed launches Airtable knows and the feed does
     not yet, within TL_UPCOMING_DAYS. Each record carries its name, id, the
@@ -1867,7 +1980,7 @@ def tl_releases(series: dict | None, launch_frame: pd.DataFrame | None, inputs: 
         inp = saved.get(name)
         rid = (inp or {}).get("id") or tl_id(name)
         daily, hourly = _rel_rows(series, name)
-        d = tl_dates(launch, r, inp, daily, hourly, now)
+        d = tl_dates(launch, r, inp, daily, hourly, now, _orders_rows(orders_data, name))
         if d["open"] is None:
             continue
         code = (inp or {}).get("campaign_code") or guess_tl_code(str(r["artist"]), d["open"], activity, taken_codes,
@@ -1875,6 +1988,7 @@ def tl_releases(series: dict | None, launch_frame: pd.DataFrame | None, inputs: 
                                                                   airtable_code=(launch or {}).get("airtable_release"), announce=d["announce"])
         if code:
             taken_codes.add(code)
+        d = dated_with_code(d, code, emails, launch, r, inp, daily, hourly, now, _orders_rows(orders_data, name))
         out.append({"id": rid, "release_name": name, "artist": str(r["artist"]), "title": str(r.get("title") or ""), "quarter": str(r.get("quarter") or ""),
                     "type": "TL", "source": "feed", "launch": launch, "feed": r, "inputs": inp, "dates": d, "campaign_code": code,
                     "code_source": "release" if (inp or {}).get("campaign_code") else ("guessed" if code else None)})
@@ -1901,11 +2015,13 @@ def tl_releases(series: dict | None, launch_frame: pd.DataFrame | None, inputs: 
             continue
         inp = saved.get(name) or next((v for v in saved_ids.values() if ids & set(str(v.get("airtable_ids") or "").split("|"))), None)
         rid = (inp or {}).get("id") or tl_id(name)
-        d = tl_dates(launch, None, inp, series["daily"].iloc[0:0] if series else pd.DataFrame(), series["hourly"].iloc[0:0] if series else pd.DataFrame(), now)
+        none_d, none_h = (series["daily"].iloc[0:0], series["hourly"].iloc[0:0]) if series else (pd.DataFrame(), pd.DataFrame())
+        d = tl_dates(launch, None, inp, none_d, none_h, now)
         code = (inp or {}).get("campaign_code") or guess_tl_code(str(launch["artist"]), d["open"], activity, taken_codes, titles=launch.get("titles"),
                                                                   airtable_code=launch.get("airtable_release"), announce=d["announce"])
         if code:
             taken_codes.add(code)
+        d = dated_with_code(d, code, emails, launch, None, inp, none_d, none_h, now)
         out.append({"id": rid, "release_name": name, "artist": str(launch["artist"]), "title": title, "quarter": quarter, "type": "TL",
                     "source": "airtable", "launch": launch, "feed": None, "inputs": inp, "dates": d, "campaign_code": code,
                     "code_source": "release" if (inp or {}).get("campaign_code") else ("guessed" if code else None)})
@@ -2553,6 +2669,9 @@ def le_blocks(cx: dict) -> dict:
         tg, bm = tg_by.get(g), bm_by.get(g)
         kg[g] = (tg / bm) if (tg is not None and bm and bm > 0) else (k_all or 1.0)
     w = pace_now
+    # the plan-based view (etl/tl_plan.py): before the window a channel outside paid follows its plan's pieces in
+    # place of the pace, and paid the spend still to come in place of the share of the span gone by
+    plan_ov = (cx.get("plan_ov") or {}) if not in_window else {}
     channels, fbg = [], {}
     tot = {"now": 0.0, "exp": 0.0, "tg": 0.0, "proj": 0.0, "bm": 0.0, "bm_exp": 0.0}
     now_idx = day_no
@@ -2565,14 +2684,28 @@ def le_blocks(cx: dict) -> dict:
         exp = (tg * w) if tg is not None else None
         bm_exp = (bm * w) if bm is not None else None
         proj = _project(now_g, exp, tg, w, clock_complete)
+        ovg = plan_ov.get(g) if not clock_complete else None
+        if ovg is not None and g == "paid":
+            proj = now_g + float(ovg.get("toCome") or 0.0)
+        elif ovg is not None:
+            exp, proj = float(ovg["exp"]), now_g + float(ovg["fut"])
+        ahead_all = (of_n + 1) - (now_idx + frac_day)          # the days from now to the end of the track
         daily = []
         for i in range(len(steps)):
+            plan_i = (tg * pace[i]) if tg is not None else None
+            if ovg is not None and g != "paid":
+                plan_i = float(ovg["plan"].get(labels[i], plan_i if plan_i is not None else 0.0))
             row = {"date": labels[i], "actual": round(cum[i], 2) if seen_steps[i] else None,
-                   "plan": round(tg * pace[i], 2) if tg is not None else None, "proj": None}
+                   "plan": round(plan_i, 2) if plan_i is not None else None, "proj": None}
             if bm is not None:
                 row["bm"] = round(bm * pace[i], 2)
             if i > now_idx and not clock_complete:
-                frac = ((pace[i] - w) / (1 - w)) if w < 1 else 1.0
+                if ovg is not None and g == "paid":
+                    frac = (((i + 1) - (now_idx + frac_day)) / ahead_all) if ahead_all > 0 else 1.0      # an even spend from here
+                elif ovg is not None:
+                    frac = float(ovg["share"].get(labels[i], 1.0))
+                else:
+                    frac = ((pace[i] - w) / (1 - w)) if w < 1 else 1.0
                 row["proj"] = round(now_g + (proj - now_g) * max(min(frac, 1.0), 0.0), 2)
             daily.append(row)
         # the two factors, sessions and the rate they convert at (held at the
@@ -2603,8 +2736,9 @@ def le_blocks(cx: dict) -> dict:
                       "contrib_buyers_bm": round(conversion_bm, 1), "contrib_per_buyer_bm": 0.0})
         fbg[g] = f
         sub = frame[frame["group"] == g] if (frame is not None and len(frame) and "group" in frame.columns) else None
+        tg_shown = float(ovg["plan_total"]) if (ovg is not None and g != "paid") else tg      # on the plan's path a channel's total is its plan's
         ch = {"key": g, "name": GROUP_NAMES[g], "now": round(now_g, 1), "exp": round(exp, 1) if exp is not None else None,
-              "proj": round(proj, 1), "target": round(tg, 1) if tg is not None else None,
+              "proj": round(proj, 1), "target": round(tg_shown, 1) if tg_shown is not None else None,
               "parts": _parts(sub, measure_col), "daily": daily, "off": g in off,
               "sessions": round(sess_g, 1), "rate": conv_act if sess_g > 0 else None,
               "bmSessions": bm_sess if has_bm else None, "bmRate": held if (has_bm and held > 0) else None,
@@ -2914,8 +3048,11 @@ def resolve_lead(inp: dict, airtable_lead: str | None, notion: dict | None, code
 def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, spend: pd.DataFrame | None, emails: pd.DataFrame | None,
              as_of: date, now: datetime, seen: float = 1.0, orders_data: dict | None = None, email_bench: dict | None = None,
              content: pd.DataFrame | None = None, artist_posts: pd.DataFrame | None = None, signup_products: pd.DataFrame | None = None,
-             direct: dict | None = None, notion: dict | None = None) -> dict:
-    """The page snapshot of one TL (module docstring). `email_bench` is the
+             direct: dict | None = None, notion: dict | None = None, plan_ov: dict | None = None) -> dict:
+    """The page snapshot of one TL (module docstring). `plan_ov` builds the
+    plan-based view of a launch gathering signups (etl/tl_plan.py override):
+    each channel group's path by its plan's pieces, and paid's by the spend
+    still to come. `email_bench` is the
     run's email cohort (email_cohort), `content` the Emplifi post export and
     `artist_posts` the Notion post log, for the funnel's email and post rows;
     `notion` the log's campaign entries (the marketing lead, resolve_lead).
@@ -3047,7 +3184,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
         feed_units = float(feed_win["units"].sum()) if len(feed_win) else 0.0
         feed_orders = float(feed_win["orders"].sum()) if len(feed_win) else 0.0
         o_rows = _orders_rows(orders_data, name)
-        o = window_from_orders(o_rows, d["sales_open"], until) if o_rows is not None else None
+        o = window_from_orders(o_rows, d["sales_open"], until, d.get("count_from")) if o_rows is not None else None
         use_orders = o is not None and o["units"] > 0
         win_cx = {"until": until, "o": o if use_orders else None, "units_target": units_target}
         if use_orders:
@@ -3128,7 +3265,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
         # where the lead came from (notion / airtable / typed), as the LE page says it (docs 1.6)
         "inputSources": {"marketing_lead": lead_src},
         "windowStart": _iso(announce), "windowEnd": _iso(close_day), "windowOpen": _iso(d["open"]), "windowClose": _iso(d["close"]),
-        "salesOpen": _iso(d["sales_open"]), "earlyAccessOpen": _iso(d["early_access"]), "earlyAccessAssumed": d["early_access_assumed"],
+        "salesOpen": _iso(d["sales_open"]), "earlyAccessOpen": _iso(d["early_access"]), "earlyAccessAssumed": d["early_access_assumed"], "earlyAccessSource": d.get("early_access_source"),
         "settleEnd": _iso(d["settle"]), "windowHours": d["hours"], "hoursLeft": round(hours_left, 1) if hours_left is not None else None,
         "campaignLengthDays": length_days, "day": day_no, "of": length_days or 1,
         "asOf": as_of.isoformat(), "asOfFraction": seen, "dataTo": data_to, "builtAt": _iso(now), "completeThrough": as_of.isoformat(),
@@ -3173,7 +3310,7 @@ def build_tl(rec: dict, series: dict | None, panel: pd.DataFrame, curves: dict, 
                            "spend_pre": spend_pre, "spend_win": spend_win, "sp": sp, "sales": sales, "win": win_cx,
                            "products": products, "econ": econ, "snap": snap, "code": code, "names": names,
                            "email_bench": email_bench, "content": content, "artist_posts": artist_posts, "paid_value": paid_value,
-                           "signup_products": signup_products,
+                           "signup_products": signup_products, "plan_ov": plan_ov,
                            "release": {"id": rec["id"], "release_name": name, "campaign_code": code, "launch_end": release_for_basket["launch_end"]}}))
     return snap
 
@@ -3278,7 +3415,7 @@ def build_all(ctx: dict) -> dict:
         tmp = CURVES.with_suffix(".tmp"); tmp.write_text(json.dumps(_json_safe({"asOf": as_of.isoformat(), "curves": curves}), separators=(",", ":"))); tmp.replace(CURVES)
         tmp = CANDIDATES.with_suffix(".tmp"); tmp.write_text(json.dumps(_json_safe({"asOf": as_of.isoformat(), "rows": candidate_rows(panel)}), indent=1)); tmp.replace(CANDIDATES)
     recs = tl_releases(series or {"releases": pd.DataFrame(columns=["release"]), "daily": pd.DataFrame(), "hourly": pd.DataFrame(), "by_release": {}, "hourly_by_release": {}},
-                       ctx.get("launch_frame"), ctx.get("inputs") or [], as_of, now, spend, emails)
+                       ctx.get("launch_frame"), ctx.get("inputs") or [], as_of, now, spend, emails, orders_data)
     only = ctx.get("only")
     configured = set(ctx.get("configured_ids") or [])
     for rec in recs:
@@ -3304,6 +3441,28 @@ def build_all(ctx: dict) -> dict:
                                                       if k not in ("variants", "directShare", "sellForecast") and _json_safe(v) != _json_safe(snap.get(k))}}
             except Exception as e:  # noqa: BLE001 - the page stands without its spread view
                 out["failures"].append((f"{rec['id']} (Direct spread)", f"{type(e).__name__}: {e}"))
+        # a launch gathering signups with a comms plan on file is built a third way: on its plan's path, with paid
+        # read from the spend still to come (etl/tl_plan.py, docs/PLAN_MODEL.md 6b). The page's Targets from switch
+        # lays it over the page; the clock's page stays the default. It is read as the feed attributes its channels,
+        # as the sell-through forecast is (docs 3b). A failure costs the page its plan view, never the page.
+        if snap.get("tlState") == "signups":
+            try:
+                pctx = tl_plan.context()
+                ov = tl_plan.override(snap, _rel_rows(series, rec["release_name"])[0], pctx) if (pctx and series) else None
+                if ov and ov.get("skip"):
+                    out.setdefault("plan_skips", []).append((rec["id"], str(ov["skip"])))
+                elif ov:
+                    pv = build_tl(rec, series, panel, curves, spend, emails, as_of, now, seen, orders_data,
+                                  email_bench=email_bench, content=content, artist_posts=artist_posts,
+                                  signup_products=signup_products.get(rec["release_name"]), notion=notion,
+                                  plan_ov={**ov["groups"], "paid": ov["paid"]})
+                    tl_plan.finish(pv, ov)
+                    snap.setdefault("variants", {})["plan"] = {k: v for k, v in pv.items()
+                                                               if k not in ("variants", "directShare") and _json_safe(v) != _json_safe(snap.get(k))}
+                    out.setdefault("plan_views", []).append(rec["id"])
+            except Exception as e:  # noqa: BLE001 - the plan view never stops a page
+                (snap.get("variants") or {}).pop("plan", None)
+                out.setdefault("plan_skips", []).append((rec["id"], f"it failed to build ({type(e).__name__}: {str(e)[:120]})"))
         where = (APP / "releases" if rec["id"] in configured or rec.get("inputs") else DERIVED) / f"{rec['id']}.json"
         if ctx.get("write", True):
             where.parent.mkdir(parents=True, exist_ok=True)

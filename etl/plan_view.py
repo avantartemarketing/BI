@@ -179,19 +179,30 @@ def entry_days(at: pd.DataFrame, name: str, days: pd.DatetimeIndex, group_of: di
     return out
 
 
+# a draw launch's plan card: a row per phase, a plan row in the phase Notion gives it (else by its day), an email
+# in the phase of its kind. A timed launch's signups have their own (etl/tl_plan.py SPEC)
+DRAW = {"phases": PHASES, "row_phase": lambda r, ann, days: phase_of(r, ann, days), "send_phase": lambda s, ann, days: KIND_PHASE.get(s["kind"], PHASES[2]),
+        "planned_email": lambda name, kind: kind != "after"}
+
+
 # ---------------------------------------------------------------- the override: the plan's path, channel by channel
-def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> dict | None:
+def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None, spec: dict | None = None, entered: dict | None = None) -> dict | None:
     """The plan's path for one launch. `page` is the launch's page with Direct
     shared over the other channels (the dashboard's default view), which is
     the view the plan is read in. Returns {"groups": what the build reads per
     channel group, "meta": the plan's level and how the launch runs against
     it, "work": what finish() needs to lay the plan card out}; None for a page
-    the view is not for (a timed launch, a closed one, one line's own page);
-    and {"skip": why} for a live draw launch that could have had one."""
+    the view is not for (a closed launch, one line's own page, and a timed
+    launch unless etl/tl_plan.py asks with its own `spec`); and {"skip": why}
+    for a live launch that could have had one. `entered(days)` stands in for
+    the funnel's reading of what came in by day and channel (a timed launch's
+    signups, from its own feed)."""
     if not ctx or not isinstance(page, dict):
         return None
-    if page.get("type") == "TL" or page.get("upcoming") or page.get("catalogue") or page.get("complete") or page.get("line"):
+    if (page.get("type") == "TL" and spec is None) or page.get("upcoming") or page.get("catalogue") or page.get("complete") or page.get("line"):
         return None
+    spec = spec or DRAW
+    phases = spec["phases"]
     pr = ctx["prices"]
     ann, close, today = _ts(page.get("windowStart")), _ts(page.get("windowEnd")), _ts(page.get("asOf"))
     code, name = page.get("campaignCode"), page.get("releaseName")
@@ -231,7 +242,7 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
         return {"skip": f"no plan on file in Notion under {code}"}
     if sends.empty and emails_planned.empty:
         return {"skip": f"no email sent or planned under {code}"}
-    plan["moment"] = [phase_of(r, ann, L) for _, r in plan.iterrows()]
+    plan["moment"] = [spec["row_phase"](r, ann, L) for _, r in plan.iterrows()]
     # the emails still to come: the plan's email rows from today on that no send has answered yet, each at the
     # usual audience for its kind (only HubSpot knows a send's audience, and only once it is set)
     usual = pr.get("usual_audience") or {}
@@ -239,13 +250,13 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
     planned = []
     for _, r in emails_planned.iterrows():
         kind = P.email_kind("x - " + str(r["name"]))
-        if kind == "after" or (pd.Timestamp(r["date"]), kind) in sent_on:
+        if not spec["planned_email"](str(r["name"]), kind) or (pd.Timestamp(r["date"]), kind) in sent_on:
             continue
         planned.append({"day": pd.Timestamp(r["date"]), "kind": kind, "delivered": float(usual.get(kind) or usual.get("other") or 5000.0), "name": str(r["name"]), "planned": True})
     sent = [{"day": pd.Timestamp(s["day"]), "kind": s["kind"], "delivered": float(s["delivered"]), "name": str(s["name"]), "clicked": float(s["clicked"]), "planned": False}
             for _, s in sends.iterrows()]
     all_sends = pd.DataFrame(sent + planned, columns=["day", "kind", "delivered", "name", "clicked", "planned"])
-    all_sends["moment"] = all_sends["kind"].map(KIND_PHASE).fillna(PHASES[2])
+    all_sends["moment"] = [spec["send_phase"](s, ann, L) for _, s in all_sends.iterrows()] if len(all_sends) else []
     posts = plan[plan["family"].isin(P.POST_FAMILIES)]
     piece_days = list(posts["date"]) + list(all_sends["day"])
     first = min(piece_days) if piece_days else ann
@@ -276,12 +287,12 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
         return {g: P.piece_values(D, pr, FAMILIES[g]) for g in groups}
 
     val0, val1 = {}, {}
-    for m in PHASES:
+    for m in phases:
         pm, sm = posts[posts["moment"] == m], all_sends[all_sends["moment"] == m]
         val0[m], val1[m] = values(sm, pm, True), values(sm, pm, False)
     val0[BASELINE] = {g: split[g] * base for g in groups}
     val1[BASELINE] = val0[BASELINE]
-    rows = PHASES + [BASELINE]
+    rows = phases + [BASELINE]
 
     # what has come in, by channel and by the day a person entered or bought, each channel scaled to the page's own
     # count for it so the plan card adds up to every other card; a channel the entry feed has nothing for keeps
@@ -289,7 +300,7 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
     now = {g: float(chan[g].get("now") or 0.0) for g in groups}
     now_all = sum(now.values())
     dates = [r["date"] for r in (chan[groups[0]].get("daily") or [])]
-    entered = entry_days(at, name, days, group_of)
+    entered = entered(days) if callable(entered) else entry_days(at, name, days, group_of)
     seen_study = float(sum(entered[g][: i_now + 1].sum() for g in groups if g in entered))
     inc = {}
     for g in groups:
@@ -344,7 +355,8 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
             "organicToCome": sum(v["fut"] for v in out.values()), "firstPiece": str(pd.Timestamp(first).date())}
     work = {"pr": pr, "coef": coef, "rel": rel, "ann": ann, "close": close, "today": today, "frac": frac, "L": L, "days": days, "iso": iso, "i_now": i_now, "t": t,
             "groups": groups, "split": split, "base": base, "val0": val0, "val1": val1, "rows": rows, "inc": inc, "level": level, "pull": pull, "pull_all": pull_all,
-            "sends": all_sends, "posts": posts, "plan": plan, "first": first, "lay": lay, "aud": aud, "target": target, "level_range": lv["range"], "level_study": lv["level"]}
+            "sends": all_sends, "posts": posts, "plan": plan, "first": first, "lay": lay, "aud": aud, "target": target, "level_range": lv["range"], "level_study": lv["level"],
+            "phases": phases}
     return {"groups": out, "meta": meta, "work": work}
 
 
@@ -412,7 +424,7 @@ def card_rows(w: dict) -> list[dict]:
                 {g: P.piece_values(w["lay"](sm, pm, False), w["pr"], FAMILIES[g]) for g in groups})
 
     rows = []
-    for m in PHASES:
+    for m in w.get("phases") or PHASES:
         row = {"moment": m, **figures(w["val0"][m], w["val1"][m])}
         sm, pm = w["sends"][w["sends"]["moment"] == m], w["posts"][w["posts"]["moment"] == m]
         lines, emails = [], []
@@ -499,7 +511,8 @@ def changes(w: dict, page: dict) -> list[dict]:
                 if n <= n0 * 1.5:
                     continue
                 u = pe * level * (email_units(kind, n, t) - q0)
-                out.append({"key": f"email.{kind}.{str(s['day'].date())}.{int(n)}", "kind": "change", "title": title, "from": f"{int(round(n0, -2)):,}", "to": label, "channel": "Email",
+                out.append({"key": f"email.{kind}.{str(s['day'].date())}.{int(n)}", "same": f"email.{kind}.{str(s['day'].date())}", "kind": "change", "title": title,
+                            "from": f"{int(round(n0, -2)):,}", "to": label, "channel": "Email",
                             "date": str(s["day"].date()), "people": int(round(n)), "units": {"low": u * lo_m, "high": u * hi_m},
                             "reason": f"No audience is set yet, so the usual {int(round(n0, -2)):,} people are assumed. To {'the full list' if label == 'Full list' else label + ' people'} "
                                       f"it should bring about {clicks_at(kind, n, t):,} clicks, and about {unsubs(n)} unsubscribes."})
@@ -513,7 +526,7 @@ def changes(w: dict, page: dict) -> list[dict]:
                 if n <= 0 or (label.endswith("full list") is False and small >= full / 2):
                     continue
                 u = pe * level * email_units("sustain", n, t_mid)
-                out.append({"key": f"email.sustain.add.{int(n)}", "kind": "add", "title": label, "note": "Not in the plan", "channel": "Email", "date": str(mid_day.date()),
+                out.append({"key": f"email.sustain.add.{int(n)}", "same": "email.sustain.add", "kind": "add", "title": label, "note": "Not in the plan", "channel": "Email", "date": str(mid_day.date()),
                             "people": int(round(n)), "units": {"low": u * lo_m, "high": u * hi_m},
                             "reason": f"About {clicks_at('sustain', n, t_mid):,} clicks at how this launch's emails are running, and about {unsubs(n)} unsubscribes."})
         running = {"Artist": pa, "AA Social": ps, "Partner": pull_all}

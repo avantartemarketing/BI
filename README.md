@@ -261,10 +261,9 @@ There are two paths to the same two files, and BigQuery wins whenever it is conf
 Reads `le_funnel_report_split_touch_export` and `ads_insights_AA_export` (Meta spend by ad,
 summed to campaign × ad set × day so a line of work reads its own ad sets) straight from
 `avantarte-data-production.AA_company_tables` - the origin of every funnel and spend
-number in the dashboard. Prefer it: the sheet tabs below are query *exports* capped at
-50,000 rows per tab, and that cap does not error. It silently drops the oldest days as
-new launches push rows off the end, which is why the across-time curves are fitted on a
-handful of complete campaigns rather than the hundreds we have run.
+number in the dashboard, and since 25 November 2026 the only one: the Google Sheet
+fallback (the *LE Paid Calculator* tabs, query exports capped at 50,000 rows that
+silently dropped the oldest days) is no longer read.
 
 - `BIGQUERY_SERVICE_ACCOUNT_JSON` - the key file's contents, verbatim (falls back to
   `GOOGLE_SERVICE_ACCOUNT_JSON` if one account does both jobs). The account needs
@@ -275,7 +274,8 @@ handful of complete campaigns rather than the hundreds we have run.
 - `BQ_SINCE` (default `2025-01-01`) - how far back to pull. Widening it is the whole
   point of this path; it also sets the bill, since BigQuery charges per byte scanned and
   both queries filter on the partition column - and the memory, see below.
-- `BIGQUERY=off` forces the sheet path back on. `BQ_ALLOW_SHRINK=1` disables the guard
+- `BIGQUERY=off` stops the funnel and spend refresh (the previous files keep serving and
+  the header reads **Sources stale**). `BQ_ALLOW_SHRINK=1` disables the guard
   that refuses to replace a long history with a much shorter one.
 - The timed launches' pair (`sources/tl_events.csv`, `sources/tl_browsing.csv`, from
   `TL_Funnel_Report_v2`; "Timed launches" below) runs from `BQ_TL_SINCE` (default
@@ -283,13 +283,10 @@ handful of complete campaigns rather than the hundreds we have run.
   `BQ_TL=off` skips it, `node server/bigquery.js --write --tl` pulls it alone.
 
 The funnel table is required; **spend is optional**. A service account granted the funnel
-dataset but not the spend table still refreshes the funnel, and spend falls
-back to the sheet's `meta_ads_insights_Extract` tab so paid spend keeps moving (the
-refresh note reads `spend only: N rows from the sheet`). If that tab is unreachable too,
-the previous `data/spend_daily.csv` keeps serving and the header reads **Sources stale**
-until one of the two is fixed - granting the BigQuery table is the better fix, since it
-keeps spend on the same attribution basis as the funnel. `BQ_SPEND=off` skips the
-BigQuery spend query outright.
+dataset but not the spend table still refreshes the funnel; the previous
+`data/spend_daily.csv` keeps serving and the header reads **Sources stale** until the
+account is granted the spend table. There is no sheet fallback. `BQ_SPEND=off` skips the
+BigQuery spend query outright (not flagged stale).
 
 **Incremental.** The hourly refresh does not re-pull the window. It asks BigQuery for the
 last `BQ_OVERLAP_DAYS` (default 45) only, keeps the older local rows, and swaps the merged
@@ -437,18 +434,11 @@ means a re-run is due. It needs:
 A re-run lets a closed release's basket take in launches that closed after it (on the September
 2026 panel, James Jean, Mondrian and Zeng Fanzhi would move), so decide first whether it should.
 
-### Google Sheet (fallback; `server/sheets.js`)
+### Google Sheet (removed)
 
-Pulls two tabs of the *LE Paid Calculator* sheet. Used when BigQuery is unconfigured, and
-attempted as a fallback when a BigQuery pull fails - in that case the header reads
-**Sources stale**, because the numbers on screen came from the truncated copy.
-
-- `GOOGLE_SERVICE_ACCOUNT_JSON` - a Google service-account key (Sheets API enabled);
-  share the sheet with the key's `client_email` as **Viewer** and the sheet can stay
-  Restricted. While unset, the fetch falls back to the public CSV export, which only
-  works while the sheet is link-shared.
-- `SHEET_ID`, `SHEET_FUNNEL_TAB`, `SHEET_SPEND_TAB`, `REFRESH_MINUTES` - optional
-  overrides; `SHEETS_REFRESH=off` disables the scheduler.
+The *LE Paid Calculator* sheet is no longer read (25 November 2026). `SHEET_ID`,
+`SHEET_FUNNEL_TAB` and `SHEET_SPEND_TAB` do nothing; `REFRESH_MINUTES` still sets the
+refresh interval and `SHEETS_REFRESH=off` still disables the scheduler.
 
 Whichever path ran, and whether it worked, is on `GET /api/refresh/status` and in the
 tooltip behind the header's source-freshness line. A Python step that failed is named by
@@ -600,9 +590,8 @@ rows from that table - the terminal output is part of the retained conversation.
 Draw-entry CSVs contain customer emails - they stay in `sources/` and only aggregated,
 anonymised numbers reach `data/`.
 
-Longer term this should be pointed at BigQuery
-(`avantarte-data-production.AA_company_tables.*`) instead of the sheet - the sheet
-pipeline's accumulators are already silently truncating history (docs §11).
+The live refresh reads BigQuery (`avantarte-data-production.AA_company_tables.*`) only;
+the sheet is no longer used.
 
 ## Suggested actions
 
@@ -677,6 +666,13 @@ three pulled files are ignored by git and hold no person: list ids and counts on
 `python3 tests/test_plan_model.py` holds the model's parts to hand-built cases,
 `python3 tests/test_plan_view.py` the page's view to a hand-built launch, and
 `node tests/comms_plan.mjs` the two pulls to stand-ins for the APIs.
+
+A timed launch gathering signups has the view too (`etl/tl_plan.py`, docs/PLAN_MODEL.md 6b):
+its signups outside paid on a price list of their own, `etl/tl_plan_prices.json`, and paid
+read from the spend still to come. `python3 etl/analysis/tl_plan_backtest.py --write` re-fits
+that list (it needs the timed launches' feeds, the Notion plan read in full and the HubSpot
+audiences) and prints the readings behind it; `python3 tests/test_tl_plan.py` holds the
+view's own parts to hand-built cases.
 
 ## Signing in
 
