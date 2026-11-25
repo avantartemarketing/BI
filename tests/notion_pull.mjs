@@ -20,6 +20,7 @@ fs.writeFileSync(path.join(tmp, "inputs.json"), JSON.stringify({
   discovered: {
     catt: { release_name: "Maurizio Cattelan · Multiple · 2026 Q4", campaign_code: "", announce_date: "2026-10-05", launch_end: "2026-10-28" },
     dali: { release_name: "Salvador Dali Estate · Multiple · 2026 Q3", campaign_code: "Dali_LE_26", announce_date: "2026-09-01", launch_end: "2026-09-25" },
+    miller: { release_name: "Harland Miller · Multiple · 2026 Q4", campaign_code: "", announce_date: "2026-11-25", launch_end: "2026-12-16" },
   },
 }));
 process.env.APP_DATA_PATH = tmp;
@@ -131,5 +132,17 @@ assert.ok(!out.datesCsv.includes("@") && !out.leadNote.includes("@") && !out.pla
 // each linked page was fetched once for the whole pull
 assert.strictEqual(calls.filter((u) => u.endsWith("/pages/t_maria")).length, 1, "the team page is read once");
 assert.strictEqual(calls.filter((u) => u.endsWith("/pages/r_bisa")).length, 1, "the release page is read once");
+// a row that names no moment in its own words, linked to a campaign page whose name carries one ("... Combined
+// Launch ..."): the page's name places the row and says nothing of the moment it records. On 25 November 2026 a
+// form's "New submission" on Harland Miller's announce day read as the launch through that name, and the page
+// closed the launch that day in place of 16 December.
+pages.r_miller = { Release: title("Harland Miller - Combined Launch (RED & STAR)"), Status: status("7. In Flight") };
+postRows.push(post("p5", "New submission", "2026-11-25", "IG Post", "r_miller"));
+const again = await fetchPostsCsv();
+assert.strictEqual(again.matched, 5, "the row is still placed by the campaign it links to");
+assert.ok(rows(again.planCsv).some((r) => r.release_name === "Harland Miller · Multiple · 2026 Q4" && r.date === "2026-11-25" && r.title === "New submission"), again.planCsv);
+const miller = rows(again.datesCsv).find((r) => r.release_name === "Harland Miller · Multiple · 2026 Q4");
+assert.ok(!miller || !miller.launch_end, "a campaign's name is not a row's moment: " + JSON.stringify(miller));
+assert.strictEqual(rows(again.datesCsv).find((r) => r.campaign_code === "Dali_LE_26").launch_end, "2026-09-24", "a row's own words still say it");
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log("notion pull: ok (the lead through the release page, the campaigns database over it, an unreadable page said)");

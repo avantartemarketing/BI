@@ -1407,6 +1407,20 @@ def mix_fallbacks(ss: dict, sess_s: dict, us: dict) -> tuple[dict, dict, dict]:
     return pick(ss, us, sess_s), pick(sess_s, ss, us), pick(us, ss, sess_s)
 
 
+PAID_RATE_LOG_SD = 0.6      # the sd of the log of the paid signup -> order rate where a basket is too thin to give its own:
+#                             the panel's launches read 0.7 on 25 November 2026 (49 with a paid rate; the middle half 5% to 10.5%)
+PAID_RATE_MIN_ROWS = 4
+
+
+def _log_sd(rows: pd.DataFrame, col: str) -> float | None:
+    """The sd of the log of a positive column over a basket's launches; None under PAID_RATE_MIN_ROWS of them."""
+    if col not in rows.columns:
+        return None
+    v = pd.to_numeric(rows[col], errors="coerce")
+    v = v[v > 0]
+    return round(float(np.log(v).std()), 3) if len(v) >= PAID_RATE_MIN_ROWS else None
+
+
 def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dict:
     """The medians for one TL basket (spec §8). JSON-ready."""
     wanted = [str(m) for m in (members or [])]
@@ -1448,6 +1462,9 @@ def basket_profile(panel: pd.DataFrame, curves: dict, members: list[str]) -> dic
         "conv_window": {g: _median(rows, f"conv_win_{g}", positive=True) for g in GROUPS},
         # each group's signup -> order rate: a paid signup converts at a fraction of an email one
         "signup_order_rate_by_group": {g: _median(rows, f"signup_order_rate_{g}", positive=True) for g in GROUPS},
+        # ... and how far the basket's launches sit from each other on the paid one (the sd of its log), which is
+        # how unsure the worth of a paid signup is before this launch has sold anything (spend_levels)
+        "signup_order_rate_paid_log_sd": _log_sd(rows, "signup_order_rate_paid"),
         # the forecast's medians (docs §4b): each kind of signup's rate by group and
         # over the launch, the window's non-signup units by group, the pieces a
         # signup-led order took, the product signups' share of a launch's signups
@@ -2246,6 +2263,110 @@ def tl_economics(rows: list[dict], b: dict | None = None) -> dict:
             "deal": sorted({"profit share" if _num(r.get("aa_profit_share")) is not None else "revenue share" for r in dealt})}
 
 
+LEVELS_SEED = 11            # the worth's draws are the same on every build, as the path's are (build.PathDraws)
+
+
+def spend_levels(B, path, signups_window: float, gain: float, share: float, today: float, biggest_day: float = 0.0,
+                 paid_now: float = 0.0, budget_left: float | None = None, target_signups: float | None = None,
+                 value_log_sd: float = PAID_RATE_LOG_SD, cannibalisation: float | None = None, b: dict | None = None) -> dict | None:
+    """How much to spend a day on a timed launch gathering signups: the draw
+    launches' Spend levels (etl/build.py, docs/METHODOLOGY.md 7) read on signups,
+    in the block's own shape so the one card draws both (25 November 2026, asked
+    for by the owner: the page said what paid returned and not what to spend).
+
+    `path` is the cost path the page's ROI line already runs on (build.CostPath:
+    the last three days' price of a signup, dearer on a bigger day and as the
+    spend adds up), over the days left to the sales open. A flat daily spend s
+    buys path.units(s) signups; each is worth `gain` to Avant Arte (a paid
+    signup's value net of cannibalisation, tl_paid_value) and costs AA its
+    `share` of the spend. The profit from the spend still to come is read across
+    draws: the path's own (build.PathDraws: the window's price, the elasticity,
+    the wear-out) and one more, which matters most here: what a paid signup is
+    worth. That rests on the share of paid signups that go on to order, a
+    basket's median that its launches sit far apart on (`value_log_sd`, the sd
+    of its log), and nothing of this launch's own is known of it before the
+    window opens. An open edition has no sell-out, so no spend is capped by it.
+
+    The level is the cautious peak, as a draw launch's is: the daily spend that
+    earns the most if the launch turns out dear (the 25th percentile of the
+    profit). Where no spend pays in that case while the point estimate still
+    does, it is the point estimate's held to today's spend, never a raise.
+    Tomorrow's budget is today's moved toward it by at most the pacing rule's
+    step. `budgetPace` is the daily spend that would use what is left of the
+    pre-window budget by the open: marked on the card, and no cap on the level.
+    None when there is nothing to read a level from."""
+    b = b or BENCH
+    n = int(getattr(path, "n", 0) or 0)
+    if n <= 0 or not (gain > 0) or not (share > 0) or not (today > 0):
+        return None
+    rules = b.get("spend_rules") or {}
+    step, small = float(rules.get("max_daily_change", 0.3)), float(rules.get("ignore_change_below", 0.1))
+    draws = B.PathDraws(path, signups_window, b)
+    worth = gain * np.exp(np.random.default_rng(LEVELS_SEED).normal(0.0, max(float(value_log_sd or 0.0), 0.0), draws.N))
+
+    def runs(s: float) -> np.ndarray:
+        return worth * draws.units(s) - share * s * n
+
+    def at(s: float) -> dict:
+        r = runs(s)
+        pc = lambda q: round(float(np.percentile(r, q)), 2)   # noqa: E731
+        return {"median": pc(50), "p10": pc(10), "p25": pc(25), "p75": pc(75), "p90": pc(90), "lossP": round(float((r < 0).mean()), 3) if s > 0 else 0.0}
+
+    point = float(path.spend_for_profit(gain, share))
+    stop = point <= 0
+    level = 0.0
+    if not stop:
+        top = max(point * 2.5, today * 1.2, 1.0)
+        dear = lambda s: float(np.percentile(runs(s), 25))    # noqa: E731
+        grid = [top * i / 40 for i in range(41)]
+        vals = [0.0] + [dear(v) for v in grid[1:]]
+        k = int(np.argmax(vals))
+        lo_f, hi_f = grid[max(k - 1, 0)], grid[min(k + 1, 40)]
+        fine = [lo_f + (hi_f - lo_f) * i / 20 for i in range(21)]
+        fv = [dear(v) if v > 0 else 0.0 for v in fine]
+        level = fine[int(np.argmax(fv))] if max(fv) > 0 else min(point, today)
+    tomorrow = min(max(level, today * (1 - step)), today * (1 + step))
+    if abs(tomorrow - today) < small * today:
+        tomorrow = today
+
+    def row(key: str, s: float) -> dict:
+        got = float(path.units(s)) if s > 0 else 0.0
+        spend = s * n
+        m = path.marginal_roi(s, gain, share) if s > 0 else None
+        return {"key": key, "daily": round(s, 2), "unitsAtClose": round(paid_now + got, 1), "pct": None, "spendToCome": round(spend, 2),
+                "roi": round(gain * got / (share * spend), 2) if spend > 0 else None, "marginal": round(m, 2) if m is not None else None}
+
+    rows = [row("none", 0.0)] + ([row("today", today)] if stop else [row(k_, level * m_) for k_, m_ in (("half", 0.5), ("recommended", 1.0), ("double", 2.0))])
+    sd = float(b.get("cpe_spend_elasticity_sd", 0.1) or 0.1)
+    eps, wear = float(path.eps or 0.0), float(path.wear or 0.0)
+    m_today = path.marginal_roi(today, gain, share)
+    out = {"unit": "signup", "today": round(today, 2), "recommended": round(level, 2), "stop": "marginal" if stop else None,
+           "marginalToday": round(m_today, 2) if m_today is not None else None, "sellout": None, "daysLeft": n,
+           "ppu": round(gain, 2), "cannibalisation": cannibalisation, "aaShare": share,
+           "elasticity": eps, "elasticityBand": [round(max(eps - sd, 0.0), 3), round(min(eps + sd, 0.9), 3)],
+           "rows": rows, "curve": []}
+    if stop:
+        return out
+    top = max(level * 2.5, point * 1.2, today * 1.2, (budget_left / n * 1.15) if (budget_left and budget_left > 0) else 0.0, 1.0)
+    for i in range(41):
+        s_pt = top * i / 40
+        pt = at(s_pt)
+        out["curve"].append({"daily": round(s_pt, 2), "profit": round(float(path.profit(s_pt, gain, share)), 2), "lo": pt["p10"], "hi": pt["p90"],
+                             "signups": round(float(path.units(s_pt)), 1) if s_pt > 0 else 0.0, **pt})
+    here, got = at(level), float(path.units(level))
+    pace = (budget_left / n) if (budget_left is not None and budget_left > 0) else None
+    out.update({"tomorrow": round(tomorrow, 2), "lossAtRecommended": here["lossP"], "profitAtRecommended": {k_: here[k_] for k_ in ("median", "p10", "p90")},
+                "pointLevel": round(point, 2), "lossAtPoint": at(point)["lossP"],
+                "unitsAtRecommended": round(paid_now + got, 1), "signupsToCome": round(got, 1), "signupsNow": round(paid_now, 1),
+                "signupsAtToday": round(paid_now + float(path.units(today)), 1), "targetSignups": round(target_signups, 1) if target_signups else None,
+                "spendToCome": round(level * n, 2), "edition": None, "biggestDay": round(biggest_day, 2) if biggest_day > 0 else None,
+                "entriesWindow": round(float(signups_window or 0.0), 1), "wearout": wear, "draws": int(draws.N), "valueLogSd": round(float(value_log_sd or 0.0), 3),
+                "budgetLeft": round(budget_left, 2) if budget_left is not None else None, "budgetPace": round(pace, 2) if pace else None,
+                "signupsAtBudget": round(paid_now + float(path.units(pace)), 1) if pace else None,
+                "lossAtBudget": at(pace)["lossP"] if pace else None, "profitAtBudget": at(pace)["median"] if pace else None})
+    return out
+
+
 def tl_paid_value(inputs: dict | None, profile: dict | None, targets: dict | None, econ: dict | None, b: dict | None = None) -> dict:
     """What a paid signup, and a paid sale, is worth to Avant Arte, and the
     cost it can pay for one at the target ROI (docs/TL_SPEC.md §7;
@@ -2315,6 +2436,7 @@ def tl_paid_value(inputs: dict | None, profile: dict | None, targets: dict | Non
             "frame_profit_per_unit": frame_profit, "frame_uplift_per_unit": frame_uplift, "value_per_unit": value_unit if readable else None,
             "cannibalisation": cann, "value_per_sale": value_sale if readable else None,
             "signup_order_rate": s2o, "signup_order_rate_source": s2o_src, "purchases_per_order": ppo,
+            "signup_order_rate_log_sd": _num(profile.get("signup_order_rate_paid_log_sd")) or PAID_RATE_LOG_SD,
             "value_per_signup": value_signup if readable else None,
             "aa_budget_share": share, "aa_budget_share_assumed": assumed, "roi_target": roi_target,
             "break_even_cost_per_signup": cost_at(value_signup, 1.0), "cost_per_signup_at_target_roi": cost_at(value_signup, roi_target),
@@ -2862,7 +2984,7 @@ def le_blocks(cx: dict) -> dict:
     # the campaign's own fit once it has the days - the trailing price rising
     # with the spend so far and the day's budget, read at today's spend over
     # the days left to the open or the close; the ROI line's dotted end
-    roi_path, roi_path_a, decline, terms = [], [], {"start": None, "dailyFactor": None}, None
+    roi_path, roi_path_a, decline, terms, levels = [], [], {"start": None, "dailyFactor": None}, None, None
     if roi_ok and last_full and last_full.get("cost3") and last_full.get("roi") is not None and not clock_complete:
         terms = B.campaign_cost_terms(rows, BENCH)
         before = [sum(x["spend"] for x in full[:j]) for j in range(len(full))]
@@ -2876,8 +2998,18 @@ def le_blocks(cx: dict) -> dict:
         future = [last_day + timedelta(days=i) for i in range(1, (end_day - last_day).days + 1)]
         s0 = full[-1]["spend"] if full[-1]["spend"] > 0 else last_full["spend"]
         if future and s0 > 0:
-            mult = B.CostPath(last_full["cost3"], spend_ref, clock_ref, spent_so_far, len(future),
-                              terms["elasticity"], terms["wearout"], terms["wearoutK"]).multipliers(s0)
+            path = B.CostPath(last_full["cost3"], spend_ref, clock_ref, spent_so_far, len(future),
+                              terms["elasticity"], terms["wearout"], terms["wearoutK"])
+            mult = path.multipliers(s0)
+            if not in_window and spend_ref:
+                # the Spend levels card of a launch gathering signups (25 November 2026): the same path, read at
+                # every daily spend, with what a paid signup is worth and AA's share of what it costs
+                was = snap.get("paid") or {}
+                levels = spend_levels(B, path, sum(x["entries"] for x in full[-3:]), float(value), share, float(s0),
+                                      biggest_day=max((x["spend"] for x in full), default=0.0), paid_now=float(paid_now or 0.0),
+                                      budget_left=_num(was.get("leftPre")), target_signups=_num(was.get("targetSignups")),
+                                      value_log_sd=float(pv.get("signup_order_rate_log_sd") or PAID_RATE_LOG_SD),
+                                      cannibalisation=pv.get("cannibalisation"))
             roi_path = [{"date": fd.isoformat(), "roi": round(last_full["roi"] / f, 3)} for fd, f in zip(future, mult)]
             decline = {"start": last_full["roi"], "dailyFactor": round((1 / mult[-1]) ** (1 / len(mult)), 4) if mult and mult[-1] > 0 else None}
             if a_ok and last_full.get("roiArtist") is not None:
@@ -2889,7 +3021,7 @@ def le_blocks(cx: dict) -> dict:
                   "daily": rows, "cumCost": cum_cost, "l3dCost": l3d_cost, "l1dCost": l1d_cost,
                   "roiReadable": roi_ok, "roiTarget": pv.get("roi_target"), "cumRoi": cum_roi,
                   "l3dRoi": last_full["roi"] if last_full else None, "l1dRoi": last_full["roi1"] if last_full else None,
-                  "roiPath": roi_path, "roiDeclineModel": decline,
+                  "roiPath": roi_path, "roiDeclineModel": decline, "levels": levels,
                   "costTerms": {k: terms.get(k) for k in ("elasticity", "wearout", "wearoutK", "fitDays")} if terms else None,
                   "value": value if roi_ok else None, "valuePerUnit": pv.get("value_per_unit"), "profitPerUnitAA": pv.get("aa_profit_per_unit"),
                   "frameUpliftPerUnit": pv.get("frame_uplift_per_unit"), "frameRate": pv.get("frame_rate"), "frameRateSource": pv.get("frame_rate_source"),

@@ -315,6 +315,11 @@ products in force, `mode` (`products` or `release`) and `deal`.
 **Dates.** The Notion log first: `server/notion.js` reads each matched row's words for the
 stage it records (early access, exclusive access, private room → `private_room_open`; announce;
 launch, draw close, last chance → `launch_end`) and writes `data/notion_campaigns.csv`. The
+stage is read from the row's own columns alone: the titles of the pages it links to (the
+campaign, the artist) place it in a release and say nothing of the moment it records. Until
+25 November 2026 they were read for the stage too, and a campaign page named "Harland
+Miller - Combined Launch (RED & STAR)" made a form's "New submission" on the announce day a
+launch row, which closed the launch that day over Airtable's 16 December. The
 private room opens on the day the early-access email is scheduled for: among a release's
 early-access rows the one whose channel is an email (`isEmailRow`) sets the date, and a story
 or post on that stage stands in only when no email row is on file. A row belongs to a release

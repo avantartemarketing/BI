@@ -62,7 +62,9 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   const planStart = snap.method === "plan" && !!(snap.plan && snap.plan.state === "start");
   // the Spend levels card is on every draw launch with a paid block: without
   // a level from the build it says why there is none (12 November 2026)
-  const levelsOn = !isTL && paidOn;
+  // ... and on a timed launch gathering signups once the build has a level for it (etl/tl.py spend_levels,
+  // 25 November 2026): before that its Paid section said what the spend returned and not what to spend
+  const levelsOn = paidOn && (!isTL || !!(snap.paid && snap.paid.levels));
   // a release selling lines of work, on the All lines view: paid per line, each its own ad set
   const paidLines = !isTL && Array.isArray(lineViews) && lineViews.length > 1 ? lineViews.filter((l) => l.snap.paid) : [];
   return (

@@ -232,7 +232,7 @@ export default function SpendLevels({ snap }) {
 /* The marks of the card read under uncertainty: the range behind the line,
  * the zero line, the campaign's biggest day so far, the aim's drop and dot,
  * today's ring, and their labels, in the pixels the line chart measures. */
-function CautiousMarks({ W, x, y, band, zero, drop, dot, ring, tested, labels, layer }) {
+function CautiousMarks({ W, x, y, band, zero, drop, dot, ring, tested, pace, labels, layer }) {
   if (!(W > 0)) return null;
   const style = { position: "absolute", left: 0, top: 0, width: "100%", height: "auto", display: "block", overflow: "visible", pointerEvents: "none" };
   if (layer === "under") {
@@ -243,6 +243,7 @@ function CautiousMarks({ W, x, y, band, zero, drop, dot, ring, tested, labels, l
       <svg viewBox={`0 0 ${W} ${HC}`} style={style} aria-hidden="true">
         {zero && <path d={zero} stroke="#d9d9de" strokeWidth="1" fill="none" />}
         {tested && <path d={tested} stroke={COL.GREY} strokeWidth="1" strokeDasharray="2 3" fill="none" />}
+        {pace && <path d={pace} stroke={COL.INK} strokeWidth="1" strokeDasharray="5 3" fill="none" />}
         {drop && <path d={drop} stroke={COL.IND} strokeWidth="1" strokeDasharray="3 3" fill="none" />}
         {dot && <circle cx={x(dot.i).toFixed(1)} cy={y(dot.v).toFixed(1)} r="5" fill={COL.DEEP} stroke="#fff" strokeWidth="2" />}
         {ring && <circle cx={x(ring.i).toFixed(1)} cy={y(ring.v).toFixed(1)} r="4.5" fill="#fff" stroke={COL.INK} strokeWidth="2" />}
@@ -265,7 +266,22 @@ function Cautious({ lv, curve, title, boxRef, W }) {
   // ----- the head: tomorrow's budget alone (13 November 2026); today's level
   // and the aim are marked on the plot, the working is on the figure's hover -----
   const riskKind = !has(lossP) ? undefined : lossP <= 0.1 ? "good" : lossP <= 0.25 ? "amber" : "warm";
-  const working = [
+  // a timed launch gathering signups (etl/tl.py spend_levels): the spend buys signups to the sales open, an open
+  // edition has no sell-out, the worth of a signup is the unsure thing, and the budget's own pace is marked
+  const su = lv.unit === "signup";
+  const working = su ? [
+    `${title}, how they are read`,
+    `Tomorrow ${money(tomorrow)} a day: today's ${money(today)} moved by at most 30%, toward ${money(rec)}`,
+    `Aim ${money(rec)} a day: the daily spend that earns the most if the launch turns out dear (the 25th percentile of the profit to come)`,
+    `At that level the spend to come is ${kprofit(lv.spendToCome)} over ${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"} to the sales open, the profit on it ${kprofit(pr.median)} (${kprofit(pr.p10)} to ${kprofit(pr.p90)})${has(lv.unitsAtRecommended) ? ` and paid signups at the open ${fmt(lv.unitsAtRecommended)}${has(lv.targetSignups) ? ` of the ${fmt(lv.targetSignups)} targeted` : ""}` : ""}`,
+    ...(has(lv.signupsAtToday) ? [`Today's ${money(today)} held to the open brings ${fmt(lv.signupsAtToday)} paid signups`] : []),
+    ...(has(lv.budgetPace) ? [`The budget's pace is ${money(lv.budgetPace)} a day: what is left of it (${kprofit(lv.budgetLeft)}) spent evenly to the open${has(lv.signupsAtBudget) ? `, bringing ${fmt(lv.signupsAtBudget)} paid signups` : ""}${has(lv.lossAtBudget) ? `, with a ${oneIn(lv.lossAtBudget)} chance of a loss` : ""}`] : []),
+    ...(has(lv.pointLevel) ? [`The point estimate's peak, where the next euro returns 1.0, is ${money(lv.pointLevel)} a day${has(lv.lossAtPoint) ? `, with a ${oneIn(lv.lossAtPoint)} chance of a loss` : ""}`] : []),
+    ...(today !== null && has(lv.marginalToday) ? [`At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}`] : []),
+    `The range is where eight in ten runs land once the window's price${has(lv.entriesWindow) ? ` (${fmt(lv.entriesWindow, 1)} signups over three days)` : ""}, the elasticity${has(lv.elasticity) ? ` (${fmt(lv.elasticity, 2)})` : ""}, the wear-out${has(lv.wearout) ? ` (${fmt(lv.wearout, 2)})` : ""} and what a paid signup is worth are each allowed their uncertainty. The last is the widest: it rests on the share of paid signups that go on to order, which is the comparison launches' and not yet this launch's own`,
+    ...(has(lv.ppu) ? [`A paid signup is worth ${fmtMoney(lv.ppu)} to AA${has(lv.cannibalisation) ? `, net of ${fmtPct(lv.cannibalisation, 0)} cannibalisation` : ""}${has(lv.aaShare) ? `, and AA pays ${fmtPct(lv.aaShare, 0)} of the spend` : ""}`] : []),
+    "An open edition has no sell-out, so no daily spend is capped by one.",
+  ].join("\n") : [
     `${title}, how they are read`,
     `Tomorrow ${money(tomorrow)} a day: today's ${money(today)} moved by at most 30%, toward ${money(rec)}`,
     `Aim ${money(rec)} a day: the daily spend that earns the most if the campaign turns out dear (the 25th percentile of the profit to come)`,
@@ -321,6 +337,14 @@ function Cautious({ lv, curve, title, boxRef, W }) {
     ring = { i: todayPt.i, v: todayPt.v, lead: `M${(x(todayPt.i) + (right ? 4 : -4)).toFixed(1)} ${(y(todayPt.v) + 5).toFixed(1)}L${(lx + (right ? -3 : 3)).toFixed(1)} ${(ly - 3).toFixed(1)}` };
     labels.push({ t: `Today ${money(today)}`, s: { left: P(lx, W), top: P(ly - 5, H), transform: right ? "none" : "translate(-100%,0)", color: COL.MUTED } });
   }
+  // the budget's own pace (a timed launch): the daily spend that uses what is left of the budget by the open
+  const pacePt = su && has(lv.budgetPace) && lv.budgetPace > 0 ? onCurve(curve, lv.budgetPace, "daily") : null;
+  let pace = null;
+  if (pacePt) {
+    const leftSide = x(pacePt.i) > W * 0.6;
+    pace = `M${x(pacePt.i).toFixed(1)} ${TT + 18}V${H - B}`;
+    labels.push({ t: `Budget's pace ${money(lv.budgetPace)}`, s: { left: P(x(pacePt.i) + (leftSide ? -7 : 7), W), top: P(TT + 18, H), transform: leftSide ? "translate(-100%,0)" : "none", color: COL.MUTED } });
+  }
   let tested = null;
   if (testedPt) {
     // the label on the side of the line with the room for it
@@ -345,9 +369,10 @@ function Cautious({ lv, curve, title, boxRef, W }) {
               { n: "Profit to come, likely", v: kprofit(rowAt(i).median), k: lk(COL.IND) },
               ...(has(rowAt(i).p10) && has(rowAt(i).p90) ? [{ n: "8 in 10 runs", v: `${kprofit(rowAt(i).p10)} to ${kprofit(rowAt(i).p90)}`, k: sw(COL.PALE) }] : []),
               ...(has(rowAt(i).lossP) && rowAt(i).daily > 0 ? [{ n: "Chance of a loss", v: oneIn(rowAt(i).lossP), k: { width: 8, flex: "0 0 8px" } }] : []),
+              ...(su && has(rowAt(i).signups) && rowAt(i).daily > 0 ? [{ n: "Paid signups it buys", v: fmt(Math.round(rowAt(i).signups)), k: { width: 8, flex: "0 0 8px" } }] : []),
             ]}
             aria={`Profit from the spend still to come at each daily spend, with its likely range; aim ${money(rec)} a day`} />
-          <CautiousMarks W={W} layer="over" x={x} y={y} zero={zero} tested={tested} drop={recPt ? `M${x(recPt.i).toFixed(1)} ${y(recPt.v).toFixed(1)}V${y(Math.max(0, ymin)).toFixed(1)}` : null} dot={recPt} ring={ring} labels={labels} />
+          <CautiousMarks W={W} layer="over" x={x} y={y} zero={zero} tested={tested} pace={pace} drop={recPt ? `M${x(recPt.i).toFixed(1)} ${y(recPt.v).toFixed(1)}V${y(Math.max(0, ymin)).toFixed(1)}` : null} dot={recPt} ring={ring} labels={labels} />
         </div>
       </div>
     </Card>
