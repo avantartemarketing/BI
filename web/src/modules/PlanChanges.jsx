@@ -34,7 +34,7 @@ import { Agent as AgentIcon, Check, Chev, Undo } from "../icons.jsx";
 import { fmtDay } from "../format.mjs";
 
 const KIND = { add: "Add", change: "Change", drop: "Drop" };
-const LOAD = { normal: "List at its usual load", busy: "List busy", very_busy: "List very busy" };
+const LOAD = { normal: "List as usual", busy: "List busy", very_busy: "List very busy" };
 export const nth = (n) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th"}`;
 const sends = (n) => `${n} general send${n === 1 ? "" : "s"}`;
 const DAY_MS = 86400000;
@@ -86,7 +86,7 @@ function Row({ c, asOf, open, onOpen, onSet, artist, week }) {
         <button className="pc-hit" aria-expanded={open} onClick={onOpen}>
           <span className={`pc-kind ${c.kind}`}>{KIND[c.kind] || "Change"}</span>
           <span className="pc-t">{c.title}</span>
-          <span className={`pc-d${c.to ? " to" : ""}`}><span className="pc-dt"><Detail c={c} /></span>{g && <span className="pc-g" title={`It would be the list's ${nth(g.nth)} general send ${g.week === week ? "this" : "that"} week; the cap is ${g.cap}`}>General send {g.nth} of {g.cap}</span>}</span>
+          <span className={`pc-d${c.to ? " to" : ""}`}><span className="pc-dt"><Detail c={c} /></span>{g && <span className="pc-g" title={`The list's ${nth(g.nth)} general send ${g.week === week ? "this" : "that"} week; the cap is ${g.cap}`}>General send {g.nth} of {g.cap}</span>}</span>
           <span className="pc-ch">{c.channel}</span>
           <span className="pc-day">{dayWord(c.date, asOf)}</span>
           <span className={`pc-u${units ? "" : size ? " save" : " none"}`}>{size || "No estimate"}</span>
@@ -96,7 +96,7 @@ function Row({ c, asOf, open, onOpen, onSet, artist, week }) {
         <div className="pc-open">
           <div className="pc-dd">{[c.to ? `${c.from ? `${c.from} to` : "To"} ${String(c.to).toLowerCase()}` : c.note, c.channel, dayWord(c.date, asOf)].filter(Boolean).join(" · ")}</div>
           {c.held && <div className="pc-why"><b>Held back.</b> {c.held}</div>}
-          <div className="pc-why">{c.reason}{g ? ` It would be the list's ${nth(g.nth)} general send ${g.week === week ? "this" : "that"} week; the cap is ${g.cap}.` : ""}</div>
+          <div className="pc-why">{c.reason}{g ? ` The list's ${nth(g.nth)} general send ${g.week === week ? "this" : "that"} week; the cap is ${g.cap}.` : ""}</div>
           {(c.alts || []).map((a) => (
             <div className="pc-why pc-alt" key={a.key}>Or {a.people ? `to ${Math.round(a.people).toLocaleString("en-GB")} people` : String(a.title || "").toLowerCase()}: {unitsWord(a.units) || "no estimate"}.</div>
           ))}
@@ -121,13 +121,13 @@ function ListLoad({ list, open, onOpen }) {
         <Chev />
         <span className="pc-ls"><i />{LOAD[w.state] || "List"}</span>
         <span className="pc-lw">{sends(w.general || 0)} this week, {list.cap} at most</span>
-        {w.load != null && <span className="pc-ll">{w.load.toFixed(1)} emails a person a week over four weeks</span>}
+        {w.load != null && <span className="pc-ll">{w.load.toFixed(1)} emails a person a week</span>}
       </button>
       {open && (
         <div className="pc-lopen">
           <div><span>This week</span>{named(w)}</div>
           <div><span>Next week</span>{named(nx)}{nx.general > list.cap ? `: ${nx.general}, over the cap of ${list.cap}` : ""}</div>
-          <div className="pc-lnote">A general send is an email to half the list or more, gone or still in a launch's plan. Up to {list.normalTo} emails a person a week, any launch that is short can have one. Up to {list.busyTo}, only the launch with the most at stake. Past that, none. Never more than {list.cap} in a week.</div>
+          <div className="pc-lnote">A general send goes to half the list or more. Up to {list.normalTo} emails a person a week, any launch that is short can have one; up to {list.busyTo}, only the launch with the most at stake; past that, none. Never more than {list.cap} a week.</div>
         </div>
       )}
     </>

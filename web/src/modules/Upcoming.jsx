@@ -32,10 +32,10 @@ export default function Upcoming({ snap, onSetup }) {
   const facts = [
     { l: works.length > 1 ? `Works (${works.length})` : "Work", v: works.length ? works.join(" · ") : snap.title || "–" },
     { l: "Edition", v: a.edition_size ? `${fmt(a.edition_size)} units` : "–" },
-    { l: "Price", v: a.unit_price ? fmtMoney(a.unit_price) + native : "–", tip: "Converted to euros at the fixed table the panel uses; check it on the Targets tab" },
+    { l: "Price", v: a.unit_price ? fmtMoney(a.unit_price) + native : "–", tip: "Converted to euros at a fixed rate; check it on the Targets tab" },
     { l: "Airtable", v: [a.airtable_release, a.project_status, a.launch_type || "launch type not set"].filter(Boolean).join(" · ") || "–" },
     { l: "Campaign code", v: d.campaign_code || "none yet", tag: d.campaign_code ? "Guessed" : null,
-      tip: d.campaign_code ? "Guessed from the codes the email and content feeds already use: correct it when you set targets" : "No code in the email or content feeds yet: type it when you set targets" },
+      tip: d.campaign_code ? "Guessed from the email and content feeds: correct it when you set targets" : "No code in the email or content feeds yet: type it when you set targets" },
   ];
   const targeted = snap.targeted !== false && !!(snap.hero && snap.hero.target > 0);
   return (
@@ -44,10 +44,10 @@ export default function Upcoming({ snap, onSetup }) {
         <Ring w={36} />
         <div className="big">Not live yet</div>
         <div className="sub">
-          Figures start when the funnel report carries this release{daysToOpen !== null && daysToOpen > 0 ? `: it announces in ${daysToOpen} day${daysToOpen === 1 ? "" : "s"}` : ""} and closes {day(snap.windowEnd)}
+          Figures start once this release is in the funnel report{daysToOpen !== null && daysToOpen > 0 ? `: it announces in ${daysToOpen} day${daysToOpen === 1 ? "" : "s"}` : ""} and closes {day(snap.windowEnd)}
         </div>
         <div className="btns">
-          {targeted ? <span className="loz good">Targets set</span> : <button className="sbtn prim" onClick={onSetup} title="Set its targets now; when the report starts carrying the launch, its actuals attach to them here">Set targets</button>}
+          {targeted ? <span className="loz good">Targets set</span> : <button className="sbtn prim" onClick={onSetup} title="Set targets now; the actuals attach once the launch is in the report">Set targets</button>}
           {a.url && <a className="sbtn" href={a.url} target="_blank" rel="noreferrer">Open in Airtable</a>}
         </div>
       </div>

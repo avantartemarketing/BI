@@ -37,9 +37,9 @@ function PaidPick({ scenarios, mode, onChange }) {
   const m = useMenu();
   const daily = (k) => (scenarios[k] && scenarios[k].paid && scenarios[k].paid.daily) || 0;
   const tip = {
-    recommended: `${money(daily("recommended"))} a day: the level at which the next euro of paid spend returns what it costs, reached from today's by steps of up to 30% a day`,
-    current: `${money(daily("current"))} a day: today's daily spend held to the close`,
-    none: "No more paid spend from now: the organic course alone",
+    recommended: `${money(daily("recommended"))} a day: where the next euro of paid spend returns what it costs, reached in steps of up to 30% a day`,
+    current: `${money(daily("current"))} a day: today's spend held to the close`,
+    none: "No more paid spend from now",
   };
   const cur = MODES.find(([k]) => k === mode) || MODES[0];
   return (
@@ -138,12 +138,12 @@ export default function SellThroughTable({ snap }) {
     <>
       {incomplete.length > 0 && (
         <Loz kind="warm" tip={`Not in the feed yet: ${incomplete.join(", ")}. ${incomplete.includes("orders table")
-          ? "The orders table has no lines for this launch yet, so its units are the feed's purchase events and the launch is one row."
-          : incomplete.includes("products") ? "The event feed has no draws for this release yet, so the release is one row. The rows by work appear after the next data refresh."
-          : "Sales the draw cannot name a product for are split by edition size inside the paid figure until the sales feed carries the product."}`}>Incomplete data</Loz>
+          ? "No order lines for this launch yet, so units come from purchase events and the launch is one row."
+          : incomplete.includes("products") ? "No draws in the feed for this release yet, so it is one row until the next refresh."
+          : "Sales with no product named are split by edition size until the sales feed names it."}`}>Incomplete data</Loz>
       )}
       {mismatch && (
-        <Loz kind="warm" tip={`The works' editions add up to ${fmt(st.editionSum)}, the release's edition is ${fmt(st.edition)}. The All works row reads the release's; each work its own. One of the two is wrong: check them on the Targets tab.`}>editions add to {fmt(st.editionSum)}</Loz>
+        <Loz kind="warm" tip={`The works' editions add up to ${fmt(st.editionSum)}, the release's edition is ${fmt(st.edition)}. All works uses the release's. Check them on the Targets tab.`}>editions add to {fmt(st.editionSum)}</Loz>
       )}
       {confWord && !complete && (
         <Loz kind={confKind} icon={<span className="dot" />} tip={[cf.confidenceWhy || null, has(cf.lo) && has(cf.hi) && cf.hi > cf.lo ? `Likely ${fmt(cf.lo)} to ${fmt(cf.hi)} at the close${cf.range && cf.range.note ? `: ${cf.range.note}` : ""}` : null].filter(Boolean).join("\n") || undefined}>{confWord} confidence</Loz>
@@ -192,7 +192,7 @@ export default function SellThroughTable({ snap }) {
         <table className="stt">
           <colgroup>{[17, 6, 6, 7, 6.5, 7, 7, 7, 6.5, 7.5, 6.5, 7.5, 8.5].map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>
           <thead><tr>
-            <th>Work</th><th>Paid</th><th>Drafts</th><th>Likely winners</th><th>Total sold</th><th>Target to date</th><th>vs target</th><th>Target at close</th><th>Edition size</th><th>Sell-through</th><th>Framing</th><th>{complete ? "Units at close" : "Forecast units"}</th>
+            <th>Work</th><th>Paid</th><th>Drafts</th><th>Likely winners</th><th>Sold</th><th>Target to date</th><th>vs target</th><th>Target at close</th><th>Edition</th><th>Sell-through</th><th>Framing</th><th>{complete ? "Units at close" : "Forecast units"}</th>
             <th><span className="sorted">{sortWord} <span aria-hidden="true">↓</span></span></th>
           </tr></thead>
           <tbody>
@@ -208,7 +208,7 @@ export default function SellThroughTable({ snap }) {
                 {cells(all)}
               </tr>
             )}
-            {rows.length === 0 && <tr><td colSpan={13} className="dim">No works by draw yet: the rows appear once the event feed carries this release's draws</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={13} className="dim">No works yet: rows appear once the feed has this release's draws</td></tr>}
           </tbody>
         </table>
       </div>

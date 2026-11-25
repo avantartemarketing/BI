@@ -38,30 +38,30 @@ export function noLevels(snap) {
 
   if (snap && snap.complete) {
     return { v: money(spent), u: "spent in all", aside: "", loz: "Closed", kind: undefined,
-      why: spent > 0 ? "The release has closed, so there is no spend still to come to set a level for."
+      why: spent > 0 ? "The release has closed: no spend still to come."
         : "The release closed without paid spend." };
   }
   if (!(spent > 0)) {
     return { ...head, aside: "", loz: null,
-      why: snap && snap.campaignName ? "No paid spend yet. The spend levels come once paid has run for a full day and bought entries."
-        : "No Meta campaign matched to this release: set one on the Targets tab." };
+      why: snap && snap.campaignName ? "No paid spend yet. Levels come once paid has run a full day and bought entries."
+        : "No Meta campaign matched: set one on the Targets tab." };
   }
   if (snap && snap.targeted === false) {
     return { ...head, loz: "No targets", kind: undefined,
-      why: "No recommendation: the spend levels need targets and a profit split. Set them on the Targets tab." };
+      why: "No recommendation: set targets and a profit split on the Targets tab." };
   }
   if (win.length && s3 <= 0) {
     return { ...head, loz: "Paid off", kind: "warm",
-      why: `No recommendation: paid has spent nothing in the last three days${since ? ` (off since ${since})` : ""}, so there is no recent price of an entry to set a level from. The levels return once paid runs for a day and buys entries.` };
+      why: `No recommendation: paid has spent nothing in the last three days${since ? ` (off since ${since})` : ""}. Levels return once paid runs for a day and buys entries.` };
   }
   if (win.length && e3 <= 0) {
     return { ...head, loz: "No entries in 3 days", kind: "warm",
-      why: `No recommendation: the ${money(s3)} spent in the last three days bought no entries, so there is no price of an entry to set a level from.${since ? ` Paid has been off since ${since}.` : ""} The levels return once paid buys entries again.` };
+      why: `No recommendation: the ${money(s3)} spent in the last three days bought no entries.${since ? ` Paid has been off since ${since}.` : ""} Levels return once paid buys entries again.` };
   }
   if ((paid.budget || {}).daysLeft === 0) {
     return { ...head, loz: "Last day", kind: undefined,
-      why: "No recommendation: the release is on its last day, so there is no full day still to come to set a level for." };
+      why: "No recommendation: the release is on its last day." };
   }
   return { ...head, loz: null,
-    why: "No recommendation yet: a level is set from the price of an entry over the last three days, the profit on a unit and the days left, and these are not all there." };
+    why: "No recommendation yet: it needs three days of entry prices, the profit on a unit and the days left." };
 }

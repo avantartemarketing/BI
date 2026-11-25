@@ -71,9 +71,9 @@ function PaidPick({ scenarios, mode, onChange }) {
   const m = useMenu();
   const daily = (k) => (scenarios[k].paid && scenarios[k].paid.daily) || 0;
   const tip = {
-    recommended: `${money(daily("recommended"))} a day: the level at which the next euro of paid spend returns what it costs, reached from today's by steps of up to 30% a day`,
-    current: `${money(daily("current"))} a day: today's daily spend held to the close`,
-    none: "No more paid spend from now: the organic course alone",
+    recommended: `${money(daily("recommended"))} a day: where the next euro of paid spend returns what it costs, reached in steps of up to 30% a day`,
+    current: `${money(daily("current"))} a day: today's spend held to the close`,
+    none: "No more paid spend from now",
   };
   const cur = MODES.find(([k]) => k === mode) || MODES[0];
   return (
@@ -118,7 +118,7 @@ export default function SellThroughClose({ snap, vs = "target" }) {
   const paid = cf.paid || null;
   const range = cf.range || null;
   const working = [
-    `${title}, how it is read`,
+    title,
     `Projected ${fmt(cf.units)}${has(cf.edition) ? ` of ${fmt(cf.edition)} (${fmtPct(cf.pct, 0)})` : ""} · today ${fmt(cf.today)}${has(cf.pctToday) ? ` (${fmtPct(cf.pctToday, 0)})` : ""}${daysWord ? ` · ${daysWord}` : ""}`,
     ...(has(cf.target) ? [byBm ? `Benchmark at close ${fmt(cf.target)}` : `Units target ${fmt(cf.target)}`] : []),
     ...(Object.keys(b).length ? [`Built from: sold ${fmt(b.sold)} + in hand ${fmt(b.inHand)} + organic to come ${fmt(b.organic)} + paid to come ${fmt(b.paid)}`] : []),

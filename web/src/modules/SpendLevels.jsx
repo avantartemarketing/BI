@@ -42,8 +42,8 @@ function oneIn(p) {
 }
 const WORDS = { none: "no paid", half: "half", recommended: "recommended", double: "double", today: "today's, held" };
 const STOP = {
-  supply: ["Edition spoken for", "Paid stops: the edition is spoken for without it, so a further entry buys nothing."],
-  marginal: ["Next euro under 1.0", "Paid stops: even the smallest day's next euro returns less than it costs."],
+  supply: ["Edition spoken for", "Paid stops: the edition is spoken for without it."],
+  marginal: ["Next euro under 1.0", "Paid stops: even the smallest spend returns less than it costs."],
   zero_conversion_pause: ["No entries for 3 days", "Paid pauses: three days of spend have bought no entries."],
 };
 const H = 190, L = 40, R = 10, T = 14, B = 26;
@@ -127,14 +127,14 @@ export default function SpendLevels({ snap }) {
   const aside = today !== null ? `today ${money(today)} · ${chgWord}` : "";
   const band = Array.isArray(lv.elasticityBand) && lv.elasticityBand.length === 2 ? lv.elasticityBand : null;
   const working = [
-    `${title}, how they are read`,
-    `Recommended ${money(rec)} a day: the level at which the next euro of spend returns 1.0`,
+    title,
+    `Recommended ${money(rec)} a day: where the next euro returns 1.0`,
     ...(today !== null ? [`Today ${money(today)} a day${has(lv.marginalToday) ? ` · the next euro returns ${fmt(lv.marginalToday, 2)}` : ""}`] : []),
-    has(lv.sellout) ? `Sells out at ${money(lv.sellout)} a day, flat to the close` : "No flat daily spend sells the edition out by the close",
+    has(lv.sellout) ? `Sells out at ${money(lv.sellout)} a day` : "No daily spend sells the edition out",
     ...(has(lv.ppu) ? [`AA's profit on a paid unit ${fmtMoney(lv.ppu)}${has(lv.cannibalisation) ? `, net of ${fmtPct(lv.cannibalisation, 0)} cannibalisation` : ""}`] : []),
-    ...(has(lv.elasticity) ? [`Elasticity ${fmt(lv.elasticity, 2)}${band ? ` (${fmt(band[0], 2)} to ${fmt(band[1], 2)}: the band)` : ""}`] : []),
+    ...(has(lv.elasticity) ? [`Elasticity ${fmt(lv.elasticity, 2)}${band ? ` (${fmt(band[0], 2)} to ${fmt(band[1], 2)})` : ""}`] : []),
     ...(has(lv.daysLeft) ? [`${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"} left`] : []),
-    "The curve is AA's profit from the spend still to come at a flat daily spend; ROI is that profit over AA's share of the spend, the next euro's return the slope of it.",
+    "The curve is AA's profit from the spend still to come, at each daily spend.",
   ].join("\n");
 
   if (stop) {
@@ -197,7 +197,7 @@ export default function SpendLevels({ snap }) {
     labels.push({ t: `Today ${money(today)}`, s: { left: P(lx, W), top: P(ly - 5, H), transform: right ? "none" : "translate(-100%,0)", color: COL.MUTED } });
   }
   const legend = [
-    { n: "Profit from the spend still to come", k: lk(COL.IND) },
+    { n: "Profit from spend to come", k: lk(COL.IND) },
     ...(banded ? [{ n: "Where the peak may sit", k: { ...sw(COL.PALE), width: 10, height: 10, flex: "0 0 10px", border: "1px solid #dfe2f8" }, tip: band ? `The same profit with the elasticity at ${fmt(band[0], 2)} and ${fmt(band[1], 2)}` : undefined }] : []),
     ...(ring ? [{ n: "Today", k: { width: 8, height: 8, flex: "0 0 8px", borderRadius: "50%", border: `2px solid ${COL.INK}` } }] : []),
   ];
@@ -206,7 +206,7 @@ export default function SpendLevels({ snap }) {
   return (
     <Card title={title} aria={title}>
       <Head v={money(rec)} u="a day recommended" aside={aside} asideTip={working}>
-        <Loz kind="ind" tip={has(lv.marginalToday) && today !== null ? `At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}; at ${money(rec)} it returns 1.0` : "The level at which the next euro of spend returns what it costs"}>Next euro returns 1.0</Loz>
+        <Loz kind="ind" tip={has(lv.marginalToday) && today !== null ? `At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}; at ${money(rec)} it returns 1.0` : "Where the next euro of spend returns what it costs"}>Next euro returns 1.0</Loz>
       </Head>
       <div ref={ref} style={{ position: "relative" }}>
         <Marks W={W} layer="under" band={bandPath} x={x} y={y} dots={[]} labels={[]} />
@@ -270,26 +270,26 @@ function Cautious({ lv, curve, title, boxRef, W }) {
   // edition has no sell-out, the worth of a signup is the unsure thing, and the budget's own pace is marked
   const su = lv.unit === "signup";
   const working = su ? [
-    `${title}, how they are read`,
+    title,
     `Tomorrow ${money(tomorrow)} a day: today's ${money(today)} moved by at most 30%, toward ${money(rec)}`,
-    `Aim ${money(rec)} a day: the daily spend that earns the most if the launch turns out dear (the 25th percentile of the profit to come)`,
-    `At that level the spend to come is ${kprofit(lv.spendToCome)} over ${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"} to the sales open, the profit on it ${kprofit(pr.median)} (${kprofit(pr.p10)} to ${kprofit(pr.p90)})${has(lv.unitsAtRecommended) ? ` and paid signups at the open ${fmt(lv.unitsAtRecommended)}${has(lv.targetSignups) ? ` of the ${fmt(lv.targetSignups)} targeted` : ""}` : ""}`,
+    `Aim ${money(rec)} a day: the spend that earns the most if the launch turns out dear`,
+    `At that level: ${kprofit(lv.spendToCome)} to spend over ${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"} to the open, profit ${kprofit(pr.median)} (${kprofit(pr.p10)} to ${kprofit(pr.p90)})${has(lv.unitsAtRecommended) ? `, ${fmt(lv.unitsAtRecommended)} paid signups at the open${has(lv.targetSignups) ? ` of the ${fmt(lv.targetSignups)} targeted` : ""}` : ""}`,
     ...(has(lv.signupsAtToday) ? [`Today's ${money(today)} held to the open brings ${fmt(lv.signupsAtToday)} paid signups`] : []),
-    ...(has(lv.budgetPace) ? [`The budget's pace is ${money(lv.budgetPace)} a day: what is left of it (${kprofit(lv.budgetLeft)}) spent evenly to the open${has(lv.signupsAtBudget) ? `, bringing ${fmt(lv.signupsAtBudget)} paid signups` : ""}${has(lv.lossAtBudget) ? `, with a ${oneIn(lv.lossAtBudget)} chance of a loss` : ""}`] : []),
-    ...(has(lv.pointLevel) ? [`The point estimate's peak, where the next euro returns 1.0, is ${money(lv.pointLevel)} a day${has(lv.lossAtPoint) ? `, with a ${oneIn(lv.lossAtPoint)} chance of a loss` : ""}`] : []),
+    ...(has(lv.budgetPace) ? [`Budget's pace ${money(lv.budgetPace)} a day: the ${kprofit(lv.budgetLeft)} left, spent evenly to the open${has(lv.signupsAtBudget) ? `, ${fmt(lv.signupsAtBudget)} paid signups` : ""}${has(lv.lossAtBudget) ? `, ${oneIn(lv.lossAtBudget)} chance of a loss` : ""}`] : []),
+    ...(has(lv.pointLevel) ? [`The next euro returns 1.0 at ${money(lv.pointLevel)} a day${has(lv.lossAtPoint) ? `, ${oneIn(lv.lossAtPoint)} chance of a loss` : ""}`] : []),
     ...(today !== null && has(lv.marginalToday) ? [`At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}`] : []),
-    `The range is where eight in ten runs land once the window's price${has(lv.entriesWindow) ? ` (${fmt(lv.entriesWindow, 1)} signups over three days)` : ""}, the elasticity${has(lv.elasticity) ? ` (${fmt(lv.elasticity, 2)})` : ""}, the wear-out${has(lv.wearout) ? ` (${fmt(lv.wearout, 2)})` : ""} and what a paid signup is worth are each allowed their uncertainty. The last is the widest: it rests on the share of paid signups that go on to order, which is the comparison launches' and not yet this launch's own`,
+    `The range is where 8 in 10 runs land, allowing for the recent price${has(lv.entriesWindow) ? ` (${fmt(lv.entriesWindow, 1)} signups over three days)` : ""}, the elasticity${has(lv.elasticity) ? ` (${fmt(lv.elasticity, 2)})` : ""}, the wear-out${has(lv.wearout) ? ` (${fmt(lv.wearout, 2)})` : ""} and what a paid signup is worth. The last is the least sure: it rests on other launches' share of paid signups that order`,
     ...(has(lv.ppu) ? [`A paid signup is worth ${fmtMoney(lv.ppu)} to AA${has(lv.cannibalisation) ? `, net of ${fmtPct(lv.cannibalisation, 0)} cannibalisation` : ""}${has(lv.aaShare) ? `, and AA pays ${fmtPct(lv.aaShare, 0)} of the spend` : ""}`] : []),
-    "An open edition has no sell-out, so no daily spend is capped by one.",
+    "An open edition has no sell-out to cap the spend.",
   ].join("\n") : [
-    `${title}, how they are read`,
+    title,
     `Tomorrow ${money(tomorrow)} a day: today's ${money(today)} moved by at most 30%, toward ${money(rec)}`,
-    `Aim ${money(rec)} a day: the daily spend that earns the most if the campaign turns out dear (the 25th percentile of the profit to come)`,
-    `At that level the spend to come is ${kprofit(lv.spendToCome)} over ${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"}, the profit on it ${kprofit(pr.median)} (${kprofit(pr.p10)} to ${kprofit(pr.p90)})${has(lv.unitsAtRecommended) ? ` and the close ${fmt(lv.unitsAtRecommended)}${has(lv.edition) ? ` of ${fmt(lv.edition)}` : ""} units` : ""}`,
-    ...(has(lv.pointLevel) ? [`The point estimate's peak, where the next euro returns 1.0, is ${money(lv.pointLevel)} a day${has(lv.lossAtPoint) ? `, with a ${oneIn(lv.lossAtPoint)} chance of a loss` : ""}`] : []),
+    `Aim ${money(rec)} a day: the spend that earns the most if the campaign turns out dear`,
+    `At that level: ${kprofit(lv.spendToCome)} to spend over ${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"}, profit ${kprofit(pr.median)} (${kprofit(pr.p10)} to ${kprofit(pr.p90)})${has(lv.unitsAtRecommended) ? `, ${fmt(lv.unitsAtRecommended)}${has(lv.edition) ? ` of ${fmt(lv.edition)}` : ""} units at the close` : ""}`,
+    ...(has(lv.pointLevel) ? [`The next euro returns 1.0 at ${money(lv.pointLevel)} a day${has(lv.lossAtPoint) ? `, ${oneIn(lv.lossAtPoint)} chance of a loss` : ""}`] : []),
     ...(today !== null && has(lv.marginalToday) ? [`At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}`] : []),
-    `The range is where eight in ten runs land once the window's price${has(lv.entriesWindow) ? ` (${fmt(lv.entriesWindow, 1)} entries over three days)` : ""}, the elasticity${has(lv.elasticity) ? ` (${fmt(lv.elasticity, 2)})` : ""}, the wear-out${has(lv.wearout) ? ` (${fmt(lv.wearout, 2)})` : ""} and the close's lift are each allowed their uncertainty`,
-    has(lv.sellout) ? `Sells out at ${money(lv.sellout)} a day, flat to the close` : "No flat daily spend sells the edition out by the close",
+    `The range is where 8 in 10 runs land, allowing for the recent price${has(lv.entriesWindow) ? ` (${fmt(lv.entriesWindow, 1)} entries over three days)` : ""}, the elasticity${has(lv.elasticity) ? ` (${fmt(lv.elasticity, 2)})` : ""}, the wear-out${has(lv.wearout) ? ` (${fmt(lv.wearout, 2)})` : ""} and the close's lift`,
+    has(lv.sellout) ? `Sells out at ${money(lv.sellout)} a day` : "No daily spend sells the edition out",
     ...(has(lv.ppu) ? [`AA's profit on a paid unit ${fmtMoney(lv.ppu)}${has(lv.cannibalisation) ? `, net of ${fmtPct(lv.cannibalisation, 0)} cannibalisation` : ""}`] : []),
   ].join("\n");
 
@@ -356,7 +356,7 @@ function Cautious({ lv, curve, title, boxRef, W }) {
   return (
     <Card title={title} aria={title}>
       <Head v={money(tomorrow)} u="a day" tip={working}>
-        {has(lossP) && <Loz kind={riskKind} tip={`At ${money(rec)} a day the spend still to come loses money in ${oneIn(lossP)} runs${has(lv.lossAtPoint) && has(lv.pointLevel) ? `; at the point estimate's peak, ${money(lv.pointLevel)}, in ${oneIn(lv.lossAtPoint)}` : ""}`}><span className="dot" />{oneIn(lossP)} chance of a loss</Loz>}
+        {has(lossP) && <Loz kind={riskKind} tip={`At ${money(rec)} a day the spend to come loses money in ${oneIn(lossP)} runs${has(lv.lossAtPoint) && has(lv.pointLevel) ? `; at ${money(lv.pointLevel)}, in ${oneIn(lv.lossAtPoint)}` : ""}`}><span className="dot" />{oneIn(lossP)} chance of a loss</Loz>}
       </Head>
       <div ref={boxRef} style={{ position: "relative", marginTop: "auto" }}>
         <CautiousMarks W={W} layer="under" band={bandPath} x={x} y={y} labels={[]} />
@@ -369,7 +369,7 @@ function Cautious({ lv, curve, title, boxRef, W }) {
               { n: "Profit to come, likely", v: kprofit(rowAt(i).median), k: lk(COL.IND) },
               ...(has(rowAt(i).p10) && has(rowAt(i).p90) ? [{ n: "8 in 10 runs", v: `${kprofit(rowAt(i).p10)} to ${kprofit(rowAt(i).p90)}`, k: sw(COL.PALE) }] : []),
               ...(has(rowAt(i).lossP) && rowAt(i).daily > 0 ? [{ n: "Chance of a loss", v: oneIn(rowAt(i).lossP), k: { width: 8, flex: "0 0 8px" } }] : []),
-              ...(su && has(rowAt(i).signups) && rowAt(i).daily > 0 ? [{ n: "Paid signups it buys", v: fmt(Math.round(rowAt(i).signups)), k: { width: 8, flex: "0 0 8px" } }] : []),
+              ...(su && has(rowAt(i).signups) && rowAt(i).daily > 0 ? [{ n: "Paid signups", v: fmt(Math.round(rowAt(i).signups)), k: { width: 8, flex: "0 0 8px" } }] : []),
             ]}
             aria={`Profit from the spend still to come at each daily spend, with its likely range; aim ${money(rec)} a day`} />
           <CautiousMarks W={W} layer="over" x={x} y={y} zero={zero} tested={tested} pace={pace} drop={recPt ? `M${x(recPt.i).toFixed(1)} ${y(recPt.v).toFixed(1)}V${y(Math.max(0, ymin)).toFixed(1)}` : null} dot={recPt} ring={ring} labels={labels} />
@@ -387,7 +387,7 @@ function LevelsTable({ rows }) {
     <div style={{ overflowX: "auto" }}>
       <table>
         <thead>
-          <tr><th>Daily spend</th><th>Units at close</th><th>Spend to come</th><th>ROI on it</th></tr>
+          <tr><th>Daily spend</th><th>Units at close</th><th>Spend to come</th><th>ROI</th></tr>
         </thead>
         <tbody>
           {rows.map((r) => (

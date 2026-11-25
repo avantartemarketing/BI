@@ -70,18 +70,18 @@ function normaliseLE(raw) {
  * glyph of its unit. */
 const WORK_ROWS = [
   { key: "edition", label: "Edition", glyph: "№", tip: "Units in the edition of this work." },
-  { key: "target_sellthrough", label: "Sell-through", glyph: "%", tip: "The share of the edition targeted to sell by close. Blank = Airtable's target (its units target over the edition, else the expected sell-through), else 100%." },
-  { key: "unit_price", label: "Price", glyph: "€", tip: "Retail price per unit. Airtable prices in euros, the page's currency; a product in another currency is converted at a fixed rate." },
+  { key: "target_sellthrough", label: "Sell-through", glyph: "%", tip: "The share of the edition targeted to sell by close. Blank = Airtable's target, else 100%." },
+  { key: "unit_price", label: "Price", glyph: "€", tip: "Retail price per unit, in euros. Other currencies are converted at a fixed rate." },
   { key: "artist_profit_per_unit", label: "Artist profit", glyph: "€", tip: "The artist's profit on one unit sold." },
   { key: "aa_profit_per_unit", label: "AA profit", glyph: "€", tip: "Avant Arte's group profit on one unit sold, before framing." },
   { key: "artist_revenue_cut", label: "Artist revenue cut", glyph: "%", tip: "The artist's or estate's commission on revenue, taken before any profit is split (Airtable's Revenue Commission %)." },
-  { key: "aa_profit_share", label: "Profit share", glyph: "%", tip: "Avant Arte's own share of the profit on a profit-share deal, which is also its share of the paid budget. Closed while the product has an AA revenue share." },
-  { key: "aa_revenue_share", label: "Revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal, where Avant Arte carries the ads outright. Closed while the product has an AA profit share." },
+  { key: "aa_profit_share", label: "Profit share", glyph: "%", tip: "Avant Arte's share of the profit on a profit-share deal, and of the paid budget. Closed while the product has an AA revenue share." },
+  { key: "aa_revenue_share", label: "Revenue share", glyph: "%", tip: "Avant Arte's share of revenue on a royalty deal, where it pays for all the ads. Closed while the product has an AA profit share." },
 ];
 const FRAME_ROWS = [
-  { key: "frame_price", label: "Frame price", glyph: "€", tip: "The price of the cheapest frame offered on this work (Airtable's Frame products). It sets the band the default frames per print is read from." },
-  { key: "frame_conversion", label: "Frame take-up", glyph: "%", tip: "The share of buyers expected to take a frame. Blank = the default: the share of paid prints that took a frame over the last twelve months' launches, in the band of the frame's price against the print's." },
-  { key: "frame_profit_per_unit", label: "Frame profit", glyph: "€", tip: "Avant Arte's profit on each frame sold, which is Avant Arte's alone. There is no default: blank counts no framing profit." },
+  { key: "frame_price", label: "Frame price", glyph: "€", tip: "The price of the cheapest frame offered on this work. It sets the default frame take-up." },
+  { key: "frame_conversion", label: "Frame take-up", glyph: "%", tip: "The share of buyers expected to take a frame. Blank = the last twelve months' take-up for frames priced like this one." },
+  { key: "frame_profit_per_unit", label: "Frame profit", glyph: "€", tip: "Avant Arte's profit on each frame sold. Blank counts no framing profit." },
 ];
 const closedFor = (p, key) => {
   if (key === "aa_revenue_share") return p.aa_profit_share !== null && p.aa_revenue_share === null;
@@ -401,7 +401,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
 
             <Section title="Works" count={products.length} action={<AddWorkButton onClick={onAdd} />}>
               {workRows.map((w) => <WorkRow key={w.key} w={w} on={sel === w.key} onPick={() => { setSel(sel === w.key ? null : w.key); setSelLine(null); }} />)}
-              {!products.length && <div className="empty-note">No works yet: Airtable has no record matched to this release{(sourced.airtable || {}).note ? ` (${sourced.airtable.note})` : ""}. Add one by hand with the plus.</div>}
+              {!products.length && <div className="empty-note">No works yet: nothing in Airtable matches this release{(sourced.airtable || {}).note ? ` (${sourced.airtable.note})` : ""}. Add one with the plus.</div>}
             </Section>
 
             {lineRows.length > 0 && (
@@ -421,10 +421,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
 
             <Section title="Basket" icon={<BasketIcon />}
               count={members.length} aria="Basket"
-              lozes={bmUnits ? <Loz kind="ind" tip={`The basket's median units of demand, the channels not in plan set aside: the benchmark${k ? `, ×${fmt(k, 2)} to the target` : ""}`}>{fmt(Math.round(bmUnits * 10) / 10, bmUnits < 100 ? 1 : 0)} units</Loz> : null}
+              lozes={bmUnits ? <Loz kind="ind" tip={`The benchmark: the basket's median demand on the channels in plan${k ? `, ×${fmt(k, 2)} to the target` : ""}`}>{fmt(Math.round(bmUnits * 10) / 10, bmUnits < 100 ? 1 : 0)} units</Loz> : null}
               action={<PickButton onClick={() => { setPickingLine(null); setRoute({ ...route, basket: true }); }} />}>
               {members.slice().sort((x, y) => (y.units || 0) - (x.units || 0)).map((r) => <BasketRow key={r.release_name} r={{ ...r, unitsTip: r.sold_short && r.demand > r.units ? `Sold ${fmt(r.units)}; it sold out with more wanted, so the benchmark counts its demand of ${fmt(r.demand)}` : "Units it sold in its window" }} onOpen={openRelease(r.release_name)} />)}
-              {!members.length && <div className="empty-note">{editionSize > 0 ? (cands ? "No launches on file near this target and price yet." : "Finding the nearest launches…") : "A target and a price are needed before there is anything to be near to: add a work, or type them in the picker."}</div>}
+              {!members.length && <div className="empty-note">{editionSize > 0 ? (cands ? "No launches on file near this target and price yet." : "Finding the nearest launches…") : "Needs a target and a price first: add a work, or type them in the picker."}</div>}
             </Section>
 
             <Section title="Dates" count={3}>
@@ -442,13 +442,13 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               <Group>Work</Group>
               {!selP.airtable_id && <EditRow id="w-name" label="Name" text value={selP.name || ""} placeholder="Name of the work" tag="by hand" onCommit={(raw) => onName(selP, raw)} />}
               <EditRow id="w-line" label="Line" text value={selP.line_typed ? selP.line : ""} placeholder={selP.line || "One release"} tag={selP.line_typed ? "Typed" : selP.line ? "Airtable" : ""} typed={selP.line_typed}
-                tip="The line of work this product sells on, for a release selling two kinds of edition on one page. Two names split the release into lines, each benchmarked and targeted on its own." onCommit={(raw) => onField(selP, "line", raw)} />
+                tip="For a release selling two kinds of edition on one page. Two names split it into lines, each with its own benchmark and target." onCommit={(raw) => onField(selP, "line", raw)} />
               {WORK_ROWS.map((r) => workField(selP, r))}
               <Group>Framing</Group>
               <SwitchRow label="Offered" on={!!selP.framing_available} onChange={(on) => onField(selP, "framing_available", on)} tip={selP.sources.framing_available === "default" ? "Airtable's Framing is blank: a sculpture edition defaults to no frame, a print to one" : "Whether a frame is offered on this work"} />
               {selP.framing_available && FRAME_ROWS.map((r) => workField(selP, r))}
               <Group>Release</Group>
-              {selP.airtable_id && <SwitchRow label="In the release" on={!selP.excluded} onChange={(on) => onInclude(selP, on)} tip="Untick to leave this work out of the release: it stays listed, greyed, and counts nothing." />}
+              {selP.airtable_id && <SwitchRow label="In the release" on={!selP.excluded} onChange={(on) => onInclude(selP, on)} tip="Untick to leave this work out: it stays listed but counts nothing." />}
               <div className="acts">
                 {selP.airtable_id && typedKeys(selP).length > 0 && <button className="sbtn" onClick={() => onReset(selP)} title={`Back to Airtable's figures on this work (${typedKeys(selP).length} typed)`}><Undo />Reset to Airtable</button>}
                 {!selP.airtable_id && <button className="sbtn" onClick={() => onRemove(selP)} title="Take this work off the release"><X />Remove</button>}
@@ -460,7 +460,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               <Group>Line</Group>
               <EditRow id="ln-name" label="Name" text value={selLineRow.settings.name || ""} placeholder={selLineRow.line.name} tag={selLineRow.line.code || ""} tip="The line's name on the page. Blank: the words its works' titles share, else its Airtable release code." onCommit={(raw) => setLine(selLineRow.line.key, { name: raw })} />
               <Prop label="Target" tip="Its works' editions at their target sell-through"><Val ic={<Target />}>{fmt(selLineRow.line.edition_size)} units{selLineRow.line.unit_price ? ` at ${fmtMoney(selLineRow.line.unit_price, 0)}` : ""}</Val></Prop>
-              <Prop label="Basket" tip="The launches this line is benchmarked against: those whose demand is nearest its own size, at a price nearest its own, the artist's own first.">
+              <Prop label="Basket" tip="The launches this line is benchmarked against: the nearest in size and price, the artist's own first.">
                 <button className="chipb" onClick={() => { setPickingLine(selLineRow.line.key); setRoute({ ...route, basket: true }); }}>{selLineRow.basketN ? `${selLineRow.basketN} launches` : "Basket"}<span className="tag">{selLineRow.basketEdited ? "Edited" : "Suggested"}</span></button>
               </Prop>
               {selLineRow.profile && <Prop label="Benchmark"><Val ic={<Bmk />}>{fmt(selLineRow.profile.units)} units{selLineRow.k ? ` · ×${fmt(selLineRow.k, 2)}` : ""}</Val></Prop>}
@@ -484,7 +484,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               <Prop label="Units target" tip={`The works' editions at their target sell-through, summed${partialEdition ? ` - ${fmt(editionSize)} of the ${fmt(econ.edition_total)} in the editions` : ""}.`}>
                 <Val ic={<Target />} tag={econ.mode === "release" ? "Release-level" : partialEdition ? `of ${fmt(econ.edition_total)}` : ""}>{editionSize > 0 ? fmt(editionSize) : "–"}</Val>
               </Prop>
-              <Prop label="Benchmark" tip={bmUnits ? `The basket's median units of demand, the channels not in plan set aside${k ? `: ×${fmt(k, 2)} to the target` : ""}.` : "Choose a basket first."}>
+              <Prop label="Benchmark" tip={bmUnits ? `The basket's median demand on the channels in plan${k ? `: ×${fmt(k, 2)} to the target` : ""}.` : "Choose a basket first."}>
                 <Val ic={<Bmk />}>{bmUnits ? `${fmt(Math.round(bmUnits * 10) / 10, bmUnits < 100 ? 1 : 0)} units` : "–"}</Val>
               </Prop>
               <Prop label="Stretch" tip={T ? `The target less the benchmark, ${stretchMode === "paid" ? "all from paid" : stretchMode === "custom" ? "on custom shares" : "even across channels"}.` : "Choose a basket first."}>
@@ -498,7 +498,7 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               <EditRow id="t-e2o" label="Entry to order" glyph="→" value={asPct(inp.entry_conversion_rate)} placeholder={`${e2oDefault}%`} tag={inp.entry_conversion_rate ? "Typed" : "Panel"} typed={!!inp.entry_conversion_rate}
                 tip="What share of eligible entries in hand become orders. Blank is the panel's standard." onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, entry_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
               <EditRow id="t-pre" label="Pre-order" glyph="→" value={asPct(inp.preorder_conversion_rate)} placeholder="95%" tag={inp.preorder_conversion_rate ? "Typed" : "Default"} typed={!!inp.preorder_conversion_rate}
-                tip="What share of pre-order entries become orders. Their card is already authorised, so they convert higher than a plain entry. Blank is 95%." onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, preorder_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
+                tip="What share of pre-order entries become orders. Blank is 95%." onCommit={(raw) => { const c = String(raw).replace(/[^0-9]/g, ""); setInp((prev) => ({ ...prev, preorder_conversion_rate: c === "" ? null : clamp(parseInt(c, 10), 1, 100) / 100 })); }} />
 
               <Group>Paid</Group>
               <CampaignsProp code={codeInForce} chosen={inp.campaign_names} all={meta.meta_campaigns} suggested={sourced.campaigns} asOf={snap.asOf} onChange={(names) => setInp({ ...inp, campaign_names: names })} />
@@ -510,10 +510,10 @@ export default function TargetSetting({ snap, onSaved, directSpread = false, rou
               </Prop>
               <EditRow id="t-cpu" label="Cost per unit" glyph="€" value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)} placeholder={fmtMoney(cpp, 0)}
                 tag={Number(inp.cost_per_purchase) > 0 ? "Typed" : cppSource === "basket" ? "Basket" : "Panel"} typed={Number(inp.cost_per_purchase) > 0}
-                tip="What a paid unit costs to buy: paid units at this price is the paid budget. Blank is the basket's median cost per paid unit, or the panel's when fewer than three of the basket's launches have spend on file." onCommit={numCommit("cost_per_purchase", 0, 1e7)} />
+                tip="What a paid unit costs: paid units at this price is the paid budget. Blank is the basket's median, or the panel's when fewer than three basket launches have spend on file." onCommit={numCommit("cost_per_purchase", 0, 1e7)} />
               <EditRow id="t-cann" label="Cannibalised" glyph="%" value={inp.cannibalisation === null || inp.cannibalisation === undefined ? "" : String(Math.round(Number(inp.cannibalisation) * 1000) / 10)} placeholder={`${cannDefault}%`}
                 tag={inp.cannibalisation !== null && inp.cannibalisation !== undefined ? "Typed" : "Default"} typed={inp.cannibalisation !== null && inp.cannibalisation !== undefined}
-                tip="The share of paid entries that would have come anyway. The ROI and the budget floor read profit net of it." onCommit={numCommit("cannibalisation", 0, 95, 100)} />
+                tip="The share of paid entries that would have come anyway. ROI and the budget floor are net of it." onCommit={numCommit("cannibalisation", 0, 95, 100)} />
 
               <TeamGroup snap={snap} sourced={sourced} inp={inp} setInp={setInp} slack={slack} />
             </div>

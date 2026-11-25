@@ -24,25 +24,25 @@ export default function SellForecast({ snap, horizon = "today" }) {
   const atOpen = horizon === "close";
   const H = f ? (atOpen ? f.open : f.today) : null;
   if (!f || !H || !H.works || !H.works.length) {
-    return <Card title="Sell-through forecast by work"><div className="empty-state">No works from Airtable and no units target yet: nothing to forecast against</div></Card>;
+    return <Card title="Sell-through forecast by work"><div className="empty-state">No forecast yet: needs works from Airtable or a units target</div></Card>;
   }
   const whenShort = atOpen ? "at the open" : "today";
   const rates = f.rates || { prod: {}, rel: {} };
   const band = Array.isArray(f.band) ? f.band : [0.63, 1.62];
   const keyedWords = f.source === "signup pages"
-    ? `${fmt(f.keyed)} product signups are keyed to a work by the product page of their session (${finite(f.keyedShare) ? fmtPct(f.keyedShare, 0) : "–"} of product signups); the ${fmt(f.releaseSignups)} release signups and the ${fmt(f.unkeyedProduct)} product signups without a page spread pro rata.`
-    : `Fewer than ${fmt(f.minKeyed)} signups are keyed to a work so far, so the works split by their units target.`;
+    ? `${fmt(f.keyed)} product signups (${finite(f.keyedShare) ? fmtPct(f.keyedShare, 0) : "–"}) name a work by the page they came from; the ${fmt(f.releaseSignups)} release signups and the other ${fmt(f.unkeyedProduct)} are shared out pro rata.`
+    : `Fewer than ${fmt(f.minKeyed)} signups name a work so far, so the works split by units target.`;
   const working = [
-    `Units at close ${whenShort}, how it is read`,
+    `Units at close, on signups ${whenShort}`,
     `Signups ${whenShort} ${fmt(H.signups)} · signup-led units ${fmt(H.su)} + non-signup units ${fmt(H.non)} = ${fmt(H.units)} units at close`,
     `Range, the middle half of past launches: ${fmt(H.lo)} to ${fmt(H.hi)}`,
     ...(H.edition ? [`Edition ${fmt(H.edition)} · sell-through ${fmtPct(H.pct, 0)}`] : []),
     ...(H.target ? [`Units target ${fmt(H.target)} · ${fmtPct(H.pctTarget, 0)} of it`] : []),
     `Pieces per order ${fmt(f.ppo, 2)} (${f.ppoSource === "release" ? "typed" : "the basket's"})`,
     ...Object.keys(GROUP_NAMES).map((g) => `${GROUP_NAMES[g]}: product / release rate ${fmtPct((rates.prod || {})[g] ?? 0, 0)} / ${fmtPct((rates.rel || {})[g] ?? 0, 0)} · ${fmt(H.nonByGroup ? H.nonByGroup[g] : 0)} non-signup units at ×${fmt(H.perfByGroup ? H.perfByGroup[g] : 1, 2)}`),
-    `Signup-led units: each channel's signups ${atOpen ? "projected to the open" : "to date"}, product subscriptions and release ones apart, at ${rates.source === "release" ? "the rate typed on the Targets tab" : `the basket's (${fmt(f.basketN ?? 0)} launches) signup to order rates for that channel and kind`}, times the pieces an order takes. ${keyedWords}`,
-    `Non-signup units: the same launches' median window sales to buyers who never signed up, by channel, moved ${Math.round((f.beta ?? 0) * 100)}% of the way with this launch's signups against theirs${Array.isArray(f.perfClip) ? ` (the ratio held between ${f.perfClip[0]} and ${f.perfClip[1]})` : ""}, spread over the works by the same shares.`,
-    `The band is where completed launches landed around this forecast: the middle half, ${band[0]} to ${band[1]} times it.`,
+    `Signup-led units: each channel's signups ${atOpen ? "projected to the open" : "to date"}, at ${rates.source === "release" ? "the rate typed on the Targets tab" : `the basket's (${fmt(f.basketN ?? 0)} launches) signup to order rates`}, times pieces per order. ${keyedWords}`,
+    `Non-signup units: the same launches' median sales to buyers who never signed up, moved ${Math.round((f.beta ?? 0) * 100)}% of the way with this launch's signups against theirs${Array.isArray(f.perfClip) ? ` (the ratio held between ${f.perfClip[0]} and ${f.perfClip[1]})` : ""}.`,
+    `The range is where the middle half of past launches landed: ${band[0]} to ${band[1]} times the forecast.`,
   ].join("\n");
   // on each edition where every work has one, else on units
   const works = H.works;

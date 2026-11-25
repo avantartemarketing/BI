@@ -110,13 +110,13 @@ function tlLiveProfile(rows) {
 
 const WORK_ROWS = [
   { key: "edition", label: "Edition", glyph: "№", tip: "Units in the edition of this work; a timed launch's edition caps nothing." },
-  { key: "units_target", label: "Units target", glyph: "◎", tip: "Airtable's units target for this work. The launch's target is the sum over the ticked works, and the window is measured against it. Blank = Airtable's figure; type over it where you know better." },
+  { key: "units_target", label: "Units target", glyph: "◎", tip: "This work's units target. The launch's target is the sum over the ticked works. Blank = Airtable's figure." },
   { key: "unit_price", label: "Price", glyph: "€", tip: "Retail price per unit, in euros." },
   { key: "artist_profit_per_unit", label: "Artist profit", glyph: "€", tip: "The artist's profit on one unit sold." },
   { key: "aa_profit_per_unit", label: "AA profit", glyph: "€", tip: "Avant Arte's group profit on one unit sold, before framing." },
   { key: "artist_revenue_cut", label: "Artist revenue cut", glyph: "%", tip: "The artist's or estate's commission on revenue, taken before any profit is split." },
-  { key: "aa_profit_share", label: "Profit share", glyph: "%", tip: "Avant Arte's own share of the profit on a profit-share deal, which is also its share of the paid budget." },
-  { key: "aa_revenue_share", label: "Revenue share", glyph: "%", tip: "Avant Arte's own share of revenue on a royalty deal, where Avant Arte carries the ads outright." },
+  { key: "aa_profit_share", label: "Profit share", glyph: "%", tip: "Avant Arte's share of the profit on a profit-share deal, and of the paid budget." },
+  { key: "aa_revenue_share", label: "Revenue share", glyph: "%", tip: "Avant Arte's share of revenue on a royalty deal, where it pays for all the ads." },
 ];
 const FRAME_ROWS = [
   { key: "frame_price", label: "Frame price", glyph: "€", tip: "The price of the cheapest frame offered on this work." },
@@ -376,7 +376,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
 
             <Section title="Works" count={products.length} action={<AddWorkButton onClick={onAdd} />}>
               {workRows.map((wr) => <WorkRow key={wr.key} w={wr} on={sel === wr.key} onPick={() => setSel(sel === wr.key ? null : wr.key)} />)}
-              {!products.length && <div className="empty-note">No works yet: Airtable has no record matched to this launch{at.note ? ` (${at.note})` : ""}. Add one by hand with the plus.</div>}
+              {!products.length && <div className="empty-note">No works yet: nothing in Airtable matches this launch{at.note ? ` (${at.note})` : ""}. Add one with the plus.</div>}
             </Section>
 
             <Section title="Basket" icon={<BasketIcon />} count={members.length} aria="Basket"
@@ -384,7 +384,7 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
               action={<PickButton onClick={() => setRoute({ ...route, basket: true })} />}>
               {members.slice().sort((x, y) => (y.units || 0) - (x.units || 0)).map((r) => <BasketRow key={r.release_name} r={{ ...r, unitsTip: "Units its window sold" }} onOpen={openRelease(r.release_name)}
                 extra={(row) => <Loz tip="Its window length">{hoursShort(row.window_hours)}</Loz>} />)}
-              {!members.length && <div className="empty-note">{unitsTarget > 0 ? (cands ? "No completed timed launch to benchmark against yet." : "Finding the nearest launches…") : "A units target is needed before there is anything to be near to: Airtable's for the ticked works, or typed."}</div>}
+              {!members.length && <div className="empty-note">{unitsTarget > 0 ? (cands ? "No completed timed launch to benchmark against yet." : "Finding the nearest launches…") : "Needs a units target first: Airtable's for the ticked works, or typed."}</div>}
             </Section>
 
             <Section title="Dates" count={5}>
@@ -420,11 +420,11 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
             <div>
               <Group>Outcome</Group>
               <EditRow id="t-units" label="Units target" glyph={<Target />} value={releaseUnits ? String(releaseUnits) : ""} placeholder={airtableUnits ? fmt(airtableUnits) : "None"} tag={releaseUnits ? "Typed" : airtableUnits ? "Airtable" : ""} typed={!!releaseUnits}
-                tip="The launch's units target: Airtable's, summed over the ticked works, or typed here for the launch as a whole. The window is measured against it; the edition caps nothing." onCommit={numCommit("units_target", 0, 1e7)} />
-              <Prop label="Signup target" tip={T && T.signup_target ? `${T.nonsignup_share > 0 ? `${fmt(T.units_target)} units, less the ${fmtPct(T.nonsignup_share, 0)} the basket's launches sold to buyers who never signed up, leaves ${fmt(T.signup_units)} for the signups to bring: ${fmt(T.signup_units)}` : `${fmt(T.units_target)} units`} ÷ ${fmt(T.purchases_per_order, 2)} an order ÷ ${fmtPct(T.signup_order_rate, 1)}${k ? ` · ×${fmt(k, 2)} the basket's median` : ""}` : "A units target and a basket are needed."}>
+                tip="Airtable's, summed over the ticked works, or typed here for the whole launch. The edition caps nothing." onCommit={numCommit("units_target", 0, 1e7)} />
+              <Prop label="Signup target" tip={T && T.signup_target ? `${T.nonsignup_share > 0 ? `${fmt(T.units_target)} units, less the ${fmtPct(T.nonsignup_share, 0)} the basket's launches sold to buyers who never signed up: ${fmt(T.signup_units)}` : `${fmt(T.units_target)} units`} ÷ ${fmt(T.purchases_per_order, 2)} an order ÷ ${fmtPct(T.signup_order_rate, 1)}${k ? ` · ×${fmt(k, 2)} the basket's median` : ""}` : "A units target and a basket are needed."}>
                 <Val ic={<Target />}>{T && T.signup_target ? fmt(T.signup_target) : "–"}</Val>
               </Prop>
-              <Prop label="Benchmark" tip={BM ? "The basket's median signups before the open and units sold in the window, the channels not in plan set aside." : "Choose a basket first."}>
+              <Prop label="Benchmark" tip={BM ? "The basket's median signups before the open and units sold in the window, on the channels in plan." : "Choose a basket first."}>
                 <Val ic={<Bmk />}>{BM ? `${fmt(BM.signups)} signups · ${fmt(BM.units)} units` : "–"}</Val>
               </Prop>
               <Prop label="Stretch" tip={T && BM ? (stretchTyped ? `The signup target less the benchmark, on the shares placed: ${CH.filter((g) => Number((T.stretch_from || {})[g.key]) > 0).map((g) => `${g.name} ${Math.round(100 * T.stretch_from[g.key])}%`).join(", ")}` : `The signup target less the benchmark, the same uplift ×${fmt(k || 1, 2)} in every channel`) : "Choose a basket first."}>
@@ -434,10 +434,10 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
 
               <Group>Conversion</Group>
               <EditRow id="t-s2o" label="Signup to order" glyph="→" value={pct1(inp.signup_order_rate)} placeholder={T && T.signup_order_rate > 0 ? `${pct1(T.signup_order_rate)}%` : "–"} tag={Number(inp.signup_order_rate) > 0 ? "Typed" : "Basket"} typed={Number(inp.signup_order_rate) > 0}
-                tip={`What share of the pre-window signups order in the window; with the units left for the signups to bring, it sets the signup target. ${T ? `Blank reads ${s2oWords[T.signup_order_rate_source]}${T.signup_order_rate_source === "basket_mix" ? `: ${CH.filter((g) => T.signup_order_rate_by_group[g.key] > 0).map((g) => `${g.name} ${fmtPct(T.signup_order_rate_by_group[g.key], 1)}`).join(", ")}` : ""}.` : "Choose a basket first."}`}
+                tip={`The share of pre-window signups that order in the window. It sets the signup target. ${T ? `Blank reads ${s2oWords[T.signup_order_rate_source]}${T.signup_order_rate_source === "basket_mix" ? `: ${CH.filter((g) => T.signup_order_rate_by_group[g.key] > 0).map((g) => `${g.name} ${fmtPct(T.signup_order_rate_by_group[g.key], 1)}`).join(", ")}` : ""}.` : "Choose a basket first."}`}
                 onCommit={numCommit("signup_order_rate", 0, 100, 100)} />
               <EditRow id="t-ppo" label="Per order" glyph="№" value={inp.purchases_per_order === null || inp.purchases_per_order === undefined ? "" : String(inp.purchases_per_order)} placeholder={profile && profile.purchases_per_order > 0 ? fmt(profile.purchases_per_order, 2) : "1.00"} tag={Number(inp.purchases_per_order) > 0 ? "Typed" : "Basket"} typed={Number(inp.purchases_per_order) > 0}
-                tip="How many pieces a buyer takes in one order: the units the signups have to bring, over this, are the orders needed from them. Blank is the basket's median." onCommit={numCommit("purchases_per_order", 0, 100)} />
+                tip="How many pieces a buyer takes in one order. Blank is the basket's median." onCommit={numCommit("purchases_per_order", 0, 100)} />
 
               <Group>Paid</Group>
               <CampaignsProp code={inp.campaign_code || sd.campaign_code || dv.campaign_code || ""} chosen={inp.campaign_names || []} all={meta.meta_campaigns} suggested={sourced.campaigns} asOf={snap.asOf} onChange={(names) => setInp({ ...inp, campaign_names: names })} />
@@ -449,16 +449,16 @@ export default function TLTargets({ snap, onSaved, directSpread = false, route, 
                 <Val ic={<Wallet />} tag={!paidOff && T && T.budget_pct_of_launch_value ? `${fmtPct(T.budget_pct_of_launch_value, 1)} of value` : ""}>{paidOff ? "–" : T && T.budget_window !== null ? <span style={sense ? { color: "var(--red)" } : undefined}>{fmtMoney(T.budget_window, 0)}</span> : "–"}</Val>
               </Prop>
               <EditRow id="t-cps" label="Cost per signup" glyph="€" value={inp.cost_per_signup === null || inp.cost_per_signup === undefined ? "" : String(inp.cost_per_signup)} placeholder={basketCps > 0 ? fmtMoney(basketCps, 2) : "none on file"} tag={Number(inp.cost_per_signup) > 0 ? "Typed" : basketCps > 0 ? "Basket" : `${nCps} of ${PAID_COST_MIN_MEMBERS}`} typed={Number(inp.cost_per_signup) > 0}
-                tip={`What a paid signup costs to buy, in euros: each launch's Sign-ups spend over the paid signups it bought. ${basketCps > 0 ? `Blank reads the basket, ${nCps} launches with spend on file.` : `Blank reads the basket once ${PAID_COST_MIN_MEMBERS} of its launches have spend on file (${nCps} do today).`}${pvOk && PV.cost_per_signup_at_target_roi ? ` ${fmtMoney(PV.cost_per_signup_at_target_roi, 2)} at the target ROI.` : ""}`}
+                tip={`What a paid signup costs, in euros: Sign-ups spend over the paid signups it bought. ${basketCps > 0 ? `Blank reads the basket, ${nCps} launches with spend on file.` : `Blank reads the basket once ${PAID_COST_MIN_MEMBERS} of its launches have spend on file (${nCps} do today).`}${pvOk && PV.cost_per_signup_at_target_roi ? ` ${fmtMoney(PV.cost_per_signup_at_target_roi, 2)} at the target ROI.` : ""}`}
                 onCommit={numCommit("cost_per_signup", 0, 1e6)} />
               <EditRow id="t-cpu" label="Cost per sale" glyph="€" value={inp.cost_per_purchase === null || inp.cost_per_purchase === undefined ? "" : String(inp.cost_per_purchase)} placeholder={basketCpu > 0 ? fmtMoney(basketCpu, 0) : "none on file"} tag={Number(inp.cost_per_purchase) > 0 ? "Typed" : basketCpu > 0 ? "Basket" : `${nCpu} of ${PAID_COST_MIN_MEMBERS}`} typed={Number(inp.cost_per_purchase) > 0}
-                tip={`What a paid unit costs to buy in the window, in euros: each launch's Purchases spend over the paid units its window sold. ${basketCpu > 0 ? `Blank reads the basket, ${nCpu} launches with spend on file.` : `Blank reads the basket once ${PAID_COST_MIN_MEMBERS} of its launches have spend on file (${nCpu} do today).`}`}
+                tip={`What a paid unit costs in the window, in euros: Purchases spend over the paid units sold. ${basketCpu > 0 ? `Blank reads the basket, ${nCpu} launches with spend on file.` : `Blank reads the basket once ${PAID_COST_MIN_MEMBERS} of its launches have spend on file (${nCpu} do today).`}`}
                 onCommit={numCommit("cost_per_purchase", 0, 1e7)} />
               <EditRow id="t-cann" label="Cannibalised" glyph="%" value={inp.cannibalisation === null || inp.cannibalisation === undefined ? "" : String(Math.round(Number(inp.cannibalisation) * 1000) / 10)} placeholder={`${Math.round(100 * TL_CANNIBALISATION)}%`} tag={inp.cannibalisation !== null && inp.cannibalisation !== undefined ? "Typed" : "TL default"} typed={inp.cannibalisation !== null && inp.cannibalisation !== undefined}
                 tip={`The share of paid signups that would have come anyway. Blank = the ${Math.round(100 * TL_CANNIBALISATION)}% standard for timed launches.`} onCommit={numCommit("cannibalisation", 0, 95, 100)} />
               <Prop label="Signup worth" tip={pvOk
                 ? `${fmtMoney(PV.value_per_unit, 0)} a unit sold (AA group profit ${fmtMoney(PV.aa_profit_per_unit, 0)} + framing ${fmtMoney(PV.frame_uplift_per_unit, 0)}: ${fmtPct(PV.frame_share, 0)} of units framed at ${fmtPct(PV.frame_rate, 0)} take-up, ${FRAME_WORDS[PV.frame_rate_source]}), less ${fmtPct(PV.cannibalisation, 0)} cannibalisation, × ${fmt(PV.purchases_per_order, 2)} pieces an order × ${fmtPct(PV.signup_order_rate, 1)} of paid signups ordering (${S2O_PAID_WORDS[PV.signup_order_rate_source]}). At the ${fmt(PV.roi_target, 2)} target ROI a paid signup may cost ${fmtMoney(PV.cost_per_signup_at_target_roi, 2)}; break-even ${fmtMoney(PV.break_even_cost_per_signup, 2)}. ${PV.aa_budget_share_assumed ? "AA's share of the spend assumed at 50%." : `AA carries ${Math.round(100 * PV.aa_budget_share)}% of the spend.`}`
-                : "What a paid signup is worth to Avant Arte: the Overview's paid card reads its ROI against this. It needs AA's group profit per unit: type it per work, or fill it in Airtable."}>
+                : "What a paid signup is worth to Avant Arte. It needs AA's group profit per unit: type it per work, or fill it in Airtable."}>
                 <Val ic={<Trend />} tag={pvOk ? (PV.aa_budget_share_assumed ? "AA 50% assumed" : `AA ${Math.round(100 * PV.aa_budget_share)}%`) : "needs AA profit"}>{pvOk ? fmtMoney(PV.value_per_signup, 2) : "–"}</Val>
               </Prop>
 

@@ -29,7 +29,7 @@ export default function Geo({ snap }) {
   return (
     <Card title="Orders by country" aria="Orders by country">
       <Head v={fmt(total)} u={unit}
-        tip={`${share(top.reduce((a, r) => a + r.v, 0))}% in the top ${top.length}${orders > 0 ? ` · ${fmt(orders)} orders` : ""}\nUnits paid by the country the order ships to (else is billed to), counted on the orders feed; a unit with no country on its order is Unknown`} />
+        tip={`${share(top.reduce((a, r) => a + r.v, 0))}% in the top ${top.length}${orders > 0 ? ` · ${fmt(orders)} orders` : ""}\nUnits paid, by the country the order ships to (or is billed to). An order with no country shows as Unknown`} />
       <HBarChart H={34 + shown.length * 30} L={118} bh={10} xmin={0} xmax={ax.ymax} xticks={ax.ticks} xfmt={kfmt}
         rows={shown.map((r) => r.name)} series={[{ color: COL.IND, vals: shown.map((r) => r.v) }]}
         title={(i) => shown[i].name}

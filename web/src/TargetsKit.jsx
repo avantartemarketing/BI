@@ -233,7 +233,7 @@ export function Strip({ icon, text, sx, action, onDismiss }) {
 /* The basket has no name: it is the launches in it, so the pill says how
  * many and whether someone has edited the suggestion. */
 export function BasketPill({ n, edited, onClick }) {
-  return <button className="pill" onClick={onClick} title={`The launches this release is benchmarked against: the benchmark is their median, per metric and per channel. ${edited ? "Edited from the suggestion" : "The suggested launches"}. Opens the picker.`}><Basket />{n ? `${n} launch${n === 1 ? "" : "es"}` : "Basket"}{edited ? <span className="g">edited</span> : null}</button>;
+  return <button className="pill" onClick={onClick} title={`The launches this release is benchmarked against: the benchmark is their median. ${edited ? "Edited from the suggestion" : "The suggested launches"}. Opens the picker.`}><Basket />{n ? `${n} launch${n === 1 ? "" : "es"}` : "Basket"}{edited ? <span className="g">edited</span> : null}</button>;
 }
 /* Channels in plan: a multi-select menu, one row a channel. A channel left
  * out leaves the benchmark and the target: the basket is read on its other
@@ -243,13 +243,13 @@ export function ChannelsPill({ off, setOff, word }) {
   const on = CH.filter((c) => !off.includes(c.key)).length;
   return (
     <span className="pw">
-      <button className="pill" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle} title="A channel this release will not run leaves the benchmark and the target: the basket is read on its other channels."><Lines />{on === CH.length ? "All channels" : `${on} of ${CH.length} channels`}</button>
+      <button className="pill" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle} title="A channel this release will not run leaves the benchmark and the target."><Lines />{on === CH.length ? "All channels" : `${on} of ${CH.length} channels`}</button>
       <Menu open={m.open} onClose={m.close} style={{ top: 32, left: 0, width: 240 }}>
         {CH.map((c, i) => {
           const isOn = !off.includes(c.key);
           return (
             <MenuItem key={c.key} checkbox checked={isOn} icon={<span className="cdot" style={{ background: c.color }} />} right={String(i + 1)}
-              title={c.key === "paid" ? "The basket keeps every launch, paid or not; with paid off each counts on its other channels only, and there is no budget." : c.key === "referral_artist" ? "Off for an estate, or a living artist with no channels of their own: the artist group leaves the benchmark and the funnel expects no posts." : undefined}
+              title={c.key === "paid" ? "With paid off, each basket launch counts on its other channels only, and there is no budget." : c.key === "referral_artist" ? "Off for an estate, or an artist with no channels of their own: no artist posts are expected." : undefined}
               onClick={() => setOff(c.key, !isOn)}>{c.name}</MenuItem>
           );
         })}
@@ -269,7 +269,7 @@ export function StretchPill({ mode, onMode, shares, onSlide, active, paidOff, di
   return (
     <span className="pw">
       <button className="pill" aria-haspopup="menu" aria-expanded={m.open || mix} disabled={disabled} onClick={() => { if (mix) setMix(false); else m.toggle(); }}
-        title="How the gap between the target and the basket's median is shared out. Each channel's target is its benchmark plus its share of the stretch, with its sessions lifted to match; conversion is held."><Arrow />Stretch<span className="g">{word}</span></button>
+        title="How the gap between the target and the benchmark is shared out. Each channel's target is its benchmark plus its share of the stretch."><Arrow />Stretch<span className="g">{word}</span></button>
       <Menu open={m.open} onClose={m.close} style={{ top: 32, left: 0, width: 240 }}>
         {opts.map(([k, label, tip], i) => (
           <MenuItem key={k} radio checked={mode === k} right={String(i + 1)} title={tip} disabled={(k === "paid" && (paidOff || !active.includes("paid"))) || (k === "custom" && active.length < 2)}
@@ -496,7 +496,7 @@ export function CampaignsProp({ code, chosen, all, suggested, onChange, asOf }) 
   const stale = (hit) => { if (!hit || !hit.last || !asOf) return false; return (Date.parse(asOf) - Date.parse(hit.last)) / 86400000 > 14; };
   const n = chosen.length;
   return (
-    <Prop label="Campaigns" tip="Which Meta ad campaigns this release's paid actuals are read from: rows matching these names in the live spend feed, summed.">
+    <Prop label="Campaigns" tip="The Meta ad campaigns this release's paid figures come from.">
       <span className="wrap">
         <button className="chipb" aria-haspopup="menu" aria-expanded={m.open} onClick={m.toggle}><Meta />{n === 0 ? "None ticked" : `${n} campaign${n === 1 ? "" : "s"}`}</button>
         <Menu open={m.open} onClose={m.close} style={{ top: 30, right: -8, left: "auto", width: 320, maxHeight: "none" }}>
@@ -632,8 +632,8 @@ export function useEconomicsItem(snap, onSaved, { pmName, busy }) {
     : !ready ? (!(snap.slack && snap.slack.channel) ? "Set the Slack channel under Team first."
       : pmAirtable && pmAirtable.name ? `Airtable names ${pmAirtable.name} as the project manager but has no PM Slack ID for them: type their member ID, @handle or email under Team.`
         : "No project manager: type one under Team.")
-      : busy ? "Wait for the save: the message carries the figures as saved and built."
-        : "Post the unit economics to the release's Slack channel and ask the project manager to confirm them: they set the Paid ROI.";
+      : busy ? "Wait for the save: the message carries the saved figures."
+        : "Post the unit economics to the release's Slack channel for the project manager to confirm. They set the Paid ROI.";
   const send = async () => {
     setPost({ state: "posting" });
     try {
@@ -665,11 +665,11 @@ export function TeamGroup({ snap, sourced, inp, setInp, slack }) {
         : <PersonRow id="t-lead" label="Lead" name={inp.marketing_lead || ""} tag={inp.marketing_lead ? "Typed" : ""} typed placeholder="Who runs this launch" tip="Who runs this launch. Not in the Notion log or Airtable yet: typed here until it is." onChange={(v) => setInp((prev) => ({ ...prev, marketing_lead: v }))} />}
       <PersonRow id="t-pm" label="PM" name={slack.pm} placeholder={pmAirtable && pmAirtable.name ? pmAirtable.name : "@handle, email or member ID"}
         tag={slack.pm.trim() ? "Typed" : pmAirtable && pmAirtable.slackId ? "Airtable" : pmAirtable && pmAirtable.name ? "no Slack ID" : ""} typed={!!slack.pm.trim()}
-        tip="Who confirms the unit economics: Send unit economics to PM (the ⋯ menu) posts them to the channel and mentions this person. Airtable's Project Manager unless someone is typed here: a Slack member ID, @handle or email. Saved with the channel."
+        tip="Who confirms the unit economics. Airtable's Project Manager unless someone is typed here: a Slack member ID, @handle or email."
         right={sent ? <Loz kind="ghost" tip={`Economics sent for confirmation ${new Date(sent).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}${snap.slack.lastEconomicsBy ? ` by ${snap.slack.lastEconomicsBy}` : ""}`}>sent</Loz> : null}
         onChange={slack.setPm} />
       <EditRow id="t-slack" label="Slack" glyph="#" text value={slack.channel} placeholder="launch-updates" tag={slack.state.state === "saving" ? "Saving…" : slack.state.state === "failed" ? "not saved" : snap.slack && snap.slack.lastPostAt ? "posted" : ""}
-        tip="Where Post to Slack on the sell-through card sends this release's update: the channel name without the #. For a private channel, invite the Launch Performance bot first. Saved on its own." onCommit={slack.setChannel} />
+        tip="The channel Post to Slack sends to, without the #. For a private channel, invite the Launch Performance bot first." onCommit={slack.setChannel} />
     </>
   );
 }

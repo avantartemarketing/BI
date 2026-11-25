@@ -58,7 +58,7 @@ export default function AdsetEntries({ snap }) {
               <th title="Units those entrants have paid for">Paid</th>
               <th title={`Pre-order entries still waiting, counted at ${fmtPct(pre, 0)}`}>Pre-orders</th>
               <th title={`Draw entries still waiting, counted at ${fmtPct(ent, 0)}`}>Draws</th>
-              <th title={`Paid, plus pre-orders at ${fmtPct(pre, 0)} and draws at ${fmtPct(ent, 0)}: the units the ROI is read on`}>Total assumed units</th>
+              <th title={`Paid, plus pre-orders at ${fmtPct(pre, 0)} and draws at ${fmtPct(ent, 0)}: the units the ROI is read on`}>Assumed units</th>
             </tr>
           </thead>
           <tbody>

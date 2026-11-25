@@ -250,7 +250,7 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
         {tl && <span><span className={`dist${r.same ? "" : " after"}`} title={r.same ? "The same window length" : "Another window length"}>{hoursShort(r.window_hours)}</span></span>}
         <span>{r.edition_size > 0 ? fmt(r.edition_size) : "–"}</span>
         <span title={r.prints_per_unit > 1 ? `Counted in prints: a set sold counts as the prints in it (${fmt(r.units / r.prints_per_unit)} as the funnel counts them)` : undefined}>{fmt(r.units)}</span>
-        {!tl && <span className={r.sold_short && r.demand > r.units ? "" : "old"} title={r.sold_short && r.demand > r.units ? `Sold out with more wanted: ${fmt(r.units)} sold, and ${fmt(r.demand - r.units)} more from the entrants left without one, at the entry to order rate. The benchmark counts this` : "Did not sell out: its demand is its sales"}>{fmt(r.demand || r.units)}</span>}
+        {!tl && <span className={r.sold_short && r.demand > r.units ? "" : "old"} title={r.sold_short && r.demand > r.units ? `Sold out with more wanted: ${fmt(r.units)} sold, and ${fmt(r.demand - r.units)} more wanted by entrants left without one. The benchmark counts both` : "Did not sell out: its demand is its sales"}>{fmt(r.demand || r.units)}</span>}
         <span>{r.price > 0 ? fmtMoney(r.price) : "–"}</span>
         <span className={r.later ? "later" : !r.recent ? "old" : ""} title={r.later ? "Closed after this launch: left out of the rule" : !r.recent ? "Older than eighteen months" : undefined}>{fmtMonth(r.window_end)}</span>
         <span><span className={`dist${r.later ? " after" : on ? " in" : ""}`} title={r.d !== null ? `${x2(r.du)} on units · ${x2(r.dp)} on price` : "No distance: a figure is missing"}>{r.later ? "After" : x2(r.d)}</span></span>
@@ -284,9 +284,9 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
         <label className="lzin" title={targetUnits > 0 ? "The release's target, from its works" : "No target yet: type one and the basket appears"}><Bars /><span className="sr">Units target</span><input value={targetUnits > 0 ? String(targetUnits) : draft.units} readOnly={targetUnits > 0} onChange={(e) => typed("units", e.target.value)} inputMode="numeric" style={{ width: 48 }} /><span className="u">units</span></label>
         <label className="lzin" title={unitPrice > 0 ? "The release's unit price, from its works" : "No price yet: type one"}><Euro /><span className="sr">Unit price in euros</span><input value={unitPrice > 0 ? String(Math.round(unitPrice)) : draft.price} readOnly={unitPrice > 0} onChange={(e) => typed("price", e.target.value)} inputMode="numeric" style={{ width: 52 }} /></label>
         {lengthHours ? <button className={`tg${same ? " on" : ""}`} aria-pressed={same} onClick={() => setSame(!same)} title={`${hoursShort(lengthHours)} launches first; the nearest of any length when fewer than ${THIN_MEMBERS} are on file`}><Clock w={12} />{hoursShort(lengthHours)} first</button> : null}
-        <button className={`tg${recent ? " on" : ""}`} aria-pressed={recent} onClick={() => setRecent(!recent)} title="Launches closed in the last eighteen months ranked ahead of older ones among the comparable. Saved with the basket."><Bars w={12} />Recent first</button>
+        <button className={`tg${recent ? " on" : ""}`} aria-pressed={recent} onClick={() => setRecent(!recent)} title="Rank launches closed in the last eighteen months ahead of older ones."><Bars w={12} />Recent first</button>
         <button className={`tg${!paidOff ? " on" : ""}`} aria-pressed={!paidOff} onClick={() => onInputs && onInputs({ channels_off: paidOff ? off.filter((g) => g !== "paid") : [...off, "paid"] })}
-          title="Running paid. The basket keeps every launch, paid or not; with paid off each counts on its other channels only, so the benchmark is what launches like this reached without paid. The release's channels-in-plan setting, saved with the targets."><Wallet w={12} />Paid</button>
+          title="Running paid. With paid off, the benchmark is what launches like this reached without paid."><Wallet w={12} />Paid</button>
         <span className="sp" />
         {tl ? (
           <>
@@ -299,8 +299,8 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
         ) : (
           <>
             <span className="sv" title={paidOff ? "The basket's median units without paid: the benchmark with paid out of plan" : "The basket's median units of demand at close: the benchmark"}>Benchmark<b>{live && members.length ? fmt(Math.round(live.units * 10) / 10, live.units < 100 ? 1 : 0) : "–"}</b></span>
-            <span className="sv" title="The target over the basket's median units: how far past the benchmark this launch is being asked to go">Uplift<b>{K === null ? "–" : `×${fmt(K, 2)}`}</b></span>
-            <span className="sv" title="The basket's median unit price in euros; launches Airtable could not price are left out">Price<b>{live && members.length && live.price > 0 ? fmtMoney(live.price) : "–"}</b></span>
+            <span className="sv" title="The target over the basket's median units">Uplift<b>{K === null ? "–" : `×${fmt(K, 2)}`}</b></span>
+            <span className="sv" title="The basket's median unit price in euros">Price<b>{live && members.length && live.price > 0 ? fmtMoney(live.price) : "–"}</b></span>
             <span className="sv" title={paidOff ? "Paid is not in plan" : "The basket's median share of sessions from paid"}>Paid<b>{paidOff ? "Off" : live && members.length ? fmtPct(live.share_sessions.paid, 0) : "–"}</b></span>
           </>
         )}
@@ -316,7 +316,7 @@ export default function BasketPicker({ kind = "le", rows, releaseName, artist, b
               {tl && <span><span className="dist">{hoursShort(lengthHours)}</span></span>}
               <span>{target > 0 ? fmt(target) : "–"}</span><span style={{ color: "#a1a1aa" }}>target</span>{!tl && <span />}<span>{priceUsed > 0 ? fmtMoney(priceUsed) : "–"}</span><span>{launchEnd ? fmtMonth(launchEnd) : ""}</span><span />
             </div>
-            {!placeable && <div className="empty"><People w={22} />Both a target and a price are needed before there is anything to be near to. Type them above and the basket appears.</div>}
+            {!placeable && <div className="empty"><People w={22} />Type a target and a price above and the basket appears.</div>}
             {placeable && groups.map((g) => (
               <div key={g.key}>
                 {g.name && <div className="band"><span className={g.dot} />{g.name}<span className="c">{g.rows.length}</span>{g.note ? <span className="nt">{g.note}</span> : null}</div>}

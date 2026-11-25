@@ -74,7 +74,7 @@ export default function PaidRoi({ snap }) {
   if (!hasSpend) {
     return (
       <Card title="Paid ROI">
-        <div className="empty-state">{snap.campaignName ? "No paid spend yet" : "No Meta campaign matched to this release: set one on the Targets tab"}</div>
+        <div className="empty-state">{snap.campaignName ? "No paid spend yet" : "No Meta campaign matched: set one on the Targets tab"}</div>
       </Card>
     );
   }
@@ -82,7 +82,7 @@ export default function PaidRoi({ snap }) {
   // ----- whose ROI, and which window -----
   const artist = paid.artist || null;
   const artistReason = !artist ? "The artist's reading needs a rebuilt snapshot"
-    : !((artist.budgetShare ?? 0) > 0) ? "The artist carries none of the paid spend on this deal, so there is no artist ROI"
+    : !((artist.budgetShare ?? 0) > 0) ? "The artist carries none of the paid spend, so there is no artist ROI"
     : !((artist.profitPerUnit ?? 0) > 0) ? "No artist profit per unit on the Targets tab yet" : null;
   const artistOk = roiOk && artistReason === null && (!tl || has(artist.l3dRoi) || has(artist.cumRoi));
   const party = partyPref === "artist" && artistOk ? "artist" : "aa";
@@ -161,7 +161,7 @@ export default function PaidRoi({ snap }) {
   const dropOff = paid.dropOff ?? 0.2;
   const claims = daily.some((d) => d.converting !== undefined);
   const convWords = tl ? `the paid ${V.unit} on each day` : claims
-    ? `what paid entrants bought once given a pre-order or drawn on launch day, and ${pct(paid.preorderRate ?? 0.95)} of pre-order and ${pct(1 - dropOff)} of other entries still waiting`
+    ? `what paid entrants have bought, plus ${pct(paid.preorderRate ?? 0.95)} of pre-order and ${pct(1 - dropOff)} of other entries still waiting`
     : `${pct(1 - dropOff)} of entries`;
   const splitAssumed = roiOk && paid.aaBudgetShareAssumed === true;
   // the uplift inside the paid profit per unit: the paid block's own where it
@@ -169,10 +169,10 @@ export default function PaidRoi({ snap }) {
   const upliftPU = paid.frameUpliftPerUnit ?? snap.economics?.frameUpliftPerUnit ?? 0;
   const frameUplift = !tl && upliftPU > 0;
   const working = !roiOk ? [
-    `Cost per ${unitWord}: spend over ${convWords}. ROI needs ${tl ? "AA's group profit per unit on the Targets tab's products grid" : "the profit split from the Targets tab"}.`,
+    `Cost per ${unitWord}: spend over ${convWords}. ROI needs ${tl ? "AA's group profit per unit" : "the profit split"} on the Targets tab.`,
     `€ per ${unitWord} ${winShort}: ${fmt(cpeRecent, 2)}`, `€ per ${unitWord} total: ${fmt(cpeTotal, 2)}`,
   ] : [
-    `${P.label} ROI, how it is read`,
+    `${P.label} ROI`,
     ...(party === "artist" ? [`Artist profit per unit €${fmt(P.ppu, 2)}`]
       : frameUplift ? [`AA group profit per unit €${fmt(P.ppu - upliftPU, 2)}`, `+ framing uplift per unit €${fmt(upliftPU, 2)}`, `= profit per unit, framing included €${fmt(P.ppu, 2)}`]
       : [`AA group profit per unit €${fmt(P.ppu, 2)}`]),
