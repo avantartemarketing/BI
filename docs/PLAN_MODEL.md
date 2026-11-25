@@ -444,9 +444,14 @@ estimate, not a measurement: nothing in the feeds ties a unit to a piece.
 **The card.** A bar per phase (early access, announce, sustain, last chance), one for the
 baseline and one for paid: in so far, still to come, and a tick where the plan put it,
 with the two figures beside it. A box beside the bars, the same height and scrolling
-inside, lists the pieces: every email and post with the one furthest behind its plan first
-(in date order before anything has gone out), or the phase picked, the baseline by
-channel, or paid by what is spent and still to spend.
+inside, lists the pieces: every email and post in date order, or the phase picked, the
+baseline by channel, or paid by what is spent and still to spend. On a draw launch the
+phases' days can overlap (a post's phase is the one Notion gives it, else its day's, and an
+email's is its kind: `plan_view.phase_of`, `KIND_PHASE`), so the full list is ordered by
+each piece's own day (`date` on the piece) and not phase by phase; the pieces of one day
+keep the order their phases list them in, emails ahead of posts and the bigger first.
+Until 25 November 2026 the full list put the piece furthest behind its plan first once
+anything had gone out.
 
 **Suggested actions in this view** are valued by the same price list, at the launch's
 level and at how the piece's channel is running: an email still to come sent to the full
@@ -721,3 +726,11 @@ page needs the timed launches' feeds, which a checkout does not carry.
   card and across the page, and was given its own. The same day the owner asked why a
   last chance email stood twice among a launch's suggested actions: it was one email at
   two audiences, and is now one row that opens to the other.
+- **25 November 2026, the card's list.** The owner asked for the list of pieces beside the
+  bars in date order. Once anything had gone out it led with the piece furthest behind its
+  plan, which on Harland Miller's launch read 25 November's announcement email, then 23
+  November's early access, then posts of 25 November, 15 December and 23 November. It is
+  now every email and post by its own day, earliest first, whatever has come in (section
+  6, "The card"). The card's words for a day carry no year and a draw launch's phases are
+  not runs of days, so the build writes each piece's day in full beside them (`date`), and
+  the list is ordered on that.

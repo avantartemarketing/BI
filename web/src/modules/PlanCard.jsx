@@ -1,14 +1,14 @@
 /* The plan (the plan-based view, docs/PLAN_MODEL.md): each phase of the comms
  * plan as one bar - what it has brought, what is still to come, and a tick
  * where the plan put it - with its two figures, and beside the bars a box of
- * the pieces inside. With nothing picked the box lists every email and post,
- * the one furthest behind its plan first (in date order before anything has
- * gone out); pick a phase and it lists that phase's alone, the baseline by
- * channel, or paid by what is spent and still to spend. Pick it again to go
- * back. The box keeps the height of the bars and scrolls inside, fading at
- * its foot while there is more below. The figures are etl/plan_view.py's; on
- * a timed launch gathering signups they are etl/tl_plan.py's, in signups to
- * the sales open, with paid read from the spend still to come. */
+ * the pieces inside. With nothing picked the box lists every email and post
+ * in date order, whichever phase each is in; pick a phase and it lists that
+ * phase's alone, the baseline by channel, or paid by what is spent and still
+ * to spend. Pick it again to go back. The box keeps the height of the bars
+ * and scrolls inside, fading at its foot while there is more below. The
+ * figures are etl/plan_view.py's; on a timed launch gathering signups they
+ * are etl/tl_plan.py's, in signups to the sales open, with paid read from the
+ * spend still to come. */
 import React, { useEffect, useRef, useState } from "react";
 import { Card, Head } from "../ui.jsx";
 import { COL, sw } from "../charts.jsx";
@@ -93,9 +93,11 @@ export default function PlanCard({ snap }) {
   if (!p || !Array.isArray(p.rows)) return null;
   const m = planModel(p);
   const s = m.rows.find((r) => r.key === sel);
-  const every = m.rows.filter((r) => r.key !== "Baseline" && r.key !== "Paid").flatMap((r) => r.pieces);
-  const gaps = every.some((x) => x.lands !== x.exp);
-  const list = s ? s.pieces : gaps ? every.slice().sort((a, b) => (a.lands - a.exp) - (b.lands - b.exp)) : every;
+  // every email and post by the day it goes out (its date in full, etl/plan_view.py card_rows): a phase is Notion's
+  // or the email's kind, so the phases' days overlap; the pieces of one day keep the order their phases list them in
+  const every = m.rows.filter((r) => r.key !== "Baseline" && r.key !== "Paid").flatMap((r) => r.pieces)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  const list = s ? s.pieces : every;
   const ptop = Math.max(1, ...list.map((x) => Math.max(x.exp, x.lands))) * 1.06;
   const dated = s ? s.dates.length > 1 : true;
   const short = Math.round(p.target) - Math.round(p.lands);
@@ -129,7 +131,7 @@ export default function PlanCard({ snap }) {
           <aside className="pv-side" aria-label={s ? `Inside ${s.name}` : "Every piece of the plan"}>
             <div className="pv-ph">
               <span className="t">{s ? s.name : `All ${every.length} pieces`}</span>
-              <span className="d">{s ? (!dated && s.dates[0]) || "" : gaps ? "furthest behind plan first" : "in date order"}</span>
+              <span className="d">{s ? (!dated && s.dates[0]) || "" : "in date order"}</span>
             </div>
             {s && s.note && <div className="pv-pn">{s.note}</div>}
             <div className="pv-l head"><span /><span /><span>Plan</span>{!m.start && <span>Lands at</span>}</div>
