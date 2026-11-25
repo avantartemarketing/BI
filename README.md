@@ -466,7 +466,11 @@ refresh pulls every sent marketing email's delivered/open/click counts into
 `sources/all_sent_emails.csv` (`server/hubspot.js`). The listing comes back oldest first, so
 the pull asks only for emails created in the last two years (well inside its page cap), keeps
 older sends from the file it already has, and opens its status line with `sends through
-<date>`; a pull that still hits the cap says `CAPPED`. The header shows `emails through
+<date>`; a pull that still hits the cap says `CAPPED`. A row is replaced by the email's
+HubSpot id (the file's `Id` column), so an email renamed after it went replaces its own row
+rather than standing beside it under the old name; a row from before the column is dropped
+when a pulled email went at the same second with the same delivered count, and the status
+line counts those as `dropped as the same send under an earlier name`. The header shows `emails through
 <date>` in amber whenever that date is more than a week behind the build. Emails join a release when the
 HubSpot campaign name is the release's campaign code, when the code appears in the
 email or campaign name, or when an `Artist_Type_YY` token in either names the same
