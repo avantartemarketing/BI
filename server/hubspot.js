@@ -3,7 +3,16 @@
  * Pulls every marketing email with its stats from the HubSpot API and rewrites
  * sources/all_sent_emails.csv in the shape the ETL already reads:
  *   Email Name, Send Date (Your time zone), Campaign, Delivered, Opened,
- *   Clicked, Unsubscribed, Kind
+ *   Clicked, Unsubscribed, Kind, Id
+ *
+ * Id is HubSpot's id for the email, and it is what a pull replaces a row by.
+ * Before the column existed rows were replaced by name and send day, so an
+ * email renamed after it went (Marina Abramovic's announcement of 18 November
+ * 2026 went as 131126_CUS_... and was renamed 181126_GEN_... afterwards) kept
+ * its old row beside the new one and the page counted the send twice. A row
+ * kept from a file without the column is still dropped when a pulled email
+ * went at the same second with the same delivered count: the same send under
+ * an earlier name.
  *
  * Kind says what the send date is. A `batch` email is sent once, at its send
  * date, to the minute. An `automated` email is sent by a workflow, to each
@@ -178,9 +187,10 @@ function summarise(recs, targeted, now = Date.now()) {
     (loose.length > RECENT_NAMES ? ", …" : "");
 }
 
-/* The CSV on disk, keyed by email name and send day so a pull replaces the
- * rows it fetched again and keeps the rest. Quoted cells carry commas and
- * quotes; the writer below quotes the same way. */
+/* The CSV on disk, keyed by HubSpot id (by email name and send day on a row
+ * from before the Id column) so a pull replaces the rows it fetched again and
+ * keeps the rest. Quoted cells carry commas and quotes; the writer below
+ * quotes the same way. */
 function parseCsvLine(line) {
   const out = [];
   let cur = "", quoted = false;
@@ -197,6 +207,8 @@ function parseCsvLine(line) {
   return out;
 }
 const rowKey = (name, sent) => `${name}#${String(sent).slice(0, 10)}`;
+// a send's signature without its name: the second it went and what it delivered
+const sendSig = (sent, delivered) => `${sent}#${delivered}`;
 function readExisting() {
   let text;
   // the last pull's rows; on a disk that has no pull yet (SOURCES_PATH just
@@ -209,8 +221,12 @@ function readExisting() {
     if (!line.trim()) continue;
     const f = parseCsvLine(line);
     if (f.length < 7) continue;
-    // a row from before the Kind column: kept with none
-    rows.set(rowKey(f[0], f[1]), { sent: f[1], line: [...f.slice(0, 7), f[7] || ""].map(cell).join(",") });
+    // a row from before the Kind or Id column: kept with none
+    const id = String(f[8] || "").trim();
+    rows.set(id ? `id:${id}` : rowKey(f[0], f[1]), {
+      sent: f[1], id, sig: sendSig(f[1], String(f[3] || "").trim()),
+      line: [...f.slice(0, 7), f[7] || "", id].map(cell).join(","),
+    });
   }
   return rows;
 }
@@ -253,9 +269,10 @@ async function fetchEmailsCsv(now = Date.now()) {
       const { code, via } = matchCampaign(r.name || "", r.campaignName || "", index);
       recs.push({ name: r.name || "", ms: d.getTime(), code, via, known: known.has(code) });
       const at = sendDate(d);
-      pulled.set(rowKey(r.name || "", at), {
-        sent: at,
-        line: [cell(r.name), at, cell(code), delivered, c.open ?? c.opened ?? 0, c.click ?? c.clicked ?? 0, c.unsubscribed ?? 0, emailKind(r.type)].join(","),
+      const id = String(r.id ?? "").trim();
+      pulled.set(id ? `id:${id}` : rowKey(r.name || "", at), {
+        sent: at, id, name: r.name || "", sig: sendSig(at, delivered),
+        line: [cell(r.name), at, cell(code), delivered, c.open ?? c.opened ?? 0, c.click ?? c.clicked ?? 0, c.unsubscribed ?? 0, emailKind(r.type), id].join(","),
       });
     }
     after = body.paging && body.paging.next && body.paging.next.after;
@@ -263,15 +280,25 @@ async function fetchEmailsCsv(now = Date.now()) {
   }
   if (pulled.size === 0) throw new Error("HubSpot returned no sent emails - not overwriting the CSV");
   const rows = [];
-  let kept = 0;
-  for (const [k, row] of readExisting()) if (!pulled.has(k)) { rows.push(row); kept++; }
+  let kept = 0, renamed = 0;
+  // a pulled email also claims the row its name and day would have written
+  // (the file from before the Id column) and, on a row without an id, the same
+  // send under any name: an email renamed after it went
+  const claimed = new Set(pulled.keys());
+  const sigs = new Set();
+  for (const row of pulled.values()) { claimed.add(rowKey(row.name, row.sent)); if (Number(row.sig.split("#")[1]) > 0) sigs.add(row.sig); }
+  for (const [k, row] of readExisting()) {
+    if (claimed.has(k)) continue;
+    if (!row.id && sigs.has(row.sig)) { renamed++; continue; }
+    rows.push(row); kept++;
+  }
   for (const row of pulled.values()) rows.push(row);
   rows.sort((a, b) => (a.sent < b.sent ? -1 : a.sent > b.sent ? 1 : 0));
   const through = rows[rows.length - 1].sent.slice(0, 10);
-  const header = "Email Name,Send Date (Your time zone),Campaign,Delivered,Opened,Clicked,Unsubscribed,Kind";
+  const header = "Email Name,Send Date (Your time zone),Campaign,Delivered,Opened,Clicked,Unsubscribed,Kind,Id";
   return {
     csv: header + "\n" + rows.map((r) => r.line).join("\n") + "\n",
-    rows: rows.length, pulled: pulled.size, kept, through, pages, capped, filtered,
+    rows: rows.length, pulled: pulled.size, kept, renamed, through, pages, capped, filtered,
     since: since.toISOString().slice(0, 10), summary: summarise(recs, targeted, now),
   };
 }
@@ -288,7 +315,8 @@ async function refreshEmails() {
   fs.renameSync(tmp, OUT);
   const how = out.filtered ? `created since ${out.since}` : "unfiltered - the API refused the date filter";
   const cap = out.capped ? `; CAPPED at ${MAX_PAGES} pages, the newest sends are missing` : "";
-  return `hubspot ${out.rows} emails, sends through ${out.through} (${out.pulled} pulled, ${how}, ${out.kept} kept from the file${cap}); ${out.summary}`;
+  const dup = out.renamed ? `, ${out.renamed} dropped as the same send under an earlier name` : "";
+  return `hubspot ${out.rows} emails, sends through ${out.through} (${out.pulled} pulled, ${how}, ${out.kept} kept from the file${dup}${cap}); ${out.summary}`;
 }
 
 module.exports = { refreshEmails, fetchEmailsCsv, emailKind, matchCampaign, campaignIndex, codesInUse, knownCampaignCodes, summarise, parseCsvLine, OUT };
