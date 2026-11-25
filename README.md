@@ -718,6 +718,12 @@ BigQuery: `bigquery_tables` (the tables the dashboard is built on and any table'
 columns, by name, since the service account is granted tables and cannot list the
 dataset) and `bigquery_sql` (one SELECT, through `query()` in `server/bigquery.js`).
 
+Through the connector `get_release` takes two more things the Agent's does not: `targets_from:
+"plan"` reads a live draw launch as its page shows it on Plan (docs/PLAN_MODEL.md 6), and
+`settings: true` adds the release's target settings as saved on the Target setting tab. Both
+are read: a Claude working on the model can then rebuild a page as the dashboard built it,
+without the settings being typed out again by hand (asked for by the owner, 25 November 2026).
+
 **Switching it on.** Set `MCP_TOKEN` on Render to a long random string (24 characters at
 least; `openssl rand -base64 32` makes one). Unset, or shorter, the route answers 404 and
 the server is as it was. Set, every request must carry it, as `Authorization: Bearer

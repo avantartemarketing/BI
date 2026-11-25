@@ -27,9 +27,15 @@ and the BigQuery tables underneath, back to 2019.
 | The question | Use |
 |---|---|
 | How is a release doing; a figure on its page | `list_releases` for its id, then `get_release` |
+| A live draw launch as its page reads on Plan (the Targets from switch) | `get_release` with `targets_from: "plan"`; the plan card is the field `plan`. A page with no plan-based view says so and gives the clock's |
+| How a release's targets were set up: its dates, campaign code, comparison launches, the works ticked or left out, what is typed over Airtable | `get_release` with `settings: true` |
 | Across releases, from what the dashboard already aggregates: units paid by day and channel, ad spend, email sends, posts, past launches | `describe_table`, then `query_table` |
 | Anything over the whole history, by channel, by launch or by person: trends over years, funnels, cohorts, repeat buyers | `bigquery_sql` (and `bigquery_tables` for a table's columns) |
 | How a figure is worked out, what a term means | `read_docs` |
+
+The settings are the saved inputs as the Target setting tab left them (or the repository's
+defaults for a release nobody has edited there), and `settings.from` says which. They are
+read only: nothing through the connector changes a setting.
 
 For a figure a release's page shows, read the page (`get_release`) and use it as it is:
 do not recompute it. The page counts units paid in the Shopify orders over the release's
