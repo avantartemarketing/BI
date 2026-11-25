@@ -439,7 +439,10 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
             lo_l, hi_l = lv["range"]
             against = "in line" if lo_l <= asked <= hi_l else "short" if asked > hi_l else "over"
             lv = dict(lv, level=float(np.clip(asked, lo_l, hi_l)))
-    level = lv["level"] * conv
+    # a plan sized on what launches sold is in the page's own units already, so the page's count over the study's
+    # (conv) is not laid over it: it would move a plan sized to the target off the target (Jennifer Guidi's read 58
+    # against a target of 50 on the first build)
+    level = lv["level"] * (1.0 if lv["basis"] == "similar" else conv)
 
     exp = {}
     for g in groups:
