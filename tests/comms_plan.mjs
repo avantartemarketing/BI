@@ -80,7 +80,10 @@ const camp = (id, release, code, extra = {}) => ({ id, properties: { Release: ti
   "Formula Announce": formula("2026-09-21"), "Launch Date Formula": formula("2026-10-15"), "◒ Launch mechanic": rollup(sel("Draw"), sel("Draw")),
   Status: status("7. In Flight"), "Content Tier": sel("Programme"), ...extra } });
 assert.deepEqual(C.campaignRow(camp("c1", "Maurizio Cattelan - Horse", "MaurizioCatt_HorseLE_26")),
-  { id: "c1", code: "MaurizioCatt_HorseLE_26", codes: ["MaurizioCatt_HorseLE_26"], coded: true, release: "Maurizio Cattelan - Horse", announce: "2026-09-21", launch: "2026-10-15", mechanic: "Draw", status: "7. In Flight", tier: "Programme" });
+  { id: "c1", code: "MaurizioCatt_HorseLE_26", codes: ["MaurizioCatt_HorseLE_26"], coded: true, release: "Maurizio Cattelan - Horse", announce: "2026-09-21", launch: "2026-10-15", mechanic: "Draw", status: "7. In Flight", tier: "Programme", email_audience: "" });
+// the announcement's planned audience is the campaign's "Email audience" number, found whatever spaces its name carries
+assert.equal(C.campaignRow(camp("c1b", "Harland Miller - Combined Launch", "HarlandMiller_LE_26", { "Email audience ": { type: "number", number: 70000 } })).email_audience, "70000");
+assert.equal(C.campaignRow(camp("c1c", "Harland Miller - Combined Launch", "HarlandMiller_LE_26", { "Email audience ": { type: "number", number: null } })).email_audience, "");
 // no code of its own (none before mid-2024, and the plan goes back to September 2023): kept under a stand-in, its page
 const older = C.campaignRow(camp("166e6526-5ca2-80a0-8bc9-f239feb76e2d", "George Condo · Three Silkscreens", ""));
 assert.deepEqual([older.code, older.codes, older.coded, older.release], ["notion:166e65265ca2", ["notion:166e65265ca2"], false, "George Condo · Three Silkscreens"]);
@@ -157,7 +160,7 @@ assert.ok(queries.length >= C.slices("2026-11-16").length);
 const lines = out.csv.trim().split("\n");
 assert.equal(lines[0], C.HEADER.join(","));
 assert.ok(lines.includes("Catt_LE_26,Cattelan,2026-09-21,09:00,AA Email,AA CRM,email,2-Announce,Live,Announcement (LE),777,,2026-08-20,2026-09-22"));
-assert.equal(out.campaignsCsv.trim().split("\n")[1], "Catt_LE_26,Cattelan,2026-09-21,2026-10-15,Draw,7. In Flight,Programme");
+assert.equal(out.campaignsCsv.trim().split("\n")[1], "Catt_LE_26,Cattelan,2026-09-21,2026-10-15,Draw,7. In Flight,Programme,");
 assert.match(C.summary(out), /comms plan 4 lines for 2 campaigns, dated to 2026-10-01/);
 
 // ---- the audiences

@@ -188,6 +188,10 @@ FUNNEL_COLS = FUNNEL_LABELS + [
 # still waiting on a draw, pre-order or plain. Only the rebuilt file carries
 # them; without them the paid ROI reads entries x the entry rate (docs 7).
 CONV_COLS = ["Conv_Units_Claimed", "Conv_Units_Pending_Preorder", "Conv_Units_Pending_Draw"]
+# How many entries a row holds and how many of them were made as pre-orders:
+# the plan model splits a row's eligible units between the two rates by that
+# share (etl/plan_model.py demand_units). Read when the file has them.
+ENTRY_COLS = ["Draw_Entries", "Preorder_App"]
 
 
 # The build reads the export rebuilt from the event-level feeds by
@@ -223,7 +227,7 @@ def load_across_time() -> pd.DataFrame:
     key = None
     try:
         st = FUNNEL_FILE.stat()
-        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS + CONV_COLS, "v": 2}
+        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS + CONV_COLS + ENTRY_COLS, "v": 2}
         if cache.exists() and meta.exists() and json.loads(meta.read_text()) == key:
             df = pd.read_pickle(cache)
             print(f"funnel: {len(df)} rows from the cached parse of {FUNNEL_FILE.name}")
@@ -242,7 +246,7 @@ def load_across_time() -> pd.DataFrame:
 
 
 def _parse_across_time() -> pd.DataFrame:
-    df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS or c in CONV_COLS,
+    df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS or c in CONV_COLS or c in ENTRY_COLS,
                      dtype={c: "category" for c in FUNNEL_LABELS})
     missing = [c for c in FUNNEL_COLS if c not in df.columns]
     if missing:

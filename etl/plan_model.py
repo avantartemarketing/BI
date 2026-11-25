@@ -53,6 +53,7 @@ PRICES_PATH = ROOT / "etl" / "plan_prices.json"
 # ---------------------------------------------------------------- constants
 LEAD_DAYS = 14          # how far before the announce a launch's plan is read (the early access days)
 ENTRY_RATE = 0.8        # an eligible entry unit counted as the page counts it (docs/METHODOLOGY.md 1)
+PREORDER_RATE = 0.95    # ... and one entered as a pre-order: the card is authorised, so it is charged at the draw (the same section)
 MIN_DELIVERED = 100     # a send to fewer than this is a test or a hand-picked note, and is not priced
 EMAIL_FADE_DAYS = 4     # an email is felt on its day and the four after (the back-test: longer tails fit no better)
 POST_FADE_DAYS = 1      # a post is felt on its day and the next
@@ -122,6 +123,21 @@ def code_of(campaign: object, name: object = "") -> str | None:
     return None
 
 
+def demand_units(g: pd.DataFrame) -> pd.Series:
+    """What the funnel's rows count as demand, row by row: eligible entry
+    units at the rate they pay, plus the private room's units. An entry made
+    as a pre-order pays at PREORDER_RATE and a plain draw entry at ENTRY_RATE,
+    as the page counts them; a row's eligible units are split between the two
+    by its share of entries made as pre-orders (the feed gives the units in
+    one figure). Until 25 November 2026 every unit was counted at ENTRY_RATE,
+    which read a launch entered mostly by pre-order about a sixth low."""
+    num = lambda c: pd.to_numeric(g[c], errors="coerce").fillna(0.0) if c in g.columns else pd.Series(0.0, index=g.index)
+    entries, pre = num("Draw_Entries"), num("Preorder_App")
+    share = (pre / entries.where(entries > 0)).clip(0.0, 1.0).fillna(0.0)
+    rate = ENTRY_RATE + (PREORDER_RATE - ENTRY_RATE) * share
+    return rate * num("Draw_Entries_Eligible_Units") + num("Product_Units_Private_Room")
+
+
 def _norm(s: object) -> str:
     return re.sub(r"[^a-z0-9]", "", str(s or "").lower())
 
@@ -160,13 +176,26 @@ def load_comms(path: pathlib.Path | str | None = None) -> pd.DataFrame:
 def load_campaigns(path: pathlib.Path | str | None = None) -> pd.DataFrame:
     """The Notion campaign list: a code, its release, its announce and launch days."""
     p = pathlib.Path(path) if path else DATA / "notion_comms_campaigns.csv"
-    cols = ["campaign_code", "release", "announce", "launch", "mechanic", "status", "tier"]
+    cols = ["campaign_code", "release", "announce", "launch", "mechanic", "status", "tier", "email_audience"]
     if not p.exists():
         return pd.DataFrame({c: pd.Series(dtype=str) for c in cols})
     df = pd.read_csv(p, dtype=str).fillna("")
     for c in ("announce", "launch"):
         df[c] = pd.to_datetime(df[c], errors="coerce")
+    if "email_audience" not in df.columns:      # a file pulled before the column was read
+        df["email_audience"] = ""
     return df
+
+
+def planned_audience(campaigns: pd.DataFrame | None, code: object) -> float | None:
+    """How many people a campaign's announcement is planned to go to: the
+    number the team types on the campaign in Notion ("Email audience"), or
+    None when it is empty. It is the only place a planned audience is written
+    down before the email is built in HubSpot."""
+    if campaigns is None or not len(campaigns) or not code or "email_audience" not in campaigns.columns:
+        return None
+    v = pd.to_numeric(campaigns.loc[campaigns["campaign_code"] == str(code), "email_audience"], errors="coerce").dropna()
+    return float(v.iloc[0]) if len(v) and v.iloc[0] >= 1 else None
 
 
 def load_audiences(path: pathlib.Path | str | None = None) -> pd.DataFrame:
@@ -188,6 +217,19 @@ def load_audiences(path: pathlib.Path | str | None = None) -> pd.DataFrame:
     df["went"] = df["delivered"] > 0
     df["n_lists"] = df["lists_in"].map(lambda s: len([x for x in str(s).split("|") if x]))
     return df
+
+
+def load_list_sizes(path: pathlib.Path | str | None = None) -> dict:
+    """HubSpot's lists by id with how many people each holds
+    (sources/hubspot_lists.csv, written only when the token may read lists).
+    Empty without the file: an email built but not sent then has no audience
+    HubSpot can give."""
+    p = pathlib.Path(path) if path else SOURCES / "hubspot_lists.csv"
+    if not p.exists():
+        return {}
+    df = pd.read_csv(p, dtype=str).fillna("")
+    size = pd.to_numeric(df.get("size"), errors="coerce")
+    return {str(i): float(n) for i, n in zip(df["list_id"], size) if pd.notna(n) and n > 0}
 
 
 def carries_code(aud: pd.DataFrame, code: str) -> pd.Series:

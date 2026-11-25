@@ -108,7 +108,7 @@ def daily_demand(at: pd.DataFrame, name: str, announce, close) -> pd.Series:
     g = at[(at["simple_release_name"] == name) & ~at["channel"].isin(PAID)]
     days = pd.date_range(announce - pd.Timedelta(days=P.LEAD_DAYS), close)
     g = g.assign(day=pd.to_datetime(g["event_date"]))
-    y = P.ENTRY_RATE * g.groupby("day")["Draw_Entries_Eligible_Units"].sum() + g.groupby("day")["Product_Units_Private_Room"].sum()
+    y = P.demand_units(g).groupby(g["day"]).sum()
     return y.reindex(days).fillna(0.0)
 
 
@@ -125,7 +125,7 @@ def group_demand(at: pd.DataFrame, name: str, announce, close) -> dict:
     out = {}
     for key, chans in CHECK_GROUPS.items():
         c = g[g["channel"].isin(chans)]
-        y = P.ENTRY_RATE * c.groupby("day")["Draw_Entries_Eligible_Units"].sum() + c.groupby("day")["Product_Units_Private_Room"].sum()
+        y = P.demand_units(c).groupby(c["day"]).sum()
         out[key] = y.reindex(days).fillna(0.0).to_numpy(dtype=float)
     return out
 

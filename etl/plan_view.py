@@ -90,7 +90,7 @@ def context(reload: bool = False) -> dict | None:
         return _CTX or None
     prices, comms, aud = P.load_prices(), P.load_comms(), P.load_audiences()
     ok = bool(prices) and not comms.empty and aud is not None and not aud.empty and "fade_email" in (prices or {}) and bool((prices or {}).get("split"))
-    _CTX = {"prices": prices, "comms": comms, "aud": aud, "campaigns": P.load_campaigns()} if ok else {}
+    _CTX = {"prices": prices, "comms": comms, "aud": aud, "campaigns": P.load_campaigns(), "lists": P.load_list_sizes()} if ok else {}
     return _CTX or None
 
 
@@ -133,6 +133,31 @@ def email_label(name: object, kind: str, delivered: float) -> str:
     return f"Email to {_people(delivered)} {'insiders' if kind == 'insiders' else 'people'}"
 
 
+def planned_size(day, kind: str, aud: pd.DataFrame, codes, lists: dict | None, campaigns, code, usual: dict) -> tuple:
+    """How many people an email still to come is planned to go to, and where
+    that was read: "hubspot", the lists the email names once it is built there
+    (their sizes, when the token may read lists); "notion", the number the team
+    types on the campaign for its announcement ("Email audience"); else
+    "usual", the usual audience for its kind, which the card says is not set.
+    The repository owner's order of 25 November 2026: HubSpot for what it
+    knows, Notion's number for what is not built yet."""
+    if lists and aud is not None and len(aud):
+        mine = pd.Series(False, index=aud.index)
+        for c in codes:
+            if c:
+                mine |= P.carries_code(aud, c)
+        built = aud[mine & ~aud["went"] & (aud["kind"] == kind) & ((aud["day"] - pd.Timestamp(day)).abs() <= pd.Timedelta(days=1))]
+        for _, e in built.iterrows():
+            n = sum(float(lists.get(i, 0.0)) for i in str(e.get("lists_in") or "").split("|") if i)
+            if n >= P.MIN_DELIVERED:
+                return n, "hubspot"
+    if kind == "announce":
+        n = P.planned_audience(campaigns, code)
+        if n:
+            return n, "notion"
+    return float(usual.get(kind) or usual.get("other") or 5000.0), "usual"
+
+
 def phase_of(row, announce, days: int) -> str:
     """The phase a plan row sits in: the one Notion gives it, else by its day."""
     ph = str(row.get("phase") or "")
@@ -172,7 +197,7 @@ def entry_days(at: pd.DataFrame, name: str, days: pd.DatetimeIndex, group_of: di
         return out
     grp = g["channel"].astype(str).map(group_of)
     day = pd.to_datetime(g["event_date"]).dt.normalize()
-    y = P.ENTRY_RATE * pd.to_numeric(g["Draw_Entries_Eligible_Units"], errors="coerce").fillna(0.0) + pd.to_numeric(g["Product_Units_Private_Room"], errors="coerce").fillna(0.0)
+    y = P.demand_units(g)
     tab = y.groupby([grp, day]).sum()
     for key in tab.index.get_level_values(0).unique():
         out[str(key)] = tab.loc[key].reindex(days).fillna(0.0).to_numpy(dtype=float)
@@ -241,10 +266,11 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
         kind = P.email_kind("x - " + str(r["name"]))
         if kind == "after" or (pd.Timestamp(r["date"]), kind) in sent_on:
             continue
-        planned.append({"day": pd.Timestamp(r["date"]), "kind": kind, "delivered": float(usual.get(kind) or usual.get("other") or 5000.0), "name": str(r["name"]), "planned": True})
+        size, src = planned_size(pd.Timestamp(r["date"]), kind, aud, [code, own], ctx.get("lists"), ctx.get("campaigns"), code, usual)
+        planned.append({"day": pd.Timestamp(r["date"]), "kind": kind, "delivered": size, "name": str(r["name"]), "planned": True, "audience": src})
     sent = [{"day": pd.Timestamp(s["day"]), "kind": s["kind"], "delivered": float(s["delivered"]), "name": str(s["name"]), "clicked": float(s["clicked"]), "planned": False}
             for _, s in sends.iterrows()]
-    all_sends = pd.DataFrame(sent + planned, columns=["day", "kind", "delivered", "name", "clicked", "planned"])
+    all_sends = pd.DataFrame(sent + planned, columns=["day", "kind", "delivered", "name", "clicked", "planned", "audience"])
     all_sends["moment"] = all_sends["kind"].map(KIND_PHASE).fillna(PHASES[2])
     posts = plan[plan["family"].isin(P.POST_FAMILIES)]
     piece_days = list(posts["date"]) + list(all_sends["day"])
@@ -426,7 +452,9 @@ def card_rows(w: dict) -> list[dict]:
         for e in emails:
             s = e["s"]
             if s["planned"]:
-                lines.append({"when": _day_word(s["day"]), "name": "Email, audience not set", "who": "email", "expected": e["expected"], "in": 0.0, "toCome": e["toCome"],
+                known = str(s.get("audience") or "usual") != "usual"
+                lines.append({"when": _day_word(s["day"]), "name": f"Email to {_people(float(s['delivered']))} people, planned" if known else "Email, audience not set", "who": "email",
+                              "expected": e["expected"], "in": 0.0, "toCome": e["toCome"],
                               "_o": (s["day"], 0, -e["expected"])})
             else:
                 lines.append({"when": _day_word(s["day"]), "name": email_label(s["name"], s["kind"], float(s["delivered"])), "who": "email", "expected": e["expected"],

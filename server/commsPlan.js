@@ -52,7 +52,7 @@ const QUERY_CAP = 10000;
 
 const HEADER = ["campaign_code", "release", "date", "time", "channel", "channel_type", "family", "phase", "status",
   "name", "hubspot_id", "make_ready", "created", "edited"];
-const CAMPAIGNS_HEADER = ["campaign_code", "release", "announce", "launch", "mechanic", "status", "tier"];
+const CAMPAIGNS_HEADER = ["campaign_code", "release", "announce", "launch", "mechanic", "status", "tier", "email_audience"];
 
 /* A property's value as plain data. A formula gives its string, number or
  * date; a rollup the values it gathers; a relation the ids it points to.
@@ -157,7 +157,20 @@ function campaignRow(row) {
     mechanic: [...new Set(flat(value(p["◒ Launch mechanic"])).map(String))].sort().join("; "),
     status: value(p["Status"]) || "",
     tier: value(p["Content Tier"]) || "",
+    email_audience: emailAudience(p),
   };
+}
+
+/* How many people the campaign's announcement email is planned to go to: the
+ * Campaigns database's "Email audience" number, typed by the team before the
+ * email is built (HubSpot knows an audience only once it is). One number a
+ * campaign, so it is the announcement's; "" when empty or not a count. The
+ * field is found by its name with the spaces trimmed, since it was made as
+ * "Email audience " with one after it. */
+function emailAudience(p) {
+  const key = Object.keys(p || {}).find((k) => k.trim().toLowerCase() === "email audience");
+  const v = key ? Number(value(p[key])) : NaN;
+  return Number.isFinite(v) && v >= 1 ? String(Math.round(v)) : "";
 }
 
 /* A plan row as the lines it writes: one per campaign it belongs to (a bundle
@@ -302,7 +315,7 @@ async function fetchCommsPlan(today = new Date().toISOString().slice(0, 10), opt
   lines.sort((a, b) => (a.campaign_code + a.date + a.channel + a.name).localeCompare(b.campaign_code + b.date + b.channel + b.name));
   const camps = [...campaigns.values()].sort((a, b) => a.code.localeCompare(b.code));
   // a line per code, so a campaign under two codes is found by either
-  const campLines = camps.flatMap((c) => (c.codes || [c.code]).map((code) => ({ campaign_code: code, release: c.release, announce: c.announce, launch: c.launch, mechanic: c.mechanic, status: c.status, tier: c.tier })))
+  const campLines = camps.flatMap((c) => (c.codes || [c.code]).map((code) => ({ campaign_code: code, release: c.release, announce: c.announce, launch: c.launch, mechanic: c.mechanic, status: c.status, tier: c.tier, email_audience: c.email_audience || "" })))
     .sort((a, b) => a.campaign_code.localeCompare(b.campaign_code));
   return {
     csv: csv(HEADER, lines),
