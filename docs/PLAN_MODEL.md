@@ -449,9 +449,9 @@ baseline by channel, or paid by what is spent and still to spend. On a draw laun
 phases' days can overlap (a post's phase is the one Notion gives it, else its day's, and an
 email's is its kind: `plan_view.phase_of`, `KIND_PHASE`), so the full list is ordered by
 each piece's own day (`date` on the piece) and not phase by phase; the pieces of one day
-keep the order their phases list them in, emails ahead of posts and the bigger first.
-Until 25 November 2026 the full list put the piece furthest behind its plan first once
-anything had gone out.
+stay phase by phase, each phase's emails ahead of its posts and the bigger first. Until
+25 November 2026 the full list put the piece furthest behind its plan first once anything
+had gone out.
 
 **Suggested actions in this view** are valued by the same price list, at the launch's
 level and at how the piece's channel is running: an email still to come sent to the full
