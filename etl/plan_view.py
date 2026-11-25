@@ -659,8 +659,8 @@ def changes(w: dict, page: dict) -> list[dict]:
                 out.append({"key": f"email.{kind}.{str(s['day'].date())}.{int(n)}", "same": f"email.{kind}.{str(s['day'].date())}", "kind": "change", "title": title,
                             "from": f"{int(round(n0, -2)):,}", "to": label, "channel": "Email",
                             "date": str(s["day"].date()), "people": int(round(n)), "units": {"low": u * lo_m, "high": u * hi_m},
-                            "reason": f"No audience is set yet, so the usual {int(round(n0, -2)):,} people are assumed. To {'the full list' if label == 'Full list' else label + ' people'} "
-                                      f"it should bring about {clicks_at(kind, n, t):,} clicks, and about {unsubs(n)} unsubscribes."})
+                            "reason": f"No audience is set, so the usual {int(round(n0, -2)):,} people are assumed. {'The full list' if label == 'Full list' else label + ' people'} "
+                                      f"should bring about {clicks_at(kind, n, t):,} clicks and {unsubs(n)} unsubscribes."})
     t_mid = min(int((today - ann).days) + MID_LEAD_DAYS, L - 4)
     if days_left >= MIN_DAYS_LEFT and t_mid > int((today - ann).days):
         mid_day = ann + pd.Timedelta(days=t_mid)
@@ -673,7 +673,7 @@ def changes(w: dict, page: dict) -> list[dict]:
                 u = pe * level * email_units("sustain", n, t_mid)
                 out.append({"key": f"email.sustain.add.{int(n)}", "same": "email.sustain.add", "kind": "add", "title": label, "note": "Not in the plan", "channel": "Email", "date": str(mid_day.date()),
                             "people": int(round(n)), "units": {"low": u * lo_m, "high": u * hi_m},
-                            "reason": f"About {clicks_at('sustain', n, t_mid):,} clicks at how this launch's emails are running, and about {unsubs(n)} unsubscribes."})
+                            "reason": f"About {clicks_at('sustain', n, t_mid):,} clicks at this launch's email rates, and about {unsubs(n)} unsubscribes."})
         running = {"Artist": pa, "AA Social": ps, "Partner": pull_all}
         for col, label, chn in (("pl_artist_post", "Artist IG post", "Artist"), ("pl_aa_post", "AA IG post", "AA Social"), ("pl_partner", "Partner post", "Partner")):
             u = running[chn] * level * P.action_value(col, 1.0, pr)
@@ -681,7 +681,7 @@ def changes(w: dict, page: dict) -> list[dict]:
             who = {"Artist": "The artist's channels are", "AA Social": "Avant Arte's posts are", "Partner": "The launch is"}[chn]
             out.append({"key": f"post.{col}", "kind": "add", "title": label, "note": "Not in the plan", "channel": chn, "date": str(mid_day.date()),
                         "units": {"low": u * POST_BAND[0], "high": u * POST_BAND[1]},
-                        "reason": f"{who} bringing {word} the plan expected so far." + (" Partner posts are the least certain piece: few past launches ran one." if chn == "Partner" else "")})
+                        "reason": f"{who} bringing {word} the plan expected so far." + (" Partner posts are the least certain: few past launches ran one." if chn == "Partner" else "")})
     # the paid budget: the Spend levels card's own reading for tomorrow (etl/plan_changes.py paid_changes). One for
     # the campaign, which on this page is sized against what the plan's comms leave to do; on a launch that runs an
     # ad set per line of work, one per line off the line's own card, as the clock's page gives them
@@ -748,7 +748,7 @@ def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
     # no piece of the plan is there to bring, on the similar launches' reading
     if ov["meta"].get("against") == "short" and target - tot["expected"] >= 0.5:
         rows.append({"moment": "Not covered", "expected": round(target - tot["expected"], 2), "in": 0.0, "toCome": 0.0, "lands": 0.0, "pieces": [],
-                     "note": "What the plan as written leaves of the target, read against launches that sold this many."})
+                     "note": "The part of the target that nothing in the plan covers."})
     hero = page.setdefault("hero", {})
     now_all = float(hero.get("now") or tot["in"])
     hero.update({"projected": round(lands), "expectedToday": round(by_today), "delta": round(now_all - by_today),
@@ -757,7 +757,7 @@ def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
     paid_plan = float((pc or {}).get("target") or 0.0)
     lvl = paid.get("levels") or {}
     basis = {"similar": f"the {ov['meta']['levelN']} launches that sold nearest the target at a similar price", "artist": f"the artist's last {ov['meta']['levelN']} launches",
-             "basket": f"the {ov['meta']['levelN']} launches the page is benchmarked on", "all": "every past draw launch"}[ov["meta"]["levelBasis"]]
+             "basket": f"the {ov['meta']['levelN']} benchmark launches", "all": "every past draw launch"}[ov["meta"]["levelBasis"]]
     page["method"] = "plan"
     page["plan"] = {"state": "live" if started else "start", "target": target, "expected": round(tot["expected"], 2), "in": round(tot["in"], 2), "toCome": round(tot["toCome"], 2),
                     "lands": round(demand, 2), "byToday": round(by_today, 2), "range": [round(lo + paid_plan, 1), round(hi + paid_plan, 1)],
@@ -767,8 +767,8 @@ def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
                     # give it, short or over only outside it (a starting size is rough, and a gap inside the range is no gap)
                     "against": ov["meta"].get("against"), "notCovered": round(max(target - tot["expected"], 0.0), 2) if ov["meta"].get("against") == "short" else 0.0,
                     "similar": ov["meta"].get("similar"), "similarPaidShare": ov["meta"].get("similarPaidShare"), "ownRecord": ov["meta"].get("ownRecord"),
-                    "notes": [f"What each piece is expected to bring is sized on {basis}.", "Still to come follows how each channel is responding so far.",
-                              "What came in is credited to the day people entered or bought."]
+                    "notes": [f"Each piece is sized on {basis}.", "Still to come follows how each channel is responding so far.",
+                              "Results count on the day people entered or bought."]
                              + ([f"Paid is held at today's €{round(float(lvl['today'])):,} a day."] if lvl.get("today") is not None else [])}
 
     cf = page.get("closeForecast")
@@ -788,7 +788,7 @@ def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
                 "built": {**(cf.get("built") or {}), "organic": round(ov["meta"]["organicToCome"], 1), **({"paid": round(max(float(pc.get("proj") or 0) - float(pc.get("now") or 0), 0.0), 1)} if pc else {})}}
         if lvl.get("today") is not None:
             read["paid"] = {"daily": lvl["today"], "today": lvl["today"], "change": 0.0, "direction": "hold", "spendAtClose": (paid.get("ifContinued") or {}).get("spendProjectedTotal"),
-                            "budget": paid.get("spendBudget"), "rule": "The forecast holds today's paid spend to the close, so it shows where the plan lands with nothing changed."}
+                            "budget": paid.get("spendBudget"), "rule": "Today's paid spend held to the close: where the plan lands with nothing changed."}
         cf.update(read)
         if held_sc is not None:
             sc["current"] = {**held_sc, **read}

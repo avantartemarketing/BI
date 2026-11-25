@@ -245,14 +245,14 @@ def test_paid() -> None:
     assert (c["key"], c["kind"], c["title"], c["from"], c["to"], c["channel"], c["date"]) == \
         ("paid.budget.1500", "change", "Paid daily budget", "\u20ac1,000", "\u20ac1,500", "Paid", "2026-09-21"), c
     assert c["units"] == {"low": 20, "high": 20} and "saves" not in c, c
-    assert c["reason"] == "The next euro returns 1.6 at today's \u20ac1,000. \u20ac2,000 a day is the level it is heading for.", c["reason"]
+    assert c["reason"] == "The next euro returns 1.6 at today's \u20ac1,000. It is heading for \u20ac2,000 a day.", c["reason"]
     # within five per cent of today's spend is a hold, and no change
     assert P.paid_change(levels(1000.0, 2000.0, 1040.0), day, close) is None
     # a cut: sized in the spend it saves to the close, the units it gives up said in the reason
     c = P.paid_change(levels(2000.0, 1000.0, 1500.0, marginal=0.7), day, close)
     assert (c["kind"], c["from"], c["to"], c["units"], c["saves"]) == ("change", "\u20ac2,000", "\u20ac1,500", None, 2500), c
     assert c["reason"] == ("The next euro returns 0.7 at today's \u20ac2,000, under the 1.0 it costs. "
-                           "\u20ac1,000 a day is the level it is heading for. About 20 fewer units by the close."), c["reason"]
+                           "It is heading for \u20ac1,000 a day. About 20 fewer units by the close."), c["reason"]
     # a stop is the one drop: the reason the Spend levels card gives, and what it saves
     c = P.paid_change(levels(900.0, 0.0, stop="supply", days=4), day, close)
     assert (c["key"], c["kind"], c["title"], c["note"], c["from"], c["saves"]) == ("paid.stop", "drop", "Paid spend", "Edition spoken for", "\u20ac900", 3600), c
