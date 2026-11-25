@@ -977,6 +977,11 @@ one list, never a fresh to-do list:
 A launch on course for its target gets no comms changes: the extra sends are
 better kept for a launch that needs them. Its paid change still shows.
 
+A timed launch gathering signups has the card on its plan-based view alone
+(docs/PLAN_MODEL.md 6b), sized in signups by the sales open: the paid
+budget's own pace against today's spend first, since paid is most of a timed
+launch's signups, then an announcement sent wider and a post.
+
 **What it reads.** Three things: the launch's own page (where it is heading,
 and whether AA Email is short on visits or on visits turning into entries),
 the plan (the rows the team logs in Notion, read every refresh) and the
@@ -1037,7 +1042,8 @@ across every launch at once (`etl/list_load.py`):
   widest send of the last 120 days.
 - **The count** for a week is the general sends that have gone (HubSpot) and
   those still in a launch's plan (Notion): a launch's announcement, and a timed
-  launch's email to the people outside its flow. One a launch a week. The plan
+  launch's email to the people outside its flow; a re-send is not one. One a
+  launch a week. The plan
   names an email and not who it goes to, and launches that share a bundle each
   list their own, so the count of what is to come runs high: about three in
   four planned general sends went as their own (16 weeks to November 2026).
@@ -1049,7 +1055,8 @@ across every launch at once (`etl/list_load.py`):
 - **The scale.** Up to 2.0 emails a person a week the list is at its usual
   load, and any launch that is short can be offered a general send. Up to 2.5
   it is busy, and only the launch with the most at stake that week is offered
-  one: the units it is heading to fall short by, times the price of a unit.
+  one: the units it is heading to fall short by, times the price of a unit (a
+  timed launch before its window: the units its sales forecast leaves short).
   Past 2.5 none is.
 - **The cap.** Never more than 3 general sends in a week, gone and planned
   together, whatever the load.
@@ -1059,7 +1066,10 @@ A general send the rule lets through says which of the week's it would be
 ("General send 3 of 3"). One it does not sits under **Held back** with the
 reason in a line and what it was worth; it can still be accepted, except in a
 week at the cap. Emails to fewer than half the list, posts and paid are
-untouched. The card's first line gives the list's state, this week's count
+untouched. An email the plan-based view offers at two audiences (the full
+list, and about three times its usual one) is one row, the larger the rule
+leaves standing, and opens to the other as an alternative: as two rows they
+read as two things to do (24 November 2026). The card's first line gives the list's state, this week's count
 against the cap and the load, and opens to the sends counted this week and
 next.
 
@@ -1084,10 +1094,10 @@ The card is shown to admins only while the rules are new.
   refresh with the other orders figures.
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
   are pulled live from BigQuery (the LE Funnel Report's daily export and the Meta
-  ads insights table) on boot and every hour. The *LE Paid Calculator* Google
-  Sheet stands in while BigQuery is not configured and is tried when a BigQuery
-  pull fails, in which case the header reads "Sources stale", since the sheet's
-  copy is cut at 50,000 rows a tab.
+  ads insights table) on boot and every hour. BigQuery is the only source: when
+  a pull fails the previous numbers keep serving and the header reads "Sources
+  stale". The *LE Paid Calculator* Google Sheet is no longer read (25 November
+  2026).
   The header's "data through" day is the newest day in the feed, which while the
   feed is live is today, part-observed: the actuals run through it and the header says
   "today so far". The paid pacing rules, the run rates and whether a campaign is complete

@@ -93,7 +93,7 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
     const i = input && typeof input === "object" ? input : {};
     switch (name) {
       case "list_releases": return tools.listReleases(i);
-      case "get_release": return tools.getRelease(i);
+      case "get_release": return tools.getRelease({ id: i.id, fields: i.fields, display: i.display, line: i.line });   // the saved settings and the plan-based view are the connector's to ask for
       case "describe_table": return tools.describeTable(i);
       case "query_table": return tools.queryTable(i);
       case "read_docs": return tools.readDocs(i);

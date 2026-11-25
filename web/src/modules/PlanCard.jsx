@@ -6,7 +6,9 @@
  * gone out); pick a phase and it lists that phase's alone, the baseline by
  * channel, or paid by what is spent and still to spend. Pick it again to go
  * back. The box keeps the height of the bars and scrolls inside, fading at
- * its foot while there is more below. The figures are etl/plan_view.py's. */
+ * its foot while there is more below. The figures are etl/plan_view.py's; on
+ * a timed launch gathering signups they are etl/tl_plan.py's, in signups to
+ * the sales open, with paid read from the spend still to come. */
 import React, { useEffect, useRef, useState } from "react";
 import { Card, Head } from "../ui.jsx";
 import { COL, sw } from "../charts.jsx";
@@ -98,8 +100,8 @@ export default function PlanCard({ snap }) {
   const chk = planCheck(p);
   return (
     <Card wide title="The plan" className={`plan-card${m.start ? " start" : ""}`} aria="The plan, phase by phase">
-      <Head v={n(p.lands)} u="at the close" tip={(p.notes || []).join(" ")}
-        deltas={[short > 0 ? { t: `${short} short of the ${n(p.target)} target`, dir: "dn" } : { t: `reaches the ${n(p.target)} target`, dir: "up" }]}
+      <Head v={n(p.lands)} u={snap.type === "TL" ? "signups at the open" : "at the close"} tip={(p.notes || []).join(" ")}
+        deltas={[short > 0 ? { t: `${n(short)} short of the ${n(p.target)} target`, dir: "dn" } : { t: `reaches the ${n(p.target)} target`, dir: "up" }]}
         aside={m.start ? likely : `day ${snap.day} of ${snap.of}`} asideTip={(p.notes || []).join(" ")} />
       {chk && (
         <div className={`plan-chk ${chk.kind === "short" ? "dn" : "ok"}`} title={chk.similar.length ? `Read against ${[...new Set(chk.similar)].join(", ")}` : undefined}>
@@ -115,8 +117,8 @@ export default function PlanCard({ snap }) {
               title={r.pieces.length ? (sel === r.key ? "Back to every piece" : `Show what is inside ${r.name}`) : undefined} onClick={() => setSel(sel === r.key ? null : r.key)}>
               <span className="nm">{r.name}</span>
               <Bar x={r} top={m.top} />
-              <span className="pl">{r.exp}</span>
-              {!m.start && <span className="ld">{r.lands}</span>}
+              <span className="pl">{n(r.exp)}</span>
+              {!m.start && <span className="ld">{n(r.lands)}</span>}
             </button>
           ))}
         </div>
@@ -133,8 +135,8 @@ export default function PlanCard({ snap }) {
                 <div className="pv-l" key={`${i}-${x.when}-${x.name}`}>
                   <span className="nm" title={x.name}>{dated && x.when && <em>{x.when}</em>}{x.name}</span>
                   <Bar x={x} top={ptop} />
-                  <span className="pl">{x.exp}</span>
-                  {!m.start && <span className="ld">{x.lands}</span>}
+                  <span className="pl">{n(x.exp)}</span>
+                  {!m.start && <span className="ld">{n(x.lands)}</span>}
                 </div>
               ))}
               {!list.length && <div className="pv-pn">No emails or posts in the plan yet</div>}

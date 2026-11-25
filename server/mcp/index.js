@@ -151,8 +151,12 @@ function install(app, opts = {}) {
     fromAgent("list_releases", { title: "List releases" }),
     fromAgent("get_release", {
       title: "Read a release's page",
-      description: "Read a release's page snapshot: the exact figures its dashboard page shows. With no fields it returns an outline (top-level scalars plus the shape of each block); then ask for the blocks you need by dot path, e.g. [\"hero\", \"channels\", \"sellthrough\", \"paid.daily\"]. An array element can be picked by index or by its name (channels.Paid). Direct is spread over the other channels by default, as the page shows it; pass display \"channel\" to read Direct as a channel of its own.",
-      schema: (s) => { s.properties.display.description = "Direct display: spread (the default, as the page shows it) or channel"; },
+      description: "Read a release's page snapshot: the exact figures its dashboard page shows. With no fields it returns an outline (top-level scalars plus the shape of each block); then ask for the blocks you need by dot path, e.g. [\"hero\", \"channels\", \"sellthrough\", \"paid.daily\"]. An array element can be picked by index or by its name (channels.Paid). Direct is spread over the other channels by default, as the page shows it; pass display \"channel\" to read Direct as a channel of its own. A live draw launch can also be read as its Targets from switch shows it on Plan: pass targets_from \"plan\" for the plan-based view (the plan card is the field \"plan\"); a page with none says so and gives the clock's. Pass settings true to get the release's target settings as saved on the Target setting tab (dates, campaign code, comparison launches, the works ticked and what is typed over Airtable), read-only.",
+      schema: (s) => {
+        s.properties.display.description = "Direct display: spread (the default, as the page shows it) or channel";
+        s.properties.targets_from = { type: "string", enum: ["time", "plan"], description: "Which view to read: time (the campaign clock, the default) or plan (the plan-based view, where the page has one)" };
+        s.properties.settings = { type: "boolean", description: "true adds the release's saved target settings to the answer" };
+      },
     }),
     fromAgent("describe_table", {
       title: "Describe a dashboard table",

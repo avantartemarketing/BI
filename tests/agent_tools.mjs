@@ -39,6 +39,41 @@ assert.ok(t.getRelease({ id: "warhol_le_26", fields: ["nope"] }).fields.nope.mis
 assert.ok(JSON.stringify(t.getRelease({ id: "warhol_le_26" })).length < 20000);
 assert.throws(() => t.getRelease({ id: "no_such_release" }), /No release/);
 
+// get_release for the connector: the plan-based view where the page has one, and the saved target settings, read only
+{
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "bi-settings-"));
+  const app = path.join(tmp, "data", "app");
+  fs.mkdirSync(app, { recursive: true });
+  fs.writeFileSync(path.join(app, "index.json"), JSON.stringify({ asOf: "2026-11-25", releases: [{ id: "a_le_26" }, { id: "b_le_26" }, { id: "c_le_26" }] }));
+  fs.writeFileSync(path.join(app, "inputs.json"), JSON.stringify({ releases: { b_le_26: { id: "b_le_26", announce_date: "2026-11-01" } }, discovered: { c_le_26: { release_name: "C" } } }));
+  fs.writeFileSync(path.join(tmp, "data", "inputs.saved.json"), JSON.stringify({ releases: { a_le_26: { id: "a_le_26", campaign_code: "A_LE_26", products: [{ airtable_id: "1", excluded: true }] } } }));
+  const pages = {
+    a_le_26: { id: "a_le_26", type: "LE", hero: { projected: 74 }, variants: { direct_spread: { hero: { projected: 75 } }, plan: { hero: { projected: 36 }, plan: { lands: 36 }, method: "plan" } } },
+    b_le_26: { id: "b_le_26", type: "LE", hero: { projected: 10 }, variants: { direct_spread: { hero: { projected: 11 } } } },
+    c_le_26: { id: "c_le_26", type: "LE", hero: { projected: 5 } },
+  };
+  const before = process.env.SAVED_INPUTS_PATH;
+  delete process.env.SAVED_INPUTS_PATH;
+  const u = createTools({ ROOT: tmp, DATA: app, readSnapshot: (id) => (pages[id] ? JSON.parse(JSON.stringify(pages[id])) : null) });
+  const plan = u.getRelease({ id: "a_le_26", fields: ["hero", "plan"], targets_from: "plan" });
+  assert.match(plan.display, /plan-based view/);
+  assert.deepStrictEqual([plan.fields.hero.projected, plan.fields.plan.lands], [36, 36]);
+  assert.strictEqual(u.getRelease({ id: "a_le_26", fields: ["hero"] }).fields.hero.projected, 75, "the clock's page stays the default");
+  const none = u.getRelease({ id: "b_le_26", fields: ["hero"], targets_from: "plan" });
+  assert.match(none.display, /no plan-based view/);
+  assert.strictEqual(none.fields.hero.projected, 11);
+  assert.strictEqual(u.getRelease({ id: "a_le_26", fields: ["hero"] }).settings, undefined, "settings only when asked for");
+  const saved = u.getRelease({ id: "a_le_26", fields: ["hero"], settings: true }).settings;
+  assert.match(saved.from, /saved on the Target setting tab/);
+  assert.strictEqual(saved.inputs.products[0].excluded, true);
+  assert.match(u.getRelease({ id: "b_le_26", settings: true }).settings.from, /repository's defaults/);
+  const bare = u.getRelease({ id: "c_le_26", settings: true }).settings;
+  assert.match(bare.from, /nothing saved/);
+  assert.strictEqual(bare.inputs.release_name, "C");
+  if (before !== undefined) process.env.SAVED_INPUTS_PATH = before;
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
 // query_table: group and sum agree with a straight sum; untracked is one channel
 const byChannel = t.queryTable({ table: "units_paid", filters: [{ column: "release", op: "contains", value: "warhol" }], group_by: ["channel"], metrics: [{ fn: "sum", column: "units_paid" }], sort: [{ column: "sum(units_paid)", desc: true }] });
 const raw = t.queryTable({ table: "units_paid", filters: [{ column: "release", op: "contains", value: "warhol" }], columns: ["units_paid"], limit: 500 });

@@ -353,14 +353,18 @@ def load_emails() -> pd.DataFrame:
             "name": pd.Series(dtype=str), "sent_at": pd.Series(dtype="datetime64[ns]"),
             "campaign": pd.Series(dtype=str), "delivered": pd.Series(dtype=float),
             "opened": pd.Series(dtype=float), "clicked": pd.Series(dtype=float),
-            "unsubscribed": pd.Series(dtype=float), "email_type": pd.Series(dtype=str),
+            "unsubscribed": pd.Series(dtype=float), "email_type": pd.Series(dtype=str), "kind": pd.Series(dtype=str),
         })
     df = pd.read_csv(source_file("all_sent_emails.csv"))
     df = df.rename(columns={
         "Email Name": "name", "Send Date (Your time zone)": "sent_at",
         "Campaign": "campaign", "Delivered": "delivered", "Opened": "opened",
-        "Clicked": "clicked", "Unsubscribed": "unsubscribed"})
+        "Clicked": "clicked", "Unsubscribed": "unsubscribed", "Kind": "kind"})
     df["sent_at"] = pd.to_datetime(df["sent_at"])
+    # what the send date is (server/hubspot.js): a batch email went at it, an
+    # automated one was published at it and went when its workflow sent it;
+    # blank on a file from before the column, and then nothing is timed off it
+    df["kind"] = df["kind"].fillna("").astype(str).str.strip().str.lower() if "kind" in df.columns else ""
     def email_type(n):
         for t in ("GEN", "CUS", "INS", "TRNS", "AUT", "FREQ", "TEST"):
             if f"_{t}_" in n or n.startswith(f"{t}_"):
@@ -8945,9 +8949,14 @@ def settle_list(as_of: date) -> str:
         aud, comms = list_feeds()
         ctx = list_load.read(aud, comms, as_of) if aud is not None and len(aud) else None
         pages = []
-        for path in sorted((APP / "releases").glob("*.json")):
+        # the launches with targets set, and the timed launches gathering signups (their pages sit with the
+        # discovered ones until their inputs are saved; only one with suggestions is read whole)
+        for path in sorted((APP / "releases").glob("*.json")) + sorted(DERIVED.glob("*_tl.json")):
             try:
-                doc = json.loads(path.read_text())
+                text = path.read_text()
+                if '"planChanges"' not in text:
+                    continue
+                doc = json.loads(text)
             except (OSError, ValueError):
                 continue
             if isinstance(doc, dict) and (isinstance(doc.get("planChanges"), dict) or isinstance(((doc.get("variants") or {}).get("plan") or {}).get("planChanges"), dict)):
@@ -9214,6 +9223,7 @@ def main(only: str | None = None):
             (APP / "inputs.json").write_text(json.dumps(doc, indent=1))
         except (OSError, ValueError) as e:
             print(f"inputs.json: not updated for {only} ({e})")
+        print(settle_list(as_of))
         mark("release")
         print(f"{snap['id']}: {snap['tlState']} - {snap['tlLabel']}; signups {snap['hero']['now']:.0f} target {snap['hero']['target']}")
         print("timing: " + " | ".join(f"{label} {secs:.1f}s" for label, secs in marks) + f" | total {time.perf_counter() - t_start:.1f}s")
@@ -9344,6 +9354,9 @@ def main(only: str | None = None):
     except Exception as e:  # noqa: BLE001 - the TL pages never stop the LE build
         tl_out["note"] = f"tl: the timed launches could not be built ({type(e).__name__}: {e})"
     index.extend(tl_out["rows"])
+    # the timed launches read off their plan as well (etl/tl_plan.py), on the build's closing line with the draw launches
+    PLAN_VIEWS.extend(tl_out.get("plan_views") or [])
+    PLAN_SKIPS.extend(tl_out.get("plan_skips") or [])
     written |= set(tl_out["written"])
     failures.extend(tl_out["failures"])
     print(tl_out["note"])
@@ -9423,7 +9436,7 @@ def main(only: str | None = None):
         print("plan views: off - the price list, the Notion plan or the email audiences are missing")
     else:
         print(f"plan views: {len(PLAN_VIEWS)} - " + (", ".join(PLAN_VIEWS[:8]) + (f" and {len(PLAN_VIEWS) - 8} more" if len(PLAN_VIEWS) > 8 else "")
-                                                     if PLAN_VIEWS else "no live draw launch with targets set and a plan on file")
+                                                     if PLAN_VIEWS else "no live launch with targets set and a plan on file")
               + ("; without one: " + "; ".join(f"{rid} ({why})" for rid, why in PLAN_SKIPS[:8]) if PLAN_SKIPS else ""))
     # the list's load and what it held (settle_list), on a line the refresh's log carries
     print(list_note)

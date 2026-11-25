@@ -1258,7 +1258,18 @@ draw's code, `STAGGER_APART`, is another launch: Pejac's show on 13 November 202
 print draw on 18 December share a code) and, where the later day's records carry an announce
 date, one on or before the earlier close; the same code's wave months later is a launch of
 its own (a group show puts eight artists under one code; each artist's release is its own row
-in the panel). Bundles (a title with a set word - "Set of
+in the panel). **A private sale ahead of the draw** is the same launch too: a day whose records
+are all `Private` under the code, followed by a day that is not, opening no more than
+`WINDOW_BEFORE_DAYS` (45) before the draw's announce (its close where it carries no announce),
+the reach the match gives early access. Pejac's two special editions, ten each, were sold
+privately from 12 November 2026 under the code of the draw that closes 10 December, and the
+orders file all four works under one release; read as two launches the page set its target
+from the draw's 150 and counted the specials' sales against it (24 November 2026), where the
+launch is 170. A private sale's day is the day it opens, not a close, so the launch's dates,
+closes, quarter and launch type are read off its other records, and `release_products` hands
+the work on with `private_sale_date` and no `launch_date`: the page closes once, with the
+draw. A private record on the draw's own day or after it is read as before, and originals sold
+privately under a draw's code stay a launch of their own. Bundles (a title with a set word - "Set of
 4", "[Pair]", "[Quartet]", "[COMBINED PRODUCT]", a diptych or triptych - or any record without
 an edition size; a bracketed note alone, "[Special Print Edition]", "[OG painting - 1/5]", is
 not one) carry the sum of their parts and are left out, so
@@ -2492,7 +2503,11 @@ context read once per build (`plan_context`): the record, the plan and the draw 
 A failure there costs a page its card and is printed, never the page.
 
 **Who gets the block.** A targeted draw launch (LE, with a benchmark) between its announce and
-its close, on the release's own page (not a line's). Everything else has no `planChanges` key.
+its close, on the release's own page (not a line's). Everything else has no `planChanges` key,
+but for a timed launch gathering signups, which has one under its `variants.plan` alone
+(`etl/tl_plan.py finish`, docs/PLAN_MODEL.md 6b): `paid.budget.<a day>` (lever
+`tl_paid_budget_pace`), `email.announce.<day>.<people>`, `email.announce.add.<people>` and
+`post.<family>`, sized in signups by the sales open.
 
 **The plan** is `data/notion_plan.csv`, written by `server/notion.js` beside the posts and
 dates files: `campaign_code, release_name, date, channel, title`, one line per matched Notion
@@ -2584,7 +2599,8 @@ A marketing send is one that went to 100 people or more and is not `TRNS`, `AUT`
 A planned general send (`planned_general`) is a Notion row of family `email`, not dropped,
 dated today or later, whose name reads as an announcement (`plan_model.email_kind`) or as a
 timed launch's email to the people outside its flow (`Non-flow`, not an early access); a
-flow's own announcement is not one. One a campaign a week. A row dated today stops counting
+flow's own announcement is not one, nor is a re-send (to exclusions, to non-openers, a mop
+up: it goes to the people the first one missed). One a campaign a week. A row dated today stops counting
 once an email of its campaign has gone today. A week's `pp` is its deliveries over the list,
 plus `PLANNED_SHARE` a planned general send, plus the base for the days still to come; its
 `load` is the mean of its `pp` and the three weeks' before.
@@ -2593,7 +2609,11 @@ A suggested email says who it goes to: `people` (the plan view's emails, the re-
 non-openers) or `reach: "list"` (the wide last chance send, the bundle email). One with
 neither is of unknown reach and is not held to the rule. A launch's stake is the larger
 shortfall of its two readings (`hero`, `variants.plan.hero`: `target - projected`, nothing
-within 3% of the target) times `economics.unitPrice`. Per week, the launches asking for a
+within 3% of the target) times `economics.unitPrice`; a timed launch gathering signups is
+read in units and not signups, the units its sell-through forecast at the open leaves short
+of its units target (`sellForecast.open`, the page's and its plan view's) times
+`economics.unit_price_eur`. Its page is read from the discovered pages too, where it sits
+until its inputs are saved (`settle_list`: `derived/*_tl.json` with suggestions). Per week, the launches asking for a
 general send are taken in the order of their stakes, and the week's room (`CAP` less its
 count; one at most when busy; none when very busy) is given out one a launch.
 
@@ -2604,7 +2624,10 @@ The block gains `list` (`asOf`, `size`, `cap`, `normalTo`, `busyTo`, and `week` 
 build suggested). A change let through carries `general {nth, cap, week}`; a held one
 `held` (the reason, a sentence) and `heldBy`: `cap` (the week holds `CAP` already), `load`
 (the scale), `course` (the page reads on course) or `launch` (the launch's second in a
-week). The build's log carries one line: the state and the load, the week's count against
+week). The plan-based view's two audiences for one email carry the same `same` (the email's
+kind and day; `email.sustain.add` for the sustain email it would add), and of those the rule
+leaves in the list the largest stands with the others under its `alts`, each a whole change
+(`one_each`); a page settled again has them back as suggestions of their own first. The build's log carries one line: the state and the load, the week's count against
 the cap, and how many suggestions were held on how many pages.
 
 **Ticks.** `server/planChanges.js` keeps `{release: {key: {state: accepted | dismissed, by,
@@ -2699,7 +2722,7 @@ actuals-only page omits it.
 | `untracked` | `{entries: {share, count, total}, units: {...}, normal: {recentMonths, entries: {median, p90, n}, units: {...}}, high: [...]}` - the untracked share of the window against what is normal (§1.3); the Target setting tab warns when `high` names a metric |
 | `directShare` | `{sessions, entries, units}` - Direct's share of the window as the funnel attributes it (§1.3) |
 | `variants.direct_spread` | the top-level blocks that differ when Direct is spread over the other channels (`channels`, `funnelByGroup`, `paid`, `targets`, `groupTargets`, `waterfall`, `benchmark`, ...); the Overview's Direct switch lays them over the page (§1.3) |
-| `variants.plan` | on a live draw launch with a comms plan on file, the page as read off that plan instead of the campaign clock (docs/PLAN_MODEL.md 6, `etl/plan_view.py`): the top-level blocks that differ, built in the view with Direct spread on the plan's path (`channels`, `hero`, `paid`, `closeForecast`, `waterfall`, ...), plus `method` (`"plan"`), its own `planChanges`, and `plan`: `{state: "live" or "start", target, expected, in, toCome, lands, byToday, range, pull, level, levelBasis, notes, paidToday, paidRecommended, landsRecommended, rows: [{moment, expected, in, toCome, lands, note, pieces: [{when, name, who, expected, in, toCome}]}]}` (a row per phase, then Baseline and Paid; a row's pieces add up to the row). Its `closeForecast` reads shares of the edition, and its `scenarios.current` (today's paid held) is the plan's own landing. On a release selling lines of work it is the combined page's alone (never under `variants.lines`), with a paid suggestion per line. The page's Targets from switch lays them over the page; absent on any other page |
+| `variants.plan` | on a live draw launch with a comms plan on file, the page as read off that plan instead of the campaign clock (docs/PLAN_MODEL.md 6, `etl/plan_view.py`): the top-level blocks that differ, built in the view with Direct spread on the plan's path (`channels`, `hero`, `paid`, `closeForecast`, `waterfall`, ...), plus `method` (`"plan"`), its own `planChanges`, and `plan`: `{state: "live" or "start", target, expected, in, toCome, lands, byToday, range, pull, level, levelBasis, notes, paidToday, paidRecommended, landsRecommended, rows: [{moment, expected, in, toCome, lands, note, pieces: [{when, name, who, expected, in, toCome}]}]}` (a row per phase, then Baseline and Paid; a row's pieces add up to the row). Its `closeForecast` reads shares of the edition, and its `scenarios.current` (today's paid held) is the plan's own landing. On a release selling lines of work it is the combined page's alone (never under `variants.lines`), with a paid suggestion per line. The page's Targets from switch lays them over the page; absent on any other page. A timed launch gathering signups has one too (`etl/tl_plan.py`, docs/PLAN_MODEL.md 6b): built as the feed attributes its channels, in signups to the sales open, with `plan.rows` of Announce, Sustain, The open, Baseline and Paid, its own `sellForecast` (the forecast on the plan's signups) and `planChanges` |
 | `benchmark.basket` | `{id, kind, name, n, thin, suggestedId}`; `kind` is `ready`, `bespoke` or `saved` |
 | `benchmark.units`, `unitsP25`, `unitsP75`, `unitsSold`, `nShort` | the basket's median units of demand (§4a.2) and its middle half, the median sales beside it, and how many members sold out short |
 | `benchmark.sessions`, `entries`, `campaignDays` | the other headline medians of the profile |

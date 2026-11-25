@@ -3,8 +3,10 @@
  * Each tool reads files the dashboard already serves or builds from (the
  * index, the release snapshots, the CSV tables under data/, the docs) and
  * returns compact JSON for the model. None of them writes: there is no path
- * from here to the saved inputs, the targets, the layout or any other state,
- * which is what keeps the Agent from changing the dashboard.
+ * from here to change the saved inputs, the targets, the layout or any other
+ * state, which is what keeps the Agent from changing the dashboard. The
+ * connector alone may ask get_release for a release's saved target settings
+ * and its plan-based view (server/mcp/index.js); both are read.
  *
  * Personal data: the tables listed here hold aggregates only (customer
  * addresses never leave BigQuery, CLAUDE.md). As a second guard every table
@@ -55,7 +57,7 @@ const TABLES = {
   email_sends: {
     dir: "sources", file: "all_sent_emails.csv",
     grain: "marketing email send",
-    about: "HubSpot marketing sends: email name, send date, campaign, delivered, opened, clicked, unsubscribed (counts only).",
+    about: "HubSpot marketing sends: email name, send date, campaign, delivered, opened, clicked, unsubscribed (counts only), and kind (batch: sent once at the send date; automated: sent by a workflow, the date is when it was published).",
   },
   release_clusters: {
     dir: "data", file: "release_clusters.csv",
@@ -214,12 +216,20 @@ function createTools({ ROOT, DATA, SOURCES, readSnapshot, docsDir }) {
    * by laying snap.variants.direct_spread over the snapshot, and a line's
    * variant when a release sells two lines (ReleasePage.jsx). The same here,
    * so the figures match what is on screen. */
-  function viewOf(snap, display, line) {
+  function viewOf(snap, display, line, targetsFrom) {
     const v = snap.variants || {};
     const spread = display !== "channel";
     if (line && v.lines && v.lines[line]) {
       const lv = (spread && v.lines_direct && v.lines_direct[line]) || v.lines[line];
       return { view: { ...snap, ...lv }, applied: `line ${line}${spread && v.lines_direct && v.lines_direct[line] ? ", Direct spread" : ""}` };
+    }
+    // the plan-based view (docs/PLAN_MODEL.md 6): the page as its Targets from switch shows it on Plan, which is
+    // built with Direct spread and laid over the page as the page does. A page with none keeps the clock's.
+    if (targetsFrom === "plan" && v.plan) return { view: { ...snap, ...v.plan }, applied: "the plan-based view (Targets from: Plan), Direct spread" };
+    const noPlan = targetsFrom === "plan" ? "; this page has no plan-based view, so this is the clock's" : "";
+    if (noPlan) {
+      if (spread && v.direct_spread) return { view: { ...snap, ...v.direct_spread }, applied: "Direct spread (the page's default)" + noPlan };
+      return { view: snap, applied: (v.direct_spread ? "Direct as a channel" : "single view (no Direct variant)") + noPlan };
     }
     if (spread && v.direct_spread) return { view: { ...snap, ...v.direct_spread }, applied: "Direct spread (the page's default)" };
     return { view: snap, applied: v.direct_spread ? "Direct as a channel" : "single view (no Direct variant)" };
@@ -265,7 +275,21 @@ function createTools({ ROOT, DATA, SOURCES, readSnapshot, docsDir }) {
     return cur;
   }
 
-  function getRelease({ id, fields, display, line } = {}) {
+  /* A release's target settings, read and never written: as saved from the Target setting tab (the saved inputs,
+   * SAVED_INPUTS_PATH), else as the last build read them off the repository's defaults (the inputs document
+   * beside the pages), else what the feeds and Airtable gave a release nobody has set up. `from` says which. */
+  const readJson = (p) => { try { return JSON.parse(fs.readFileSync(p, "utf8")); } catch { return null; } };
+  function settingsOf(id) {
+    const saved = ((readJson(process.env.SAVED_INPUTS_PATH || path.join(ROOT, "data", "inputs.saved.json")) || {}).releases || {})[id];
+    if (saved && typeof saved === "object") return { from: "saved on the Target setting tab", inputs: saved };
+    const doc = readJson(path.join(DATA, "inputs.json")) || {};
+    const built = (doc.releases || {})[id];
+    if (built && typeof built === "object") return { from: "the repository's defaults, as the last build read them", inputs: built };
+    const found = (doc.discovered || {})[id];
+    return { from: "nothing saved: the page runs on what the feeds and Airtable give", inputs: found && typeof found === "object" ? found : null };
+  }
+
+  function getRelease({ id, fields, display, line, targets_from: targetsFrom, settings } = {}) {
     const clean = String(id || "").replace(/[^a-z0-9_]/g, "");
     if (!clean) throw new Error("Give a release id (from list_releases).");
     const snap = readSnapshot(clean);
@@ -273,10 +297,11 @@ function createTools({ ROOT, DATA, SOURCES, readSnapshot, docsDir }) {
       const listed = (readIndex().releases || []).some((r) => r.id === clean);
       throw new Error(listed ? `${clean} is listed but its page has not been built yet.` : `No release with id ${clean}; use list_releases to find it.`);
     }
-    const { view, applied } = viewOf(snap, display, line);
+    const { view, applied } = viewOf(snap, display, line, targetsFrom);
     delete view.variants;
     delete view.slack;
     const head = { id: snap.id, releaseName: snap.releaseName, type: snap.type, asOf: snap.asOf, display: applied };
+    if (settings === true) head.settings = settingsOf(clean);
     if (Array.isArray(snap.lines) && snap.lines.length) head.lines = snap.lines.map((l) => (l && typeof l === "object" ? { key: l.key, name: l.name || l.label } : l));
     const want = Array.isArray(fields) ? fields.filter(Boolean).slice(0, 12) : [];
     if (!want.length) {

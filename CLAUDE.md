@@ -1,7 +1,7 @@
 # Working rules for this repository
 
 ## How to answer
-- Answer in plain English, briefly. Lead with the answer in a sentence or two a non-technical reader can follow; say what a number means before how it was worked out.
+- Always answer and speak in plain English, in every reply, with no exceptions unless the owner asks for the technical detail. Keep it brief. Lead with the answer in a sentence or two a non-technical reader can follow; say what a number means before how it was worked out.
 - No jargon, internal names or code terms (function names, column names, file paths, "basis", "converting units") unless the owner asks for the detail. If a term is needed, say what it means in passing.
 - Keep it short: a few sentences or a short list. Offer the detail, do not lead with it. Tables only when comparing numbers.
 - This covers chat replies and progress updates. Code, commit messages and the docs keep their own style. Asked by the repository owner on 10 November 2026.

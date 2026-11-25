@@ -324,3 +324,84 @@ def test_bundle_words() -> None:
 
 if __name__ == "__main__" and "test_bundle_words" in globals():
     test_bundle_words()
+
+
+def test_private_sale_ahead() -> None:
+    """A private sale ahead of the draw, under the draw's code, is the same
+    launch (Pejac's special editions, 12 November 2026, and the draw that
+    closes 10 December): the release carries all four works and their units,
+    and the sale's day is no close. A private sale months before is its own
+    launch, and a private record on the draw's own day changes nothing."""
+    rows = [
+        dict(airtable_id=21, artist="Private Maker", title="Wire [Special Print Edition]", release="PrivateLE26", unit_price=3700, edition_size=10,
+             launch_date="2026-11-12", announce_date="2026-11-23", launch_type="Private"),
+        dict(airtable_id=22, artist="Private Maker", title="Trip [Special Print Edition]", release="PrivateLE26", unit_price=3000, edition_size=10,
+             launch_date="2026-11-12", announce_date="2026-11-23", launch_type="Private"),
+        dict(airtable_id=23, artist="Private Maker", title="Wire", release="PrivateLE26", unit_price=2800, edition_size=75,
+             launch_date="2026-12-10", announce_date="2026-11-23", launch_type="Draw"),
+        dict(airtable_id=24, artist="Private Maker", title="Trip", release="PrivateLE26", unit_price=1800, edition_size=75,
+             launch_date="2026-12-10", announce_date="2026-11-23", launch_type="Draw"),
+        # the same code's private sale four months before the announce: a launch of its own
+        dict(airtable_id=25, artist="Private Maker", title="Early", release="PrivateLE26", unit_price=5000, edition_size=5,
+             launch_date="2026-07-20", announce_date=None, launch_type="Private"),
+        # a draw with no announce on file: the reach is counted from its close
+        dict(airtable_id=26, artist="Bare Maker", title="Plate [Special]", release="BareLE26", unit_price=900, edition_size=10,
+             launch_date="2026-05-01", announce_date=None, launch_type="Private"),
+        dict(airtable_id=27, artist="Bare Maker", title="Plate", release="BareLE26", unit_price=600, edition_size=100,
+             launch_date="2026-06-10", announce_date=None, launch_type="Draw"),
+        # a private record on the draw's own day: one launch as before, read as before
+        dict(airtable_id=28, artist="Same Day", title="Cup [Private]", release="SameLE26", unit_price=900, edition_size=10,
+             launch_date="2026-06-10", announce_date=None, launch_type="Private"),
+        dict(airtable_id=29, artist="Same Day", title="Cup", release="SameLE26", unit_price=600, edition_size=100,
+             launch_date="2026-06-10", announce_date=None, launch_type="Draw"),
+        # originals sold privately ahead of a print draw under its code: another launch (STAGGER_APART)
+        dict(airtable_id=30, artist="Show Seller", title="Canvas", release="SellerLE26", unit_price=20000, edition_size=1,
+             launch_date="2026-11-12", announce_date=None, launch_type="Private", edition_type="OG"),
+        dict(airtable_id=31, artist="Show Seller", title="Print", release="SellerLE26", unit_price=800, edition_size=100,
+             launch_date="2026-12-10", announce_date="2026-11-23", launch_type="Draw"),
+    ]
+    recs = pd.DataFrame(rows)
+    recs["currency"] = "EUR"
+    recs["edition_type"] = recs["edition_type"].fillna("PE")
+    recs["product_type"], recs["price_status"] = "Silkscreen print", "Confirmed"
+    recs["launch_date"] = pd.to_datetime(recs["launch_date"])
+    recs["artist_key"] = recs["artist"].map(P.artist_key)
+    recs["title_key"] = recs["title"].map(P.norm)
+    recs["bundle"] = recs["title"].fillna("").str.contains(P.BUNDLE_RE) | ~(recs["edition_size"] > 0)
+    lf = P.launches(recs)
+
+    mine = lf[lf["airtable_release"] == "PrivateLE26"].sort_values("launch_date")
+    assert len(mine) == 2, mine[["launch_date", "airtable_ids"]]
+    early, launch = mine.iloc[0], mine.iloc[1]
+    assert early["airtable_ids"] == "25" and early["launch_type"] == "Private" and early["closes"] == ["2026-07-20"], early
+    # the four works are one launch of 170, dated and typed by the draw
+    assert set(launch["airtable_ids"].split("|")) == {"21", "22", "23", "24"} and launch["edition_size"] == 170, launch
+    assert launch["launch_date"].date().isoformat() == "2026-12-10" and launch["first_launch_date"].date().isoformat() == "2026-12-10"
+    assert launch["closes"] == ["2026-12-10"] and launch["quarter"] == "2026 Q4" and launch["launch_type"] == "Draw", launch
+    assert launch["launch_value"] == 3700 * 10 + 3000 * 10 + 2800 * 75 + 1800 * 75
+
+    bare = lf[lf["airtable_release"] == "BareLE26"]
+    assert len(bare) == 1 and bare.iloc[0]["edition_size"] == 110 and bare.iloc[0]["closes"] == ["2026-06-10"], bare[["launch_date", "closes"]]
+    same = lf[lf["airtable_release"] == "SameLE26"]
+    assert len(same) == 1 and same.iloc[0]["edition_size"] == 110 and same.iloc[0]["launch_type"] == P._mode(recs.loc[recs["release"] == "SameLE26", "launch_type"])
+    assert (lf["airtable_release"] == "SellerLE26").sum() == 2, lf[lf["airtable_release"] == "SellerLE26"][["launch_date", "airtable_ids"]]
+
+    # the release's products: the specials with the draw's works, their sale
+    # day beside them and no close of their own, so the page closes once
+    keep = P.records_and_launches
+    try:
+        P.records_and_launches = lambda path=None: (recs, lf)
+        out = P.release_products({"release_name": "Private Maker · Multiple · 2026 Q4", "artist": "Private Maker", "title": "Multiple",
+                                  "quarter": "2026 Q4", "announce_date": "2026-11-23", "launch_end": "2026-12-10"})
+    finally:
+        P.records_and_launches = keep
+    got = {p["airtable_id"]: p for p in out["products"]}
+    assert set(got) == {"21", "22", "23", "24"} and sum(p["edition"] for p in got.values()) == 170, out
+    assert got["21"]["launch_date"] is None and got["21"]["private_sale_date"] == "2026-11-12", got["21"]
+    assert got["23"]["launch_date"] == "2026-12-10" and got["23"]["private_sale_date"] is None, got["23"]
+    assert out["launch_date"] == "2026-12-10" and out["announce_date"] == "2026-11-23", out
+    print("private sale ahead of the draw: ok")
+
+
+if __name__ == "__main__" and "test_private_sale_ahead" in globals():
+    test_private_sale_ahead()

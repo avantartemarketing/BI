@@ -13,7 +13,12 @@ import { join } from "node:path";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { matchCampaign, campaignIndex, codesInUse } = require("../server/hubspot.js");
+const { matchCampaign, campaignIndex, codesInUse, emailKind } = require("../server/hubspot.js");
+
+/* ---- the file's Kind: a batch email went at its send date, an automated one
+ * was published at it (the ETL times the early access off the first alone) */
+assert.deepStrictEqual(["BATCH_EMAIL", "AUTOMATED_EMAIL", "AUTOMATED_AB_EMAIL", "LOCALTIME_EMAIL", "", undefined].map(emailKind),
+  ["batch", "automated", "automated", "", "", ""], "HubSpot's email type as the Kind column");
 
 const known = ["ZengFanzhi_LE_26", "AndyWarhol_TL_26", "JuliaSchna_LE_26"];
 
