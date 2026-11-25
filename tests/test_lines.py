@@ -442,7 +442,15 @@ try:
     pp = {**snap_p, **VP["direct_spread"], **VP.get("plan", {})}
     plan_p = pp.get("plan") or {"rows": [], "lands": 0.0, "target": 0.0}
     check(plan_p["target"] == 1200 and pp["edition"]["total"] == 3300, f"the plan's target is the lines' summed, under the edition: {plan_p['target']} of {pp['edition']}")
-    check(close(sum(r["lands"] for r in plan_p["rows"]), plan_p["lands"], 1e-3) and [r["moment"] for r in plan_p["rows"]][-2:] == ["Baseline", "Paid"], "the plan card's rows add up to where it lands")
+    # a plan that reads short of the target carries the gap as a last row, "Not covered" (etl/plan_view.py finish): it lands at
+    # nothing, and with it the rows' plan figures add up to the target
+    own_rows = [r for r in plan_p["rows"] if r["moment"] != "Not covered"]
+    gap_rows = [r for r in plan_p["rows"] if r["moment"] == "Not covered"]
+    check(close(sum(r["lands"] for r in plan_p["rows"]), plan_p["lands"], 1e-3) and [r["moment"] for r in own_rows][-2:] == ["Baseline", "Paid"],
+          f"the plan card's rows add up to where it lands: {[r['moment'] for r in plan_p['rows']]}")
+    check(len(gap_rows) == (1 if plan_p.get("against") == "short" and plan_p.get("notCovered", 0) >= 0.5 else 0)
+          and all(r is plan_p["rows"][-1] and r["lands"] == 0 and close(sum(x["expected"] for x in plan_p["rows"]), plan_p["target"], 0.05) for r in gap_rows),
+          f"a plan that reads short carries its gap as the last row, and the rows then add up to the target: {plan_p.get('against')}, {plan_p.get('notCovered')}")
     cfp = pp["closeForecast"]
     check(close(cfp["pct"], cfp["units"] / 3300, 2e-3) and cfp["lo"] <= cfp["units"] <= cfp["hi"], f"the share at the close is of the edition, inside its range: {cfp['units']}, {cfp['pct']}, {cfp['lo']}-{cfp['hi']}")
     check(close(cfp["scenarios"]["current"]["units"], cfp["units"]), "the close card's default reading is the plan's landing")

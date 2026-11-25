@@ -641,7 +641,8 @@ page needs the timed launches' feeds, which a checkout does not carry.
 
 - **25 November 2026.** The owner asked why Harland Miller's launch read 36 at the close
   against a target of 100 on its announce day, and worked through the model with it. Agreed
-  and built, on the branch `plan-rework` until the before and after is approved: demand
+  and built, and live the same day once the owner had seen the before and after of the
+  seven live draw launches and the one timed launch gathering signups: demand
   counted with pre-orders at 0.95 and plain entries at 0.8 (`plan_model.demand_units`; with
   it counted demand is 0.98 of the units sold outside paid at the median, so the two rates
   close the gap between them); a plan sized on the launches that sold nearest its target at
@@ -655,9 +656,19 @@ page needs the timed launches' feeds, which a checkout does not carry.
   its clicks, with no quiet day between. What each click brings varies from launch to
   launch as much as the quiet day does (x2.5 against x2.6 across the middle half) and is
   told worse from similar launches, and two fifths of the demand outside paid arrives by
-  search and direct, which leave no clicks. Still to build: the plan check as a step before
-  early access (the gap, the ways to close it, an agreed plan and an accepted shortfall as
-  one line), and the view on a launch's page before its first piece goes out.
+  search and direct, which leave no clicks. A plan that reads short carries the gap as a
+  row of its own, "Not covered", so the card's rows still add up to the target. The same
+  reading was applied to a timed launch's signups that day, at the owner's asking
+  (etl/tl_plan.py, which reads them through the same code): its plan is sized on the timed
+  launches that drew nearest its signup target at a similar price, which tells the signups
+  outside paid to within about 40% against 59% the older way on 40 launches, each read from
+  those that opened before it; the pull is eased in as on a draw launch, 63% against 71%
+  over the announce day and the next and no worse later; the card gives the same verdict
+  and the same row. The two payment rates do not apply there: a signup is not an entry.
+  The page's switch is as it was (the paragraph at the head of this file): Time is the
+  default and Plan is this view. Still to build: the plan check as a step before early
+  access (the gap, the ways to close it, an agreed plan and an accepted shortfall as one
+  line), and the view on a launch's page before its first piece goes out.
 
 - **16 November 2026.** The brief (section 1). The first study on 64 launches, then the
   feeds, the price list and the back-test, on 66. The strength kept at 0.5.
