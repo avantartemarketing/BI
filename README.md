@@ -707,9 +707,10 @@ moment the two Google variables are set, those routes answer 404.
 The dashboard's data for a Claude outside the dashboard. `POST /mcp` is a Model Context
 Protocol server (`server/mcp/index.js`): a colleague in claude.ai or Claude Code adds it
 as a connector and asks questions of the same data, without the repository and without a
-key of their own. It reads; it cannot change a target, an input, a page or the data.
+key of their own. It reads, and it can change one thing: which of a limited edition's works
+are ticked (`set_works`, below). It cannot change a target, a date, a price, a page or the data.
 
-**What it offers.** Eight tools. `start_here` hands over the guide
+**What it offers.** Eight tools that read, and one that writes. `start_here` hands over the guide
 (`docs/CONNECTOR_GUIDE.md`: which tool answers what, the BigQuery tables and columns, the
 channel groups, how Untracked and Direct are read, worked queries, the traps); keep that
 file true, it is the context a chat has. Five are the Agent's read-only tools, unchanged:
@@ -717,6 +718,17 @@ file true, it is the context a chat has. Five are the Agent's read-only tools, u
 BigQuery: `bigquery_tables` (the tables the dashboard is built on and any table's
 columns, by name, since the service account is granted tables and cannot list the
 dataset) and `bigquery_sql` (one SELECT, through `query()` in `server/bigquery.js`).
+
+**The one write.** `set_works` ticks or unticks works of a limited edition release, as the
+tick on the Target setting tab's works grid does: a work left out stays on the grid and counts
+nothing. The owner asked for it on 25 November 2026, when six plinths Airtable files beside
+Ai Weiwei's works had each been read as an edition of 300 to sell (a target of 3,092 where
+1,292 was meant) and could be unticked only from the dashboard. It takes only works the
+release already has, will not leave a release with none ticked, changes no other setting,
+writes the save to the targets log as the connector's (`actor: "connector"`), and rebuilds
+that one page. It is marked as a write, so a client asks its user before it runs. Whoever
+holds the connector's token can use it, as with everything else on the connector; rotating
+`MCP_TOKEN` removes it from everyone. `node tests/set_works.mjs` runs it end to end.
 
 Through the connector `get_release` takes two more things the Agent's does not: `targets_from:
 "plan"` reads a live draw launch as its page shows it on Plan (docs/PLAN_MODEL.md 6), and

@@ -40,7 +40,7 @@ app.use(express.json());
 // outside it, as an MCP server at /mcp. It is registered ahead of the session
 // gate because a Claude has no browser session: its own token is what lets a
 // request in (MCP_TOKEN; unset, the route answers 404).
-require("./mcp").install(app, { ROOT, DATA, SOURCES: process.env.SOURCES_PATH, readSnapshot: (id) => readSnapshot(id) });
+require("./mcp").install(app, { ROOT, DATA, SOURCES: process.env.SOURCES_PATH, readSnapshot: (id) => readSnapshot(id), setWorks: (args) => setWorksTicked(args) });
 
 // password login (avantarte.com only) - installs /login, /auth/* and the gate;
 // every route registered after this line requires a signed session cookie.
@@ -642,6 +642,62 @@ app.post("/api/inputs/:id", route(async (req, res) => {
   const build = startBuild(id, false, creating);
   res.json({ queued: true, created: creating, build: publicBuild(build), storage: storageInfo() });
 }));
+
+/* The connector's one write (server/mcp/index.js set_works): tick or untick
+ * works of a limited edition release, which is the tick on the Target setting
+ * tab's works grid and nothing else. A work left out stays on the grid and
+ * counts nothing (docs 1.6). Asked for by the owner on 25 November 2026, when
+ * six plinths Airtable files beside Ai Weiwei's works had each been read as
+ * an edition of 300 to sell and nobody outside the dashboard could untick
+ * them. It takes only works the release already has, refuses to leave none
+ * ticked, keeps every other setting as it was, is written to the targets log
+ * as the connector's, and rebuilds the one page as a save on the tab does. */
+async function setWorksTicked({ id: rawId, works, ticked } = {}) {
+  const refuse = (message) => { throw Object.assign(new Error(message), { kind: "works-refused" }); };
+  const id = String(rawId || "").replace(/[^a-z0-9_]/g, "");
+  if (!id) refuse("Give a release id (from list_releases).");
+  if (typeof ticked !== "boolean") refuse("ticked must be true (count the works in) or false (leave them out).");
+  const ids = [...new Set((Array.isArray(works) ? works : []).map((w) => String(w === null || w === undefined ? "" : w).trim()).filter(Boolean))];
+  if (!ids.length || ids.length > 30) refuse("works is a list of 1 to 30 Airtable record ids, as get_release shows them under economics.products (airtable_id).");
+  const doc = readInputsDoc();
+  const current = doc.releases[id];
+  if (!current) refuse(`${id} has no targets set: set it up on the Target setting tab first.`);
+  if (current.type === "TL") refuse("A timed launch's works are ticked on its own Target setting tab; this is for limited editions.");
+  if (!fs.existsSync(path.join(DATA, "releases", `${id}.json`))) refuse(`${id} has no page built yet.`);
+  const sourced = sourcedFor(doc, id);
+  const known = new Map(((sourced.airtable || {}).products || []).map((p) => [String(p.airtable_id), String(p.name || "")]));
+  for (const p of current.products || []) if (p && p.airtable_id && !known.has(String(p.airtable_id))) known.set(String(p.airtable_id), String(p.name || ""));
+  const unknown = ids.filter((w) => !known.has(w));
+  if (unknown.length) refuse(`not works of ${id}: ${unknown.join(", ")}. Its works are ${[...known].map(([k, n]) => `${k} (${n})`).join(", ") || "none"}.`);
+  const products = (current.products || []).map((p) => ({ ...p }));
+  for (const w of ids) {
+    let entry = products.find((p) => p && String(p.airtable_id || "") === w);
+    if (!entry) {
+      entry = { airtable_id: w, name: "" };
+      for (const [f] of PRODUCT_FIELDS) entry[f] = null;
+      products.push(entry);
+    }
+    if (ticked) delete entry.excluded; else entry.excluded = true;
+  }
+  const next = { ...current, products };
+  const { resolveProducts, releaseEconomics } = await economicsPromise;
+  const resolved = resolveProducts((sourced.airtable || {}).products || [], products, doc.benchmarks || {});
+  if (resolved.length && resolved.every((p) => p.excluded)) refuse("that would leave every work unticked: at least one has to count.");
+  const econ = releaseEconomics(resolved, next.legacy_economics || null, doc.benchmarks || {});
+  if (!next.legacy_economics && !(econ.edition_size > 0)) refuse("that would leave no work with an edition.");
+  next.saved_at = new Date().toISOString();
+  writeSaved(id, next);
+  fs.appendFileSync(TARGETS_LOG, JSON.stringify({ ts: next.saved_at, releaseId: id, inputs: next, actor: "connector", works: ids, ticked }) + "\n");
+  const build = startBuild(id, false, false);
+  return {
+    saved: true, release: id, [ticked ? "ticked" : "leftOut"]: ids.map((w) => ({ airtable_id: w, name: known.get(w) })),
+    editionOfTickedWorks: releaseEconomics(resolved, null, doc.benchmarks || {}).edition_size || null,
+    note: next.legacy_economics
+      ? "Saved, but this release still runs on figures typed for the release as a whole, from before works were sized one by one, so its edition and target do not follow the tick until those are cleared on the Target setting tab."
+      : "Saved. The page is being rebuilt, which takes about a minute: read it again with get_release to see the new target.",
+    build: publicBuild(build),
+  };
+}
 
 /* A timed launch's basket (docs/TL_SPEC.md §8): a ready basket the launch's
  * page lists (etl/tl.py ready_baskets), or a bespoke list of launches the TL

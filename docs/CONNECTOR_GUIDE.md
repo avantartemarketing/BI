@@ -6,7 +6,8 @@ grouped and read, and the traps that change answers. The connector's `start_here
 returns this file, with the list of the dashboard's tables and documents after it
 (`server/mcp/index.js`). Keep it accurate when a feed or a convention changes.
 
-Everything here is read-only. No tool changes a target, an input, a page or the data.
+Everything here reads, with one exception: `set_works` ticks or unticks works of a limited
+edition release (section 2). No tool changes a target, a date, a price, a page or the data.
 
 ## 1. What this is
 
@@ -32,6 +33,16 @@ and the BigQuery tables underneath, back to 2019.
 | Across releases, from what the dashboard already aggregates: units paid by day and channel, ad spend, email sends, posts, past launches | `describe_table`, then `query_table` |
 | Anything over the whole history, by channel, by launch or by person: trends over years, funnels, cohorts, repeat buyers | `bigquery_sql` (and `bigquery_tables` for a table's columns) |
 | How a figure is worked out, what a term means | `read_docs` |
+
+`set_works` is the one tool that changes the dashboard, and only on a person's say-so: it
+leaves works out of a limited edition release, or counts them in again, as the tick on the
+Target setting tab's works grid does. Read the release's works first (`get_release`,
+`economics.products`: each has an `airtable_id`, a name, an edition and whether it is
+`excluded`), name the works back to the person, and only then call it with the release id,
+the `airtable_id` values and `ticked: false` to leave them out. A work left out counts
+nothing towards the edition or the target. The page is rebuilt in about a minute; read it
+again to confirm. It does not set editions, prices, dates or targets: those are the
+dashboard's Target setting tab's.
 
 The settings are the saved inputs as the Target setting tab left them (or the repository's
 defaults for a release nobody has edited there), and `settings.from` says which. They are
