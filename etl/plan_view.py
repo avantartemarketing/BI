@@ -187,7 +187,7 @@ def page_price(page: dict) -> float | None:
             num, den = num + float(price) * float(units), den + float(units)
     if den > 0:
         return num / den
-    v = econ.get("unitPrice")
+    v = econ.get("unitPrice") or econ.get("unit_price_eur")      # a draw launch's page, then a timed launch's
     return float(v) if v else None
 
 
@@ -467,9 +467,9 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None, spe
     # ratio is raised to REACT_BASE plus the share of the plan's value already in, capped at 1 (the back-test's
     # reading: no worse than full strength at any point, and 43% against 49% before the announce).
     plan_all = sum(float(level * total(val0, g).sum()) for g in groups)
-    # (a draw launch's reading: a timed launch's signups, read through etl/tl_plan.py's own spec, keep full strength
-    # until they have been read the same way)
-    strength = float(min(1.0, REACT_BASE + (exp_all / plan_all if plan_all > 0 else 0.0))) if spec is DRAW else 1.0
+    # A timed launch's signups, read the same way on 40 launches, are told no worse at any point and better over
+    # the announce (63% against 71%), so its view (etl/tl_plan.py) takes the same strength.
+    strength = float(min(1.0, REACT_BASE + (exp_all / plan_all if plan_all > 0 else 0.0)))
     raw_all = float(np.clip(now_all / exp_all, *PULL_BAND)) if exp_all >= MIN_EXPECTED else 1.0
     pull_all = raw_all ** strength
     pull, out = {}, {}

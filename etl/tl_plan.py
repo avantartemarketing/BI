@@ -257,6 +257,13 @@ def finish(page: dict, ov: dict) -> None:
             for k in ("expected", "in", "toCome"):
                 x[k] = round(float(x[k]), 2)
     tot = {k: sum(r[k] for r in rows) for k in ("expected", "in", "toCome", "lands")}
+    # a plan that reads short of the signup target carries the gap as a row of its own, as a draw launch's does
+    # (etl/plan_view.py finish): what no piece of the plan is there to bring, on the similar launches' reading
+    against = ov["meta"].get("against")
+    not_covered = round(max(target - tot["expected"], 0.0), 2) if against == "short" else 0.0
+    if not_covered >= 0.5:
+        rows.append({"moment": "Not covered", "expected": not_covered, "in": 0.0, "toCome": 0.0, "lands": 0.0, "pieces": [],
+                     "note": "What the plan as written leaves of the signup target, read against launches that drew this many."})
     started = tot["in"] > 0 or w["today"] >= pd.Timestamp(w["first"])
     lands = tot["lands"] if started else tot["expected"]
     by_today = sum(float(c.get("exp") or 0.0) for c in page.get("channels") or [])
@@ -265,7 +272,8 @@ def finish(page: dict, ov: dict) -> None:
                  "statusPct": round(now_all / by_today - 1.0, 4) if by_today > 0 else 0.0, "ok": lands >= target * (1 - V.SHORT_TOLERANCE)})
     lo, hi = ov["meta"]["organicRange"]
     paid_plan = float((pc or {}).get("target") or 0.0)
-    basis = {"artist": f"the artist's last {ov['meta']['levelN']} timed launches", "basket": f"the {ov['meta']['levelN']} launches the page is benchmarked on",
+    basis = {"similar": f"the {ov['meta']['levelN']} timed launches that drew nearest this many signups at a similar price",
+             "artist": f"the artist's last {ov['meta']['levelN']} timed launches", "basket": f"the {ov['meta']['levelN']} launches the page is benchmarked on",
              "all": "every past timed launch"}[ov["meta"]["levelBasis"]]
     page["method"] = "plan"
     page["plan"] = {"state": "live" if started else "start", "target": target, "expected": round(tot["expected"], 2), "in": round(tot["in"], 2), "toCome": round(tot["toCome"], 2),
@@ -273,6 +281,7 @@ def finish(page: dict, ov: dict) -> None:
                     "landsRecommended": round(lands - paid["toCome"] + paid["toComeAtBudget"], 1) if paid.get("toComeAtBudget") is not None else None,
                     "paidToday": round(paid["spendToday"], 2), "paidRecommended": round(paid["budgetPace"], 2) if paid.get("budgetPace") is not None else None,
                     "rows": rows, "pull": round(ov["meta"]["pullAll"], 3), "level": round(ov["meta"]["level"], 3), "levelBasis": ov["meta"]["levelBasis"],
+                    "against": against, "notCovered": not_covered, "of": "signups", "similar": ov["meta"].get("similar"), "similarPaidShare": ov["meta"].get("similarPaidShare"),
                     "notes": [f"What each email and post is expected to bring is sized on {basis}.", "Still to come follows how each channel is responding so far.",
                               "Paid is read from the spend, not the calendar: today's spend held to the open, at what a signup will cost."]}
     found = [dict(c, units=V._whole(c["units"]) if c.get("units") else None) for c in (changes(w, page, paid) if started else [])]

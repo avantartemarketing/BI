@@ -216,12 +216,21 @@ def write_prices(panel: dict, th: np.ndarray, d: dict) -> None:
         for g in ORGANIC:
             tot[g] += float(x["G"][g][q].sum())
     split = {g: round(v / sum(tot.values()), 4) for g, v in tot.items()}
+    # each launch's level, and what a new launch's plan is sized on (etl/plan_view.py similar_launches): the
+    # signups it drew outside paid (`could`: an open edition is capped by nothing) and through paid (`sold_paid`),
+    # its price, and `level`, the signups outside paid for a quiet day of its plan. The names are the draw
+    # launches' own, so one reading sizes both; here every one of them counts signups.
+    price = d["panel"].set_index("release_name")["unit_price_eur"]
     quiet = []
     for n in names:
         x = panel[n]
         v = float(B.mu(x, th).sum())
         if v > 0:
-            quiet.append({"name": n, "artist": n.split(" \u00b7 ")[0], "close": str(pd.Timestamp(x["close"]).date()), "quiet": round(float(x["y"].sum()) / v, 4), "demand": round(float(x["y"].sum()), 1)})
+            y, paid = float(x["y"].sum()), float(x["paid"].sum())
+            pe = pd.to_numeric(price.get(n), errors="coerce")
+            quiet.append({"name": n, "artist": n.split(" \u00b7 ")[0], "close": str(pd.Timestamp(x["close"]).date()), "quiet": round(y / v, 4), "demand": round(y, 1),
+                          "weight": round(v, 2), "sold": round(y + paid, 1), "sold_paid": round(paid, 1), "could": round(y, 1), "level": round(y / v, 4),
+                          "price": float(pe) if pd.notna(pe) and pe > 0 else None})
     sends = pd.concat([x["sends"] for x in panel.values()], ignore_index=True)
     rows = list(paid_rows(panel, d).values())
     up = {}
