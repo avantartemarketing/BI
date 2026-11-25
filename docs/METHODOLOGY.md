@@ -1094,10 +1094,10 @@ The card is shown to admins only while the rules are new.
   refresh with the other orders figures.
 - **Daily funnel** (sessions, entries, units by channel × day) and **Meta spend**
   are pulled live from BigQuery (the LE Funnel Report's daily export and the Meta
-  ads insights table) on boot and every hour. The *LE Paid Calculator* Google
-  Sheet stands in while BigQuery is not configured and is tried when a BigQuery
-  pull fails, in which case the header reads "Sources stale", since the sheet's
-  copy is cut at 50,000 rows a tab.
+  ads insights table) on boot and every hour. BigQuery is the only source: when
+  a pull fails the previous numbers keep serving and the header reads "Sources
+  stale". The *LE Paid Calculator* Google Sheet is no longer read (25 November
+  2026).
   The header's "data through" day is the newest day in the feed, which while the
   feed is live is today, part-observed: the actuals run through it and the header says
   "today so far". The paid pacing rules, the run rates and whether a campaign is complete

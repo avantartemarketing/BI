@@ -1,18 +1,12 @@
 /* Live data ingestion + the refresh scheduler.
  *
- * Two paths write the same two files. BigQuery is the origin and is preferred
- * when a key is configured (server/bigquery.js); this Google Sheet path is the
- * fallback, and is capped at 50,000 rows per tab by the sheet export itself.
- *
- * Pulls two tabs and rewrites the ETL inputs, then reruns the ETL so the
- * dashboard serves fresh snapshots without a redeploy:
- *   "Metabase LE Funnel Import by Day"  -> sources/across_time.csv
- *   "meta_ads_insights_Extract"         -> data/spend_daily.csv
- *
- * Auth: a Google service account (share the sheet with its client_email as
- * Viewer, put the key JSON in GOOGLE_SERVICE_ACCOUNT_JSON). Without a key it
- * falls back to the public CSV export, which only works while the sheet is
- * link-shared. The ETL needs python3 + pandas on PATH (see render.yaml).
+ * The funnel (sources/across_time.csv) and Meta spend (data/spend_daily.csv)
+ * come from BigQuery alone (server/bigquery.js). The Google Sheet fallback was
+ * removed on 25 November 2026: when BigQuery is off or fails, the previous
+ * files keep serving and the header reads stale. This file keeps the row
+ * converters BigQuery's writers share, the other feeds (HubSpot, Notion,
+ * Airtable) and the ETL rerun. The ETL needs python3 + pandas on PATH (see
+ * render.yaml).
  *
  * The refresh runs on boot and every REFRESH_MINUTES (default 60), and can be
  * forced with POST /api/refresh. Failures leave the previous snapshots serving. */
@@ -22,63 +16,6 @@ const path = require("path");
 const { execFile } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
-const SHEET_ID = process.env.SHEET_ID || "147xGRf0fKfsdgh_AqHqsRiajdd7bQANrhbipCbzby_o";
-const FUNNEL_TAB = process.env.SHEET_FUNNEL_TAB || "Metabase LE Funnel Import by Day";
-const SPEND_TAB = process.env.SHEET_SPEND_TAB || "meta_ads_insights_Extract";
-// the pulled feeds' directory, on the persistent disk when SOURCES_PATH says so (server/bigquery.js)
-const SOURCES = process.env.SOURCES_PATH || path.join(ROOT, "sources");
-const ACROSS_TIME = path.join(SOURCES, "across_time.csv");
-const SPEND_DAILY = path.join(ROOT, "data", "spend_daily.csv");
-
-// ---------------------------------------------------------------- auth
-// The JWT/RS256 exchange lives in googleAuth.js - BigQuery needs the same
-// machinery with a different scope, and one cache keyed only by account would
-// hand the wrong token to whichever feed asked second.
-const googleAuth = require("./googleAuth");
-const serviceAccount = () => googleAuth.serviceAccount("GOOGLE_SERVICE_ACCOUNT_JSON");
-const accessToken = (sa) => googleAuth.accessToken(sa, "sheets");
-
-// ---------------------------------------------------------------- fetch
-
-async function listTabs(token) {
-  const res = await fetch(
-    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties.title`,
-    { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) return [];
-  const body = await res.json().catch(() => ({}));
-  return (body.sheets || []).map((s) => s.properties && s.properties.title).filter(Boolean);
-}
-
-/* Returns the tab as an array of row arrays (strings/numbers; dates as Sheets
- * serial numbers when authenticated, locale-formatted strings via the public
- * fallback - normDate handles both). */
-async function fetchTab(tab, token) {
-  if (token) {
-    const range = encodeURIComponent(`'${tab.replace(/'/g, "''")}'`);
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}` +
-      "?majorDimension=ROWS&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=SERIAL_NUMBER";
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      let hint = "";
-      if (res.status === 400) hint = ` - tabs on the sheet: ${(await listTabs(token)).join(" | ")}`;
-      if (res.status === 403) hint = " - is the sheet shared with the service account email?";
-      throw new Error(`Sheets API ${res.status} for tab "${tab}"${hint} ${text.slice(0, 200)}`);
-    }
-    const body = await res.json();
-    return body.values || [];
-  }
-  // public fallback (sheet must be link-shared)
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
-  const res = await fetch(url, { redirect: "follow" });
-  const text = await res.text();
-  if (!res.ok || text.startsWith("<")) {
-    throw new Error(`public CSV export failed for tab "${tab}" (${res.status}) - ` +
-      "set GOOGLE_SERVICE_ACCOUNT_JSON or keep the sheet link-shared");
-  }
-  return parseCsv(text);
-}
-
 function parseCsv(text) {
   const rows = [];
   let row = [], field = "", inQ = false;
@@ -347,11 +284,10 @@ async function refresh({ full = false } = {}) {
     const out = { ok: true };
     let updated = false;
 
-    // BigQuery is the same data without the sheet's 50k-row export cap, so it
-    // wins when configured. If it fails we still try the sheet - a shorter
-    // history beats a frozen one - but ok stays false so the header says stale
-    // rather than quietly serving the truncated fallback as if nothing broke.
-    let bqDone = false, bqSpend = false;
+    // BigQuery is the only source for the funnel and Meta spend. The Google
+    // Sheet fallback was removed on 25 November 2026 at the repository
+    // owner's request: when BigQuery is off or fails, the previous files keep
+    // serving and the header reads stale, rather than swapping in the sheet.
     const bq = require("./bigquery");
     let bqOn = false;
     try { bqOn = !!bq.configured(); } catch (e) {
@@ -366,53 +302,21 @@ async function refresh({ full = false } = {}) {
         // left in place rather than blanked
         const pulled = await bq.pull({ full });
         out.bigquery = pulled.summary;
-        bqDone = true;
-        bqSpend = pulled.spendRows !== null;
         updated = true;
+        if (pulled.spendRows === null && process.env.BQ_SPEND !== "off") {
+          out.spend = "spend stale - BigQuery denies or skips the spend table (no sheet fallback)";
+          out.ok = false;
+          console.error("sheets: " + out.spend);
+        }
       } catch (e) {
         out.bigquery = "bigquery failed: " + String((e && e.message) || e).slice(0, 300);
         out.ok = false;
         console.error("sheets: " + out.bigquery);
       }
-    }
-
-    if (bqDone && bqSpend) {
-      out.sheet = "skipped - BigQuery is the source";
-    } else if (bqDone) {
-      // BigQuery covered the funnel but the account cannot see the spend
-      // table. Take spend from the sheet's tab so paid spend keeps refreshing,
-      // rather than freezing at whatever the last pull left behind.
-      try {
-        const sa = serviceAccount();
-        const token = sa ? await accessToken(sa) : null;
-        const sp = convertSpend(await fetchTab(SPEND_TAB, token));
-        writeAtomic(SPEND_DAILY, sp.csv);
-        out.sheet = `spend only: ${sp.rows} rows from the sheet (${token ? "service-account" : "public-link"}); ` +
-          "funnel from BigQuery";
-      } catch (e) {
-        // paid spend is stale from both sources - say so rather than reading fresh
-        out.sheet = "spend stale - BigQuery denies the spend table and the sheet fallback failed: " +
-          String((e && e.message) || e).slice(0, 200);
-        out.ok = false;
-        console.error("sheets: " + out.sheet);
-      }
-    } else try {
-      const sa = serviceAccount();
-      const token = sa ? await accessToken(sa) : null;
-      const [funnel, spend] = await Promise.all([
-        fetchTab(FUNNEL_TAB, token), fetchTab(SPEND_TAB, token),
-      ]);
-      const at = convertAcrossTime(funnel);
-      const sp = convertSpend(spend);
-      if (at.rows < 100) throw new Error(`funnel tab suspiciously small (${at.rows} rows) - not overwriting`);
-      writeAtomic(ACROSS_TIME, at.csv);
-      writeAtomic(SPEND_DAILY, sp.csv);
-      out.sheet = `funnel ${at.rows} rows, spend ${sp.rows} rows (${token ? "service-account" : "public-link"})`;
-      updated = true;
-    } catch (e) {
-      out.sheet = "sheet failed: " + String((e && e.message) || e).slice(0, 300);
+    } else if (!out.bigquery) {
+      out.bigquery = "bigquery failed: not configured, and the Google Sheet is no longer used - previous files keep serving";
       out.ok = false;
-      console.error("sheets: " + out.sheet);
+      console.error("sheets: " + out.bigquery);
     }
 
     try {
@@ -522,7 +426,7 @@ function alertDecision(state, result, now) {
 }
 /* What is wrong, one line per failing feed or step, as the status words it. */
 function troubleLines(result) {
-  const feeds = [["BigQuery", result.bigquery], ["Sheet", result.sheet], ["Email", result.emails],
+  const feeds = [["BigQuery", result.bigquery], ["Spend", result.spend], ["Email", result.emails],
     ["Notion", result.notion], ["Airtable", result.airtable], ["ETL", result.etl]];
   const lines = feeds.filter(([, v]) => /failed|misconfigured|stale/i.test(String(v || "")))
     .map(([k, v]) => `${k}: ${String(v).slice(0, 240)}`);
@@ -580,7 +484,7 @@ function startScheduler() {
   }
   const tick = (label) => refresh()
     .then((r) => console.log(`sheets: ${label} refresh ${r.ok ? "ok" : "with failures"} - ` +
-      `${r.bigquery ? r.bigquery + " | " : ""}${r.sheet} | ${r.emails} | ${r.notion} | ` +
+      `${r.bigquery ? r.bigquery + " | " : ""}${r.spend ? r.spend + " | " : ""}${r.emails} | ${r.notion} | ` +
       `${r.commsPlan ? r.commsPlan + " | " : ""}${r.audiences ? r.audiences + " | " : ""}` +
       `${r.tookMs}ms | ${r.etl}`))
     .catch((e) => console.error(`sheets: ${label} refresh crashed - ${e.message}`));
@@ -596,7 +500,7 @@ function startScheduler() {
     setTimeout(() => tick("scheduled").finally(schedule), mins * 60 * 1000).unref();
   };
   setTimeout(() => tick("boot").finally(schedule), 8000);
-  console.log(`sheets: live refresh every ${refreshIntervalMinutes(readIndexDoc())}m from sheet ${SHEET_ID.slice(0, 8)}…`);
+  console.log(`sheets: live refresh every ${refreshIntervalMinutes(readIndexDoc())}m from BigQuery`);
 }
 
 module.exports = {

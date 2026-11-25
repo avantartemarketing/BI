@@ -150,6 +150,10 @@ for (const t of list) {
 // the Agent's own definitions are untouched by the connector's wording (its prompt cache rests on them)
 assert.match(TOOL_DEFS.find((t) => t.name === "get_release").description, /The reader's Direct display/);
 assert.doesNotMatch(list.find((t) => t.name === "get_release").description, /reader/);
+// the connector alone offers the plan-based view and the saved target settings; the Agent's definition does not
+assert.deepStrictEqual(list.find((t) => t.name === "get_release").inputSchema.properties.targets_from.enum, ["time", "plan"]);
+assert.strictEqual(list.find((t) => t.name === "get_release").inputSchema.properties.settings.type, "boolean");
+assert.strictEqual(TOOL_DEFS.find((t) => t.name === "get_release").input_schema.properties.settings, undefined);
 assert.match(list.find((t) => t.name === "describe_table").description, /units_paid/);
 
 // ---- the guide, and the Agent's tools on the committed data
@@ -165,6 +169,9 @@ assert.ok(JSON.stringify(releases).includes("warhol_le_26"));
 const page = JSON.parse((await s.call("get_release", { id: "warhol_le_26", fields: ["hero"] })).text);
 assert.match(page.display, /^Direct spread/, "the page's default display, with no reader to ask");
 assert.ok(page.fields.hero);
+const withSettings = JSON.parse((await s.call("get_release", { id: "warhol_le_26", fields: ["hero"], targets_from: "plan", settings: true })).text);
+assert.match(withSettings.display, /plan-based view/);
+assert.ok(withSettings.settings && typeof withSettings.settings.from === "string", "the saved settings come back when asked for");
 const byChannel = JSON.parse((await s.call("query_table", { table: "units_paid", filters: [{ column: "release", op: "contains", value: "warhol" }], group_by: ["channel"], metrics: [{ fn: "sum", column: "units_paid" }] })).text);
 assert.ok(byChannel.rows.length > 1);
 assert.ok(JSON.parse((await s.call("read_docs", {})).text));
