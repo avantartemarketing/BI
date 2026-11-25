@@ -726,6 +726,11 @@ def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
     demand = tot["lands"] if started else tot["expected"]      # where the plan lands: demand, which a strong plan takes past the edition
     lands = min(demand, ceiling)                                  # ... and what the page's other cards can count: the edition is the ceiling
     by_today = sum(float(c.get("exp") or 0.0) for c in page.get("channels") or [])
+    # a plan that reads short carries the gap as a line of its own, so the rows still add up to the target: what
+    # no piece of the plan is there to bring, on the similar launches' reading
+    if ov["meta"].get("against") == "short" and target - tot["expected"] >= 0.5:
+        rows.append({"moment": "Not covered", "expected": round(target - tot["expected"], 2), "in": 0.0, "toCome": 0.0, "lands": 0.0, "pieces": [],
+                     "note": "What the plan as written leaves of the target, read against launches that sold this many."})
     hero = page.setdefault("hero", {})
     now_all = float(hero.get("now") or tot["in"])
     hero.update({"projected": round(lands), "expectedToday": round(by_today), "delta": round(now_all - by_today),
