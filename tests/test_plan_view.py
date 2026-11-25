@@ -132,6 +132,47 @@ def test_start_level():
     assert V.start_level(PRICES, "Test Artist", T("2025-09-01"))["n"] == 2
 
 
+def test_similar_launches():
+    """A plan is sized on the launches that sold nearest its target at a similar price, not on the artist's own
+    last launches: the new launch is matched on its target, a past one on what it sold (or could have sold)."""
+    rows = [{"name": f"L{i} \u00b7 W \u00b7 2026 Q1", "artist": f"L{i}", "close": f"2026-0{1 + i % 6}-10", "quiet": 1.0, "demand": 100.0, "weight": 100.0,
+             "sold": s, "sold_paid": pd_, "could": s - pd_, "level": (s - pd_) / 100.0, "edition": float(s), "price": pr, "entered": float(s)}
+            for i, (s, pd_, pr) in enumerate([(100, 0, 1000), (110, 10, 1100), (90, 0, 900), (105, 5, 1000), (95, 0, 1200), (100, 20, 950), (120, 0, 1000), (80, 0, 1000),
+                                              (1000, 0, 500), (1200, 0, 500), (20, 0, 8000), (25, 0, 9000), (2000, 0, 300), (15, 0, 10000)])]
+    pr = dict(PRICES, quiet=rows)
+    near = V.similar_launches(pr, ANN, 100.0, 1000.0)
+    assert len(near) == V.SIMILAR and near["sold"].between(80, 120).all(), "the eight that sold about 100 at about 1,000"
+    lv = V.start_level(pr, "L0", ANN, target=100.0, price=1000.0)
+    assert lv["basis"] == "similar" and lv["n"] == 8
+    close_to(lv["level"], float(np.median([1.0, 1.0, 0.9, 1.0, 0.95, 0.8, 1.2, 0.8])))
+    assert lv["range"] == (0.8, 1.0), "the lowest and the highest of them are left out of the range"
+    # no target or price, or a price list fitted before sales were kept on it: the older reading stands
+    assert V.start_level(pr, "L0", ANN)["basis"] != "similar"
+    assert V.start_level(PRICES, "Test Artist", ANN, target=100.0, price=1000.0)["basis"] == "artist"
+    # the artist's own record is shown, and moves no figure
+    assert V.own_record(pr, "L0", ANN) == [{"name": rows[0]["name"], "close": rows[0]["close"], "edition": 100.0, "sold": 100, "cover": 1.0}]
+
+
+def test_planned_size():
+    """An email still to come: the lists HubSpot names once it is built, else the campaign's number in Notion for
+    its announcement, else the usual audience for its kind."""
+    camps = pd.DataFrame({"campaign_code": [CODE], "email_audience": ["70000"]})
+    usual = {"announce": 11000.0, "last_chance": 5000.0}
+    assert V.planned_size(T("2026-09-01"), "announce", pd.DataFrame(), [CODE], {}, camps, CODE, usual) == (70000.0, "notion")
+    assert V.planned_size(T("2026-09-24"), "last_chance", pd.DataFrame(), [CODE], {}, camps, CODE, usual) == (5000.0, "usual")
+    built = pd.DataFrame([{"name": f"010926_GEN_{CODE} - Announcement (LE)", "campaign": CODE, "code": CODE, "kind": "announce", "went": False, "day": T("2026-09-01"), "lists_in": "7|8"}])
+    assert V.planned_size(T("2026-09-01"), "announce", built, [CODE], {"7": 40000.0, "8": 5000.0}, camps, CODE, usual) == (45000.0, "hubspot")
+    assert V.planned_size(T("2026-09-01"), "announce", built, [CODE], {}, camps, CODE, usual)[1] == "notion", "no list sizes: HubSpot cannot say"
+
+
+def test_demand_units():
+    """A pre-order pays at 0.95 and a plain entry at 0.8; a row's eligible units are split by its share of pre-orders."""
+    g = pd.DataFrame({"Draw_Entries": [10, 10, 0], "Preorder_App": [0, 5, 0], "Draw_Entries_Eligible_Units": [10.0, 10.0, 0.0], "Product_Units_Private_Room": [0.0, 1.0, 2.0]})
+    y = P.demand_units(g)
+    close_to(y[0], 8.0); close_to(y[1], 10 * 0.875 + 1.0); close_to(y[2], 2.0)
+    close_to(P.demand_units(g.drop(columns=["Draw_Entries", "Preorder_App"]))[1], 9.0)      # a file without the counts: every unit at the entry rate
+
+
 def test_qualifies():
     c, at = ctx(), funnel()
     assert V.override(page(), at, GROUP_OF, c) is not None

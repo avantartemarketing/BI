@@ -65,6 +65,7 @@ MIN_SEEN = 10.0            # the page's units against the study's are read once 
 CONV_BAND = (0.7, 1.5)     # ... and held within this
 MIN_EXPECTED = 5.0         # a channel's own pull is read once the plan expected this many units of it by today
 PULL_BAND = (0.3, 2.0)     # how far a channel may run from its plan and still be read as running so
+REACT_BASE = 0.3           # how strongly results so far move what is still to come before any of the plan is in (override)
 OWN_LAUNCHES = 3           # the artist's last launches a new plan is sized on
 MIN_OWN = 2                # ... when the artist has at least this many
 MIN_BASKET = 3             # else the basket's launches, when this many have a size on file
@@ -168,11 +169,92 @@ def phase_of(row, announce, days: int) -> str:
     return PHASES[0] if t < 0 else PHASES[1] if t <= 1 else PHASES[3] if t >= days - 2 else PHASES[2]
 
 
-def start_level(prices: dict, artist: str, announce, members: list[str] | None = None) -> dict:
-    """How big a quiet day is for a launch before it has results of its own, in
-    the study's units: the artist's own last launches when there are enough,
-    else the launches the page is benchmarked on, else every launch. The range
-    is the weakest and strongest of those read (the middle half, off every launch)."""
+SIMILAR = 8                 # the launches a new plan is sized on: those that sold nearest its target at a similar price
+SIMILAR_MONTHS = 18         # ... among the launches closed in this many months, when there are SIMILAR_POOL of them (plans have grown heavier)
+SIMILAR_POOL = 12
+
+
+def page_price(page: dict) -> float | None:
+    """A launch's price in euros for finding its like: its works' prices
+    weighted by the units each is asked to sell, else the page's one price."""
+    econ = page.get("economics") or {}
+    num = den = 0.0
+    for p in econ.get("products") or []:
+        if not isinstance(p, dict) or p.get("excluded"):
+            continue
+        price, units = p.get("unit_price_eur") or p.get("unit_price"), p.get("target_units") or p.get("edition")
+        if price and units:
+            num, den = num + float(price) * float(units), den + float(units)
+    if den > 0:
+        return num / den
+    v = econ.get("unitPrice")
+    return float(v) if v else None
+
+
+def similar_launches(prices: dict, announce, target: float | None, price: float | None) -> pd.DataFrame | None:
+    """The past launches a new one is sized on: the SIMILAR that sold nearest
+    its target at the nearest price, among those closed before it announced
+    and, when there are enough, in the last SIMILAR_MONTHS. A launch is its
+    like by what it sold (or could have sold, where it sold out), not by what
+    it was asked to sell: one that aimed at 100 and sold 50 is no guide to
+    selling 100, and one that aimed at 200 and sold 100 is (the repository
+    owner, 25 November 2026). The new launch is matched on its target, not
+    its edition. None when the price list was fitted before sales were kept
+    on it, or the launch has no target or price."""
+    if not target or not price or target <= 0 or price <= 0:
+        return None
+    df = pd.DataFrame([r for r in (prices.get("quiet") or []) if r.get("level") and r.get("price") and r.get("could") and float(r.get("weight") or 0) > 0])
+    if df.empty:
+        return None
+    df = df[df["close"].astype(str) < str(pd.Timestamp(announce).date())].copy()
+    if len(df) < SIMILAR_POOL:
+        return None
+    df["size"] = df["could"].astype(float) + df["sold_paid"].fillna(0.0).astype(float)
+    ls, lp = np.log(df["size"]), np.log(df["price"].astype(float))
+    ss, sp = float(ls.std()) or 1.0, float(lp.std()) or 1.0
+    df["dist"] = ((ls - np.log(target)) / ss) ** 2 + ((lp - np.log(price)) / sp) ** 2
+    recent = df[pd.to_datetime(df["close"]) >= pd.Timestamp(announce) - pd.DateOffset(months=SIMILAR_MONTHS)]
+    pool = recent if len(recent) >= SIMILAR_POOL else df
+    return pool.nsmallest(SIMILAR, "dist").reset_index(drop=True)
+
+
+def own_record(prices: dict, artist: str, announce) -> list[dict]:
+    """The artist's earlier launches as a plain record beside the plan: what
+    each sold of its edition and how many times over the units entered for
+    (eligible entries and the private room, every channel) covered it. It
+    moves no figure: the target carries the judgement of how much the work is
+    wanted, and this is what that judgement can be checked against."""
+    out = []
+    for r in prices.get("quiet") or []:
+        if r.get("artist") != artist or str(r.get("close") or "") >= str(pd.Timestamp(announce).date()) or not r.get("edition"):
+            continue
+        ed = float(r["edition"])
+        out.append({"name": r["name"], "close": r["close"], "edition": ed, "sold": r.get("sold"),
+                    "cover": round(float(r["entered"]) / ed, 2) if r.get("entered") is not None else None})
+    return out[-OWN_LAUNCHES:]
+
+
+def start_level(prices: dict, artist: str, announce, members: list[str] | None = None, target: float | None = None, price: float | None = None) -> dict:
+    """How big a quiet day is for a launch before it has results of its own.
+    From the launches that sold nearest its target at a similar price
+    (similar_launches): the middle of what each sold outside paid for a quiet
+    day of its plan, so a plan as heavy as theirs reads at the target and a
+    lighter one below it. The range leaves out the lowest and the highest of
+    them. An artist's own launches no longer set it: their last three could
+    differ by a factor of four, and a follow-up is not marked down either.
+
+    Where the price list has no sales on it, or the launch no target or
+    price, the older reading stands: the artist's own last launches when
+    there are enough, else the launches the page is benchmarked on, else
+    every launch, in counted demand."""
+    near = similar_launches(prices, announce, target, price)
+    if near is not None and len(near) >= 3:
+        lv = np.sort(near["level"].astype(float).to_numpy())
+        inner = lv[1:-1] if len(lv) >= 5 else lv
+        paid = (near["sold_paid"].fillna(0.0).astype(float) / near["sold"].astype(float).clip(lower=1.0))
+        return {"level": float(np.median(lv)), "range": (float(inner.min()), float(inner.max())), "basis": "similar", "n": int(len(near)),
+                "similar": [{"name": r["name"], "sold": r.get("sold"), "price": r.get("price"), "paidShare": round(float(p), 3)} for (_, r), p in zip(near.iterrows(), paid)],
+                "paidShare": float(paid.median())}
     rows = [r for r in (prices.get("quiet") or []) if str(r.get("close") or "") < str(pd.Timestamp(announce).date()) and float(r.get("quiet") or 0) > 0]
     own = [float(r["quiet"]) for r in rows if r.get("artist") == artist][-OWN_LAUNCHES:]
     if len(own) >= MIN_OWN:
@@ -335,23 +417,49 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
             prev = float(r["actual"])
         inc[g] = x
 
-    lv = start_level(pr, str(page.get("artist") or ""), ann, [m.get("name") for m in ((page.get("benchmark") or {}).get("members") or []) if isinstance(m, dict)])
+    lv = start_level(pr, str(page.get("artist") or ""), ann, [m.get("name") for m in ((page.get("benchmark") or {}).get("members") or []) if isinstance(m, dict)],
+                     target=target, price=page_price(page))
     conv = float(np.clip(now_all / seen_study, *CONV_BAND)) if seen_study >= MIN_SEEN else 1.0
-    level = lv["level"] * conv
 
     def total(vals: dict, g: str) -> np.ndarray:
         return sum(vals[m][g] for m in rows)
+
+    # the plan is sized to the target wherever the similar launches allow it. The target says how much the work is
+    # wanted; the plan check asks only whether these comms are enough for a launch of that size. So a quiet day is
+    # given the size the target asks of it (the target less paid's part, over the plan's value), and the pieces'
+    # figures then add up to the target. It is held to the range the similar launches ran at: a plan that would
+    # need more from each quiet day than the strongest of them reads short, with the gap as a line of its own; one
+    # that needs less than the weakest reads over. Inside the range a gap is no gap: a starting size is rough.
+    against, asked = None, None
+    if lv["basis"] == "similar":
+        w_plan = sum(float(total(val0, g).sum()) for g in groups)
+        paid_t = float((chan.get("paid") or {}).get("target") or 0.0)
+        if w_plan > 0 and target > paid_t:
+            asked = (target - paid_t) / w_plan
+            lo_l, hi_l = lv["range"]
+            against = "in line" if lo_l <= asked <= hi_l else "short" if asked > hi_l else "over"
+            lv = dict(lv, level=float(np.clip(asked, lo_l, hi_l)))
+    level = lv["level"] * conv
 
     exp = {}
     for g in groups:
         cum = level * np.cumsum(total(val0, g))
         exp[g] = float((cum[i_now - 1] if i_now > 0 else 0.0) + frac * (cum[i_now] - (cum[i_now - 1] if i_now > 0 else 0.0)))
     exp_all = sum(exp.values())
-    pull_all = float(np.clip(now_all / exp_all, *PULL_BAND)) if exp_all >= MIN_EXPECTED else 1.0
+    # how far the launch's results so far move what is still to come. Read at full strength from the first piece,
+    # one small early access email marked the whole campaign down to the floor (Harland Miller's, 25 November 2026:
+    # 36 at the close on day 0). On the history the strength that tells what is still to come best grows with how
+    # much of the plan has landed: about half before the announce, full from two thirds of the plan in. So the
+    # ratio is raised to REACT_BASE plus the share of the plan's value already in, capped at 1 (the back-test's
+    # reading: no worse than full strength at any point, and 43% against 49% before the announce).
+    plan_all = sum(float(level * total(val0, g).sum()) for g in groups)
+    strength = float(min(1.0, REACT_BASE + (exp_all / plan_all if plan_all > 0 else 0.0)))
+    raw_all = float(np.clip(now_all / exp_all, *PULL_BAND)) if exp_all >= MIN_EXPECTED else 1.0
+    pull_all = raw_all ** strength
     pull, out = {}, {}
     for g in groups:
-        own = (now[g] / exp[g]) if exp[g] >= MIN_EXPECTED else pull_all
-        pull[g] = float(np.clip(0.5 * own + 0.5 * pull_all, *PULL_BAND))
+        own = (now[g] / exp[g]) if exp[g] >= MIN_EXPECTED else raw_all
+        pull[g] = float(np.clip(0.5 * own + 0.5 * raw_all, *PULL_BAND)) ** strength
         cum = level * np.cumsum(total(val0, g))
         rem = total(val1, g).copy()
         rem[:i_now] = 0.0
@@ -365,7 +473,8 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None) -> 
         out[g] = {"plan": {d: round(at_day(cum, d), 2) for d in dates}, "exp": round(exp[g], 2), "fut": round(fut, 2), "pull": round(pull[g], 3),
                   "plan_total": round(float(cum[-1]), 2), "share": {d: round(at_day(share, d), 4) for d in dates if d >= str(today.date())}}
     plan_total = sum(v["plan_total"] for v in out.values())
-    meta = {"code": code, "level": level, "levelStudy": lv["level"], "levelBasis": lv["basis"], "levelN": lv["n"], "conv": conv, "pullAll": pull_all,
+    meta = {"code": code, "level": level, "levelStudy": lv["level"], "levelBasis": lv["basis"], "levelN": lv["n"], "conv": conv, "pullAll": pull_all, "pullRaw": raw_all, "strength": strength, "against": against, "asked": asked, "levelRange": list(lv["range"]),
+            "similar": lv.get("similar"), "similarPaidShare": lv.get("paidShare"), "ownRecord": own_record(pr, str(page.get("artist") or ""), ann),
             "organicPlan": plan_total, "organicRange": [plan_total * lv["range"][0] / lv["level"], plan_total * lv["range"][1] / lv["level"]] if lv["level"] > 0 else [plan_total, plan_total],
             "organicToCome": sum(v["fut"] for v in out.values()), "firstPiece": str(pd.Timestamp(first).date())}
     work = {"pr": pr, "coef": coef, "rel": rel, "ann": ann, "close": close, "today": today, "frac": frac, "L": L, "days": days, "iso": iso, "i_now": i_now, "t": t,
@@ -621,12 +730,17 @@ def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
     lo, hi = ov["meta"]["organicRange"]
     paid_plan = float((pc or {}).get("target") or 0.0)
     lvl = paid.get("levels") or {}
-    basis = {"artist": f"the artist's last {ov['meta']['levelN']} launches", "basket": f"the {ov['meta']['levelN']} launches the page is benchmarked on", "all": "every past draw launch"}[ov["meta"]["levelBasis"]]
+    basis = {"similar": f"the {ov['meta']['levelN']} launches that sold nearest the target at a similar price", "artist": f"the artist's last {ov['meta']['levelN']} launches",
+             "basket": f"the {ov['meta']['levelN']} launches the page is benchmarked on", "all": "every past draw launch"}[ov["meta"]["levelBasis"]]
     page["method"] = "plan"
     page["plan"] = {"state": "live" if started else "start", "target": target, "expected": round(tot["expected"], 2), "in": round(tot["in"], 2), "toCome": round(tot["toCome"], 2),
                     "lands": round(demand, 2), "byToday": round(by_today, 2), "range": [round(lo + paid_plan, 1), round(hi + paid_plan, 1)],
                     "landsRecommended": (paid.get("atRecommended") or {}).get("sellThrough", {}).get("units"), "paidToday": lvl.get("today"), "paidRecommended": lvl.get("recommended"),
                     "rows": rows, "pull": round(ov["meta"]["pullAll"], 3), "level": round(ov["meta"]["level"], 3), "levelBasis": ov["meta"]["levelBasis"],
+                    # the plan as set against the target: in line when the target sits inside the range the similar launches
+                    # give it, short or over only outside it (a starting size is rough, and a gap inside the range is no gap)
+                    "against": ov["meta"].get("against"), "notCovered": round(max(target - tot["expected"], 0.0), 2) if ov["meta"].get("against") == "short" else 0.0,
+                    "similar": ov["meta"].get("similar"), "similarPaidShare": ov["meta"].get("similarPaidShare"), "ownRecord": ov["meta"].get("ownRecord"),
                     "notes": [f"What each piece is expected to bring is sized on {basis}.", "Still to come follows how each channel is responding so far.",
                               "What came in is credited to the day people entered or bought."]
                              + ([f"Paid is held at today's €{round(float(lvl['today'])):,} a day."] if lvl.get("today") is not None else [])}

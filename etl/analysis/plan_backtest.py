@@ -315,16 +315,65 @@ def quiet_split(panel: dict) -> dict:
     return {g: round(v / s, 4) for g, v in tot.items()} if s > 0 else {}
 
 
-def quiet_sizes(panel: dict, th: np.ndarray) -> list[dict]:
-    """How big a quiet day was on each launch, in demand units: its demand
-    over its plan's value. What a new launch's plan is sized on before it has
-    results of its own (etl/plan_view.py)."""
+SOLD_OUT = 0.9             # a launch that sold this share of its edition is read as capped by it: its entries say what it could have sold
+
+
+def launch_outcomes(panel: dict, at: pd.DataFrame) -> pd.DataFrame:
+    """What each launch sold in its days, in all and through paid, with its
+    edition and price (Airtable's, joined as the panel's are: etl/pricing.py).
+    A launch Airtable cannot be matched to has no edition or price, and is
+    then not one a new launch is sized on (etl/plan_view.py start_level)."""
+    import pricing
+    day = pd.to_datetime(at["event_date"])
+    units = pd.to_numeric(at["Total_Product_Units"], errors="coerce").fillna(0.0)
+    entered = pd.to_numeric(at["Draw_Entries_Eligible_Units"], errors="coerce").fillna(0.0) + pd.to_numeric(at["Product_Units_Private_Room"], errors="coerce").fillna(0.0)
+    paid = at["channel"].isin(PAID)
+    rows = []
+    for name, d in panel.items():
+        m = (at["simple_release_name"] == name) & (day >= d["announce"] - pd.Timedelta(days=P.LEAD_DAYS)) & (day <= d["close"] + pd.Timedelta(days=build.UNITS_GRACE_DAYS))
+        parts = name.split(" \u00b7 ")
+        rows.append({"release_name": name, "artist": d["artist"], "title": parts[1] if len(parts) > 1 else "", "quarter": parts[-1],
+                     "announce": str(pd.Timestamp(d["announce"]).date()), "close": str(pd.Timestamp(d["close"]).date()),
+                     "sold": float(units[m].sum()), "sold_paid": float(units[m & paid].sum()), "entered": float(entered[m].sum())})
+    out = pd.DataFrame(rows)
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            out = pricing.attach_pricing(out)
+    except Exception as e:  # noqa: BLE001 - no pricing is no sizing on sales; the quiet day stands
+        print(f"warning: editions and prices could not be joined ({e}) - a new launch keeps the older sizing")
+    return out.set_index("release_name")
+
+
+def quiet_sizes(panel: dict, th: np.ndarray, at: pd.DataFrame | None = None) -> list[dict]:
+    """What a new launch's plan is sized on before it has results of its own
+    (etl/plan_view.py start_level), a row a launch. `quiet` is how big a quiet
+    day was in counted demand, its demand over its plan's value (`weight`).
+    With the funnel, also what it sold: `sold` and `sold_paid` in its days,
+    its `edition` and `price`, `entered` (the units its eligible entries and
+    private room asked for, every channel, as entered), `could` (what it could have sold outside paid:
+    its sales outside paid, or its counted demand where that is more and the
+    launch sold out, since a sell-out's sales are capped by its edition) and
+    `level`, `could` over the plan's value: units sold outside paid for each
+    quiet day of plan."""
+    out = launch_outcomes(panel, at) if at is not None else None
     rows = []
     for name, d in panel.items():
         v = float(mu(d, th).sum())
-        if v > 0:
-            rows.append({"name": name, "artist": name.split(" \u00b7 ")[0], "close": str(pd.Timestamp(d["close"]).date()),
-                         "quiet": round(float(d["y"].sum()) / v, 4), "demand": round(float(d["y"].sum()), 1)})
+        if v <= 0:
+            continue
+        y = float(d["y"].sum())
+        row = {"name": name, "artist": name.split(" \u00b7 ")[0], "close": str(pd.Timestamp(d["close"]).date()),
+               "quiet": round(y / v, 4), "demand": round(y, 1), "weight": round(v, 2)}
+        if out is not None and name in out.index:
+            o = out.loc[name]
+            sold, sold_paid = float(o["sold"]), float(o["sold_paid"])
+            edition, price = pd.to_numeric(o.get("edition_size"), errors="coerce"), pd.to_numeric(o.get("unit_price_eur"), errors="coerce")
+            unpaid = max(sold - sold_paid, 0.0)
+            capped = pd.notna(edition) and edition > 0 and sold >= SOLD_OUT * float(edition)
+            could = max(unpaid, y) if capped else unpaid
+            row.update({"sold": round(sold, 1), "sold_paid": round(sold_paid, 1), "entered": round(float(o["entered"]), 1), "could": round(could, 1), "level": round(could / v, 4) if could > 0 else None,
+                        "edition": float(edition) if pd.notna(edition) and edition > 0 else None, "price": float(price) if pd.notna(price) and price > 0 else None})
+        rows.append(row)
     return sorted(rows, key=lambda r: r["close"])
 
 
@@ -518,7 +567,7 @@ def main() -> None:
     print(f"\nreads at 25, 50 and 75%: remaining plan under 0.8 of the usual ({lean['lighter']['n']}): what came was x{lean['lighter']['came_over_clock']:.2f} the clock's figure; "
           f"within 0.8 to 1.25 ({lean['usual']['n']}): x{lean['usual']['came_over_clock']:.2f}; over 1.25 ({lean['heavier']['n']}): x{lean['heavier']['came_over_clock']:.2f}")
 
-    prices.update({"baseline_share": round(float(np.median(base_share)), 4), "split": quiet_split(panel), "quiet": quiet_sizes(panel, th_all),
+    prices.update({"baseline_share": round(float(np.median(base_share)), 4), "split": quiet_split(panel), "quiet": quiet_sizes(panel, th_all, at),
                    "usual_audience": {k: float(v) for k, v in S.groupby("kind")["delivered"].median().items()},
                    "asOf": str(as_of), "launches": len(names), "launchDays": int(sum(len(d["t"]) for d in panel.values())),
                    "usual": usual, "gamma": gamma, "reliability": {k: round(v, 3) for k, v in sorted(reliability.items())},

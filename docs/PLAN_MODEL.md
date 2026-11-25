@@ -360,12 +360,41 @@ In this view the page has one reference, the plan, so the Compare to switch is o
 
 **The plan as set.** Every plan row written by the day the launch's first piece went out
 counts, each as planned (a post at how often its family goes out, section 3), plus the
-emails. An email's plan is sized on the audience it went to, or for one still to come on
-the usual audience for its kind until HubSpot says otherwise: only HubSpot knows an
-audience, and only once it is set. A piece dropped later keeps its plan and lands at
+emails. An email's plan is sized on the audience it went to. One still to come is sized, in
+order (`planned_size`, from 25 November 2026): on the lists it names once it is built in
+HubSpot, when the token may read list sizes (the `crm.lists.read` scope, which HubSpot
+also calls `crm.segments.read`); for an announcement, on the "Email audience" number the
+team types on the campaign in Notion; else on the usual audience for its kind, and only
+then does its line say the audience is not set. Until then every email to come took the
+usual audience, which read an announcement going to 70,000 people as one to 11,700. A piece dropped later keeps its plan and lands at
 nothing, and its line says so.
 
-**The level.** The price list is in quiet days, so a plan needs to know how big a quiet
+**The level (from 25 November 2026).** A plan is sized on the launches that sold nearest
+its target at a similar price (`similar_launches`): the eight nearest on what each sold,
+or could have sold where it sold out, and on its price, among those closed in the last
+18 months when there are twelve of them. The new launch is matched on its target, never
+its edition, and a past launch on what it sold, never on what it was asked to sell: one
+that aimed at 100 and sold 50 is no guide to selling 100, and one that aimed at 200 and
+sold 100 is (the owner's rule). From them comes the range a quiet day of plan ran at,
+the lowest and the highest left out. Inside that range the plan is sized to the target:
+a quiet day is given the size the target asks of it (the target less paid's part, over
+the plan's value), so the pieces' figures add up to the target and the card says the plan
+as written is in line with it. A plan that would need more from each quiet day than the
+strongest of them reads short, at the strongest's size, and one that needs less than the
+weakest reads over. The target carries the judgement of how much the work is wanted; the
+plan check asks only whether the comms are enough for a launch of that size, and the
+artist's own earlier launches are printed beside it (sold of the edition, and how many
+times over it was entered for) and move no figure. The older reading below stands where
+the price list has no sales on it or the launch has no target or price.
+
+Read on 90 launches, each from those closed before it announced: what a launch sold
+outside paid is told to within 52% this way against 76% the older way, and the plan of
+the middle launch reads at 101% of its target. A plan's size does not tell whether a
+launch sells out: once the edition's size is allowed for it adds nothing, and among
+editions of 150 or more the lighter half of plans sold 83% against 92%. So "in line" says
+the comms are usual for a launch that sold this many, not that this one will.
+
+**The level, the older reading.** The price list is in quiet days, so a plan needs to know how big a quiet
 day is for this launch before it has results: the median of the artist's last three
 launches when the artist has at least two on file, else the median of the launches the
 page is benchmarked on (when three have a size on file), else of every launch. The sizes
@@ -377,7 +406,16 @@ differ by a factor of two, and the range beside the headline before a launch sta
 **How the launch is running.** Each channel's pull is what it has brought over what the
 plan as set expected of it by today, read once the plan expected at least 5 units of it,
 averaged half and half with the launch's pull across every channel and held between x0.3
-and x2.0. What is still to come is the plan's remaining pieces and baseline at that pull.
+and x2.0. From 25 November 2026 the pull is then raised to a strength below one while
+little of the plan is in: 0.3 plus the share of the plan's value already landed, capped
+at 1. At full strength from the first piece, one early access email to 2,733 people
+marked a whole campaign down to the floor on its announce day. On the history the
+strength that tells what is still to come best is about a half before the announce and
+full from two thirds of the plan in; this rule misses by 43% before the announce against
+49% at full strength, 41% against 48% over the announce day and the next, and no worse
+at any later point. A weak early access is still a warning: of 74 launches with an early
+access phase, the weakest third on it sold 72% of the edition at the median and the
+others 97%. What is still to come is the plan's remaining pieces and baseline at that pull.
 The headline ("185 at the close, 15 short of the 200 target") is the plan as it stands
 with nothing changed: paid held at today's spend. What a change would add is the suggested
 actions'.
@@ -523,6 +561,26 @@ the view to its combined page.
   only has a page once its targets are set; the upcoming pages do not carry the plan yet.
 
 ## 9. Log
+
+- **25 November 2026.** The owner asked why Harland Miller's launch read 36 at the close
+  against a target of 100 on its announce day, and worked through the model with it. Agreed
+  and built, on the branch `plan-rework` until the before and after is approved: demand
+  counted with pre-orders at 0.95 and plain entries at 0.8 (`plan_model.demand_units`; with
+  it counted demand is 0.98 of the units sold outside paid at the median, so the two rates
+  close the gap between them); a plan sized on the launches that sold nearest its target at
+  a similar price and to the target inside their range, with no markdown of an artist's
+  follow-up (section 6, "The level"); the pull eased in as the plan lands (section 6, "How
+  the launch is running"); an email to come sized from HubSpot's lists, then Notion's
+  "Email audience", then the usual audience; the plan check's words on the card. The price
+  list is fitted again on 91 launches with what each sold kept on it. On that launch the
+  card reads 47 at the close in place of 36, its rows add up to the 100 target and the plan
+  as written reads in line. Tried and not borne out: sizing an email's units straight from
+  its clicks, with no quiet day between. What each click brings varies from launch to
+  launch as much as the quiet day does (x2.5 against x2.6 across the middle half) and is
+  told worse from similar launches, and two fifths of the demand outside paid arrives by
+  search and direct, which leave no clicks. Still to build: the plan check as a step before
+  early access (the gap, the ways to close it, an agreed plan and an accepted shortfall as
+  one line), and the view on a launch's page before its first piece goes out.
 
 - **16 November 2026.** The brief (section 1). The first study on 64 launches, then the
   feeds, the price list and the back-test, on 66. The strength kept at 0.5.

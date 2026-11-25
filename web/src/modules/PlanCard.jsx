@@ -46,6 +46,25 @@ export function planModel(p) {
 }
 const pct = (v, top) => `${Math.min(Math.max(v / top, 0), 1) * 100}%`;
 
+/* The plan check, in words: whether the plan as written is in line with the
+ * target, on the launches that sold nearest it at a similar price, and the
+ * artist's own earlier launches beside it. The target says how much the work
+ * is wanted; this says only whether the comms are enough for a launch that
+ * size (etl/plan_view.py override). Nothing on a plan sized the older way. */
+export function planCheck(p) {
+  if (!p || !p.against) return null;
+  const lo = Array.isArray(p.range) ? n(p.range[0]) : null, hi = Array.isArray(p.range) ? n(p.range[1]) : null;
+  const span = lo !== null ? ` Launches that sold about this many at a similar price would have brought ${lo} to ${hi} with these comms.` : "";
+  const gap = Math.round(p.notCovered || 0);
+  const lead = p.against === "in line" ? `The plan as written is in line with the ${n(p.target)} target.`
+    : p.against === "short" ? `The plan as written is ${gap} short of the ${n(p.target)} target: it is lighter than the plans of launches that sold this many.`
+      : `The plan as written is heavier than launches that sold ${n(p.target)} have needed.`;
+  const title = (name) => { const b = String(name || "").split(" \u00b7 "); return b.length > 2 ? `${b[1]} (${b[b.length - 1]})` : name; };
+  const own = (p.ownRecord || []).filter((r) => r && r.edition > 0 && r.sold !== null && r.sold !== undefined);
+  const record = own.length ? "Earlier launches: " + own.map((r) => `${title(r.name)} sold ${n(r.sold)} of ${n(r.edition)}${r.cover ? `, entered for ${r.cover.toFixed(1)} times the edition` : ""}`).join("; ") + "." : null;
+  return { kind: p.against, lead, span, record, similar: (p.similar || []).map((x) => String(x.name || "").split(" \u00b7 ")[0]) };
+}
+
 /* one bar: in so far, still to come, and the plan's tick */
 function Bar({ x, top }) {
   return (
@@ -76,11 +95,18 @@ export default function PlanCard({ snap }) {
   const dated = s ? s.dates.length > 1 : true;
   const short = Math.round(p.target) - Math.round(p.lands);
   const likely = Array.isArray(p.range) ? `likely ${n(p.range[0])} to ${n(p.range[1])}` : undefined;
+  const chk = planCheck(p);
   return (
     <Card wide title="The plan" className={`plan-card${m.start ? " start" : ""}`} aria="The plan, phase by phase">
       <Head v={n(p.lands)} u="at the close" tip={(p.notes || []).join(" ")}
         deltas={[short > 0 ? { t: `${short} short of the ${n(p.target)} target`, dir: "dn" } : { t: `reaches the ${n(p.target)} target`, dir: "up" }]}
         aside={m.start ? likely : `day ${snap.day} of ${snap.of}`} asideTip={(p.notes || []).join(" ")} />
+      {chk && (
+        <div className={`plan-chk ${chk.kind === "short" ? "dn" : "ok"}`} title={chk.similar.length ? `Read against ${[...new Set(chk.similar)].join(", ")}` : undefined}>
+          <b>{chk.lead}</b>{chk.span}
+          {chk.record && <span className="rec">{chk.record}</span>}
+        </div>
+      )}
       <div className="pv-split">
         <div className="plan-rows">
           <div className="plan-r head"><span /><span /><span>Plan</span>{!m.start && <span>Lands at</span>}</div>
