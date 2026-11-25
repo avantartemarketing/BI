@@ -10,8 +10,11 @@
  *   start_here       the guide a Claude reads first (docs/CONNECTOR_GUIDE.md)
  *   bigquery_tables  what the service account can see: tables and columns, never a row
  *   bigquery_sql     one read-only query on BigQuery, through the guarded client
- * Nothing here writes: there is no path from a tool to the saved inputs, the
- * targets or any other state, and the BigQuery token is read-only by scope.
+ * Everything here reads, with one exception the owner asked for on
+ * 25 November 2026: set_works, the tick on a limited edition's works grid
+ * (server/index.js setWorksTicked). No other tool has a path to the saved
+ * inputs, the targets or any other state, and the BigQuery token is
+ * read-only by scope.
  *
  * Switched off until MCP_TOKEN is set (the route answers 404). With it set,
  * every request must carry the token, as "Authorization: Bearer <token>" or
@@ -38,7 +41,7 @@ const { createTools, TOOL_DEFS, mask } = require("../agent/tools");
 const SERVER = { name: "avant-arte-launch-bi", title: "Avant Arte launch data", version: "1.0.0" };
 // newest first: the version answered when a client asks for one this server does not know
 const PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
-const INSTRUCTIONS = "Avant Arte's launch data, read-only: every release's dashboard page, the tables behind the dashboard, " +
+const INSTRUCTIONS = "Avant Arte's launch data, read-only but for one tool (set_works, which ticks or unticks a limited edition's works, and only when a person asks): every release's dashboard page, the tables behind the dashboard, " +
   "the project's documentation, and BigQuery (the event-level funnel, orders and ad spend, back to 2019). " +
   "Call start_here once before the first question: it says which tool answers which kind of question, names the tables and columns, " +
   "and lists the caveats that change answers. Aggregate in the query and report counts, not people.";
@@ -118,6 +121,7 @@ function typedCell(v, type) {
 
 function install(app, opts = {}) {
   const { ROOT, DATA, SOURCES, readSnapshot } = opts;
+  const setWorks = typeof opts.setWorks === "function" ? opts.setWorks : null;   // the one write, when the dashboard hands it over
   const TOKEN = String(opts.token !== undefined ? opts.token : process.env.MCP_TOKEN || "").trim();
   const bq = opts.bq || require("../bigquery");
   const accessToken = opts.accessToken || require("../googleAuth").accessToken;
@@ -193,6 +197,26 @@ function install(app, opts = {}) {
       annotations: READ_ONLY,
     },
   ];
+  /* The one tool that changes anything: the tick on a limited edition's works grid. It is listed only when the
+   * dashboard hands the write over (server/index.js setWorksTicked), and it is marked as a write, so a client
+   * asks its user before it runs. */
+  if (setWorks) {
+    TOOLS.push({
+      name: "set_works", title: "Tick or untick a release's works",
+      description: "The connector's one change to the dashboard, and only when a person has asked for it: tick or untick works of a limited edition release, as the tick on the Target setting tab's works grid does. A work left out stays on the grid and counts nothing towards the edition or the target; ticking it counts it in again. Give the release id and the works' airtable_id values, which get_release shows under economics.products (read them first, and name the works back to the person before unticking). It takes only works the release already has, will not leave a release with none ticked, changes no other setting, is recorded in the targets log, and rebuilds that one page (about a minute). It does not edit editions, prices, dates or targets.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "Release id, e.g. warhol_le_26" },
+          works: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 30, description: "The works' airtable_id values, from get_release economics.products" },
+          ticked: { type: "boolean", description: "false leaves the works out of the release; true counts them in again" },
+        },
+        required: ["id", "works", "ticked"],
+        additionalProperties: false,
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    });
+  }
 
   // ------------------------------------------------------------ start_here
   const GUIDE = path.join(ROOT, "docs", "CONNECTOR_GUIDE.md");
@@ -326,6 +350,7 @@ function install(app, opts = {}) {
       case "read_docs": return { out: tools.readDocs(i) };
       case "bigquery_tables": return { out: await bigqueryTables(i) };
       case "bigquery_sql": return bigquerySql(i);
+      case "set_works": return { out: await setWorks(i), stats: `release=${String(i.id || "").replace(/[^a-z0-9_]/g, "").slice(0, 60)} works=${Array.isArray(i.works) ? i.works.length : 0} ticked=${i.ticked === true}` };
       default: throw rpcError(-32602, `Unknown tool: ${name}`);
     }
   }

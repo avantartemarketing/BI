@@ -147,6 +147,21 @@ for (const t of list) {
   assert.ok(t.description.length > 40 && t.title, `${t.name}: described`);
   assert.deepStrictEqual(t.annotations, { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false });
 }
+// the one write is listed only when the dashboard hands it over, marked as a write, and a refusal reads as one
+{
+  const calls = [];
+  const w = await serve({ token: TOKEN, setWorks: async (args) => { calls.push(args); if (!args.works) throw Object.assign(new Error("works is a list"), { kind: "works-refused" }); return { saved: true, release: args.id }; } });
+  const wl = (await w.rpc("tools/list")).json.result.tools;
+  assert.deepStrictEqual(wl.map((t) => t.name).slice(-1), ["set_works"]);
+  assert.deepStrictEqual(wl.find((t) => t.name === "set_works").annotations, { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false });
+  const done = await w.call("set_works", { id: "warhol_le_26", works: ["3066"], ticked: false });
+  assert.ok(!done.isError && JSON.parse(done.text).saved === true);
+  assert.deepStrictEqual(calls[0], { id: "warhol_le_26", works: ["3066"], ticked: false });
+  const refused = await w.call("set_works", { id: "warhol_le_26", ticked: false });
+  assert.ok(refused.isError && /works is a list/.test(refused.text));
+  await w.close();
+}
+assert.ok(!list.some((t) => t.name === "set_works"), "no write without the dashboard's own");
 // the Agent's own definitions are untouched by the connector's wording (its prompt cache rests on them)
 assert.match(TOOL_DEFS.find((t) => t.name === "get_release").description, /The reader's Direct display/);
 assert.doesNotMatch(list.find((t) => t.name === "get_release").description, /reader/);
