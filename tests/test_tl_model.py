@@ -103,6 +103,74 @@ hourly = pd.DataFrame({"ts": pd.to_datetime(["2026-06-29T15:00:00Z", "2026-06-29
 d3 = tl.tl_dates(crewdson, {"feed_launch": "2026-06-30T17:00:00Z"}, None, EMPTY, hourly, NOW)
 check(d3["early_access"] == datetime(2026, 6, 29, 16, 0, tzinfo=UTC) and not d3["early_access_assumed"], f"Crewdson's early access began at 16:00Z the day before ({d3['early_access']})")
 check(d3["sales_open"] == d3["early_access"], "the sales window opens with the early access")
+# a private-room sale is the early access begun, whatever the hour sold: Matt DesLauriers' Serac (2026 Q4) took
+# three private-room pieces at 14:00Z the day before a 17:00Z open, three hours ahead of the hour expected, and
+# the page counted from 17:00Z read 3 units where the orders table held 7
+serac = {"launch_date": "2026-11-24", "launch_time": "2026-11-24T17:00:00.000Z", "tl_length": "48 hours"}
+serac_now = datetime(2026, 11, 24, 12, 0, tzinfo=UTC)
+lines = pd.DataFrame({"ts": pd.to_datetime(["2026-11-20T13:00:00Z", "2026-11-23T14:00:00Z", "2026-11-23T15:00:00Z", "2026-11-24T04:00:00Z", "2026-11-24T09:00:00Z", "2026-11-24T09:00:00Z"], utc=True),
+                      "status": ["awaiting", "paid", "paid", "paid", "paid", "awaiting"], "units": [2.0, 3.0, 1.0, 1.0, 1.0, 1.0],
+                      "units_private": [0.0, 3.0, 1.0, 1.0, 1.0, 0.0], "orders": [2.0, 3.0, 1.0, 1.0, 1.0, 1.0], "value": [650.0] * 6,
+                      "prints_offered": [2.0, 3.0, 1.0, 1.0, 1.0, 1.0], "frames": [0.0] * 6, "group": ["untracked"] * 6})
+d4 = tl.tl_dates(serac, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, serac_now)
+check(d4["early_access"] == datetime(2026, 11, 23, 17, 0, tzinfo=UTC) and d4["early_access_assumed"], "with no sales to go on, the early access is expected a day before the open")
+d5 = tl.tl_dates(serac, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, serac_now, lines)
+check(d5["early_access"] == datetime(2026, 11, 23, 14, 0, tzinfo=UTC) and not d5["early_access_assumed"], f"Serac's early access began with its first private-room sale ({d5['early_access']})")
+check(tl.window_from_orders(lines, d4["sales_open"], serac_now)["units"] == 3 and tl.window_from_orders(lines, d5["sales_open"], serac_now)["units"] == 7,
+      "the window counts the private-room sales made before the hour expected")
+d6 = tl.tl_dates(serac, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, datetime(2026, 11, 25, 12, 0, tzinfo=UTC), lines)
+check(d6["sales_open"] == d5["sales_open"], "and keeps them once the public window has opened, with no hour of five pieces before it")
+# a sale outside the private room, or a private-room line cancelled, starts nothing
+stray = lines.assign(units_private=0.0)
+gone = lines.assign(status=["awaiting", "cancelled", "refunded", "cancelled", "cancelled", "awaiting"])
+check(tl.early_access_from(EMPTY_H, d4["open"], stray) is None and tl.early_access_from(EMPTY_H, d4["open"], gone) is None,
+      "a lone sale outside the private room, or a private-room order cancelled, is not the early access")
+# the feed's own private-room purchases say it too, where the orders table has no lines for the launch
+feed_private = pd.DataFrame({"ts": pd.to_datetime(["2026-11-23T14:00:00Z", "2026-11-23T20:00:00Z"], utc=True), "units": [1.0, 2.0], "units_private": [1.0, 0.0], "group": ["untracked"] * 2})
+check(tl.early_access_from(feed_private, d4["open"]) == datetime(2026, 11, 23, 14, 0, tzinfo=UTC), "the feed's private-room purchases start the early access too")
+
+# ---- the early access is timed from when its email went, not from when the room opened (24 November 2026)
+# William Mapan's (Un)confined, sold beside Serac: the room sold a piece at 12:00Z, the early access email went at
+# 14:00:33Z, filed under Serac's code and named for the two launches' shared campaign
+sends = pd.DataFrame({
+    "name": ["AUT_WillMatt_TL_26 - Early Access (TL Flow)", "AUT_WillMatt_TL_26 - Early Access for PP (TL Non-flow)", "AUT_WillMatt_TL_26 - TL Education (TL Flow)",
+             "041126_GEN_WillMatt_TL_26 - Announcement (TL Non-flow) (William first)", "201126_CUS_WillMatt_TL_26 - Early Access sneak peek"],
+    "sent_at": pd.to_datetime(["2026-11-23 10:29:57", "2026-11-23 14:00:33", "2026-11-03 18:42:14", "2026-11-04 09:45:00", "2026-11-20 16:30:29"]),
+    "campaign": ["MattDesla_H2_25", "MattDesla_H2_25", "WilliamMapan_LE_26", "MattDesla_H2_25", "MattDesla_H2_25"],
+    "kind": ["automated", "batch", "automated", "batch", "batch"]})
+mapan = {"launch_date": "2026-11-24", "launch_time": "2026-11-24T14:00:00.000Z", "tl_length": "48 hours"}
+m_open = datetime(2026, 11, 24, 14, 0, tzinfo=UTC)
+m_lines = pd.DataFrame({"ts": pd.to_datetime(["2026-11-23T12:00:00Z", "2026-11-23T14:00:00Z", "2026-11-23T15:00:00Z", "2026-11-24T09:00:00Z"], utc=True),
+                        "status": ["paid"] * 4, "units": [1.0, 2.0, 1.0, 1.0], "units_private": [1.0, 2.0, 1.0, 1.0], "orders": [1.0, 2.0, 1.0, 1.0],
+                        "value": [650.0] * 4, "prints_offered": [1.0, 2.0, 1.0, 1.0], "frames": [0.0] * 4, "group": ["untracked"] * 4})
+sent = datetime(2026, 11, 23, 14, 0, tzinfo=UTC)
+check(tl.early_access_email(sends, "MattDesla_H2_25", d4["open"]) == sent, "the batch early access email's hour, not the automated one's publish time nor a sneak peek days before")
+check(tl.early_access_email(sends, "WilliamMapan_LE_26", m_open) == sent, "a launch sold beside another reads the email named for their shared campaign, filed under the other's code")
+check(tl.early_access_email(sends, "Someone_TL_26", m_open) is None and tl.early_access_email(sends.drop(columns=["kind"]), "MattDesla_H2_25", m_open) is None
+      and tl.early_access_email(sends.assign(kind="automated"), "MattDesla_H2_25", m_open) is None,
+      "no email under the code, a file with no kind, or only automated emails: nothing is timed off the sends")
+m_now = datetime(2026, 11, 24, 12, 0, tzinfo=UTC)
+m_sales = tl.tl_dates(mapan, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, m_now, m_lines)
+m_mail = tl.tl_dates(mapan, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, m_now, m_lines, emails=sends, code="WilliamMapan_LE_26")
+check(m_sales["sales_open"] == datetime(2026, 11, 23, 12, 0, tzinfo=UTC) and m_sales["early_access_source"] == "sales", "with no email on file the room's first sale says it, as before")
+check(m_mail["sales_open"] == sent and m_mail["early_access_source"] == "email" and not m_mail["early_access_assumed"],
+      f"with the email on file the early access begins when it went, two hours after the room's first sale ({m_mail['sales_open']}, {m_mail['early_access_source']})")
+check(m_mail["count_from"] == datetime(2026, 11, 23, 12, 0, tzinfo=UTC) and tl.window_from_orders(m_lines, m_mail["sales_open"], m_now)["units"] == 4
+      and tl.window_from_orders(m_lines, m_mail["sales_open"], m_now, m_mail["count_from"])["units"] == 5,
+      "and the piece the room sold before the email is still the window's, counted from the room's first sale")
+first_hour = tl.window_from_orders(m_lines, m_mail["sales_open"], m_now, m_mail["count_from"])["live"].groupby("ts")["units"].sum()
+check(float(first_hour.loc[pd.Timestamp(sent)]) == 3.0 and len(m_lines[m_lines["ts"] < pd.Timestamp(sent)]) == 1, "in the window's first hour, the frame handed in left as it was")
+check(tl.dated_with_code(m_sales, "WilliamMapan_LE_26", sends, mapan, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, EMPTY_H, m_now, m_lines)["sales_open"] == sent
+      and tl.dated_with_code(m_sales, None, sends, mapan, None, None, EMPTY, EMPTY_H, m_now, m_lines) is m_sales, "the dates read again once the code is known, and left alone without one")
+# an hour of five pieces before the batch email is an early access email HubSpot keeps no time for (the workflow's):
+# Barry McGee's 2025 launch sold 32 pieces at 11:00Z, three hours before the insiders' batch email
+burst = pd.DataFrame({"ts": pd.to_datetime(["2026-11-23T11:00:00Z", "2026-11-23T14:00:00Z"], utc=True), "units": [32.0, 21.0], "group": ["aa_email"] * 2})
+m_burst = tl.tl_dates(mapan, {"feed_launch": "2026-11-24T14:00:00Z"}, None, EMPTY, burst, m_now, None, emails=sends, code="WilliamMapan_LE_26")
+check(m_burst["sales_open"] == datetime(2026, 11, 23, 11, 0, tzinfo=UTC) and m_burst["early_access_source"] == "sales", "an hour of five pieces before the batch email starts it: an email went that the file cannot time")
+late = pd.DataFrame({"ts": pd.to_datetime(["2026-11-23T16:00:00Z"], utc=True), "units": [40.0], "group": ["aa_email"]})
+check(tl.tl_dates(mapan, None, None, EMPTY, late, m_now, None, emails=sends, code="WilliamMapan_LE_26")["sales_open"] == sent, "and one after it does not move it")
+up = tl.tl_dates(mapan, None, None, EMPTY, EMPTY_H, datetime(2026, 11, 22, 9, 0, tzinfo=UTC), None, emails=sends, code="Someone_TL_26")
+check(up["early_access_assumed"] and up["early_access_source"] == "expected" and up["count_from"] == up["sales_open"], "a launch still to open with no email sent yet expects it a day before, as before")
 
 # ---- the campaign code
 activity = {"BisaButler_TL_26": (date(2026, 9, 16), date(2026, 9, 24)), "AiWeiwei_SelfPortrait_26": (date(2026, 1, 6), date(2026, 5, 6)),

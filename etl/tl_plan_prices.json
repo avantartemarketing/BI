@@ -1,0 +1,462 @@
+{
+ "weights": {
+  "em_early_access": 1.136429759390047,
+  "em_announce": 1.828808685568356,
+  "em_sustain": 0.0,
+  "em_last_chance": 0.0,
+  "em_other": 8.142056242076281e-18,
+  "pl_aa_post": 1.7122909180048427,
+  "pl_aa_story": 3.0955574528519947e-17,
+  "pl_aa_social_other": 0.4123724937883282,
+  "pl_artist_post": 0.5751222775719645,
+  "pl_artist_story": 2.2705376533037156,
+  "pl_artist_other": 3.2702569232749397e-19,
+  "pl_partner": 1.156522073468042e-16
+ },
+ "fade_email": [
+  0.2502196337244289,
+  0.17128247412436484,
+  0.1203576998842147,
+  0.128324228294895
+ ],
+ "fade_posts": [
+  0.8298560596774611
+ ],
+ "close_day": 1.0608668221354264e-20,
+ "day_before": 1.1393722092190033,
+ "pre": 0.48029454803694144,
+ "unpriced": [
+  "em_sustain",
+  "em_last_chance"
+ ],
+ "baseline_share": 0.2766,
+ "split": {
+  "aa_email": 0.154,
+  "aa_social": 0.142,
+  "referral_artist": 0.1506,
+  "organic_search": 0.1466,
+  "direct_other": 0.4067
+ },
+ "quiet": [
+  {
+   "name": "Christian Rex van Minnen \u00b7 Multiple \u00b7 2023 Q4",
+   "artist": "Christian Rex van Minnen",
+   "close": "2023-11-28",
+   "quiet": 2.8273,
+   "demand": 117.0
+  },
+  {
+   "name": "Snowfro \u00b7 Chromie Squiggle #8107 \u00b7 2023 Q4",
+   "artist": "Snowfro",
+   "close": "2023-12-07",
+   "quiet": 4.8475,
+   "demand": 206.0
+  },
+  {
+   "name": "Anish Kapoor \u00b7 Out of the Dark \u00b7 2023 Q4",
+   "artist": "Anish Kapoor",
+   "close": "2023-12-11",
+   "quiet": 2.2409,
+   "demand": 180.0
+  },
+  {
+   "name": "Tom\u00e1s S\u00e1nchez \u00b7 Inner Love \u00b7 2024 Q1",
+   "artist": "Tom\u00e1s S\u00e1nchez",
+   "close": "2024-01-17",
+   "quiet": 3.0202,
+   "demand": 305.0
+  },
+  {
+   "name": "Matt DesLauriers \u00b7 Sierra \u00b7 2024 Q1",
+   "artist": "Matt DesLauriers",
+   "close": "2024-02-07",
+   "quiet": 0.9353,
+   "demand": 102.0
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Guardian \u00b7 2024 Q1",
+   "artist": "Ai Weiwei",
+   "close": "2024-02-14",
+   "quiet": 9.811,
+   "demand": 1083.0
+  },
+  {
+   "name": "Ed Ruscha \u00b7 Actual Size \u00b7 2024 Q2",
+   "artist": "Ed Ruscha",
+   "close": "2024-04-10",
+   "quiet": 11.3666,
+   "demand": 984.0
+  },
+  {
+   "name": "JR \u00b7 La Nascita \u00b7 2024 Q2",
+   "artist": "JR",
+   "close": "2024-04-29",
+   "quiet": 4.042,
+   "demand": 303.0
+  },
+  {
+   "name": "Miwa Komatsu \u00b7 Sacred Connectedness \u00b7 2024 Q2",
+   "artist": "Miwa Komatsu",
+   "close": "2024-06-11",
+   "quiet": 2.2909,
+   "demand": 180.0
+  },
+  {
+   "name": "Mickalene Thomas \u00b7 Multiple \u00b7 2024 Q2",
+   "artist": "Mickalene Thomas",
+   "close": "2024-06-24",
+   "quiet": 4.9294,
+   "demand": 440.0
+  },
+  {
+   "name": "Gabriel Moses \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Gabriel Moses",
+   "close": "2024-07-08",
+   "quiet": 0.7715,
+   "demand": 61.0
+  },
+  {
+   "name": "Hank Willis Thomas \u00b7 \"The only bond worth anything between human beings is their humanness.\" \u00b7 2024 Q3",
+   "artist": "Hank Willis Thomas",
+   "close": "2024-08-06",
+   "quiet": 1.4661,
+   "demand": 108.0
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Everyone is a dragon \u00b7 2024 Q3",
+   "artist": "Ai Weiwei",
+   "close": "2024-09-04",
+   "quiet": 12.6957,
+   "demand": 952.0
+  },
+  {
+   "name": "Vhils \u00b7 Multiple \u00b7 2024 Q3",
+   "artist": "Vhils",
+   "close": "2024-09-23",
+   "quiet": 2.0441,
+   "demand": 138.0
+  },
+  {
+   "name": "Grayson Perry \u00b7 Magical Thinking \u00b7 2024 Q4",
+   "artist": "Grayson Perry",
+   "close": "2024-10-22",
+   "quiet": 7.1963,
+   "demand": 588.0
+  },
+  {
+   "name": "Danielle Mckinney \u00b7 Sandman \u00b7 2025 Q1",
+   "artist": "Danielle Mckinney",
+   "close": "2025-01-23",
+   "quiet": 18.3568,
+   "demand": 1481.0
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Combat fear with truth \u00b7 2025 Q1",
+   "artist": "Ai Weiwei",
+   "close": "2025-01-28",
+   "quiet": 3.8031,
+   "demand": 349.0
+  },
+  {
+   "name": "Barry McGee \u00b7 Fuzz Gathering \u00b7 2025 Q1",
+   "artist": "Barry McGee",
+   "close": "2025-02-04",
+   "quiet": 6.3394,
+   "demand": 600.0
+  },
+  {
+   "name": "James Jean \u00b7 Maze - Lucid \u00b7 2025 Q1",
+   "artist": "James Jean",
+   "close": "2025-02-18",
+   "quiet": 2.8645,
+   "demand": 323.0
+  },
+  {
+   "name": "Mickalene Thomas \u00b7 Multiple \u00b7 2025 Q1",
+   "artist": "Mickalene Thomas",
+   "close": "2025-03-17",
+   "quiet": 10.4443,
+   "demand": 1087.0
+  },
+  {
+   "name": "Jonny Niesche \u00b7 Multiple \u00b7 2025 Q2",
+   "artist": "Jonny Niesche",
+   "close": "2025-05-07",
+   "quiet": 2.7159,
+   "demand": 357.0
+  },
+  {
+   "name": "Friedrich Kunath \u00b7 Storms Never Last \u00b7 2025 Q2",
+   "artist": "Friedrich Kunath",
+   "close": "2025-05-14",
+   "quiet": 4.8151,
+   "demand": 507.0
+  },
+  {
+   "name": "Mark Bradford \u00b7 Scorched Earth Edition \u00b7 2025 Q2",
+   "artist": "Mark Bradford",
+   "close": "2025-05-26",
+   "quiet": 4.7959,
+   "demand": 429.0
+  },
+  {
+   "name": "Judy Chicago \u00b7 Multiple \u00b7 2025 Q2",
+   "artist": "Judy Chicago",
+   "close": "2025-05-27",
+   "quiet": 3.2115,
+   "demand": 273.0
+  },
+  {
+   "name": "Jen Stark \u00b7 Multiple \u00b7 2025 Q2",
+   "artist": "Jen Stark",
+   "close": "2025-06-03",
+   "quiet": 0.9444,
+   "demand": 83.0
+  },
+  {
+   "name": "Felipe Pantone \u00b7 Chromadynamica 19 P \u00b7 2025 Q3",
+   "artist": "Felipe Pantone",
+   "close": "2025-07-02",
+   "quiet": 3.2618,
+   "demand": 362.0
+  },
+  {
+   "name": "Carrie Mae Weems \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "Carrie Mae Weems",
+   "close": "2025-07-22",
+   "quiet": 7.5547,
+   "demand": 895.0
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Multiple \u00b7 2025 Q3",
+   "artist": "Ai Weiwei",
+   "close": "2025-08-27",
+   "quiet": 3.7326,
+   "demand": 402.0
+  },
+  {
+   "name": "Cleon Peterson \u00b7 Shame \u00b7 2025 Q3",
+   "artist": "Cleon Peterson",
+   "close": "2025-09-16",
+   "quiet": 4.49,
+   "demand": 511.0
+  },
+  {
+   "name": "Joan Cornell\u00e0 \u00b7 Work Hard and Then Die \u00b7 2025 Q4",
+   "artist": "Joan Cornell\u00e0",
+   "close": "2025-10-22",
+   "quiet": 10.3913,
+   "demand": 1005.0
+  },
+  {
+   "name": "Harmonia \u00b7 Multiple \u00b7 2025 Q4",
+   "artist": "Harmonia",
+   "close": "2025-10-28",
+   "quiet": 3.8015,
+   "demand": 430.0
+  },
+  {
+   "name": "James Jean \u00b7 Multiple \u00b7 2025 Q4",
+   "artist": "James Jean",
+   "close": "2025-10-30",
+   "quiet": 3.1877,
+   "demand": 334.0
+  },
+  {
+   "name": "Cindy Sherman \u00b7 Untitled \u00b7 2025 Q4",
+   "artist": "Cindy Sherman",
+   "close": "2025-11-10",
+   "quiet": 7.2842,
+   "demand": 632.0
+  },
+  {
+   "name": "Tom\u00e1s S\u00e1nchez \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Tom\u00e1s S\u00e1nchez",
+   "close": "2026-01-26",
+   "quiet": 6.0449,
+   "demand": 635.0
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Ai Weiwei",
+   "close": "2026-01-27",
+   "quiet": 3.4642,
+   "demand": 375.0
+  },
+  {
+   "name": "Marina Abramovi\u0107 \u00b7 Maria/Marina \u00b7 2026 Q1",
+   "artist": "Marina Abramovi\u0107",
+   "close": "2026-02-09",
+   "quiet": 12.4044,
+   "demand": 1367.0
+  },
+  {
+   "name": "Katharina Grosse \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Katharina Grosse",
+   "close": "2026-02-12",
+   "quiet": 6.1577,
+   "demand": 308.0
+  },
+  {
+   "name": "Man Ray \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Man Ray",
+   "close": "2026-02-16",
+   "quiet": 5.2741,
+   "demand": 548.0
+  },
+  {
+   "name": "Mickalene Thomas \u00b7 Multiple \u00b7 2026 Q1",
+   "artist": "Mickalene Thomas",
+   "close": "2026-03-16",
+   "quiet": 8.4702,
+   "demand": 1037.0
+  },
+  {
+   "name": "Lucian Freud \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Lucian Freud",
+   "close": "2026-04-13",
+   "quiet": 2.8075,
+   "demand": 332.0
+  },
+  {
+   "name": "Shirin Neshat \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Shirin Neshat",
+   "close": "2026-04-27",
+   "quiet": 3.3216,
+   "demand": 355.0
+  },
+  {
+   "name": "Grayson Perry \u00b7 The Changeling \u00b7 2026 Q2",
+   "artist": "Grayson Perry",
+   "close": "2026-04-29",
+   "quiet": 5.4831,
+   "demand": 711.0
+  },
+  {
+   "name": "Joel Mesler \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Joel Mesler",
+   "close": "2026-05-19",
+   "quiet": 1.2308,
+   "demand": 149.0
+  },
+  {
+   "name": "Ai Weiwei \u00b7 Guar \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Ai Weiwei",
+   "close": "2026-06-01",
+   "quiet": 6.1079,
+   "demand": 678.0
+  },
+  {
+   "name": "Gregory Crewdson \u00b7 Multiple \u00b7 2026 Q2",
+   "artist": "Gregory Crewdson",
+   "close": "2026-06-29",
+   "quiet": 10.2737,
+   "demand": 1315.0
+  },
+  {
+   "name": "Bisa Butler \u00b7 Multiple \u00b7 2026 Q4",
+   "artist": "Bisa Butler",
+   "close": "2026-10-12",
+   "quiet": 9.736,
+   "demand": 1294.0
+  }
+ ],
+ "usual_audience": {
+  "announce": 43532.0,
+  "early_access": 923.0,
+  "insiders": 153.0,
+  "other": 11967.5,
+  "sustain": 3029.0
+ },
+ "reliability": {
+  "aa_post": 0.992,
+  "aa_social_other": 0.959,
+  "aa_story": 0.965,
+  "artist_other": 0.721,
+  "artist_post": 0.724,
+  "artist_story": 0.729,
+  "email": 0.96,
+  "paid": 0.924,
+  "partner": 0.679,
+  "sms": 0.86,
+  "website": 1.0
+ },
+ "clicks": {
+  "names": [
+   "const",
+   "size",
+   "insiders",
+   "announce",
+   "sustain",
+   "last_chance",
+   "other",
+   "phase_announce",
+   "phase_middle",
+   "phase_close",
+   "announce_x_size"
+  ],
+  "coef": [
+   -2.0851622240571177,
+   -0.3189255691286909,
+   -0.7914143789245714,
+   -0.6282288229059544,
+   -0.11785345430139742,
+   -0.5736851823435585,
+   -0.39116796294280615,
+   -0.13365352644731646,
+   -0.4519542147342926,
+   -0.3056664894539861,
+   -0.029768441267059874
+  ],
+  "spread": [
+   -0.43712553767465745,
+   0.2708682692395178
+  ],
+  "sends": 433,
+  "launches": 88,
+  "pull_weight": 1.0
+ },
+ "paid_up": {
+  "0.1": {
+   "x": 1.978,
+   "n": 30
+  },
+  "0.2": {
+   "x": 1.925,
+   "n": 31
+  },
+  "0.3": {
+   "x": 1.909,
+   "n": 31
+  },
+  "0.4": {
+   "x": 1.835,
+   "n": 30
+  },
+  "0.5": {
+   "x": 1.803,
+   "n": 29
+  },
+  "0.6": {
+   "x": 1.737,
+   "n": 29
+  },
+  "0.7": {
+   "x": 1.756,
+   "n": 28
+  },
+  "0.8": {
+   "x": 1.744,
+   "n": 27
+  },
+  "0.9": {
+   "x": 1.822,
+   "n": 27
+  }
+ },
+ "paid_launches": 31,
+ "asOf": "2026-10-12",
+ "launches": 46,
+ "launchDays": 1575,
+ "note": "etl/analysis/tl_plan_backtest.py --write; timed launches' signups outside paid from the announce to the sales open; quiet day = an ordinary day after the announce with nothing going out; clicks is the draw launches' click model (etl/plan_prices.json)"
+}

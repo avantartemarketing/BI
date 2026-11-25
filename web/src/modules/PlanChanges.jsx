@@ -26,7 +26,8 @@
  * cap. It opens to the sends it counted, this week and next. A general send
  * the rule lets through says which of the week's it would be; one it does not
  * sits under "Held back" with the reason, where it can still be read and,
- * unless the week is at the cap, accepted. */
+ * unless the week is at the cap, accepted. An email offered at two audiences
+ * is one row, the larger left standing, and opens to the other (`alts`). */
 import React, { useEffect, useState } from "react";
 import { Card, Note } from "../ui.jsx";
 import { Agent as AgentIcon, Check, Chev, Undo } from "../icons.jsx";
@@ -53,9 +54,10 @@ export function dayWord(iso, asOf) {
  * from nothing, and no estimate said as that */
 export function unitsWord(u) {
   if (!u || !(u.high >= 1)) return null;
-  if (u.low === u.high) return `+${u.high}`;
-  if (!(u.low >= 1)) return `Up to ${u.high}`;
-  return `+${u.low} to ${u.high}`;
+  const f = (v) => Math.round(v).toLocaleString("en-GB");
+  if (u.low === u.high) return `+${f(u.high)}`;
+  if (!(u.low >= 1)) return `Up to ${f(u.high)}`;
+  return `+${f(u.low)} to ${f(u.high)}`;
 }
 
 /* the arrow before what a planned item changes to */
@@ -95,6 +97,9 @@ function Row({ c, asOf, open, onOpen, onSet, artist, week }) {
           <div className="pc-dd">{[c.to ? `${c.from ? `${c.from} to` : "To"} ${String(c.to).toLowerCase()}` : c.note, c.channel, dayWord(c.date, asOf)].filter(Boolean).join(" · ")}</div>
           {c.held && <div className="pc-why"><b>Held back.</b> {c.held}</div>}
           <div className="pc-why">{c.reason}{g ? ` It would be the list's ${nth(g.nth)} general send ${g.week === week ? "this" : "that"} week; the cap is ${g.cap}.` : ""}</div>
+          {(c.alts || []).map((a) => (
+            <div className="pc-why pc-alt" key={a.key}>Or {a.people ? `to ${Math.round(a.people).toLocaleString("en-GB")} people` : String(a.title || "").toLowerCase()}: {unitsWord(a.units) || "no estimate"}.</div>
+          ))}
           <div className="pc-acts">
             {!capped && <button className="sbtn prim" onClick={() => onSet(c, "accepted")}>{c.held ? "Accept anyway" : "Accept"}</button>}
             <button className="sbtn" onClick={() => onSet(c, "dismissed")}>Dismiss</button>
@@ -171,7 +176,7 @@ export default function PlanChanges({ snap, state }) {
 
   return (
     <Card wide className="pcard" aria="Suggested actions"
-      title={<>Suggested actions{todo.length > 0 && <span className="pc-n">{todo.length}</span>}</>}
+      title={<>Suggested actions{todo.length > 0 && <span className="pc-n">{todo.length}</span>}{snap.type === "TL" && todo.length > 0 && <span className="pc-n">in signups by the open</span>}</>}
       right={<button className="sbtn" onClick={() => ask(`What actions do you suggest for ${artist}, and why?`)}><AgentIcon w={13} />Ask</button>}
       menu={done.length ? [{ label: handled ? "Hide accepted and dismissed" : "Show accepted and dismissed", onClick: () => setHandled(!handled) }] : null}>
       <div className="pc">

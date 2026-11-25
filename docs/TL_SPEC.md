@@ -212,6 +212,14 @@ cards do; `web/src/vocab.mjs` gives each card its words.
 | Direct switch | the same switch (§3b): Direct's signups and sessions spread over the other channels before the window, its units and sessions inside it, the basket read the same way; the forecast keeps the feed's attribution |
 | Benchmark basket | the same card: the basket's timed launches with the units their windows sold and their price, each a link to its page; the medians and the rule stay on the Target setting tab (§8) |
 
+**The plan-based view** (24 November 2026, docs/PLAN_MODEL.md 6b, `etl/tl_plan.py`). A launch
+gathering signups with a comms plan on file has the LE page's Targets from switch. On Plan the
+signups outside paid follow the plan's emails and posts, and paid follows the spend still to
+come at what a signup will cost, in place of the pace; the plan card and the suggested actions
+lead the page, and the sell-through forecast reads the plan's signups at the open. That view is
+built as the feed attributes its channels, so the Direct switch reads Channel while it is on.
+The clock's page above is the default and is unchanged; the window has no such view.
+
 Sessions and signup rates by channel, the email sends and their signups, and the paid signups'
 cost are in the funnel card's rungs and popups, as they are on an LE page.
 
@@ -328,7 +336,7 @@ benchmark       = the basket's median units at the same share of the window
 **The cards are the LE page's cards**, in the shared layout and in units, the page's clock
 running in hours from the sales open (`clock: {unit: "hour"}`; the day helpers in
 `web/src/format.mjs` read it, so a day of the LE page is an hour of the window, "Tue 30 Jun
-20:00 · hour 28"):
+20:00 · hour 31"):
 
 | LE card | On a timed launch inside its window |
 |---|---|
@@ -527,6 +535,55 @@ What the data showed on the way, and how the build reads it:
   30 June open). The window state begins with the first hour that sold five pieces or more
   within 36 hours of the open, the sales pace curve is measured from it, and a launch still
   to open expects an early access 24 hours before, said as expected.
+- **A private-room sale is the early access begun** (24 November 2026). The private room is
+  the early access, so the first hour within 36 hours of the open that holds a private-room
+  sale starts the window as an hour of five pieces does, whichever comes first: on the feed's
+  purchases, and on the orders table's paid and awaiting lines where it has the launch's
+  (`etl/tl.py early_access_from`). Until then a quiet early access was not seen at all. Matt
+  DesLauriers' Serac sold three private-room pieces at 14:00 UTC on 23 November, the day
+  before a 17:00 UTC open on Airtable's time (the feed dates its launch 14:00 UTC); no hour
+  reached five, so the window was counted from the hour expected, 17:00 UTC, and the page
+  read 3 units at noon on the 24th where the orders table held 7 (6 paid in the private
+  room, 1 awaiting payment). At the public open the expectation would have lapsed and the
+  page counted from the open, with none of them. On the panel 16 of the 75 completed
+  launches move: six whose early access had never been seen, their windows now opening 21
+  to 35 hours before the public open (Em Cooper's 2026 launch read 25 units where it sold
+  43; Grayson Perry's Magical Thinking counted 614 signups of its early-access day as
+  pre-window) and ten whose windows open 1 to 17 hours earlier (4 at the median) and hold
+  1 to 9 units more (Gregory Crewdson's 2026 window runs 75 hours, from 13:00 UTC on 29
+  June). The panel's medians hold: signup -> order 14.5%, 401 units, 1,036 signups.
+- **The early access is timed from when its email went, not from when the room opened** (24
+  November 2026, the owner's call). The room can sell a piece before anyone is told it is
+  open: William Mapan's (Un)confined sold one at 12:00 UTC on 23 November and its early
+  access email went at 14:00 UTC, so the reading above began its window two hours before
+  the early access. The window now opens on the hour the launch's first early access email
+  was sent (`early_access_email`): a batch email of its campaign whose name says early
+  access, within 36 hours of the open. Three things hold it to what the sends can say.
+  *Batch emails only.* HubSpot keeps a send time for an email sent once; for an automated
+  email, sent by a workflow, it keeps the time it was published, hours or days before it
+  went (Bisa Butler's "Early Access (TL Flow)": published 9 October 2026, sent on the 12th),
+  so the sends file carries each email's `Kind` (`server/hubspot.js`) and an automated email
+  times nothing. *An hour of five pieces before the batch email still starts the window*:
+  that burst is an early access email the file cannot time, the workflow's (Barry McGee's
+  2025 launch sold 32 pieces at 11:00 UTC, three hours before the insiders' batch email); a
+  lone private-room sale before the email does not. *With no email timed on file the sales
+  say it as before* (the hour of five pieces or the first private-room sale), which is every
+  launch whose early access went by workflow alone. Two launches sold together share their
+  emails and each email is filed under one code, so a launch reads the emails under its own
+  code and those named for the campaign its own are named for (the one "WillMatt_TL_26"
+  early access email, filed under Serac's code, times both). **No piece is left out for
+  having been sold before the email**: the orders table's lines made between the room's
+  first sale and the email are counted in the window's first hour (`tl_dates`
+  `count_from`, `window_from_orders`), so (Un)confined's clock starts at 14:00 UTC and its
+  window still holds the 10 pieces the orders table does. On the 75 completed launches 28
+  of the 39 since November 2024 carry a batch early access email, and it falls on the hour
+  the sales reading gave for all but two, whose windows open with the email and not with
+  the private-room sales a few hours ahead of it: Gregory Crewdson's 2026 launch (16:00 UTC
+  on 29 June again, where the reading above had moved it to 13:00) and Cleon Peterson's
+  Shame (16:00 UTC on 16 September 2025, from 12:00). Their units on the orders table stand
+  (2,870 and 200); the feed's own count of the window, which is not moved into the first
+  hour, reads 5 and 1 fewer (2,806 and 197). The panel's medians hold. The snapshot says which reading is
+  in force (`earlyAccessSource`: email, sales or expected).
 - **The feed's `launch_date` runs an hour late in summer time.** Against Airtable's
   `launch_time` and the sales bursts over the 2025-26 launches it reads 17:00Z where the
   launch was 16:00Z (18:00 Amsterdam) in CEST, and agrees in CET. The open is Airtable's

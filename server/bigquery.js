@@ -66,7 +66,8 @@
  * The service account needs BigQuery Data Viewer on the dataset and BigQuery
  * Job User on the project. Spend is optional - if the account cannot see
  * the spend table the funnel still refreshes (BQ_SPEND=off skips it
- * outright). Set BIGQUERY=off to force the sheet path back on. */
+ * outright). BIGQUERY=off stops the funnel and spend refresh; there is no
+ * sheet fallback (removed 25 November 2026). */
 const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
