@@ -552,7 +552,8 @@ def _post_groups(day_posts: list[dict]) -> list[tuple[str, list[dict], str]]:
 
 def card_rows(w: dict) -> list[dict]:
     """A row per phase and one for the baseline: what the plan as set expected, what has come in, what should
-    still come, and the pieces inside (an email a line, a day's posts a line per sender)."""
+    still come, and the pieces inside (an email a line, a day's posts a line per sender), each phase's in date
+    order: on a day the emails first, then the posts, the bigger first."""
     level, groups = w["level"], w["groups"]
 
     def figures(v0: dict, v1: dict) -> dict:
@@ -596,7 +597,9 @@ def card_rows(w: dict) -> list[dict]:
                     continue      # a piece the price list gives nothing, and nothing came of: no line
                 lines.append({"when": _day_word(d), "name": word, "who": who, **tot, "_o": (d, 1, -tot["expected"])})
         lines.sort(key=lambda x: x["_o"])
-        row["pieces"] = [{k: v for k, v in x.items() if k != "_o"} for x in lines]
+        # a line carries its day in full ("date") beside the words the card shows ("when"), so the card can list
+        # every phase's pieces together in date order: a phase is Notion's or the email's kind, not a run of days
+        row["pieces"] = [{"date": str(pd.Timestamp(x["_o"][0]).date()), **{k: v for k, v in x.items() if k != "_o"}} for x in lines]
         rows.append(row)
     base = {"moment": BASELINE, "note": "What an ordinary day brings with nothing going out, by channel", **figures(w["val0"][BASELINE], w["val1"][BASELINE]), "pieces": []}
     for g in groups:

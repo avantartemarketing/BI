@@ -243,6 +243,13 @@ def test_launch():
     # a post the plan as set had and that was then cancelled keeps its plan and lands at nothing, and says so
     gone = sus["Avant Arte post (dropped)"]
     assert gone["expected"] > 0 and gone["in"] == 0 and gone["toCome"] == 0
+    # each email and post carries its day in full beside the words the card shows, and a phase lists its own in
+    # date order, so the card can list them all together by that day; the baseline's lines are no day's
+    for m in V.PHASES:
+        days = [x["date"] for x in rows[m]["pieces"]]
+        assert days == sorted(days) and all(V._day_word(d) == x["when"] for d, x in zip(days, rows[m]["pieces"])), m
+    assert [x["date"] for x in rows["Sustain"]["pieces"]] == ["2026-09-10", "2026-09-15"] and rows["Last chance"]["pieces"][0]["date"] == "2026-09-24"
+    assert all("date" not in x for x in rows["Baseline"]["pieces"])
     # the page's headline figures follow the plan
     close_to(plan["lands"], sum(r["lands"] for r in plan["rows"]), 0.05)
     assert pg["hero"]["projected"] == round(min(plan["lands"], 200.0)) and plan["state"] == "live"
