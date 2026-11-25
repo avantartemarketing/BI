@@ -504,10 +504,14 @@ async function fetchPostsCsv() {
       // every row, matched or not: an unmatched row is still evidence of what
       // the columns hold, and the unmatched are the ones being asked about
       noteSchema(schema, props);
-      const texts = [];
+      // `texts` places the row: its own words and the titles of the pages it links to (the campaign, the
+      // artist). `own` is its words alone, which is all that says the moment it records: a campaign page named
+      // "... Combined Launch ..." does not make every row linked to it the launch (25 November 2026)
+      const texts = [], own = [];
       for (const p of Object.values(props)) {
-        texts.push(...propText(p));
-        texts.push(...await relationTitles(p, token));
+        const said = propText(p);
+        own.push(...said);
+        texts.push(...said, ...await relationTitles(p, token));
       }
       if (chanProp === null) chanProp = channelProp(props) || "";
       const date = propDate(props) || String(row.created_time || "").slice(0, 10);
@@ -526,12 +530,12 @@ async function fetchPostsCsv() {
         const key = `${rel.code}|${date}|${channel}`;
         counts.set(key, (counts.get(key) || 0) + 1);
       }
-      const stage = stageOf(texts);
+      const stage = stageOf(own);
       if (stage) {
         if (!stageDates.has(rel.key)) stageDates.set(rel.key, { code: rel.code, name: rel.name });
         const st = stageDates.get(rel.key);
         (st[stage] = st[stage] || []).push(date);
-        if (stage === "early_access" && isEmailRow(texts)) (st.early_access_email = st.early_access_email || []).push(date);
+        if (stage === "early_access" && isEmailRow(own)) (st.early_access_email = st.early_access_email || []).push(date);
       }
       // the row's lead - its own column, or its release page's - counted towards the release's (campaignLeads picks the commonest)
       const lead = await leadOf(props, token);
