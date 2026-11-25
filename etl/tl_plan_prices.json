@@ -1,368 +1,644 @@
 {
  "weights": {
-  "em_early_access": 1.136429759390047,
-  "em_announce": 1.828808685568356,
+  "em_early_access": 0.8164370092433394,
+  "em_announce": 1.4255203383173989,
   "em_sustain": 0.0,
   "em_last_chance": 0.0,
-  "em_other": 8.142056242076281e-18,
-  "pl_aa_post": 1.7122909180048427,
-  "pl_aa_story": 3.0955574528519947e-17,
-  "pl_aa_social_other": 0.4123724937883282,
-  "pl_artist_post": 0.5751222775719645,
-  "pl_artist_story": 2.2705376533037156,
-  "pl_artist_other": 3.2702569232749397e-19,
-  "pl_partner": 1.156522073468042e-16
+  "em_other": 1.5300828014504057e-14,
+  "pl_aa_post": 1.3008619463992395,
+  "pl_aa_story": 3.729808311022255e-17,
+  "pl_aa_social_other": 0.5173334883545361,
+  "pl_artist_post": 0.28654780757765297,
+  "pl_artist_story": 1.8002484473929354,
+  "pl_artist_other": 2.2138331482920157e-09,
+  "pl_partner": 5.331405934276351e-16
  },
  "fade_email": [
-  0.2502196337244289,
-  0.17128247412436484,
-  0.1203576998842147,
-  0.128324228294895
+  0.24863190810815658,
+  0.16161205233634035,
+  0.10942147331820028,
+  0.1209309892829606
  ],
  "fade_posts": [
-  0.8298560596774611
+  0.7916704414732869
  ],
- "close_day": 1.0608668221354264e-20,
- "day_before": 1.1393722092190033,
- "pre": 0.48029454803694144,
+ "close_day": 8.044943087380932e-15,
+ "day_before": 0.8459347234520446,
+ "pre": 0.38443672347451735,
  "unpriced": [
   "em_sustain",
   "em_last_chance"
  ],
- "baseline_share": 0.2766,
+ "baseline_share": 0.3129,
  "split": {
-  "aa_email": 0.154,
-  "aa_social": 0.142,
-  "referral_artist": 0.1506,
-  "organic_search": 0.1466,
-  "direct_other": 0.4067
+  "aa_email": 0.1664,
+  "aa_social": 0.1433,
+  "referral_artist": 0.1466,
+  "organic_search": 0.1437,
+  "direct_other": 0.4
  },
  "quiet": [
   {
    "name": "Christian Rex van Minnen \u00b7 Multiple \u00b7 2023 Q4",
    "artist": "Christian Rex van Minnen",
    "close": "2023-11-28",
-   "quiet": 2.8273,
-   "demand": 117.0
+   "quiet": 3.3854,
+   "demand": 117.0,
+   "weight": 34.56,
+   "sold": 117.0,
+   "sold_paid": 0.0,
+   "could": 117.0,
+   "level": 3.3854,
+   "price": 550.0
   },
   {
    "name": "Snowfro \u00b7 Chromie Squiggle #8107 \u00b7 2023 Q4",
    "artist": "Snowfro",
    "close": "2023-12-07",
-   "quiet": 4.8475,
-   "demand": 206.0
+   "quiet": 6.5966,
+   "demand": 206.0,
+   "weight": 31.23,
+   "sold": 206.0,
+   "sold_paid": 0.0,
+   "could": 206.0,
+   "level": 6.5966,
+   "price": 350.0
   },
   {
    "name": "Anish Kapoor \u00b7 Out of the Dark \u00b7 2023 Q4",
    "artist": "Anish Kapoor",
    "close": "2023-12-11",
-   "quiet": 2.2409,
-   "demand": 180.0
+   "quiet": 2.5717,
+   "demand": 182.0,
+   "weight": 70.77,
+   "sold": 207.0,
+   "sold_paid": 25.0,
+   "could": 182.0,
+   "level": 2.5717,
+   "price": 1360.0
   },
   {
    "name": "Tom\u00e1s S\u00e1nchez \u00b7 Inner Love \u00b7 2024 Q1",
    "artist": "Tom\u00e1s S\u00e1nchez",
    "close": "2024-01-17",
-   "quiet": 3.0202,
-   "demand": 305.0
+   "quiet": 3.5006,
+   "demand": 305.0,
+   "weight": 87.13,
+   "sold": 451.0,
+   "sold_paid": 146.0,
+   "could": 305.0,
+   "level": 3.5006,
+   "price": 450.0
   },
   {
    "name": "Matt DesLauriers \u00b7 Sierra \u00b7 2024 Q1",
    "artist": "Matt DesLauriers",
    "close": "2024-02-07",
-   "quiet": 0.9353,
-   "demand": 102.0
+   "quiet": 0.8556,
+   "demand": 83.0,
+   "weight": 97.0,
+   "sold": 85.0,
+   "sold_paid": 2.0,
+   "could": 83.0,
+   "level": 0.8556,
+   "price": 750.0
   },
   {
    "name": "Ai Weiwei \u00b7 Guardian \u00b7 2024 Q1",
    "artist": "Ai Weiwei",
    "close": "2024-02-14",
-   "quiet": 9.811,
-   "demand": 1083.0
+   "quiet": 11.3359,
+   "demand": 1083.0,
+   "weight": 95.54,
+   "sold": 1954.0,
+   "sold_paid": 871.0,
+   "could": 1083.0,
+   "level": 11.3359,
+   "price": 650.0
   },
   {
    "name": "Ed Ruscha \u00b7 Actual Size \u00b7 2024 Q2",
    "artist": "Ed Ruscha",
    "close": "2024-04-10",
-   "quiet": 11.3666,
-   "demand": 984.0
+   "quiet": 12.4164,
+   "demand": 984.0,
+   "weight": 79.25,
+   "sold": 1934.0,
+   "sold_paid": 950.0,
+   "could": 984.0,
+   "level": 12.4164,
+   "price": 475.0
   },
   {
    "name": "JR \u00b7 La Nascita \u00b7 2024 Q2",
    "artist": "JR",
    "close": "2024-04-29",
-   "quiet": 4.042,
-   "demand": 303.0
+   "quiet": 4.7805,
+   "demand": 303.0,
+   "weight": 63.38,
+   "sold": 616.0,
+   "sold_paid": 313.0,
+   "could": 303.0,
+   "level": 4.7805,
+   "price": 440.0
   },
   {
    "name": "Miwa Komatsu \u00b7 Sacred Connectedness \u00b7 2024 Q2",
    "artist": "Miwa Komatsu",
    "close": "2024-06-11",
-   "quiet": 2.2909,
-   "demand": 180.0
+   "quiet": 2.5777,
+   "demand": 180.0,
+   "weight": 69.83,
+   "sold": 305.0,
+   "sold_paid": 125.0,
+   "could": 180.0,
+   "level": 2.5777,
+   "price": 500.0
   },
   {
    "name": "Mickalene Thomas \u00b7 Multiple \u00b7 2024 Q2",
    "artist": "Mickalene Thomas",
    "close": "2024-06-24",
-   "quiet": 4.9294,
-   "demand": 440.0
+   "quiet": 5.8584,
+   "demand": 450.0,
+   "weight": 76.81,
+   "sold": 1080.0,
+   "sold_paid": 630.0,
+   "could": 450.0,
+   "level": 5.8584,
+   "price": null
   },
   {
    "name": "Gabriel Moses \u00b7 Multiple \u00b7 2024 Q3",
    "artist": "Gabriel Moses",
    "close": "2024-07-08",
-   "quiet": 0.7715,
-   "demand": 61.0
+   "quiet": 0.891,
+   "demand": 61.0,
+   "weight": 68.46,
+   "sold": 78.0,
+   "sold_paid": 17.0,
+   "could": 61.0,
+   "level": 0.891,
+   "price": null
   },
   {
    "name": "Hank Willis Thomas \u00b7 \"The only bond worth anything between human beings is their humanness.\" \u00b7 2024 Q3",
    "artist": "Hank Willis Thomas",
    "close": "2024-08-06",
-   "quiet": 1.4661,
-   "demand": 108.0
+   "quiet": 1.817,
+   "demand": 118.0,
+   "weight": 64.94,
+   "sold": 307.0,
+   "sold_paid": 189.0,
+   "could": 118.0,
+   "level": 1.817,
+   "price": 650.0
   },
   {
    "name": "Ai Weiwei \u00b7 Everyone is a dragon \u00b7 2024 Q3",
    "artist": "Ai Weiwei",
    "close": "2024-09-04",
-   "quiet": 12.6957,
-   "demand": 952.0
+   "quiet": 15.3137,
+   "demand": 952.0,
+   "weight": 62.17,
+   "sold": 4152.0,
+   "sold_paid": 3200.0,
+   "could": 952.0,
+   "level": 15.3137,
+   "price": 850.0
   },
   {
    "name": "Vhils \u00b7 Multiple \u00b7 2024 Q3",
    "artist": "Vhils",
    "close": "2024-09-23",
-   "quiet": 2.0441,
-   "demand": 138.0
+   "quiet": 2.457,
+   "demand": 138.0,
+   "weight": 56.17,
+   "sold": 387.0,
+   "sold_paid": 249.0,
+   "could": 138.0,
+   "level": 2.457,
+   "price": null
   },
   {
    "name": "Grayson Perry \u00b7 Magical Thinking \u00b7 2024 Q4",
    "artist": "Grayson Perry",
    "close": "2024-10-22",
-   "quiet": 7.1963,
-   "demand": 588.0
+   "quiet": 8.8788,
+   "demand": 588.0,
+   "weight": 66.22,
+   "sold": 2272.0,
+   "sold_paid": 1684.0,
+   "could": 588.0,
+   "level": 8.8788,
+   "price": 1000.0
   },
   {
    "name": "Danielle Mckinney \u00b7 Sandman \u00b7 2025 Q1",
    "artist": "Danielle Mckinney",
    "close": "2025-01-23",
-   "quiet": 18.3568,
-   "demand": 1481.0
+   "quiet": 21.6737,
+   "demand": 1479.0,
+   "weight": 68.24,
+   "sold": 11691.0,
+   "sold_paid": 10212.0,
+   "could": 1479.0,
+   "level": 21.6737,
+   "price": 700.0
   },
   {
    "name": "Ai Weiwei \u00b7 Combat fear with truth \u00b7 2025 Q1",
    "artist": "Ai Weiwei",
    "close": "2025-01-28",
-   "quiet": 3.8031,
-   "demand": 349.0
+   "quiet": 4.6323,
+   "demand": 350.0,
+   "weight": 75.56,
+   "sold": 3263.0,
+   "sold_paid": 2913.0,
+   "could": 350.0,
+   "level": 4.6323,
+   "price": 850.0
   },
   {
    "name": "Barry McGee \u00b7 Fuzz Gathering \u00b7 2025 Q1",
    "artist": "Barry McGee",
    "close": "2025-02-04",
-   "quiet": 6.3394,
-   "demand": 600.0
+   "quiet": 7.5583,
+   "demand": 600.0,
+   "weight": 79.38,
+   "sold": 2092.0,
+   "sold_paid": 1492.0,
+   "could": 600.0,
+   "level": 7.5583,
+   "price": 900.0
   },
   {
    "name": "James Jean \u00b7 Maze - Lucid \u00b7 2025 Q1",
    "artist": "James Jean",
    "close": "2025-02-18",
-   "quiet": 2.8645,
-   "demand": 323.0
+   "quiet": 3.4542,
+   "demand": 323.0,
+   "weight": 93.51,
+   "sold": 2335.0,
+   "sold_paid": 2012.0,
+   "could": 323.0,
+   "level": 3.4542,
+   "price": 1000.0
   },
   {
    "name": "Mickalene Thomas \u00b7 Multiple \u00b7 2025 Q1",
    "artist": "Mickalene Thomas",
    "close": "2025-03-17",
-   "quiet": 10.4443,
-   "demand": 1087.0
+   "quiet": 12.6062,
+   "demand": 1087.0,
+   "weight": 86.23,
+   "sold": 7343.0,
+   "sold_paid": 6256.0,
+   "could": 1087.0,
+   "level": 12.6062,
+   "price": 752.1511068334937
   },
   {
    "name": "Jonny Niesche \u00b7 Multiple \u00b7 2025 Q2",
    "artist": "Jonny Niesche",
    "close": "2025-05-07",
-   "quiet": 2.7159,
-   "demand": 357.0
+   "quiet": 3.3202,
+   "demand": 357.0,
+   "weight": 107.52,
+   "sold": 471.0,
+   "sold_paid": 114.0,
+   "could": 357.0,
+   "level": 3.3202,
+   "price": 600.0
   },
   {
    "name": "Friedrich Kunath \u00b7 Storms Never Last \u00b7 2025 Q2",
    "artist": "Friedrich Kunath",
    "close": "2025-05-14",
-   "quiet": 4.8151,
-   "demand": 507.0
+   "quiet": 5.7532,
+   "demand": 507.0,
+   "weight": 88.12,
+   "sold": 2140.0,
+   "sold_paid": 1633.0,
+   "could": 507.0,
+   "level": 5.7532,
+   "price": 750.0
   },
   {
    "name": "Mark Bradford \u00b7 Scorched Earth Edition \u00b7 2025 Q2",
    "artist": "Mark Bradford",
    "close": "2025-05-26",
-   "quiet": 4.7959,
-   "demand": 429.0
+   "quiet": 5.7867,
+   "demand": 429.0,
+   "weight": 74.14,
+   "sold": 1186.0,
+   "sold_paid": 757.0,
+   "could": 429.0,
+   "level": 5.7867,
+   "price": 1300.0
   },
   {
    "name": "Judy Chicago \u00b7 Multiple \u00b7 2025 Q2",
    "artist": "Judy Chicago",
    "close": "2025-05-27",
-   "quiet": 3.2115,
-   "demand": 273.0
+   "quiet": 3.8468,
+   "demand": 273.0,
+   "weight": 70.97,
+   "sold": 919.0,
+   "sold_paid": 646.0,
+   "could": 273.0,
+   "level": 3.8468,
+   "price": 700.0
   },
   {
    "name": "Jen Stark \u00b7 Multiple \u00b7 2025 Q2",
    "artist": "Jen Stark",
    "close": "2025-06-03",
-   "quiet": 0.9444,
-   "demand": 83.0
+   "quiet": 1.1422,
+   "demand": 83.0,
+   "weight": 72.67,
+   "sold": 421.0,
+   "sold_paid": 338.0,
+   "could": 83.0,
+   "level": 1.1422,
+   "price": 450.0
   },
   {
    "name": "Felipe Pantone \u00b7 Chromadynamica 19 P \u00b7 2025 Q3",
    "artist": "Felipe Pantone",
    "close": "2025-07-02",
-   "quiet": 3.2618,
-   "demand": 362.0
+   "quiet": 3.8674,
+   "demand": 362.0,
+   "weight": 93.6,
+   "sold": 1665.0,
+   "sold_paid": 1303.0,
+   "could": 362.0,
+   "level": 3.8674,
+   "price": 500.0
   },
   {
    "name": "Carrie Mae Weems \u00b7 Multiple \u00b7 2025 Q3",
    "artist": "Carrie Mae Weems",
    "close": "2025-07-22",
-   "quiet": 7.5547,
-   "demand": 895.0
+   "quiet": 9.1791,
+   "demand": 897.0,
+   "weight": 97.72,
+   "sold": 3218.0,
+   "sold_paid": 2321.0,
+   "could": 897.0,
+   "level": 9.1791,
+   "price": 750.0
   },
   {
    "name": "Ai Weiwei \u00b7 Multiple \u00b7 2025 Q3",
    "artist": "Ai Weiwei",
    "close": "2025-08-27",
-   "quiet": 3.7326,
-   "demand": 402.0
+   "quiet": 4.609,
+   "demand": 402.0,
+   "weight": 87.22,
+   "sold": 2206.0,
+   "sold_paid": 1804.0,
+   "could": 402.0,
+   "level": 4.609,
+   "price": 1300.0
   },
   {
    "name": "Cleon Peterson \u00b7 Shame \u00b7 2025 Q3",
    "artist": "Cleon Peterson",
    "close": "2025-09-16",
-   "quiet": 4.49,
-   "demand": 511.0
+   "quiet": 5.3025,
+   "demand": 511.0,
+   "weight": 96.37,
+   "sold": 1197.0,
+   "sold_paid": 686.0,
+   "could": 511.0,
+   "level": 5.3025,
+   "price": 650.0
   },
   {
    "name": "Joan Cornell\u00e0 \u00b7 Work Hard and Then Die \u00b7 2025 Q4",
    "artist": "Joan Cornell\u00e0",
    "close": "2025-10-22",
-   "quiet": 10.3913,
-   "demand": 1005.0
+   "quiet": 12.6154,
+   "demand": 1005.0,
+   "weight": 79.66,
+   "sold": 2453.0,
+   "sold_paid": 1448.0,
+   "could": 1005.0,
+   "level": 12.6154,
+   "price": 600.0
   },
   {
    "name": "Harmonia \u00b7 Multiple \u00b7 2025 Q4",
    "artist": "Harmonia",
    "close": "2025-10-28",
-   "quiet": 3.8015,
-   "demand": 430.0
+   "quiet": 4.5913,
+   "demand": 430.0,
+   "weight": 93.66,
+   "sold": 1244.0,
+   "sold_paid": 814.0,
+   "could": 430.0,
+   "level": 4.5913,
+   "price": null
   },
   {
    "name": "James Jean \u00b7 Multiple \u00b7 2025 Q4",
    "artist": "James Jean",
    "close": "2025-10-30",
-   "quiet": 3.1877,
-   "demand": 334.0
+   "quiet": 3.9019,
+   "demand": 334.0,
+   "weight": 85.6,
+   "sold": 534.0,
+   "sold_paid": 200.0,
+   "could": 334.0,
+   "level": 3.9019,
+   "price": 593.6016949152543
   },
   {
    "name": "Cindy Sherman \u00b7 Untitled \u00b7 2025 Q4",
    "artist": "Cindy Sherman",
    "close": "2025-11-10",
-   "quiet": 7.2842,
-   "demand": 632.0
+   "quiet": 8.7663,
+   "demand": 632.0,
+   "weight": 72.09,
+   "sold": 2393.0,
+   "sold_paid": 1761.0,
+   "could": 632.0,
+   "level": 8.7663,
+   "price": 1300.0
   },
   {
    "name": "Tom\u00e1s S\u00e1nchez \u00b7 Multiple \u00b7 2026 Q1",
    "artist": "Tom\u00e1s S\u00e1nchez",
    "close": "2026-01-26",
-   "quiet": 6.0449,
-   "demand": 635.0
+   "quiet": 7.2507,
+   "demand": 635.0,
+   "weight": 87.58,
+   "sold": 2338.0,
+   "sold_paid": 1703.0,
+   "could": 635.0,
+   "level": 7.2507,
+   "price": 500.0
   },
   {
    "name": "Ai Weiwei \u00b7 Multiple \u00b7 2026 Q1",
    "artist": "Ai Weiwei",
    "close": "2026-01-27",
-   "quiet": 3.4642,
-   "demand": 375.0
+   "quiet": 4.1029,
+   "demand": 375.0,
+   "weight": 91.4,
+   "sold": 1084.0,
+   "sold_paid": 709.0,
+   "could": 375.0,
+   "level": 4.1029,
+   "price": 1500.0
   },
   {
    "name": "Marina Abramovi\u0107 \u00b7 Maria/Marina \u00b7 2026 Q1",
    "artist": "Marina Abramovi\u0107",
    "close": "2026-02-09",
-   "quiet": 12.4044,
-   "demand": 1367.0
+   "quiet": 14.5127,
+   "demand": 1366.0,
+   "weight": 94.12,
+   "sold": 7628.0,
+   "sold_paid": 6262.0,
+   "could": 1366.0,
+   "level": 14.5127,
+   "price": 675.0
   },
   {
    "name": "Katharina Grosse \u00b7 Multiple \u00b7 2026 Q1",
    "artist": "Katharina Grosse",
    "close": "2026-02-12",
-   "quiet": 6.1577,
-   "demand": 308.0
+   "quiet": 6.8449,
+   "demand": 308.0,
+   "weight": 45.0,
+   "sold": 1179.0,
+   "sold_paid": 871.0,
+   "could": 308.0,
+   "level": 6.8449,
+   "price": 1000.0
   },
   {
    "name": "Man Ray \u00b7 Multiple \u00b7 2026 Q1",
    "artist": "Man Ray",
    "close": "2026-02-16",
-   "quiet": 5.2741,
-   "demand": 548.0
+   "quiet": 6.1309,
+   "demand": 548.0,
+   "weight": 89.38,
+   "sold": 2716.0,
+   "sold_paid": 2168.0,
+   "could": 548.0,
+   "level": 6.1309,
+   "price": 451.74537987679673
   },
   {
    "name": "Mickalene Thomas \u00b7 Multiple \u00b7 2026 Q1",
    "artist": "Mickalene Thomas",
    "close": "2026-03-16",
-   "quiet": 8.4702,
-   "demand": 1037.0
+   "quiet": 10.1004,
+   "demand": 1037.0,
+   "weight": 102.67,
+   "sold": 3861.0,
+   "sold_paid": 2824.0,
+   "could": 1037.0,
+   "level": 10.1004,
+   "price": 795.0
   },
   {
    "name": "Lucian Freud \u00b7 Multiple \u00b7 2026 Q2",
    "artist": "Lucian Freud",
    "close": "2026-04-13",
-   "quiet": 2.8075,
-   "demand": 332.0
+   "quiet": 3.2856,
+   "demand": 332.0,
+   "weight": 101.05,
+   "sold": 1214.0,
+   "sold_paid": 882.0,
+   "could": 332.0,
+   "level": 3.2856,
+   "price": 500.0
   },
   {
    "name": "Shirin Neshat \u00b7 Multiple \u00b7 2026 Q2",
    "artist": "Shirin Neshat",
    "close": "2026-04-27",
-   "quiet": 3.3216,
-   "demand": 355.0
+   "quiet": 3.9997,
+   "demand": 355.0,
+   "weight": 88.76,
+   "sold": 911.0,
+   "sold_paid": 556.0,
+   "could": 355.0,
+   "level": 3.9997,
+   "price": 763.1578947368421
   },
   {
    "name": "Grayson Perry \u00b7 The Changeling \u00b7 2026 Q2",
    "artist": "Grayson Perry",
    "close": "2026-04-29",
-   "quiet": 5.4831,
-   "demand": 711.0
+   "quiet": 6.6437,
+   "demand": 711.0,
+   "weight": 107.02,
+   "sold": 2978.0,
+   "sold_paid": 2267.0,
+   "could": 711.0,
+   "level": 6.6437,
+   "price": 1000.0
   },
   {
    "name": "Joel Mesler \u00b7 Multiple \u00b7 2026 Q2",
    "artist": "Joel Mesler",
    "close": "2026-05-19",
-   "quiet": 1.2308,
-   "demand": 149.0
+   "quiet": 1.4611,
+   "demand": 149.0,
+   "weight": 101.98,
+   "sold": 236.0,
+   "sold_paid": 87.0,
+   "could": 149.0,
+   "level": 1.4611,
+   "price": 625.0
   },
   {
    "name": "Ai Weiwei \u00b7 Guar \u00b7 Multiple \u00b7 2026 Q2",
    "artist": "Ai Weiwei",
    "close": "2026-06-01",
-   "quiet": 6.1079,
-   "demand": 678.0
+   "quiet": 7.3196,
+   "demand": 678.0,
+   "weight": 92.63,
+   "sold": 4245.0,
+   "sold_paid": 3567.0,
+   "could": 678.0,
+   "level": 7.3196,
+   "price": 850.0
   },
   {
    "name": "Gregory Crewdson \u00b7 Multiple \u00b7 2026 Q2",
    "artist": "Gregory Crewdson",
    "close": "2026-06-29",
-   "quiet": 10.2737,
-   "demand": 1315.0
+   "quiet": 12.4483,
+   "demand": 1315.0,
+   "weight": 105.64,
+   "sold": 3483.0,
+   "sold_paid": 2168.0,
+   "could": 1315.0,
+   "level": 12.4483,
+   "price": 525.0
   },
   {
    "name": "Bisa Butler \u00b7 Multiple \u00b7 2026 Q4",
    "artist": "Bisa Butler",
    "close": "2026-10-12",
-   "quiet": 9.736,
-   "demand": 1294.0
+   "quiet": 11.5448,
+   "demand": 1294.0,
+   "weight": 112.09,
+   "sold": 9743.0,
+   "sold_paid": 8449.0,
+   "could": 1294.0,
+   "level": 11.5448,
+   "price": 750.0
   }
  ],
  "usual_audience": {
-  "announce": 43532.0,
+  "announce": 45605.0,
   "early_access": 923.0,
   "insiders": 153.0,
   "other": 11967.5,
@@ -396,24 +672,24 @@
    "announce_x_size"
   ],
   "coef": [
-   -2.0851622240571177,
-   -0.3189255691286909,
-   -0.7914143789245714,
-   -0.6282288229059544,
-   -0.11785345430139742,
-   -0.5736851823435585,
-   -0.39116796294280615,
-   -0.13365352644731646,
-   -0.4519542147342926,
-   -0.3056664894539861,
-   -0.029768441267059874
+   -2.076691793921155,
+   -0.2974061821389338,
+   -0.8174272389944861,
+   -0.6540242596804661,
+   -0.29210744018712936,
+   -0.5514261437759884,
+   -0.111701644352572,
+   -0.1411246433158673,
+   -0.43062171653775916,
+   -0.3131579956846394,
+   -0.03523021292417712
   ],
   "spread": [
-   -0.43712553767465745,
-   0.2708682692395178
+   -0.48431505425111476,
+   0.29202450638848987
   ],
-  "sends": 433,
-  "launches": 88,
+  "sends": 614,
+  "launches": 129,
   "pull_weight": 1.0
  },
  "paid_up": {
@@ -422,39 +698,39 @@
    "n": 30
   },
   "0.2": {
-   "x": 1.925,
-   "n": 31
+   "x": 1.994,
+   "n": 32
   },
   "0.3": {
-   "x": 1.909,
-   "n": 31
+   "x": 1.914,
+   "n": 32
   },
   "0.4": {
-   "x": 1.835,
-   "n": 30
+   "x": 1.88,
+   "n": 32
   },
   "0.5": {
-   "x": 1.803,
-   "n": 29
+   "x": 1.825,
+   "n": 32
   },
   "0.6": {
    "x": 1.737,
-   "n": 29
+   "n": 33
   },
   "0.7": {
-   "x": 1.756,
-   "n": 28
+   "x": 1.695,
+   "n": 31
   },
   "0.8": {
-   "x": 1.744,
-   "n": 27
+   "x": 1.683,
+   "n": 32
   },
   "0.9": {
-   "x": 1.822,
-   "n": 27
+   "x": 1.767,
+   "n": 32
   }
  },
- "paid_launches": 31,
+ "paid_launches": 37,
  "asOf": "2026-10-12",
  "launches": 46,
  "launchDays": 1575,
