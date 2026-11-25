@@ -2,7 +2,7 @@
  * Overview and Targets tabs, the freshness, the Display menu), the chips
  * (status, dates, lead, horizon, line), the warning strip, then the tab's
  * body: the Overview's cards, the targets page, or the basket picker. */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
 import { freshness } from "../../shared/freshness.mjs";
 import { Avatar, Badge, Menu, MenuItem, Seg, useMenu } from "./ui.jsx";
@@ -11,6 +11,7 @@ import { Cal, Caret, Chev, Clock, Display, Hamburger, ProgressRing, Refresh, Rin
 import { wordsOf } from "./vocab.mjs";
 import { releaseClock } from "./sections.mjs";
 import { canBenchmark, canTarget, compareOf } from "./compare.mjs";
+import { canConvert, toConversions } from "./conversions.mjs";
 import { GROUP_WORD, groupOf, nameOf, onDay, rowState, STATE_COLOR, whenWords } from "./rows.mjs";
 import Overview from "./Overview.jsx";
 import TargetSetting from "./TargetSetting.jsx";
@@ -130,6 +131,19 @@ function MethodSwitch({ value, onChange }) {
   );
 }
 
+/* What a timed launch's page counts before its window (web/src/conversions.mjs):
+ * signup conversions, each channel's signups at the rate they go on to buy,
+ * which is the default, or the signups themselves. Kept per browser. */
+function CountSwitch({ value, onChange }) {
+  return (
+    <span className="cmp">Count
+      <Seg label="Count" value={value} onChange={onChange}
+        options={[["conversions", "Conversions", "Signups expected to buy: each channel's signups at its own assumed rate, so paid is not overstated"],
+          ["signups", "Signups", "Every signup counted the same"]]} />
+    </span>
+  );
+}
+
 /* The header's refresh button, beside the freshness line: starts a pull and
  * rebuild now (POST /api/refresh) instead of waiting for the hourly one. It
  * spins while any refresh runs, whoever started it, and the page reloads when
@@ -205,12 +219,13 @@ function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup }) {
   ));
 }
 
-export default function ReleasePage({ snap, snapError, actions, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, targetsFrom, setTargetsFrom, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
+export default function ReleasePage({ snap, snapError, actions, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, targetsFrom, setTargetsFrom, countAs, setCountAs, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
   const tab = route.tab || "overview";
   const setTab = (t) => setRoute({ ...route, tab: t, basket: false });
   const [horizon, setHorizon] = useState("today");
   const [lineKey, setLineKey] = useState(null);
   useEffect(() => { setHorizon("today"); setLineKey(null); }, [snap && snap.id]);
+  const converted = useRef({});
   if (!snap) {
     return (
       <main className="page">
@@ -230,7 +245,14 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
   // with Direct spread), laid over the page when the switch says so. The clock's page is the default.
   const planVariant = snap.variants && snap.variants.plan;
   const planOn = targetsFrom === "plan" && !!planVariant && !lineVariant;
-  const view = lineVariant ? { ...snap, ...lineVariant } : planOn ? { ...snap, ...planVariant } : directSpread && variant ? { ...snap, ...variant } : snap;
+  const picked = lineVariant ? { ...snap, ...lineVariant } : planOn ? { ...snap, ...planVariant } : directSpread && variant ? { ...snap, ...variant } : snap;
+  // a timed launch before its window reads in signup conversions unless the switch says signups: the same view,
+  // each channel's signups at its own rate (worked out once a view, not on every render)
+  const showCount = canConvert(snap) && !lineVariant && !!setCountAs;
+  const convOn = showCount && countAs !== "signups";
+  const viewKey = [snap.id, snap.builtAt, planOn ? "plan" : directSpread && variant ? "spread" : "channel"].join("|");
+  if (convOn && (converted.current.key !== viewKey || converted.current.snap !== snap)) converted.current = { key: viewKey, snap, view: toConversions(picked) };
+  const view = convOn ? converted.current.view : picked;
   // on the All lines view, each line's own reading, for the cards that run per line (paid: an ad set per line)
   const lineViews = lines && !lineKey ? lines.map((l) => {
     const v = (directSpread && snap.variants.lines_direct && snap.variants.lines_direct[l.key]) || snap.variants.lines[l.key];
@@ -278,8 +300,9 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
             {snap.catalogue && <button className="chip"><Cal />Last 90 days</button>}
             {showHorizon && <HorizonChip horizon={horizon} onChange={setHorizon} closeLabel={W.closeLabel} />}
             {lines && <LineChip lines={lines} value={lineKey} onChange={setLineKey} />}
-            {(showMethod || showCompare) && (
+            {(showMethod || showCompare || showCount) && (
               <span className="cmps">
+                {showCount && tab === "overview" && <CountSwitch value={convOn ? "conversions" : "signups"} onChange={setCountAs} />}
                 {showMethod && <MethodSwitch value={planOn ? "plan" : "time"} onChange={setTargetsFrom} />}
                 {showCompare && <CompareSwitch snap={snap} vs={vs} onChange={setCompareTo} />}
               </span>

@@ -53,9 +53,11 @@ export function dayWord(iso, asOf) {
 /* a size as the row prints it: a range, one figure when the two meet, "Up to"
  * from nothing, and no estimate said as that */
 export function unitsWord(u) {
-  if (!u || !(u.high >= 1)) return null;
+  if (!u) return null;
+  if (u.high > 0 && u.high < 1) return "Under 1";   // a timed launch read in signup conversions: a size too small to count
+  if (!(u.high >= 1)) return null;
   const f = (v) => Math.round(v).toLocaleString("en-GB");
-  if (u.low === u.high) return `+${f(u.high)}`;
+  if (u.low === u.high || (u.low >= 1 && Math.round(u.low) === Math.round(u.high))) return `+${f(u.high)}`;
   if (!(u.low >= 1)) return `Up to ${f(u.high)}`;
   return `+${f(u.low)} to ${f(u.high)}`;
 }
@@ -176,7 +178,7 @@ export default function PlanChanges({ snap, state }) {
 
   return (
     <Card wide className="pcard" aria="Suggested actions"
-      title={<>Suggested actions{todo.length > 0 && <span className="pc-n">{todo.length}</span>}{snap.type === "TL" && todo.length > 0 && <span className="pc-n">in signups by the open</span>}</>}
+      title={<>Suggested actions{todo.length > 0 && <span className="pc-n">{todo.length}</span>}{snap.type === "TL" && todo.length > 0 && <span className="pc-n">in {snap.countAs === "conversions" ? "conversions" : "signups"} by the open</span>}</>}
       right={<button className="sbtn" onClick={() => ask(`What actions do you suggest for ${artist}, and why?`)}><AgentIcon w={13} />Ask</button>}
       menu={done.length ? [{ label: handled ? "Hide accepted and dismissed" : "Show accepted and dismissed", onClick: () => setHandled(!handled) }] : null}>
       <div className="pc">

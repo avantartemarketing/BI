@@ -224,6 +224,35 @@ The clock's page above is the default and is unchanged; the window has no such v
 Sessions and signup rates by channel, the email sends and their signups, and the paid signups'
 cost are in the funnel card's rungs and popups, as they are on an LE page.
 
+## 4a. Signup conversions (assumed): the page's unit before the window
+
+Asked by the repository owner on 25 November 2026. Counted in signups, paid looks far bigger than it is: a paid
+signup goes on to order far less often than one from an email or a post (on Marina Abramović's launch that day,
+about 6 in 100 against 33 in 100 for email), so paid was four fifths of the signup target and half of what the
+launch needs from its signups. The pre-window page therefore reads, by default, in **signup conversions
+(assumed)**: the signups expected to buy, each channel's signups weighted by the share of that channel's signups
+the basket's launches saw order (`targets.signup_order_rate_by_group`; the blended rate where the basket has none
+for a channel). The target in this unit is the orders the launch needs from its signups (`targets.orders_needed`),
+so it does not move with the reading of Direct: with Direct spread over the other channels one factor keeps it
+there.
+
+- **The switch.** `Count: Conversions | Signups` in the page's chips, beside Targets from and Compare to. Conversions
+  is the default; the choice is kept per browser (`countAs`). It shows on a timed launch gathering signups whose
+  targets carry the rates, and not once the window opens, where the page is in units.
+- **What changes.** The trajectory, the channels card, the gap card (its drivers closed onto the gap in the new
+  unit, whole and adding up), the funnel table's signups added and lost, the email card's headline, the signups side
+  of the forecast table (4c), and on the plan-based view the plan card (every piece at its channel's rate, the rows
+  the sum of their pieces, Not covered worked out again) and the suggested actions' sizes.
+- **What does not.** Sessions and the session to signup rate; the sales forecast (4b), which is already in units;
+  and the Paid section, whose cost per signup and return on spend already carry paid's own rate.
+- **Where it lives.** Nothing is stored and the build is unchanged: `web/src/conversions.mjs` lays the weights over
+  the view the page has already chosen (as the feed attributes Direct, Direct spread, or the plan-based one), and
+  `web/src/vocab.mjs` gives the cards the words. The connector and the Agent still read the page in signups.
+  `node tests/conversions.mjs` holds the sums.
+- **Read it as.** An assumption, as its name says: the rates are the basket's medians, not this launch's own, and
+  the forecast table's sales columns use a finer reading (product and release signups apart), so forecast
+  conversions times the pieces an order takes will sit near, not on, the forecast sales from signups.
+
 ## 4b. Sell-through forecast by work (pre-window)
 
 The question before the window opens is what it will sell, work by work. The card answers from
@@ -667,3 +696,4 @@ What the data showed on the way, and how the build reads it:
 | 26 | Where the basket's launches show | A card in the Overview's grid, last by default: one launch per row with units and price, nothing else (5 October 2026) |
 | 27 | The clock the signup pace is read on | The campaign clock, as LE: the share of each launch's announce -> open span gone by, a span starting where the signups began when that is after the announce on file; the panel's pace under 4 launches (16 November 2026) |
 | 28 | How much to spend a day before the open | The LE's Spend levels card, read on signups: the cautious level on the page's own cost path, what a paid signup is worth among what is unsure, the budget's pace marked and no cap (section 4; 25 November 2026) |
+| 29 | The pre-window page's unit | Signup conversions (assumed): each channel's signups at the rate they go on to order, the target the orders needed from signups; a switch back to signups (section 4a; 25 November 2026) |

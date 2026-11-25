@@ -21,7 +21,8 @@ export function tlForecastRows(snap) {
   if (!f || !open) return { rows: [], all: null };
   const now = has(hero.now) ? hero.now : (today && has(today.signups) ? today.signups : null);
   const targetNow = has(hero.expectedToday) ? hero.expectedToday : null;
-  const projected = has(open.signups) ? open.signups : (has(hero.projected) ? hero.projected : null);
+  // read in signup conversions (web/src/conversions.mjs) the projection is the headline's, which is in that unit
+  const projected = snap.countAs === "conversions" && has(hero.projected) ? hero.projected : has(open.signups) ? open.signups : (has(hero.projected) ? hero.projected : null);
   const works = open.works || [];
   const rest = (f.unkeyedProduct || 0) + (f.releaseSignups || 0);
   const pool = (f.keyed || 0) + rest;

@@ -34,6 +34,18 @@ const TL_SIGNUPS = {
   launches: "timed launches",
 };
 
+/* ... and the same page read in signup conversions (web/src/conversions.mjs):
+ * the signups expected to buy, each channel's at its own rate. The paid
+ * cards keep the signup's terms. */
+const TL_CONVERSIONS = {
+  ...TL_SIGNUPS, state: "conversions",
+  unit: "conversions", unitOne: "conversion", Unit: "Conversions",
+  secured: "Conversions", securedLower: "assumed", securedUnits: "Signup conversions",
+  toDate: "Conversions to date", projected: "Projected conversions",
+  heroTitle: "Conversions vs target", heroTitlePartial: "Conversions vs target",
+  trajTitle: "Signup conversions (assumed)",
+};
+
 const TL_UNITS = {
   ...LE, tl: true, state: "window",
   secured: "Sold", securedLower: "sold", securedUnits: "Units sold",
@@ -46,11 +58,13 @@ const TL_UNITS = {
 };
 
 /* The words for a snapshot: the LE's unless it is a timed launch, then the
- * state's - signups until the sales open, units from then on. */
+ * state's - signups until the sales open (signup conversions where the page
+ * is read that way), units from then on. */
 export function wordsOf(snap) {
   if (!snap || snap.type !== "TL") return LE;
   const st = snap.tlState;
-  return st === "window" || st === "settling" || st === "closed" ? TL_UNITS : TL_SIGNUPS;
+  if (st === "window" || st === "settling" || st === "closed") return TL_UNITS;
+  return snap.countAs === "conversions" ? TL_CONVERSIONS : TL_SIGNUPS;
 }
 
 /* Whether the page's clock runs in hours (a timed launch inside its window). */

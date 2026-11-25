@@ -52,6 +52,8 @@ const DIRECT_PREF = "directSpread";
 const readDirectPref = () => { try { return localStorage.getItem(DIRECT_PREF) !== "0"; } catch { return true; } };
 const METHOD_PREF = "targetsFrom";   // the launch pages' targets: "time" (the campaign clock, the default) or "plan" (the comms plan)
 const readMethodPref = () => { try { return localStorage.getItem(METHOD_PREF) === "plan" ? "plan" : "time"; } catch { return "time"; } };
+const COUNT_PREF = "countAs";   // a timed launch before its window: "conversions" (signup conversions, the default) or "signups"
+const readCountPref = () => { try { return localStorage.getItem(COUNT_PREF) === "signups" ? "signups" : "conversions"; } catch { return "conversions"; } };
 const COMPARE_PREF = "compareTo";
 const readComparePref = () => { try { return localStorage.getItem(COMPARE_PREF) === "benchmark" ? "benchmark" : "target"; } catch { return "target"; } };
 
@@ -95,6 +97,8 @@ export default function App() {
   const setTargetsFrom = (v) => { setTargetsFromState(v); try { localStorage.setItem(METHOD_PREF, v); } catch { /* per-browser convenience only */ } };
   const [compareTo, setCompareToState] = useState(readComparePref);
   const setCompareTo = (v) => { setCompareToState(v); try { localStorage.setItem(COMPARE_PREF, v); } catch { /* per-browser convenience only */ } };
+  const [countAs, setCountAsState] = useState(readCountPref);
+  const setCountAs = (v) => { setCountAsState(v); try { localStorage.setItem(COUNT_PREF, v); } catch { /* per-browser convenience only */ } };
   const [st, startRefresh] = useRefreshStatus();
 
   useEffect(() => { fetch("/auth/me").then((r) => (r.ok ? r.json() : null)).then(setMe).catch(() => {}); }, []);
@@ -165,7 +169,7 @@ export default function App() {
           <Permissions me={me} onMenu={() => setNav(true)} />
         ) : route.view === "release" ? (
           <ReleasePage snap={snap} snapError={snapError} actions={actions} row={current} asOf={index && index.asOf} st={st} route={route} setRoute={setRoute}
-            directSpread={directSpread} setDirectSpread={setDirectSpread} compareTo={compareTo} setCompareTo={setCompareTo} targetsFrom={targetsFrom} setTargetsFrom={setTargetsFrom} onSaved={onSaved} onRefreshed={onRefreshed} onRefresh={startRefresh} onOpen={pick} onMenu={() => setNav(true)} />
+            directSpread={directSpread} setDirectSpread={setDirectSpread} compareTo={compareTo} setCompareTo={setCompareTo} targetsFrom={targetsFrom} setTargetsFrom={setTargetsFrom} countAs={countAs} setCountAs={setCountAs} onSaved={onSaved} onRefreshed={onRefreshed} onRefresh={startRefresh} onOpen={pick} onMenu={() => setNav(true)} />
         ) : route.view === "releases" ? (
           <Releases groups={groups} asOf={index && index.asOf} onPick={pick} onMenu={() => setNav(true)} />
         ) : (

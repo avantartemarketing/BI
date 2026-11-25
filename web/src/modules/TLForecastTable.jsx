@@ -24,6 +24,7 @@ export default function TLForecastTable({ snap }) {
   const f = snap.sellForecast;
   const { rows, all, byPage } = tlForecastRows(snap);
   if (!f || !all) return <Card title={title} wide><div className="empty-state">No forecast yet: it needs the works from Airtable or a units target</div></Card>;
+  const cv = snap.countAs === "conversions";   // the signups side read in signup conversions (web/src/conversions.mjs)
   const ranged = (r) => has(r.lo) && has(r.hi) && r.hi > r.lo;
   const cells = (r) => {
     const vs = has(r.signups) && has(r.targetToDate) && r.targetToDate > 0 ? r.signups / r.targetToDate - 1 : null;
@@ -44,7 +45,7 @@ export default function TLForecastTable({ snap }) {
   };
   const rowTip = (r) => [
     r.line ? `${r.name} · ${r.line}` : r.name,
-    byPage ? "Signups: the ones made from this work's page, plus its share of the signups that name no work" : "Signups: the release's, shared out by each work's units target (too few name a work so far)",
+    cv ? "Conversions: the release's, shared out as its signups are" : byPage ? "Signups: the ones made from this work's page, plus its share of the signups that name no work" : "Signups: the release's, shared out by each work's units target (too few name a work so far)",
   ].join("\n");
   return (
     <Card title={title} wide className="stt-card" aria="Sell-through forecast by work">
@@ -52,7 +53,7 @@ export default function TLForecastTable({ snap }) {
         <table className="stt">
           <colgroup>{[19, 8, 9, 8, 9, 10, 10, 9, 8, 10].map((w, i) => <col key={i} style={{ width: `${w}%` }} />)}</colgroup>
           <thead><tr>
-            <th>Work</th><th>Signups</th><th>Signup target to date</th><th>vs target</th><th>Forecast signups</th><th>Forecast sales from signups</th><th>Forecast non-signup sales</th><th>Forecast total sales</th><th>Target</th>
+            <th>Work</th><th>{cv ? "Conversions" : "Signups"}</th><th>{cv ? "Conversion" : "Signup"} target to date</th><th>vs target</th><th>Forecast {cv ? "conversions" : "signups"}</th><th>Forecast sales from signups</th><th>Forecast non-signup sales</th><th>Forecast total sales</th><th>Target</th>
             <th><span className="sorted">Forecast <span aria-hidden="true">↓</span></span></th>
           </tr></thead>
           <tbody>
