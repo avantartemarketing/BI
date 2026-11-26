@@ -184,17 +184,21 @@
 .plan-r.head span { text-align: right; white-space: nowrap; }
 .plan-r .nm { color: var(--text); white-space: nowrap; }
 .plan-r .pl { text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
-.plan-r .ld { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.plan-r .ac { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
 .plan-r .strack { overflow: visible; background: none; }
 .plan-r .strack b, .pv-l .strack b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px 0 0 4px; background: #ededf0; }
 .plan-r .strack i:first-of-type { border-radius: 4px 0 0 4px; }
+/* a bar answers the pointer over the whole height of its row, and its readout (the forecast and what it is made
+ * of) is as wide as its longest line */
+.plan-r .strack::after, .pv-l .strack::after { content: ""; position: absolute; inset: -9px 0; }
+.plan-tip { left: 0; top: 0; visibility: hidden; width: max-content; max-width: min(300px, 100%); }
 button.plan-r { appearance: none; background: none; border: 0; padding: 0; margin: 0; width: 100%; font: inherit; font-size: 13px; color: inherit; text-align: left; cursor: pointer; border-radius: 6px; }
 button.plan-r:disabled { cursor: default; }
 button.plan-r:not(:disabled):hover .nm { color: var(--ink); }
 button.plan-r:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; }
 .plan-r.row.sel { background: #f4f4f6; box-shadow: -10px 0 0 #f4f4f6, 10px 0 0 #f4f4f6; }
 .plan-r.row.sel .nm { color: var(--ink); font-weight: 500; }
-.pv-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 30px; align-items: stretch; }
+.pv-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 30px; align-items: stretch; }
 .pv-rw { position: relative; min-height: 0; }
 .pv-side { position: absolute; inset: 0; background: #f7f7f9; border-radius: 10px; padding: 10px 6px 8px 16px; display: flex; flex-direction: column; }
 .pv-side .pv-ph, .pv-side .pv-pn, .pv-side .pv-l.head { padding-right: 16px; flex: 0 0 auto; }
@@ -209,7 +213,7 @@ button.plan-r:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px
 .pv-l .nm { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pv-l .nm em { display: inline-block; width: 48px; font-style: normal; color: var(--ghost); }
 .pv-l .pl { text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
-.pv-l .ld { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.pv-l .ac { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
 .pv-l .strack { height: 8px; border-radius: 3px; background: none; overflow: visible; }
 .pv-l .strack b { border-radius: 3px 0 0 3px; background: #e4e4e8; }
 .pv-l .strack i:first-of-type { border-radius: 3px 0 0 3px; }
