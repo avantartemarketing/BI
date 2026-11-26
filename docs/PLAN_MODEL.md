@@ -701,7 +701,8 @@ page needs the timed launches' feeds, which a checkout does not carry.
   and set aside for the owner's simpler answer. Built (section 6, "The plan check on the
   page"): no line on the card, a warning in the page's strip for a plan that reads short
   on a launch not heading for its target, and the artist's record kept as a line of its
-  own. No live page showed the warning that day: the one plan reading short was Pejac's,
+  own. Live the same day, once the owner had seen the before and after. No live page
+  showed the warning that day: the one plan reading short was Pejac's,
   which was heading for 176 against its 170. On a timed launch read in signup conversions
   the verdict is now read again in that unit (docs/TL_SPEC.md 4a), where it was the
   signups' verdict beside the conversions' figures.
