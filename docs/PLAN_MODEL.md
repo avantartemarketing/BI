@@ -378,21 +378,22 @@ that aimed at 100 and sold 50 is no guide to selling 100, and one that aimed at 
 sold 100 is (the owner's rule). From them comes the range a quiet day of plan ran at,
 the lowest and the highest left out. Inside that range the plan is sized to the target:
 a quiet day is given the size the target asks of it (the target less paid's part, over
-the plan's value), so the pieces' figures add up to the target and the card says the plan
-is about right for it. A plan that would need more from each quiet day than the
+the plan's value), so the pieces' figures add up to the target and the plan reads in line
+with it. A plan that would need more from each quiet day than the
 strongest of them reads short, at the strongest's size, and one that needs less than the
 weakest reads over. The target carries the judgement of how much the work is wanted; the
 plan check asks only whether the comms are enough for a launch of that size, and the
-artist's own earlier launches are printed beside it (sold of the edition, and how many
-times over it was entered for) and move no figure. The older reading below stands where
+artist's own earlier launches are printed on the plan card (sold of the edition, and how
+many times over it was entered for) and move no figure. What the page makes of the check
+is under "The plan check on the page" below. The older reading below stands where
 the price list has no sales on it or the launch has no target or price.
 
 Read on 90 launches, each from those closed before it announced: what a launch sold
 outside paid is told to within 52% this way against 76% the older way, and the plan of
 the middle launch reads at 101% of its target. A plan's size does not tell whether a
 launch sells out: once the edition's size is allowed for it adds nothing, and among
-editions of 150 or more the lighter half of plans sold 83% against 92%. So "about right"
-says the comms are usual for a launch that sold this many, not that this one will.
+editions of 150 or more the lighter half of plans sold 83% against 92%. So "in line" says
+the comms are usual for a launch that sold this many, not that this one will.
 
 **The level, the older reading.** The price list is in quiet days, so a plan needs to know how big a quiet
 day is for this launch before it has results: the median of the artist's last three
@@ -448,18 +449,24 @@ inside, lists the pieces: every email and post with the one furthest behind its 
 (in date order before anything has gone out), or the phase picked, the baseline by
 channel, or paid by what is spent and still to spend.
 
-**The line under the headline** is the plan check in words (`web/src/planCheck.mjs`,
-held by `node tests/plan_check.mjs`). It opens with the verdict: the plan is about right
-for the target (the build's "in line"), too small for it ("short") or bigger than the
-target needs ("over"). Then what the plan should bring going by the similar launches,
-which is their range with paid at its target, and under a plan too small the part left
-over, named as its row in the bars is ("which leaves 33 not covered"). The line reads the
-plan before any results and the headline above it reads where the launch is heading, so
-once a launch is live and heading outside that range a last sentence says so: "The launch
-is heading for 218 because it is running behind the plan, and the bars below show where"
-(or ahead of it). No figure in the line is called short, which is the headline's word for
-what the launch is short by. The artist's record beneath is headed as the artist's, so it
-is not read as the similar launches, and hovering the line names those.
+**The plan check on the page (from 26 November 2026).** The page says nothing while the
+plan is enough. A plan that reads short is a warning in the strip at the top of the
+launch's page, in the warm tint (`web/src/planCheck.mjs` and the Strips of
+`ReleasePage.jsx`, held by `node tests/plan_check.mjs`): "The comms plan is too small for
+the 170 target. Going by similar launches, it should bring 84 to 137." It shows whichever
+way the page is switched, since a page opens on Time, and there a button turns the page to
+Plan; it is dismissed launch by launch, and hovering it names the similar launches. It does
+not show on a launch its results have carried to the target all the same (the plan's own
+landing at the target or past it), where the page already says the launch reaches it, nor
+on one line's own page. The strip gives no count of what the plan leaves: that is the Not
+covered row's, on the card, and the headline's "short" counts from where the launch is
+heading and rarely gives the same figure. A plan that reads over says nothing either. The
+artist's record is a plain line under the plan card's headline, headed as the artist's so
+it is not read as the similar launches.
+
+Until that day the check was a line under the plan card's headline on every page that had
+one. It read the plan before any results and the headline above it read where the launch
+was heading, so the two pointed opposite ways on most pages (section 9).
 
 **Suggested actions in this view** are valued by the same price list, at the launch's
 level and at how the piece's channel is running: an email still to come sent to the full
@@ -682,67 +689,19 @@ page needs the timed launches' feeds, which a checkout does not carry.
   default and Plan is this view. Still to build: the plan check as a step before early
   access (the gap, the ways to close it, an agreed plan and an accepted shortfall as one
   line), and the view on a launch's page before its first piece goes out.
-- **26 November 2026.** The owner found the plan check's line confusing ("The plan as
-  written is in line with the 862 conversion target. Similar launches would have brought
-  859 to 928 with this plan", under a headline of 218 at the open, 644 short of the
-  target). The line and the headline answer different questions, the plan before any
-  results and where the launch is heading, and nothing said so: of the eight live plan
-  pages that day the line read "in line" under a headline far short of the target on four
-  (Marina Abramović, Harland Miller, Johnson Tsang, Ai Weiwei) and "33 short" under one
-  that reached it on a fifth (Pejac). The line is reworded (section 6, "The line under the
-  headline"): a plain verdict, what the plan should bring, and where the launch is heading
-  instead when that is outside it. On a timed launch read in signup conversions the verdict
-  is now read again in that unit (docs/TL_SPEC.md 4a), where it was the signups' verdict
-  beside the conversions' figures.
-
-- **16 November 2026.** The brief (section 1). The first study on 64 launches, then the
-  feeds, the price list and the back-test, on 66. The strength kept at 0.5.
-- **16 November 2026, later.** The owner chose one forecast built only from the plan, no
-  clock in the view, then a page mockup (the plan card as bars with a box of the pieces
-  beside them), then asked for it to be built behind a switch with the clock's page as the
-  default. With it: an email felt for four more days and a post for one (4.3); what came
-  in credited to the day people entered, after the mockup showed a draw's batched orders
-  landing on the baseline; the two feeds in the hourly refresh; `etl/plan_view.py`.
-- **16 November 2026, evening.** The owner asked why Ai Weiwei's launch had no switch. Two
-  reasons, both fixed: a launch selling lines of work was left out of the first build (it
-  is now read on its combined page), and its code carries the year in full
-  (`AiWeiwei_Lego_2026`), which the reading of an email's name did not take, so its six
-  sends were on no launch. With it: the code found through the Notion campaign when the
-  page has none, the reason a launch has no view on the build's closing line, and the
-  target told apart from the edition (the trajectory's level line, the ceiling, the
-  shares on the Sell-through at close card), which that launch was the first to show.
-  The same change gave Ferrari Sheppard's and Harland Miller's launches the view, through
-  their Notion campaigns, and showed a third way a code is written: Ferrari Sheppard's
-  ends in no year, so its four sends were missing from its plan card for one refresh
-  until a send with no code was matched on the code written out.
-- **17 November 2026.** The owner asked why only 66 launches were read, and then whether the
-  Notion plan did not go back further than May 2024. It does, to September 2023: the pull
-  had kept only campaigns with a code, and codes begin in mid-2024. The pull now keeps
-  every campaign, a launch finds its plan by its artist and days where there is no code,
-  and its emails through the plan where their names carry none; the back-test's launches
-  take their codes as the build does. 91 launches are read in place of 66. Alongside: the
-  level test (section 8), asked for as "test a blend" and a plan for artists with no past
-  release.
-- **20 November 2026.** The owner noted that the suggestions almost always say to email
-  everyone when a launch is behind, with no thought for what else the list is getting or
-  what the release is worth. The email history was read for a cost and shows none in the
-  short run (a send does no worse in a busy week or a day after another, and launches in
-  busy weeks were no smaller, 74 launches), so an earlier reading of 8% fewer clicks an
-  extra email in the week before was withdrawn: it was the long decline in response
-  showing up. The team's own frequency test (four groups, December 2025 to March 2026)
-  read the same way: a quarter fewer emails, 6% more clicks on the same email two months
-  in, fewer clicks overall. The cost is therefore held as a rule the team sets and not a
-  price the model works out: `etl/list_load.py`, a cap on general sends in a week and a
-  scale on the list's four-week load, read across every launch (docs/METHODOLOGY.md 7d).
-- **23 November 2026.** The owner asked whether the approach could be applied to timed
-  launches. Read on the launches closed so far before anything was built (section 8,
-  "Timed launches"): the comms explain the pattern of a timed launch's signups and little
-  of their number, and the paid budget is the activity that does before the open; in the
-  window its part did not hold from one day's feeds to the next. `etl/analysis/tl_plan_backtest.py`
-  holds the four readings, and with `--write` the price list a plan-based view would read.
-- **24 November 2026.** The owner said go on a mockup of a timed launch's plan-based view
-  (Marina Abramović's Energy Hat, six days into twenty-two), and it went live: section 6b.
-  On the way the paid cost chart was found drawing its line on the ROI's scale, off the
-  card and across the page, and was given its own. The same day the owner asked why a
-  last chance email stood twice among a launch's suggested actions: it was one email at
-  two audiences, and is now one row that opens to the other.
+- **26 November 2026.** The owner found the plan check's line on the plan card confusing
+  ("The plan as written is in line with the 862 conversion target. Similar launches would
+  have brought 859 to 928 with this plan", under a headline of 218 at the open, 644 short
+  of the target) and asked for it to go, with a warning bar at the top of the dashboard in
+  its place when the plan is not enough. The line and the headline answered different
+  questions, the plan before any results and where the launch is heading, and nothing said
+  so: of the eight live plan pages that day the line read "in line" under a headline far
+  short of the target on four (Marina Abramović, Harland Miller, Johnson Tsang, Ai Weiwei)
+  and "33 short" under one that reached it on a fifth (Pejac). A rewording was shown first
+  and set aside for the owner's simpler answer. Built (section 6, "The plan check on the
+  page"): no line on the card, a warning in the page's strip for a plan that reads short
+  on a launch not heading for its target, and the artist's record kept as a line of its
+  own. No live page showed the warning that day: the one plan reading short was Pejac's,
+  which was heading for 176 against its 170. On a timed launch read in signup conversions
+  the verdict is now read again in that unit (docs/TL_SPEC.md 4a), where it was the
+  signups' verdict beside the conversions' figures.

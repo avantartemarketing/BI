@@ -173,10 +173,7 @@
  * its two figures, and beside the bars a box of the pieces inside, which keeps
  * the bars' height and scrolls within, fading at its foot while there is more */
 .plan-card { gap: 12px; }
-.plan-chk { font-size: 13px; line-height: 1.45; color: var(--muted); padding: 8px 12px; border-radius: 8px; background: var(--wash, #f5f5f7); max-width: 980px; }
-.plan-chk b { font-weight: 600; color: var(--ink); }
-.plan-chk.dn b { color: #b4441b; }
-.plan-chk .rec { display: block; margin-top: 2px; color: var(--faint); font-size: 12px; }
+.plan-rec { font-size: 12px; line-height: 1.45; color: var(--faint); max-width: 980px; margin-top: -4px; }
 .plan-rows { display: flex; flex-direction: column; }
 .plan-r { display: grid; grid-template-columns: 104px minmax(0, 1fr) 36px 56px; column-gap: 14px; align-items: center; height: 34px; font-size: 13px; }
 .plan-card.start .plan-r { grid-template-columns: 104px minmax(0, 1fr) 36px; }

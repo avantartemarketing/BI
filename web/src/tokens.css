@@ -107,6 +107,10 @@ button, input, select { font-family: inherit; }
 .chip .avatar { width: 16px; height: 16px; border-radius: 50%; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; }
 .strip { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 4px 14px 4px 20px; border-bottom: 1px solid #f3f3f3; font-size: 12.5px; color: var(--text); flex-wrap: wrap; }
 .strip .sx { color: var(--faint); }
+/* a warning to act on (the comms plan too small for its target): the strip in the warm tint */
+.strip.warn { background: var(--warm-bg); border-bottom-color: var(--warm-border); }
+.strip.warn .tx { color: var(--warm); font-weight: 500; }
+.strip.warn .sx { color: var(--text); }
 .strip .sp { flex: 1; }
 .sbtn { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border: 1px solid #e6e6e8; border-radius: 6px; background: var(--card); font: inherit; font-size: 12px; color: var(--ink); cursor: pointer; white-space: nowrap; }
 .sbtn:hover { background: #f6f6f7; }

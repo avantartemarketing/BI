@@ -1,18 +1,18 @@
-/* The plan check, in words (the grey line under the plan card's headline):
- * whether the plan is the right size for the target, going by the launches
- * that sold nearest it at a similar price, with the artist's own earlier
- * launches beside it. The target says how much the work is wanted; this says
- * only whether the comms are enough for a launch that size (etl/plan_view.py
- * override). Nothing on a plan sized the older way.
+/* The plan check on the page (docs/PLAN_MODEL.md 6). The build reads whether
+ * a launch's comms plan is the right size for its target, going by the
+ * launches that sold nearest it at a similar price (etl/plan_view.py
+ * override: "in line", "short" or "over"). The page says nothing while the
+ * plan is enough. A plan too small is a warning in the strip at the top of
+ * the launch's page (ReleasePage.jsx Strips), whichever way the page is
+ * switched.
  *
- * The line reads the plan before any results and the headline above it reads
- * where the launch is heading, so the two can point opposite ways: a plan
- * about right for its target on a launch landing far short of it, or one too
- * small on a launch that reaches it. On 26 November 2026 five of the eight
- * live plan pages read like that, and the repository owner found the line
- * confusing. So once a launch is live and heading outside what its plan
- * should bring, a last sentence says where it is heading and why, and no
- * figure in the line is called "short" beside the headline's own.
+ * Until 26 November 2026 the verdict was a line under the plan card's
+ * headline on every page that had one. It read the plan before any results
+ * while the headline above it read where the launch was heading, so the two
+ * pointed opposite ways on five of the eight live pages that day ("in line
+ * with the 862 target" under "644 short of the 862 target"), and the
+ * repository owner asked for it to go, with a warning at the top of the
+ * dashboard in its place when the plan is not enough.
  *
  * Plain JavaScript, no JSX, so the tests can import it. */
 import { fmt } from "./format.mjs";
@@ -20,27 +20,31 @@ import { fmt } from "./format.mjs";
 const n = (v) => fmt(Math.round(v));
 const num = (v) => typeof v === "number" && Number.isFinite(v);
 
-export function planCheck(p) {
-  if (!p || !p.against) return null;
+/* The warning, or null: {text, detail, tip}. `p` is the plan as the page counts it (a timed launch before its
+ * window in signups or in signup conversions, web/src/conversions.mjs). No warning on a launch its results have
+ * carried to the target all the same: the page already says it reaches it, and a warning beside that is the
+ * two readings pointing opposite ways again. */
+export function planWarning(p) {
+  if (!p || p.against !== "short") return null;
+  if (num(p.lands) && num(p.target) && Math.round(p.lands) >= Math.round(p.target)) return null;
   const ranged = Array.isArray(p.range) && num(p.range[0]) && num(p.range[1]);
   const lo = ranged ? Math.round(p.range[0]) : null, hi = ranged ? Math.round(p.range[1]) : null;
-  // a timed launch before its window is read in signups, or in signup conversions (web/src/conversions.mjs)
   const unit = p.of === "conversions" ? " conversions" : p.of === "signups" ? " signups" : "";
-  const tg = `${n(p.target)} target`;
-  const lead = p.against === "in line" ? `The plan is about right for the ${tg}.`
-    : p.against === "short" ? `The plan is too small for the ${tg}.`
-      : `The plan is bigger than the ${tg} needs.`;
-  // what the plan should bring: the similar launches' range, and under a plan too small the part of the target
-  // left over, in the words of its row in the bars
-  const gap = Math.round(p.notCovered || 0);
-  const left = p.against === "short" && gap > 0 ? `, which leaves ${n(gap)} not covered` : "";
-  const span = ranged ? ` Going by similar launches, it should bring ${lo === hi ? `about ${n(lo)}` : `${n(lo)} to ${n(hi)}`}${unit}${left}.` : "";
-  // where the launch is heading instead, once it has results and they take it outside that range
-  const lands = num(p.lands) ? Math.round(p.lands) : null;
-  const off = p.state === "start" || !ranged || lands === null ? null : lands < lo ? "behind" : lands > hi ? "ahead of" : null;
-  const now = off ? ` The launch is heading for ${n(lands)} because it is running ${off} the plan, and the bars below show where.` : "";
+  // what the plan should bring, and no count of what that leaves: "short" and its figure are the headline's,
+  // which counts from where the launch is heading and so rarely gives the same number
+  const detail = ranged ? `Going by similar launches, it should bring ${lo === hi ? `about ${n(lo)}` : `${n(lo)} to ${n(hi)}`}${unit}.` : "";
+  const similar = [...new Set((p.similar || []).map((x) => String((x && x.name) || "").split(" · ")[0]).filter(Boolean))];
+  return { text: `The comms plan is too small for the ${n(p.target)} target`, detail, tip: similar.length ? `The similar launches: ${similar.join(", ")}` : undefined };
+}
+
+/* The artist's own earlier launches, as a plain line on the plan card: what each sold of its edition and how
+ * many times over it was entered for. It moves no figure: the target carries the judgement of how much the work
+ * is wanted, and this is what that judgement can be checked against. Headed as the artist's, so it is not read
+ * as the similar launches. Nothing on a plan sized the older way, which is sized on these launches itself. */
+export function ownRecord(p) {
+  if (!p || !p.against) return null;
   const title = (name) => { const b = String(name || "").split(" · "); return b.length > 2 ? `${b[1]} (${b[b.length - 1]})` : name; };
   const own = (p.ownRecord || []).filter((r) => r && r.edition > 0 && r.sold !== null && r.sold !== undefined);
-  const record = own.length ? "The artist's earlier launches: " + own.map((r) => `${title(r.name)} sold ${n(r.sold)} of ${n(r.edition)}${r.cover ? `, entries ${r.cover.toFixed(1)} times the edition` : ""}`).join("; ") + "." : null;
-  return { kind: p.against, lead, span, now, record, similar: (p.similar || []).map((x) => String(x.name || "").split(" · ")[0]) };
+  if (!own.length) return null;
+  return "The artist's earlier launches: " + own.map((r) => `${title(r.name)} sold ${n(r.sold)} of ${n(r.edition)}${r.cover ? `, entries ${r.cover.toFixed(1)} times the edition` : ""}`).join("; ") + ".";
 }

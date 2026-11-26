@@ -13,7 +13,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Card, Head } from "../ui.jsx";
 import { COL, sw } from "../charts.jsx";
 import { fmt } from "../format.mjs";
-import { planCheck } from "../planCheck.mjs";
+import { ownRecord } from "../planCheck.mjs";
 
 const n = (v) => fmt(Math.round(v));
 /* whole units that add up to `total` (the rounded sum when none is given): the largest remainders take the units left over */
@@ -79,18 +79,13 @@ export default function PlanCard({ snap }) {
   const dated = s ? s.dates.length > 1 : true;
   const short = Math.round(p.target) - Math.round(p.lands);
   const likely = Array.isArray(p.range) ? `likely ${n(p.range[0])} to ${n(p.range[1])}` : undefined;
-  const chk = planCheck(p);
+  const rec = ownRecord(p);   // the plan check itself is a warning at the top of the page, and only when the plan is too small (web/src/planCheck.mjs)
   return (
     <Card wide title="The plan" className={`plan-card${m.start ? " start" : ""}`} aria="The plan, phase by phase">
       <Head v={n(p.lands)} u={snap.type === "TL" ? `${p.of === "conversions" ? "conversions" : "signups"} at the open` : "at the close"} tip={(p.notes || []).join(" ")}
         deltas={[short > 0 ? { t: `${n(short)} short of the ${n(p.target)} target`, dir: "dn" } : { t: `reaches the ${n(p.target)} target`, dir: "up" }]}
         aside={m.start ? likely : `day ${snap.day} of ${snap.of}`} asideTip={(p.notes || []).join(" ")} />
-      {chk && (
-        <div className={`plan-chk ${chk.kind === "short" ? "dn" : "ok"}`} title={chk.similar.length ? `The similar launches: ${[...new Set(chk.similar)].join(", ")}` : undefined}>
-          <b>{chk.lead}</b>{chk.span}{chk.now}
-          {chk.record && <span className="rec">{chk.record}</span>}
-        </div>
-      )}
+      {rec && <div className="plan-rec">{rec}</div>}
       <div className="pv-split">
         <div className="plan-rows">
           <div className="plan-r head"><span /><span /><span>Plan</span>{!m.start && <span>Lands at</span>}</div>
