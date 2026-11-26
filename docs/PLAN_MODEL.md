@@ -379,7 +379,7 @@ sold 100 is (the owner's rule). From them comes the range a quiet day of plan ra
 the lowest and the highest left out. Inside that range the plan is sized to the target:
 a quiet day is given the size the target asks of it (the target less paid's part, over
 the plan's value), so the pieces' figures add up to the target and the card says the plan
-as written is in line with it. A plan that would need more from each quiet day than the
+is about right for it. A plan that would need more from each quiet day than the
 strongest of them reads short, at the strongest's size, and one that needs less than the
 weakest reads over. The target carries the judgement of how much the work is wanted; the
 plan check asks only whether the comms are enough for a launch of that size, and the
@@ -391,8 +391,8 @@ Read on 90 launches, each from those closed before it announced: what a launch s
 outside paid is told to within 52% this way against 76% the older way, and the plan of
 the middle launch reads at 101% of its target. A plan's size does not tell whether a
 launch sells out: once the edition's size is allowed for it adds nothing, and among
-editions of 150 or more the lighter half of plans sold 83% against 92%. So "in line" says
-the comms are usual for a launch that sold this many, not that this one will.
+editions of 150 or more the lighter half of plans sold 83% against 92%. So "about right"
+says the comms are usual for a launch that sold this many, not that this one will.
 
 **The level, the older reading.** The price list is in quiet days, so a plan needs to know how big a quiet
 day is for this launch before it has results: the median of the artist's last three
@@ -447,6 +447,19 @@ with the two figures beside it. A box beside the bars, the same height and scrol
 inside, lists the pieces: every email and post with the one furthest behind its plan first
 (in date order before anything has gone out), or the phase picked, the baseline by
 channel, or paid by what is spent and still to spend.
+
+**The line under the headline** is the plan check in words (`web/src/planCheck.mjs`,
+held by `node tests/plan_check.mjs`). It opens with the verdict: the plan is about right
+for the target (the build's "in line"), too small for it ("short") or bigger than the
+target needs ("over"). Then what the plan should bring going by the similar launches,
+which is their range with paid at its target, and under a plan too small the part left
+over, named as its row in the bars is ("which leaves 33 not covered"). The line reads the
+plan before any results and the headline above it reads where the launch is heading, so
+once a launch is live and heading outside that range a last sentence says so: "The launch
+is heading for 218 because it is running behind the plan, and the bars below show where"
+(or ahead of it). No figure in the line is called short, which is the headline's word for
+what the launch is short by. The artist's record beneath is headed as the artist's, so it
+is not read as the similar launches, and hovering the line names those.
 
 **Suggested actions in this view** are valued by the same price list, at the launch's
 level and at how the piece's channel is running: an email still to come sent to the full
@@ -669,6 +682,18 @@ page needs the timed launches' feeds, which a checkout does not carry.
   default and Plan is this view. Still to build: the plan check as a step before early
   access (the gap, the ways to close it, an agreed plan and an accepted shortfall as one
   line), and the view on a launch's page before its first piece goes out.
+- **26 November 2026.** The owner found the plan check's line confusing ("The plan as
+  written is in line with the 862 conversion target. Similar launches would have brought
+  859 to 928 with this plan", under a headline of 218 at the open, 644 short of the
+  target). The line and the headline answer different questions, the plan before any
+  results and where the launch is heading, and nothing said so: of the eight live plan
+  pages that day the line read "in line" under a headline far short of the target on four
+  (Marina Abramović, Harland Miller, Johnson Tsang, Ai Weiwei) and "33 short" under one
+  that reached it on a fifth (Pejac). The line is reworded (section 6, "The line under the
+  headline"): a plain verdict, what the plan should bring, and where the launch is heading
+  instead when that is outside it. On a timed launch read in signup conversions the verdict
+  is now read again in that unit (docs/TL_SPEC.md 4a), where it was the signups' verdict
+  beside the conversions' figures.
 
 - **16 November 2026.** The brief (section 1). The first study on 64 launches, then the
   feeds, the price list and the back-test, on 66. The strength kept at 0.5.

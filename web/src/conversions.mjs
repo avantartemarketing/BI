@@ -77,14 +77,19 @@ function planOf(plan, R, target, byToday) {
   });
   const tot = (k) => sum(rows.map((r) => r[k]));
   const expected = tot("expected");
-  const left = plan.against === "short" ? Math.max(target - expected, 0) : 0;
-  const was = plan.rows.find((r) => r.moment === "Not covered");
-  if (was && left >= 0.5) rows.push({ ...was, expected: left, in: 0, toCome: 0, lands: 0 });
-  const lands = plan.state === "start" ? expected : tot("lands");
   const ratio = plan.expected > 0 ? expected / plan.expected : R.blended;
+  const range = Array.isArray(plan.range) ? plan.range.map((v) => (num(v) ? v * ratio : v)) : plan.range;
+  // the plan check's verdict, read again in this unit (as etl/plan_view.py reads it: in line when the target sits
+  // inside the range). The weights move the plan and the target by different amounts, a plan heavy on email being
+  // worth more conversions than its signups say, so the signups' verdict can sit against the figures printed beside it
+  const ranged = Array.isArray(range) && num(range[0]) && num(range[1]);
+  const against = plan.against && ranged ? (target - range[1] >= 0.5 ? "short" : range[0] - target >= 0.5 ? "over" : "in line") : plan.against;
+  const left = against === "short" ? Math.max(target - expected, 0) : 0;
+  const was = plan.rows.find((r) => r.moment === "Not covered") || { moment: "Not covered", pieces: [], note: "The part of the target that nothing in the plan covers." };
+  if (left >= 0.5) rows.push({ ...was, expected: left, in: 0, toCome: 0, lands: 0 });
+  const lands = plan.state === "start" ? expected : tot("lands");
   return {
-    ...plan, rows, target, expected, in: tot("in"), toCome: tot("toCome"), lands, byToday,
-    range: Array.isArray(plan.range) ? plan.range.map((v) => (num(v) ? v * ratio : v)) : plan.range,
+    ...plan, rows, target, expected, in: tot("in"), toCome: tot("toCome"), lands, byToday, range, against,
     landsRecommended: num(plan.landsRecommended) && num(plan.lands) ? lands + (plan.landsRecommended - plan.lands) * R.rates.paid : plan.landsRecommended,
     notCovered: left >= 0.5 ? left : 0, of: "conversions",
   };

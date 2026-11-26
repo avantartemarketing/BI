@@ -242,7 +242,11 @@ there.
 - **What changes.** The trajectory, the channels card, the gap card (its drivers closed onto the gap in the new
   unit, whole and adding up), the funnel table's signups added and lost, the email card's headline, the signups side
   of the forecast table (4c), and on the plan-based view the plan card (every piece at its channel's rate, the rows
-  the sum of their pieces, Not covered worked out again) and the suggested actions' sizes.
+  the sum of their pieces, Not covered worked out again) and the suggested actions' sizes. The plan check's
+  verdict is read again in this unit, the target against the similar launches' range as both stand in conversions
+  (from 26 November 2026): the weights move the plan and the target by different amounts, a plan heavy on email
+  being worth more conversions than its signups say, so the signups' verdict could sit against the figures printed
+  beside it.
 - **What does not.** Sessions and the session to signup rate; the sales forecast (4b), which is already in units;
   and the Paid section, whose cost per signup and return on spend already carry paid's own rate.
 - **Where it lives.** Nothing is stored and the build is unchanged: `web/src/conversions.mjs` lays the weights over

@@ -13,6 +13,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Card, Head } from "../ui.jsx";
 import { COL, sw } from "../charts.jsx";
 import { fmt } from "../format.mjs";
+import { planCheck } from "../planCheck.mjs";
 
 const n = (v) => fmt(Math.round(v));
 /* whole units that add up to `total` (the rounded sum when none is given): the largest remainders take the units left over */
@@ -47,28 +48,6 @@ export function planModel(p) {
   return { start, rows, top };
 }
 const pct = (v, top) => `${Math.min(Math.max(v / top, 0), 1) * 100}%`;
-
-/* The plan check, in words: whether the plan as written is in line with the
- * target, on the launches that sold nearest it at a similar price, and the
- * artist's own earlier launches beside it. The target says how much the work
- * is wanted; this says only whether the comms are enough for a launch that
- * size (etl/plan_view.py override). Nothing on a plan sized the older way. */
-export function planCheck(p) {
-  if (!p || !p.against) return null;
-  const lo = Array.isArray(p.range) ? n(p.range[0]) : null, hi = Array.isArray(p.range) ? n(p.range[1]) : null;
-  const cv = p.of === "conversions";  // ... read in signup conversions (web/src/conversions.mjs)
-  const su = p.of === "signups" || cv;      // a timed launch before its window: the plan is for signups, and so is the target
-  const span = lo !== null ? ` Similar launches would have brought ${lo} to ${hi} with ${su ? "this plan" : "these comms"}.` : "";
-  const gap = Math.round(p.notCovered || 0);
-  const tg = `${n(p.target)} ${cv ? "conversion " : su ? "signup " : ""}target`;
-  const lead = p.against === "in line" ? `The plan as written is in line with the ${tg}.`
-    : p.against === "short" ? `The plan as written is ${n(gap)} short of the ${tg}: lighter than launches that ${su ? "drew" : "sold"} this many.`
-      : `The plan as written is heavier than launches that ${su ? "drew" : "sold"} ${n(p.target)} needed.`;
-  const title = (name) => { const b = String(name || "").split(" \u00b7 "); return b.length > 2 ? `${b[1]} (${b[b.length - 1]})` : name; };
-  const own = (p.ownRecord || []).filter((r) => r && r.edition > 0 && r.sold !== null && r.sold !== undefined);
-  const record = own.length ? "Earlier launches: " + own.map((r) => `${title(r.name)} sold ${n(r.sold)} of ${n(r.edition)}${r.cover ? `, entries ${r.cover.toFixed(1)} times the edition` : ""}`).join("; ") + "." : null;
-  return { kind: p.against, lead, span, record, similar: (p.similar || []).map((x) => String(x.name || "").split(" \u00b7 ")[0]) };
-}
 
 /* one bar: in so far, still to come, and the plan's tick */
 function Bar({ x, top }) {
@@ -107,8 +86,8 @@ export default function PlanCard({ snap }) {
         deltas={[short > 0 ? { t: `${n(short)} short of the ${n(p.target)} target`, dir: "dn" } : { t: `reaches the ${n(p.target)} target`, dir: "up" }]}
         aside={m.start ? likely : `day ${snap.day} of ${snap.of}`} asideTip={(p.notes || []).join(" ")} />
       {chk && (
-        <div className={`plan-chk ${chk.kind === "short" ? "dn" : "ok"}`} title={chk.similar.length ? `Read against ${[...new Set(chk.similar)].join(", ")}` : undefined}>
-          <b>{chk.lead}</b>{chk.span}
+        <div className={`plan-chk ${chk.kind === "short" ? "dn" : "ok"}`} title={chk.similar.length ? `The similar launches: ${[...new Set(chk.similar)].join(", ")}` : undefined}>
+          <b>{chk.lead}</b>{chk.span}{chk.now}
           {chk.record && <span className="rec">{chk.record}</span>}
         </div>
       )}

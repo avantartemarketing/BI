@@ -12,7 +12,7 @@ import { tlForecastRows } from "../web/src/tlForecastRows.mjs";
 const near = (a, b, tol = 1e-6) => assert.ok(Math.abs(a - b) <= tol, `${a} is not ${b}`);
 const rates = { aa_email: 0.3, aa_social: 0.2, referral_artist: 0.1, organic_search: 0.3, direct_other: 0.15, paid: 0.05 };
 const targetBy = { aa_email: 700, aa_social: 200, referral_artist: 150, organic_search: 150, direct_other: 500, paid: 8000 };
-const orders = GROUPS.reduce((t, g) => t + targetBy[g] * rates[g], 0);   // 780
+const orders = GROUPS.reduce((t, g) => t + targetBy[g] * rates[g], 0);   // 785
 const chan = (key, now, exp, proj) => ({ key, name: key, now, exp, proj, target: targetBy[key], bm: targetBy[key] * 0.9, bmExp: exp * 0.9,
   parts: [{ name: "a", value: now }], daily: [{ date: "2026-11-18", actual: now / 2, plan: exp / 2, proj: null, bm: exp * 0.45 }, { date: "2026-11-19", actual: now, plan: exp, proj: null, bm: exp * 0.9 }] });
 const channels = [chan("aa_email", 200, 350, 500), chan("aa_social", 120, 100, 240), chan("referral_artist", 0, 75, 50), chan("organic_search", 20, 70, 60), chan("direct_other", 30, 230, 180), chan("paid", 430, 3800, 3000)];
@@ -113,6 +113,32 @@ assert.deepStrictEqual(pc.waterfall.steps.map((s) => s.key), ["plan", "Announce"
 near(pc.planChanges.changes[0].units.high, 2000 * 0.05);
 near(pc.planChanges.changes[1].units.low, 10 * 0.2);
 near(pc.planChanges.changes[1].alts[0].units.high, 10 * 0.2);
+assert.strictEqual(P.against, "short");
+
+// ---- the plan check's verdict is read again in conversions, so the card's sentence agrees with the figures beside
+// it: the target inside the range reads in line, above it short (with the part not covered as a row), below it over
+const mix = (rows, extra) => toConversions({ ...planPage, plan: { ...planPage.plan, rows, ...extra } }).plan;
+const paidRow = planPage.plan.rows.find((r) => r.moment === "Paid");
+// short in signups, but heavy on email and search, whose signups order most: worth more than the orders needed
+const rich = [{ moment: "Announce", expected: 1100, in: 0, toCome: 0, lands: 0, pieces: [{ who: "email", name: "Email", expected: 900, in: 0, toCome: 0 }, { who: "aa", name: "Posts", expected: 150, in: 0, toCome: 0 }, { who: "artist", name: "Artist", expected: 50, in: 0, toCome: 0 }] },
+  { moment: "Baseline", expected: 400, in: 0, toCome: 0, lands: 0, pieces: [{ who: "search", name: "Search", expected: 400, in: 0, toCome: 0 }] }, paidRow, planPage.plan.rows.find((r) => r.moment === "Not covered")];
+const inLine = mix(rich, { range: [8900, 9500] });
+near(inLine.expected, 900 * 0.3 + 150 * 0.2 + 50 * 0.1 + 400 * 0.3 + 8000 * 0.05);   // 825 against the 785 needed
+assert.strictEqual(inLine.against, "in line");
+assert.strictEqual(inLine.notCovered, 0);
+assert.ok(!inLine.rows.some((r) => r.moment === "Not covered"));
+assert.ok(inLine.range[0] <= inLine.target && inLine.target <= inLine.range[1]);
+assert.strictEqual(mix(rich, { range: [9100, 9500] }).against, "over");
+// in line in signups, but on the artist's and other channels, whose signups order least: short in conversions
+const lean = [{ moment: "Announce", expected: 1100, in: 0, toCome: 0, lands: 0, pieces: [{ who: "artist", name: "Artist", expected: 1100, in: 0, toCome: 0 }] },
+  { moment: "Baseline", expected: 600, in: 0, toCome: 0, lands: 0, pieces: [{ who: "other", name: "Other", expected: 600, in: 0, toCome: 0 }] }, paidRow];
+const short = mix(lean, { expected: 9700, range: [9000, 9800], against: "in line", notCovered: 0 });
+assert.strictEqual(short.against, "short");
+near(short.notCovered, orders - (1100 * 0.1 + 600 * 0.15 + 8000 * 0.05));
+near(short.rows.find((r) => r.moment === "Not covered").expected, short.notCovered);
+assert.ok(short.target > short.range[1]);
+// a plan sized the older way has no verdict in either unit
+assert.strictEqual(mix(lean, { against: null }).against, null);
 
 // ---- the words follow the reading, and the paid cards keep the signup's
 assert.strictEqual(wordsOf(c).unit, "conversions");
