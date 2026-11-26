@@ -446,7 +446,9 @@ baseline and one for paid: in so far, still to come, and a tick where the plan p
 with the two figures beside it. A box beside the bars, the same height and scrolling
 inside, lists the pieces: every email and post with the one furthest behind its plan first
 (in date order before anything has gone out), or the phase picked, the baseline by
-channel, or paid by what is spent and still to spend.
+channel, or paid by what is spent and still to spend. The card sits under the trajectory,
+which leads this view as it leads the clock's page, and the suggested actions sit under the
+card (`web/src/Overview.jsx`, 26 November 2026; the card led the page until then).
 
 **Suggested actions in this view** are valued by the same price list, at the launch's
 level and at how the piece's channel is running: an email still to come sent to the full
@@ -721,3 +723,7 @@ page needs the timed launches' feeds, which a checkout does not carry.
   card and across the page, and was given its own. The same day the owner asked why a
   last chance email stood twice among a launch's suggested actions: it was one email at
   two audiences, and is now one row that opens to the other.
+- **26 November 2026.** The owner asked for the trajectory back at the top of this view.
+  The page opens on the trajectory, as the clock's does, with the plan card and the
+  suggested actions under it, on a draw launch and on a timed launch gathering signups
+  alike. The order alone changed: no figure moves.
