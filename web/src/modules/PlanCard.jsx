@@ -1,7 +1,7 @@
 /* The plan (the plan-based view, docs/PLAN_MODEL.md): each phase of the comms
- * plan as one bar - what it has brought, what is still to come, and a tick
- * where the plan put it - with its two figures, and beside the bars a box of
- * the pieces inside. With nothing picked the box lists every email and post,
+ * plan as one bar - the plan in grey, as long as the plan and ending at its
+ * tick, and on it what the phase has brought and what is still to come - with
+ * its two figures, and beside the bars a box of the pieces inside. With nothing picked the box lists every email and post,
  * the one furthest behind its plan first (in date order before anything has
  * gone out); pick a phase and it lists that phase's alone, the baseline by
  * channel, or paid by what is spent and still to spend. Pick it again to go
@@ -70,11 +70,14 @@ export function planCheck(p) {
   return { kind: p.against, lead, span, record, similar: (p.similar || []).map((x) => String(x.name || "").split(" \u00b7 ")[0]) };
 }
 
-/* one bar: in so far, still to come, and the plan's tick */
+/* one bar: the plan in grey, as long as the plan and ending at its tick, and on it what is in so far and what is
+ * still to come. The grey left showing is what the plan is short by; a bar that passes the tick is over it.
+ * Nothing in yet draws no first segment, so the bar's rounded end is the next one's. */
 function Bar({ x, top }) {
   return (
     <span className="strack">
-      <i style={{ left: 0, width: pct(x.inn, top), background: COL.DEEP }} />
+      <b style={{ width: pct(x.exp, top) }} />
+      {x.inn > 0 && <i style={{ left: 0, width: pct(x.inn, top), background: COL.DEEP }} />}
       <i style={{ left: pct(x.inn, top), width: pct(x.come, top), background: COL.LIGHT }} />
       <s style={{ left: `calc(${pct(x.exp, top)} - 1px)` }} />
     </span>

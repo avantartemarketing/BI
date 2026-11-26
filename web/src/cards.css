@@ -185,8 +185,9 @@
 .plan-r .nm { color: var(--text); white-space: nowrap; }
 .plan-r .pl { text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
 .plan-r .ld { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
-.plan-r .strack { overflow: visible; }
-.plan-r .strack i:first-child { border-radius: 4px 0 0 4px; }
+.plan-r .strack { overflow: visible; background: none; }
+.plan-r .strack b, .pv-l .strack b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px 0 0 4px; background: #ededf0; }
+.plan-r .strack i:first-of-type { border-radius: 4px 0 0 4px; }
 button.plan-r { appearance: none; background: none; border: 0; padding: 0; margin: 0; width: 100%; font: inherit; font-size: 13px; color: inherit; text-align: left; cursor: pointer; border-radius: 6px; }
 button.plan-r:disabled { cursor: default; }
 button.plan-r:not(:disabled):hover .nm { color: var(--ink); }
@@ -209,8 +210,9 @@ button.plan-r:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px
 .pv-l .nm em { display: inline-block; width: 48px; font-style: normal; color: var(--ghost); }
 .pv-l .pl { text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
 .pv-l .ld { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
-.pv-l .strack { height: 8px; border-radius: 3px; background: #e4e4e8; overflow: visible; }
-.pv-l .strack i:first-child { border-radius: 3px 0 0 3px; }
+.pv-l .strack { height: 8px; border-radius: 3px; background: none; overflow: visible; }
+.pv-l .strack b { border-radius: 3px 0 0 3px; background: #e4e4e8; }
+.pv-l .strack i:first-of-type { border-radius: 3px 0 0 3px; }
 .pv-list { flex: 1 1 0; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; padding-right: 4px; }
 .pv-list::-webkit-scrollbar { width: 6px; }
 .pv-list::-webkit-scrollbar-track { background: transparent; }
