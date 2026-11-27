@@ -516,9 +516,12 @@ The two cards sit under the trajectory, which leads this view as it leads the cl
 and the suggested actions sit under them (`web/src/Overview.jsx`, from 27 November 2026;
 the plan card led the page until then). The page's sections carry headings, "Plan" between
 the trajectory and the plan cards and "Sell through" under the suggested actions, asked by
-the owner the same day because the page had grown long; how the headings are drawn is the
-owner's to pick from three shown that day (plain titles, bands that fold a section away, a
-name on a rule), and until then the code holds all three behind a switch for the mockups.
+the owner the same day because the page had grown long. A heading is a band across the
+page with the section's glyph and its name, which folds the section under it away and opens
+it again; a reader's folds are kept in their browser and hold on every launch's page. The
+owner picked the bands from three drawn that day (the others were plain titles and a name
+on a rule) and asked for the name at a heading's size. "Channels and funnel" and "Paid"
+are drawn the same way.
 
 **The plan check on the page (from 26 November 2026).** The page says nothing while the
 plan is enough. A plan that reads short is a warning in the strip at the top of the

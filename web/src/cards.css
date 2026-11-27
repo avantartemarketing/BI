@@ -77,27 +77,22 @@
 .hn.two .hs { align-self: flex-end; padding-bottom: 4px; }
 .hn.two .hr { margin-left: auto; align-self: flex-end; display: inline-flex; gap: 8px; padding-bottom: 2px; }
 
-/* The Overview's section headings: a section's glyph and its name across both columns, with more air above
- * than below so a heading sits with the cards it heads. MOCK (27 November 2026): three ways of drawing them,
- * picked by a class on the page's body, until the owner has chosen one - plain titles, bands that fold the
- * section away, and a name on a rule. Until then they were a quiet label in small capitals (28 October 2026),
- * which the page outgrew. */
-.sect { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 2px; border: 0; background: none; font: inherit; color: var(--ink); text-align: left; }
-.sect svg { flex: 0 0 auto; width: 15px; height: 15px; color: var(--muted); }
-.heads-title .sect svg { width: 17px; height: 17px; }
-.sect .caret svg { width: 10px; height: 10px; }
-.heads-title .sect { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin-top: 20px; margin-bottom: -2px; }
-.heads-title .grid2 > .sect:first-child { margin-top: 0; }
-.heads-band .sect { height: 38px; padding: 0 12px; margin-top: 8px; border-radius: 8px; background: rgba(0,0,0,.05); font-size: 13.5px; font-weight: 600; cursor: pointer; }
-.heads-band .sect:hover { background: rgba(0,0,0,.07); }
-.heads-band .sect:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; }
-.heads-band .sect .caret { display: inline-flex; width: 10px; justify-content: center; color: var(--faint); transition: transform .12s ease; }
-.heads-band .sect.shut .caret { transform: rotate(-90deg); }
-/* folded bands sit close together, as a list of the page's sections */
-.heads-band .sect.shut + .sect { margin-top: -8px; }
-.heads-rule .sect { font-size: 14px; font-weight: 600; gap: 8px; margin-top: 16px; }
-.heads-rule .sect::after { content: ""; flex: 1 1 auto; height: 1px; margin-left: 6px; background: #dedee3; }
-.heads-rule .grid2 > .sect:first-child { margin-top: 0; }
+/* The Overview's section headings: a band across both columns with the section's glyph and its name, which
+ * folds the section under it away and opens it again (the reader's folds are kept per browser: Overview.jsx).
+ * More air above a band than below, so it sits with the cards it heads, and folded bands sit close together,
+ * as a list of the page's sections. The owner's pick of three drawn on 27 November 2026, with the name at a
+ * heading's size; until then the headings were a quiet label in small capitals (28 October 2026), which the
+ * page outgrew. */
+.sect { margin: 8px 0 0; padding: 0; font: inherit; }
+.grid2 > .sect:first-child { margin-top: 0; }
+.sect button { display: flex; align-items: center; gap: 10px; width: 100%; height: 44px; padding: 0 14px; border: 0; border-radius: 8px; background: rgba(0,0,0,.05); font: inherit; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); text-align: left; cursor: pointer; }
+.sect button:hover { background: rgba(0,0,0,.07); }
+.sect button:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; }
+.sect svg { flex: 0 0 auto; width: 17px; height: 17px; color: var(--muted); }
+.sect .caret { display: inline-flex; width: 12px; justify-content: center; color: var(--faint); transition: transform .12s ease; }
+.sect .caret svg { width: 12px; height: 12px; }
+.sect.shut .caret { transform: rotate(-90deg); }
+.sect.shut + .sect { margin-top: -8px; }
 .prow.st .fig.good b { color: var(--green); }
 .cnote { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .cnote b { font-weight: 500; }

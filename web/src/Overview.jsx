@@ -43,22 +43,27 @@ import PlanChanges from "./modules/PlanChanges.jsx";
 import PlanCard from "./modules/PlanCard.jsx";
 import "./cards.css";
 
-/* MOCK ONLY (27 November 2026, three ways of drawing the section headings, for the owner to pick from): which
- * one this browser draws, and the sections folded away. Goes once one is picked. */
-const headsStyle = () => { try { return localStorage.getItem("heads") || "title"; } catch { return "title"; } };
-const readShut = () => { try { return JSON.parse(localStorage.getItem("shut") || "{}") || {}; } catch { return {}; } };
+/* The sections a reader has folded away, kept per browser like the page's other switches: a section's key
+ * ("plan", "sell", "channels", "paid", or "paid:" and a line's key) and true. A folded section is its heading
+ * alone, on every launch's page until it is opened again. */
+const FOLD_PREF = "sectionsShut";
+const readShut = () => { try { const v = JSON.parse(localStorage.getItem(FOLD_PREF) || "{}"); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; } catch { return {}; } };
 
-/* a section's heading, across both columns: its glyph and its name, and where the headings fold (`onFold`) a
- * band that opens and shuts the section under it */
-const Sect = ({ children, icon, shut, onFold }) => (onFold
-  ? <button type="button" className={`wide sect${shut ? " shut" : ""}`} aria-expanded={!shut} onClick={onFold}><span className="caret"><Caret /></span>{icon}<span className="sn">{children}</span></button>
-  : <h2 className="wide sect">{icon}<span className="sn">{children}</span></h2>);
+/* a section's heading, across both columns: a band with the section's glyph and its name, which folds the
+ * section under it away and opens it again (27 November 2026, the owner's pick of three drawn that day, with
+ * the name at a heading's size; until then a quiet label in small capitals) */
+const Sect = ({ children, icon, shut, onFold }) => (
+  <h2 className={`wide sect${shut ? " shut" : ""}`}>
+    <button type="button" aria-expanded={!shut} onClick={onFold}><span className="caret"><Caret /></span>{icon}<span className="sn">{children}</span></button>
+  </h2>
+);
 // the paid section's heading on a line of work: what is read is the line's ad
 // set, spend and return (docs 7b), so the heading says so; a line with no ad
 // set named keeps its name alone
 const paidHead = (name, adsets) => `Paid · ${name}${(adsets || []).length > 1 ? " ad sets" : (adsets || []).length ? " ad set" : ""}`;
 
 export default function Overview({ snap, base, actions, vs, horizon, onSetup, onOpen, lineViews }) {
+  const [shut, setShut] = useState(readShut);   // the sections folded away (before any return: a hook runs on every draw)
   const isTL = snap.type === "TL";
   const targeted = snap.targeted !== false;
   // before the announce (a timed launch before its signups open too) the page shows what it knows
@@ -84,20 +89,17 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   const paidLines = !isTL && Array.isArray(lineViews) && lineViews.length > 1 ? lineViews.filter((l) => l.snap.paid) : [];
   // the sell-through section: the table, the bars by product and at the close, framing and where the orders ship
   const sellOn = !!(snap.sellthrough || snap.sales || snap.sellForecast || snap.closeForecast || geoOn);
-  // MOCK ONLY: the headings' style and the folded sections (see headsStyle above)
-  const heads = headsStyle();
-  const [shut, setShut] = useState(readShut);
-  const fold = (k) => (heads === "band" ? () => { const next = { ...shut, [k]: !shut[k] }; setShut(next); try { localStorage.setItem("shut", JSON.stringify(next)); } catch { /* per-browser convenience only */ } } : undefined);
-  const open = (k) => !(heads === "band" && shut[k]);
+  const fold = (k) => () => { const next = { ...shut, [k]: !shut[k] }; setShut(next); try { localStorage.setItem(FOLD_PREF, JSON.stringify(next)); } catch { /* per-browser convenience only */ } };
+  const open = (k) => !shut[k];
   return (
-    <div className={`body heads-${heads}`}>
+    <div className="body">
       <div className="grid2">
         {planOn && <Trajectory snap={snap} vs={vs} horizon={horizon} />}
-        {planOn && <Sect icon={<Lines w={15} />} shut={!open("plan")} onFold={fold("plan")}>Plan</Sect>}
+        {planOn && <Sect icon={<Lines />} shut={!open("plan")} onFold={fold("plan")}>Plan</Sect>}
         {planOn && open("plan") && <PlanCard snap={snap} />}
         {actionsOn && !planStart && (!planOn || open("plan")) && <PlanChanges snap={snap} state={actions} />}
         {!planOn && <Trajectory snap={snap} vs={vs} horizon={horizon} />}
-        {sellOn && <Sect icon={<Bars w={14} />} shut={!open("sell")} onFold={fold("sell")}>Sell through</Sect>}
+        {sellOn && <Sect icon={<Bars />} shut={!open("sell")} onFold={fold("sell")}>Sell through</Sect>}
         {open("sell") && (
           <>
             {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
@@ -111,7 +113,7 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
             {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}
           </>
         )}
-        <Sect icon={<Filter w={14} />} shut={!open("channels")} onFold={fold("channels")}>{planStart ? "The plan by channel" : "Channels and funnel"}</Sect>
+        <Sect icon={<Filter />} shut={!open("channels")} onFold={fold("channels")}>{planStart ? "The plan by channel" : "Channels and funnel"}</Sect>
         {open("channels") && (
           <>
             <ChannelsVsTargets snap={snap} vs={vs} horizon={planStart ? "close" : horizon} />
@@ -122,7 +124,7 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
         )}
         {paidLines.length > 0 ? paidLines.map((l) => (
           <React.Fragment key={`paid:${l.key}`}>
-            <Sect icon={<Euro w={14} />} shut={!open(`paid:${l.key}`)} onFold={fold(`paid:${l.key}`)}>{paidHead(l.name, (l.snap.line || {}).adsets || l.adsets)}</Sect>
+            <Sect icon={<Euro />} shut={!open(`paid:${l.key}`)} onFold={fold(`paid:${l.key}`)}>{paidHead(l.name, (l.snap.line || {}).adsets || l.adsets)}</Sect>
             {open(`paid:${l.key}`) && (
               <>
                 <PaidRoi snap={l.snap} horizon={horizon} />
@@ -133,7 +135,7 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
           </React.Fragment>
         )) : paidOn && (
           <>
-            <Sect icon={<Euro w={14} />} shut={!open("paid")} onFold={fold("paid")}>{snap.line && snap.line.name ? paidHead(snap.line.name, snap.line.adsets) : "Paid"}</Sect>
+            <Sect icon={<Euro />} shut={!open("paid")} onFold={fold("paid")}>{snap.line && snap.line.name ? paidHead(snap.line.name, snap.line.adsets) : "Paid"}</Sect>
             {open("paid") && (
               <>
                 <PaidRoi snap={snap} horizon={horizon} />
