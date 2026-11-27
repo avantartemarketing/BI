@@ -902,4 +902,7 @@ page needs the timed launches' feeds, which a checkout does not carry.
   euros saved), sat under "2 more". The clock's page already asked first whether the launch
   is short at all, and showed that one change alone. This view now asks it too
   (`etl/list_load.py settle`): on a card that reads on course the adds are held, under "On
-  course without these", and can still be read and taken.
+  course without these", and can still be read and taken. Live the same day, once the owner
+  had seen the before and after of that launch's card. "On course" is the test the clock's
+  page uses, the forecast within 3% of the target; the owner was told it is thin early in a
+  campaign and that a wider margin is theirs to ask for.
