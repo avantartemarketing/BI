@@ -1099,8 +1099,8 @@ list, which repeated the sidebar) is a chat with the Agent, laid out as Linear's
 one box in the middle, three examples under it (what needs attention, a chart, and the live
 release furthest behind its target) and the last few chats under those; once a question is
 asked the conversation runs down the page with the box at its foot. The header's name opens
-the list of chats and New chat. It is the same conversation the Agent's press shows on the
-other pages (`agentChat.js` holds it for both).
+the list of chats and New chat. A chat held on a release's Agent tab is listed here too, with
+the artist beside it, and opens on that tab (`agentChat.js` holds every place's chat).
 
 **Releases** (`Releases.jsx`), under Releases in the sidebar (`?view=releases`), lists every launch as Linear lists
 issues: views All / In flight / Upcoming / Recent / Closed with their counts, LE and TL pills
@@ -1109,7 +1109,7 @@ to the target with a tick at 100%), Status (the gap to target, or the state in w
 (an initial), Closes or opens.
 
 **A release's page** (`ReleasePage.jsx`) has a header - the group as a crumb, the artist, the
-work, the type badge, the Overview and Targets tabs (Set targets on a release without
+work, the type badge, the Overview, Targets and Agent tabs (Set targets on a release without
 targets), the freshness note and a **Display** menu that holds the settings that apply to
 every release (Direct: Channel or Spread, default Spread, kept per browser). Under it one
 quiet strip appears only when something is wrong (data older than the last full day, with a
@@ -1155,8 +1155,9 @@ and its own options behind a ⋯ menu:
 An upcoming release shows what is known instead (Not live yet, the milestones, the works and
 their edition and price, Set targets); a release without targets shows its actuals alone.
 
-**The Agent**, the home page and the press bottom right of every other page but Permissions
-(`Agent.jsx`), answers questions
+**The Agent**, the home page and the Agent tab of every release's page (`AgentHome.jsx`,
+`AgentTab.jsx`; until 27 November 2026 a press floating bottom right of every page opened it
+in a popup), answers questions
 about the data: how a release is doing, what a figure means and how it is worked out, and
 questions across launches that no card shows. It reads the release snapshots (with the
 reader's Direct display, so its figures match the screen), the tables under `data/` (units
@@ -1164,11 +1165,36 @@ paid by day and channel, orders by product, spend, social posts, email sends, th
 panels, every launch day by day with the day of its campaign, the index), and the docs: `docs/AGENT_GUIDE.md` (how the dashboard is built, card by
 card) and `docs/METHODOLOGY.md` are always in front of it, the rest it reads by section. It
 can draw line, bar, stacked, horizontal-bar and scatter charts in the chat, with the
-dashboard's chart components (`AgentChart.jsx`). It cannot change anything: its six tools
-(`server/agent/tools.js`) only read, and a chart lives only in the chat. On a release page
-the chat's scope switch picks This release or All launches; the open chat is kept for the tab,
-and the last twelve chats are kept in the reader's browser (never on the server) for the home
-page's list.
+dashboard's chart components (`AgentChart.jsx`). It cannot change anything: its seven tools
+(`server/agent/tools.js`) only read, and a chart lives only in the chat.
+
+**The Agent tab** is the chat about one launch, laid out as the home page is: the box in the
+middle of an empty page with three questions under it, then the conversation down the page
+with the box at its foot. Each release has its own conversation and it is remembered: leaving
+the tab, the page or the browser and coming back finds it where it was, and an answer keeps
+streaming while the reader looks at another tab (the tab shows a dot until it lands). New
+chat, in the header, starts another; the earlier ones stay in the header's list, under the
+questions on an empty tab, and in the home page's list. All of it is kept in the reader's
+browser and none on the server (`agentStore.mjs`: the last thirty chats across every release
+and the home page, and which one each release's tab shows; `node tests/agent_store.mjs`). A
+card that hands a question over (the Suggested actions card's Ask) opens the tab and asks it
+there.
+
+**Diagnose this release**, the press in the tab's box, asks with the diagnosis skill switched
+on. A skill is a written method for one kind of question, a Markdown file under
+`server/agent/skills/` that can be read and changed without touching the code
+(`diagnose.md`). The server gathers the launch's diagnosis sheet (`server/agent/diagnose.js`)
+and puts it in front of the model with the method: every stage of the funnel in order (told,
+responded, visited, looked at a work, entered or signed up, bought, which work), each with
+the launch's figure so far beside its plan by now, similar past launches by the same point of
+their campaigns, and the same artist's earlier launches by the same point, read from the
+launches' days (`funnel_daily`, docs/DATA_MODEL.md 6.1a) and cut at the same share of each
+campaign; then the shortfall split in units between visits and conversion, channel by
+channel. The answer is a finding, a small table stage by stage, where it is going wrong, what
+was ruled out and what to check next. A typed "what is going wrong here?" takes the same
+path: the model calls `diagnose_release`, which hands back the sheet with the method. The
+sheet is arithmetic and reading only, so `node tests/agent_skill.mjs` checks it, and the
+press's whole path against a stand-in for the Claude API, with no key.
 
 The server (`server/agent/`) runs the tool loop through the Claude API with the key in
 `ANTHROPIC_API_KEY` and streams status lines, the answer and its charts back as server-sent
@@ -1177,7 +1203,8 @@ hard it thinks, `AGENT_HOURLY_LIMIT` (default 60 questions per person per hour).
 the tool definitions sit behind a prompt-cache breakpoint, so the follow-up calls in one
 question read them from the cache. Logs carry the release id, the steps, the tokens and the
 time, never the questions or the answers. Without the key the Agent says it is not
-configured. `node tests/agent_tools.mjs` checks the tools on the committed data.
+configured. `node tests/agent_tools.mjs` checks the tools on the committed data. The log also
+names a skill when one was switched on (`skill=diagnose`).
 Suggested actions are not on the page yet (behind a
 `betaActions` flag until the agent that recommends them is designed).
 

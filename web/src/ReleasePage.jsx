@@ -1,13 +1,14 @@
 /* A release's page: the header (where it sits, its name, the type, the
- * Overview and Targets tabs, the freshness, the Display menu), the chips
- * (status, dates, lead, horizon, line), the warning strip, then the tab's
- * body: the Overview's cards, the targets page, or the basket picker. */
+ * Overview, Targets and Agent tabs, the freshness, the Display menu), the
+ * chips (status, dates, lead, horizon, line), the warning strip, then the
+ * tab's body: the Overview's cards, the targets page or the basket picker,
+ * or the chat about this launch (AgentTab.jsx). */
 import React, { useEffect, useRef, useState } from "react";
 import { initial as watchInitial, step as watchStep } from "../../shared/refreshWatch.mjs";
 import { freshness } from "../../shared/freshness.mjs";
 import { Avatar, Badge, Menu, MenuItem, Seg, useMenu } from "./ui.jsx";
 import { fmt, fmtDay } from "./format.mjs";
-import { Cal, Caret, Chev, Clock, Display, Hamburger, ProgressRing, Refresh, Ring, Spinner, Warn, X } from "./icons.jsx";
+import { Agent as AgentIcon, Cal, Caret, Chev, Clock, Display, Hamburger, ProgressRing, Refresh, Ring, Spinner, Warn, X } from "./icons.jsx";
 import { wordsOf } from "./vocab.mjs";
 import { releaseClock } from "./sections.mjs";
 import { canBenchmark, canTarget, compareOf } from "./compare.mjs";
@@ -17,6 +18,7 @@ import { GROUP_WORD, groupOf, nameOf, onDay, rowState, STATE_COLOR, whenWords } 
 import Overview from "./Overview.jsx";
 import TargetSetting from "./TargetSetting.jsx";
 import TLTargets from "./TLTargets.jsx";
+import AgentTab, { AgentTabHead } from "./AgentTab.jsx";
 
 /* The Display menu: the settings that hold for every release. */
 function DisplayMenu({ directSpread, setDirectSpread, snap, planOn }) {
@@ -226,7 +228,7 @@ function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup, plan, 
   ));
 }
 
-export default function ReleasePage({ snap, snapError, actions, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, targetsFrom, setTargetsFrom, countAs, setCountAs, onSaved, onRefreshed, onRefresh, onOpen, onMenu }) {
+export default function ReleasePage({ snap, snapError, actions, row, asOf, st, route, setRoute, directSpread, setDirectSpread, compareTo, setCompareTo, targetsFrom, setTargetsFrom, countAs, setCountAs, onSaved, onRefreshed, onRefresh, onOpen, onMenu, chat }) {
   const tab = route.tab || "overview";
   const setTab = (t) => setRoute({ ...route, tab: t, basket: false });
   const [horizon, setHorizon] = useState("today");
@@ -291,7 +293,7 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
   const showCompare = !!vs && !snap.catalogue && !snap.upcoming && !planOn;
   const showMethod = !!planVariant && !lineKey && !!setTargetsFrom;
   return (
-    <main className="page">
+    <main className={`page${tab === "agent" ? " ahome" : ""}`}>
       <header className="phead">
         <button className="ib menub" style={{ marginLeft: -8 }} aria-label="Open the sidebar" onClick={onMenu}><Hamburger /></button>
         <span className="crumb">{crumb}</span>
@@ -301,8 +303,10 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
         <div className="tabs" role="tablist" aria-label="Release pages">
           <button className={`tab${tab === "overview" ? " on" : ""}`} role="tab" aria-selected={tab === "overview"} onClick={() => setTab("overview")}>Overview</button>
           <button className={`tab${tab === "targets" ? " on" : ""}`} role="tab" aria-selected={tab === "targets"} onClick={() => setTab("targets")}>{targetsWord}</button>
+          {chat && <button className={`tab${tab === "agent" ? " on" : ""}`} role="tab" aria-selected={tab === "agent"} onClick={() => setTab("agent")}><AgentIcon w={12} />Agent{chat.busy && tab !== "agent" ? <span className="adot" title="Answering" /> : null}</button>}
         </div>
         <span style={{ flex: 1 }} />
+        {tab === "agent" && chat && <AgentTabHead chat={chat} />}
         {tab === "targets" && <span id="phead-status" style={{ display: "inline-flex", alignItems: "center", gap: 8 }} />}
         {f && f.label && tab === "overview" && <span className="fresh" title={[f.detail, f.head, f.body].filter(Boolean).join(" · ")}>{f.warn ? "⚠ " : ""}{f.label}</span>}
         {tab === "overview" && onRefresh && <RefreshButton st={st} onRefresh={onRefresh} />}
@@ -335,6 +339,7 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
       {tab === "targets" && (isTL
         ? <TLTargets snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} route={route} setRoute={setRoute} />
         : <TargetSetting snap={snap} onSaved={onSaved} directSpread={!!(variant && directSpread)} route={route} setRoute={setRoute} />)}
+      {tab === "agent" && chat && <AgentTab chat={chat} snap={snap} />}
     </main>
   );
 }

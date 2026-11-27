@@ -2,12 +2,12 @@
  * empty chat is one box in the middle of the page, three examples under it
  * and the last few chats under those; once a question is asked the
  * conversation runs down the page with the box at its foot. The header's name
- * opens the list of chats. It is the same conversation the press bottom right
- * shows on the other pages (agentChat.js). */
-import React, { useEffect, useRef, useState } from "react";
+ * opens the list of chats. A chat held on a release's Agent tab is listed
+ * here too, with the artist beside it, and opens on that tab (agentChat.js). */
+import React, { useEffect, useRef } from "react";
 import { Bars, Caret, Hamburger, Plus, Target, Trend } from "./icons.jsx";
 import { Menu, MenuItem, useMenu } from "./ui.jsx";
-import { Turns, SendPress } from "./Agent.jsx";
+import { ChatBox, Turns } from "./Agent.jsx";
 import { ago, chatTitle } from "./agentChat.js";
 import { nameOf } from "./rows.mjs";
 
@@ -25,8 +25,7 @@ function examples(live) {
   ];
 }
 
-export default function AgentHome({ chat, groups, onMenu }) {
-  const [text, setText] = useState("");
+export default function AgentHome({ chat, groups, onMenu, onOpenChat }) {
   const menu = useMenu();
   const scroller = useRef(null);
   const input = useRef(null);
@@ -35,18 +34,13 @@ export default function AgentHome({ chat, groups, onMenu }) {
   useEffect(() => { if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight; }, [thread, live]);
   // the box takes the typing as the page opens, where there is a keyboard
   useEffect(() => { if (input.current && window.matchMedia("(hover: hover)").matches) input.current.focus(); }, [empty, chat.chatId]);
-  const ask = (q) => { if (!(q || "").trim() || chat.busy) return; setText(""); chat.ask(q); };
-  const fresh = () => { chat.newChat(); setText(""); };
+  const ask = (q) => { if (!(q || "").trim() || chat.busy) return; chat.ask(q); };
+  const open = (c) => (onOpenChat ? onOpenChat(c) : chat.openChat(c));
+  // a chat held on a release's tab says whose: the artist, from the list of launches
+  const whose = (c) => { const r = c.rel && (groups.all || []).find((x) => x.id === c.rel); return r ? nameOf(r).artist : ""; };
+  const when = (c) => [whose(c), ago(c.at)].filter(Boolean).join(" · ");
 
-  const box = (
-    <div className="ah-box">
-      <label htmlFor="agenthome" className="sr">Ask the agent</label>
-      <textarea id="agenthome" ref={input} rows={empty ? 2 : 1} placeholder={empty ? "Ask about your launches…" : "Ask a follow-up…"} value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(text); } }} />
-      <div className="ah-boxfoot"><SendPress chat={chat} text={text} onSend={() => ask(text)} solid /></div>
-    </div>
-  );
+  const box = <ChatBox chat={chat} id="agenthome" inputRef={input} rows={empty ? 2 : 1} placeholder={empty ? "Ask about your launches…" : "Ask a follow-up…"} />;
 
   return (
     <main className="page ahome">
@@ -56,16 +50,16 @@ export default function AgentHome({ chat, groups, onMenu }) {
           <button className="ah-name" aria-haspopup="menu" aria-expanded={menu.open} onClick={menu.toggle}>
             <span>{chat.title || "New chat"}</span><Caret />
           </button>
-          <Menu open={menu.open} onClose={menu.close} label="Chats" scroll style={{ top: 32, left: -6, width: 320 }}>
-            <MenuItem icon={<Plus />} disabled={empty} onClick={() => { menu.close(); fresh(); }}>New chat</MenuItem>
+          <Menu open={menu.open} onClose={menu.close} label="Chats" scroll style={{ top: 32, left: -6, width: 340 }}>
+            <MenuItem icon={<Plus />} disabled={empty} onClick={() => { menu.close(); chat.newChat(); }}>New chat</MenuItem>
             {chats.length > 0 && <div className="msep" />}
             {chats.map((c) => (
-              <MenuItem key={c.id} checked={c.id === chat.chatId && !empty} right={ago(c.at)} onClick={() => { menu.close(); chat.openChat(c); }}>{chatTitle(c.thread)}</MenuItem>
+              <MenuItem key={c.id} checked={c.id === chat.chatId && !empty} right={when(c)} onClick={() => { menu.close(); open(c); }}>{chatTitle(c.thread)}</MenuItem>
             ))}
           </Menu>
         </div>
         <span style={{ flex: 1 }} />
-        {!empty && <button className="nv-ib" aria-label="New chat" title="New chat" onClick={fresh}><Plus /></button>}
+        {!empty && <button className="nv-ib" aria-label="New chat" title="New chat" onClick={chat.newChat}><Plus /></button>}
       </header>
       {empty ? (
         <div className="ah-mid">
@@ -84,8 +78,8 @@ export default function AgentHome({ chat, groups, onMenu }) {
             {chats.length > 0 && (
               <div className="ah-recent">
                 {chats.slice(0, 5).map((c) => (
-                  <button key={c.id} className="ah-row" onClick={() => chat.openChat(c)}>
-                    <span className="t">{chatTitle(c.thread)}</span><span className="w">{ago(c.at)}</span>
+                  <button key={c.id} className="ah-row" onClick={() => open(c)}>
+                    <span className="t">{chatTitle(c.thread)}</span><span className="w">{when(c)}</span>
                   </button>
                 ))}
               </div>

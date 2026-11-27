@@ -1,12 +1,14 @@
 /* The Agent's system prompt: its rules, then the documents it always has in
  * front of it (the guide to the dashboard, the methodology, an outline of
- * every other doc, the catalogue of tables). Everything here is stable from
- * one question to the next, so it sits behind one cache breakpoint; what
- * changes per question (the page the reader is on, the date) goes in a
- * message after it (server/agent/index.js). Rebuilt only when a doc or the
- * table list changes on disk. */
+ * every other doc, the catalogue of tables, the skills by name). Everything
+ * here is stable from one question to the next, so it sits behind one cache
+ * breakpoint; what changes per question (the page the reader is on, the date,
+ * a skill switched on and what it gathered) goes in a message after it
+ * (server/agent/index.js). Rebuilt only when a doc, a skill or the table list
+ * changes on disk. */
 const fs = require("fs");
 const path = require("path");
+const { listSkills, skillsStamp } = require("./skills");
 
 const RULES = `You are the analyst built into Avant Arte's Launch Performance dashboard. People on the marketing and launch teams ask you about their launches: how a release is doing, what a figure means and how the dashboard works it out, and questions across the data that no card shows yet.
 
@@ -21,6 +23,9 @@ Getting the facts right:
 - When the method matters, read the doc section first, then explain it in your own plain words.
 - If the data cannot answer, say so in a sentence and say what would.
 - Look before you answer, but do not over-research: a few well-aimed tool calls are better than many.
+- A comparison with an earlier launch is made at the same point of each campaign, from the day-by-day tables, never a launch still running against a finished one's totals.
+
+Skills. A skill is a written method for one kind of question; the list is below. When a question matches one, follow its method: it arrives with the question when the reader pressed its button, and otherwise comes back from the tool the list names. A skill's method sets the shape and length of its answer, in place of the short-answer rule below; everything else here still holds.
 
 How to write. The people asking run marketing and launches; they are not analysts and have not read the docs. Write the way a sharp colleague would answer them across the desk.
 - Short. Answer the question in the first sentence. Most answers are two to four sentences, under about 80 words. An explanation of how something is worked out stays under about 120 words. Go longer only when they ask for detail, and then still prefer short.
@@ -55,9 +60,15 @@ function outlines(tools) {
   return out.join("\n\n");
 }
 
+/* each skill by name: when it applies and the tool that hands its method over */
+const SKILL_TOOL = { diagnose: "diagnose_release" };
+function skillsList() {
+  return listSkills().map((s) => `- ${s.name} ("${s.title || s.name}"): ${s.when || ""}${SKILL_TOOL[s.name] ? ` Start with ${SKILL_TOOL[s.name]}, which returns the method with its evidence.` : ""}`).join("\n");
+}
+
 function createPrompt({ ROOT, tools }) {
   let cached = null, key = "";
-  const stamp = () => tools.DOCS.map(([n, f]) => { try { return fs.statSync(path.join(ROOT, f)).mtimeMs; } catch { return 0; } }).join(",");
+  const stamp = () => tools.DOCS.map(([n, f]) => { try { return fs.statSync(path.join(ROOT, f)).mtimeMs; } catch { return 0; } }).join(",") + "|" + skillsStamp();
   const read = (f) => { try { return fs.readFileSync(path.join(ROOT, f), "utf8"); } catch { return "(not on this server)"; } };
   return function systemText() {
     const k = stamp();
@@ -68,6 +79,7 @@ function createPrompt({ ROOT, tools }) {
       "<doc name=\"METHODOLOGY\">\n" + read("docs/METHODOLOGY.md") + "\n</doc>",
       "<doc_outlines>\nThe other documents, by section. Read any section with read_docs.\n\n" + outlines(tools) + "\n</doc_outlines>",
       "<tables>\nThe data tables you can query (describe_table shows columns and samples):\n" + catalogue(tools.TABLES) + "\n</tables>",
+      "<skills>\n" + skillsList() + "\n</skills>",
     ].join("\n\n");
     key = k;
     return cached;

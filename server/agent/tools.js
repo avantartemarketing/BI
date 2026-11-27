@@ -299,7 +299,10 @@ function createTools({ ROOT, DATA, SOURCES, readSnapshot, docsDir }) {
     return { from: "nothing saved: the page runs on what the feeds and Airtable give", inputs: found && typeof found === "object" ? found : null };
   }
 
-  function getRelease({ id, fields, display, line, targets_from: targetsFrom, settings } = {}) {
+  /* A release's page as the reader sees it: the snapshot with the view their Direct display (or a line, or the
+   * plan) lays over it, and the words for which view that is. get_release reads fields off it; the diagnosis
+   * sheet (server/agent/diagnose.js) reads the whole of it. */
+  function pageView({ id, display, line, targets_from: targetsFrom } = {}) {
     const clean = String(id || "").replace(/[^a-z0-9_]/g, "");
     if (!clean) throw new Error("Give a release id (from list_releases).");
     const snap = readSnapshot(clean);
@@ -310,6 +313,11 @@ function createTools({ ROOT, DATA, SOURCES, readSnapshot, docsDir }) {
     const { view, applied } = viewOf(snap, display, line, targetsFrom);
     delete view.variants;
     delete view.slack;
+    return { clean, snap, view, applied };
+  }
+
+  function getRelease({ id, fields, display, line, targets_from: targetsFrom, settings } = {}) {
+    const { clean, snap, view, applied } = pageView({ id, display, line, targets_from: targetsFrom });
     const head = { id: snap.id, releaseName: snap.releaseName, type: snap.type, asOf: snap.asOf, display: applied };
     if (settings === true) head.settings = settingsOf(clean);
     if (Array.isArray(snap.lines) && snap.lines.length) head.lines = snap.lines.map((l) => (l && typeof l === "object" ? { key: l.key, name: l.name || l.label } : l));
@@ -595,7 +603,7 @@ function createTools({ ROOT, DATA, SOURCES, readSnapshot, docsDir }) {
     return out;
   }
 
-  return { listReleases, getRelease, describeTable, queryTable, readDocs, makeChart, loadTable, docText, docExists, TABLES, DOCS, readIndex };
+  return { listReleases, getRelease, pageView, describeTable, queryTable, readDocs, makeChart, loadTable, docText, docExists, TABLES, DOCS, readIndex };
 }
 
 /* The tool definitions the model sees. Kept in a fixed order with fixed text
@@ -625,6 +633,19 @@ const TOOL_DEFS = [
         fields: { type: "array", items: { type: "string" }, description: "Dot paths to read (up to 12)" },
         display: { type: "string", enum: ["spread", "channel"], description: "Direct display; omit to use the reader's" },
         line: { type: "string", description: "A line key, for a release selling two lines" },
+      },
+      required: ["id"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "diagnose_release",
+    description: "Lay out a release's funnel for a diagnosis: every stage in order (told, responded, visited, looked at a work, entered or signed up, bought, which work), each with the launch's figure so far beside what its targets expect by now, what similar past launches had by the same point of their campaigns, and what the same artist's earlier launches had by the same point; then the shortfall split in units between visits and conversion, channel by channel. It returns the sheet with the method for reading it. Call it first when someone asks what is going wrong (or right) with a launch, why it is behind or ahead, or for a diagnosis; not for a quick \"how is it doing\" or a single figure.",
+    input_schema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Release id, e.g. warhol_le_26" },
+        display: { type: "string", enum: ["spread", "channel"], description: "Direct display; omit to use the reader's" },
       },
       required: ["id"],
       additionalProperties: false,

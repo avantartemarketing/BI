@@ -150,8 +150,8 @@ assert.throws(() => t.makeChart({ type: "line", title: "x", x: ["a"], series: [{
 assert.throws(() => t.makeChart({ type: "pie", title: "x" }), /type must be/);
 assert.throws(() => t.makeChart({ type: "scatter", title: "x", points: [{ x: 1 }] }), /scatter/);
 
-// nothing the model can call writes: the six tools, all readers or the chat's chart
-assert.deepStrictEqual(TOOL_DEFS.map((x) => x.name), ["list_releases", "get_release", "describe_table", "query_table", "read_docs", "make_chart"]);
+// nothing the model can call writes: the seven tools, all readers or the chat's chart (the diagnosis sheet is tests/agent_skill.mjs's)
+assert.deepStrictEqual(TOOL_DEFS.map((x) => x.name), ["list_releases", "get_release", "diagnose_release", "describe_table", "query_table", "read_docs", "make_chart"]);
 assert.ok(!/writeFile|appendFile|unlink|rename|mkdir/.test(fs.readFileSync(path.join(ROOT, "server", "agent", "tools.js"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "")));
 
 console.log("agent tools: ok");

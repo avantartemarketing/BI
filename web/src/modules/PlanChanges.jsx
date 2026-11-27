@@ -16,9 +16,9 @@
  * card is drawn with no ticks. With nothing to suggest the card stays and
  * reads "No suggested actions".
  *
- * Ask hands the question to the Agent, bottom right, with the change named
- * in it (an "agent:ask" event; Agent.jsx listens), so the card has no chat
- * of its own. "Plan as it stands" folds the plan's rows still to come under
+ * Ask hands the question to the Agent with the change named in it (an
+ * "agent:ask" event; App.jsx listens, opens the release's Agent tab and asks
+ * it there), so the card has no chat of its own. "Plan as it stands" folds the plan's rows still to come under
  * the changes; it is there only when the plan is on file.
  *
  * The list's load (etl/list_load.py, `planChanges.list`) is the strip above

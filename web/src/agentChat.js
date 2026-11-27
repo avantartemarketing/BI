@@ -1,56 +1,45 @@
-/* The Agent's chat, held once for the whole app so the home page and the
- * press bottom right show the same conversation (Agent.jsx, AgentHome.jsx).
+/* The Agent's chats, held once for the whole app (App.jsx) and shown in two
+ * kinds of place: the home page (AgentHome.jsx), and the Agent tab of a
+ * release's page (AgentTab.jsx). Each place has its own conversation: the
+ * home page's, and one per release, so a launch's questions stay with the
+ * launch and are still there when the reader comes back to it.
  *
- * The answer streams back as server-sent events over the POST (status lines
- * while it looks things up, then the text). The open chat is kept for the tab
- * (sessionStorage), so a reload or a move to another page keeps it; the last
- * few chats are kept in this browser (localStorage) so the home page can list
- * them. Nothing here is sent anywhere but the question itself. */
+ * An answer streams back as server-sent events over the POST (status lines
+ * while it looks things up, then the text). It keeps streaming when the
+ * reader moves to another tab or page, and is there on the way back.
+ *
+ * What is kept, all of it in this browser and none of it on the server:
+ *   - the home page's open chat, for the tab (sessionStorage), as before;
+ *   - every chat with something in it, newest first (localStorage), each with
+ *     the release it was held on, so the home page can list them and a
+ *     release's tab can list its own;
+ *   - which chat each release's tab shows (localStorage), so a reload, a new
+ *     tab or another day opens the launch's conversation where it was left.
+ * Nothing here is sent anywhere but the question itself.
+ *
+ * A skill is a written method the Agent follows for one kind of question
+ * (server/agent/skills/). The Diagnose press asks with skill "diagnose". */
 import { useEffect, useRef, useState } from "react";
 import { historyText } from "./agentText.jsx";
 
-export const TRIES = {
-  le: ["How is this release pacing?", "Which channel is working?", "Chart units by day against the plan"],
-  tl: ["How are signups pacing?", "Which work could sell out?", "Chart signups by channel"],
-  all: ["Which live releases are furthest behind target?", "Chart paid spend by month this year", "How do draw releases' sell-through compare by price?"],
+import { HOME, answered, chatTitle, keepChat, loadChats, newId, openFor, saveOpen } from "./agentStore.mjs";
+
+export { HOME, ago, answered, chatTitle } from "./agentStore.mjs";
+
+/* the skills the chat can switch on: the words on the press and the question the thread shows */
+export const SKILLS = {
+  diagnose: { label: "Diagnose this release", ask: "Diagnose this release", tip: "Goes through the funnel stage by stage, finds where this launch is weak, and compares it with the artist's earlier launches where there are any" },
 };
 
+/* the home page's open chat, kept for the tab (sessionStorage), as before the releases had chats of their own */
 const STORE = "agentThread";
 const IDKEY = "agentChatId";
-const CHATS = "agentChats";
-const KEEP = 12;
-const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const loadThread = () => { try { const t = JSON.parse(sessionStorage.getItem(STORE) || "[]"); return Array.isArray(t) ? t : []; } catch { return []; } };
 const saveThread = (t) => { try { sessionStorage.setItem(STORE, JSON.stringify(t.slice(-30))); } catch { /* a convenience only */ } };
 const loadId = () => { try { return sessionStorage.getItem(IDKEY) || newId(); } catch { return newId(); } };
 const saveId = (id) => { try { sessionStorage.setItem(IDKEY, id); } catch { /* a convenience only */ } };
-const loadChats = () => {
-  try { const c = JSON.parse(localStorage.getItem(CHATS) || "[]"); return Array.isArray(c) ? c.filter((x) => x && x.id && Array.isArray(x.thread) && x.thread.length) : []; } catch { return []; }
-};
-/* when the browser's store is full the oldest chats go first */
-const saveChats = (c) => {
-  for (let n = c.length; ; n = Math.floor(n / 2)) {
-    try { localStorage.setItem(CHATS, JSON.stringify(c.slice(0, n))); return; } catch { if (!n) return; }
-  }
-};
-const answered = (t) => t.some((m) => m.role === "assistant" && !m.error);
-const keepChat = (id, thread) => {
-  const next = [{ id, at: Date.now(), thread: thread.slice(-30) }, ...loadChats().filter((c) => c.id !== id)].slice(0, KEEP);
-  saveChats(next);
-  return next;
-};
-
-/* a chat's name is its first question */
-export const chatTitle = (thread) => { const q = (thread || []).find((m) => m.role === "user"); return q ? q.text : ""; };
-/* how long ago, the short way a list says it: now, 5m, 3h, 2d, 4w */
-export function ago(at, now = Date.now()) {
-  const m = Math.max(0, Math.floor((now - at) / 60000));
-  if (m < 1) return "now";
-  if (m < 60) return `${m}m`;
-  if (m < 60 * 24) return `${Math.floor(m / 60)}h`;
-  const d = Math.floor(m / (60 * 24));
-  return d < 7 ? `${d}d` : `${Math.floor(d / 7)}w`;
-}
+/* the browser's own store, which may refuse (a private window): every call through it is guarded in agentStore.mjs */
+const local = { getItem: (k) => localStorage.getItem(k), setItem: (k, v) => localStorage.setItem(k, v) };
 
 /* the thread as the server takes it: plain text turns, the newest last, within ~50k characters */
 function toMessages(thread) {
@@ -91,39 +80,58 @@ async function readEvents(res, on) {
   }
 }
 
-export function useAgentChat({ snap, context }) {
-  const [thread, setThreadState] = useState(loadThread);
-  const [chats, setChats] = useState(loadChats);
-  const [busy, setBusy] = useState(false);
-  const [live, setLive] = useState(null);   // { text, status, charts } while an answer streams
-  const [scope, setScope] = useState("release");
-  const id = useRef(null);
-  if (id.current === null) { id.current = loadId(); saveId(id.current); }
-  const abort = useRef(null);
-  const run = useRef(0);   // the answer in flight; a new or reopened chat leaves it behind
-  const setThread = (t) => { setThreadState(t); saveThread(t); if (answered(t)) setChats(keepChat(id.current, t)); };
-  const onRelease = !!(context && context.release && snap);
-  const releaseScope = onRelease && scope === "release";
-  useEffect(() => () => { if (abort.current) abort.current.abort(); }, []);
-  const tries = releaseScope ? (snap.type === "TL" ? TRIES.tl : TRIES.le) : TRIES.all;
+/* `place` is where the reader is: HOME, or a release's id while they are on that release's page (any of its
+ * tabs); `context` is what the server is told about the page. */
+export function useAgentChat({ place = HOME, context }) {
+  const [, redraw] = useState(0);
+  const [chats, setChats] = useState(() => loadChats(local));
+  /* one slot per place visited: { id, thread, busy, live, abort, run }. Held in a ref, not in state, so an answer
+   * that lands after the reader has moved on is written to the chat it belongs to and not to the one on screen. */
+  const slots = useRef(new Map());
+  const slotOf = (p) => {
+    let s = slots.current.get(p);
+    if (!s) {
+      if (p === HOME) { s = { id: loadId(), thread: loadThread() }; saveId(s.id); }
+      else s = openFor(local, p) || { id: newId(), thread: [] };
+      Object.assign(s, { busy: false, live: null, abort: null, run: 0 });
+      slots.current.set(p, s);
+    }
+    return s;
+  };
+  const cur = slotOf(place);
+  const draw = () => redraw((n) => n + 1);
+  useEffect(() => () => { for (const s of slots.current.values()) if (s.abort) s.abort.abort(); }, []);
 
-  const ask = async (q) => {
+  /* a place's thread, on screen and in the store */
+  const setThread = (p, s, t) => {
+    s.thread = t;
+    if (p === HOME) { saveThread(t); if (answered(t)) setChats(keepChat(local, s.id, t)); }
+    else if (t.length) { const next = keepChat(local, s.id, t, p); saveOpen(local, p, s.id, next); setChats(next); }
+    draw();
+  };
+
+  const onRelease = place !== HOME;
+
+  /* opts.skill switches a skill on for this question (the Diagnose press) */
+  const ask = async (q, opts = {}) => {
     q = (q || "").trim();
-    if (!q || busy) return;
-    const mine = ++run.current;
-    const here = () => mine === run.current;
-    const next = [...thread, { role: "user", text: q }];
-    setThread(next); setBusy(true);
-    setLive({ text: "", status: "Thinking", charts: [] });
+    const p = place, s = slotOf(p);
+    if (!q || s.busy) return;
+    const mine = ++s.run;
+    const here = () => mine === s.run && slots.current.get(p) === s;   // still this chat's answer
+    const skill = opts.skill && SKILLS[opts.skill] ? opts.skill : null;
+    const next = [...s.thread, { role: "user", text: q, ...(skill ? { skill } : {}) }];
+    s.busy = true; s.live = { text: "", status: "Thinking", charts: [] };
+    setThread(p, s, next);
     const ac = new AbortController();
-    abort.current = ac;
-    const ctx = { view: context && context.view, display: context && context.display, tab: context && context.tab, ...(releaseScope ? { release: context.release } : {}) };
+    s.abort = ac;
+    const ctx = { view: context && context.view, display: context && context.display, tab: context && context.tab, ...(p !== HOME ? { release: p } : {}) };
     let finished = false;
-    const finish = (msg) => { if (finished || !here()) return; finished = true; setThread([...next, msg]); };
+    const finish = (msg) => { if (finished || !here()) return; finished = true; setThread(p, s, [...next, msg]); };
     try {
       const r = await fetch("/api/agent", {
         method: "POST", headers: { "Content-Type": "application/json" }, signal: ac.signal,
-        body: JSON.stringify({ context: ctx, messages: toMessages(next) }),
+        body: JSON.stringify({ context: ctx, messages: toMessages(next), ...(skill ? { skill } : {}) }),
       });
       if (!r.ok || !(r.headers.get("content-type") || "").includes("text/event-stream")) {
         const d = await r.json().catch(() => ({}));
@@ -138,26 +146,40 @@ export function useAgentChat({ snap, context }) {
         else if (ev === "chart") acc = { ...acc, charts: [...acc.charts, d] };
         else if (ev === "done") finish({ role: "assistant", text: d.text, charts: d.charts || [] });
         else if (ev === "error") finish({ role: "assistant", error: true, text: d.error });
-        if (here()) setLive(acc);
+        if (here() && !finished) { s.live = acc; draw(); }
       });
       if (!finished) finish(acc.text ? { role: "assistant", text: acc.text, charts: acc.charts } : { role: "assistant", error: true, text: "The answer was cut off. Try again." });
     } catch (e) {
       finish({ role: "assistant", error: true, text: e.name === "AbortError" ? "Stopped." : "The agent could not be reached." });
     } finally {
-      if (here()) { setBusy(false); setLive(null); abort.current = null; }
+      if (here()) { s.busy = false; s.live = null; s.abort = null; draw(); }
     }
   };
-  const stop = () => { if (abort.current) abort.current.abort(); };
-  /* put another chat on screen: an empty one, or one of the kept ones */
-  const swap = (chatId, t) => {
-    run.current += 1;
-    stop(); abort.current = null;
-    id.current = chatId; saveId(chatId);
-    setThreadState(t); saveThread(t);
-    setBusy(false); setLive(null);
-  };
-  const newChat = () => swap(newId(), []);
-  const openChat = (c) => { if (c && c.id !== id.current) swap(c.id, c.thread); };
+  const stop = () => { if (cur.abort) cur.abort.abort(); };
 
-  return { thread, live, busy, ask, stop, newChat, openChat, chats, chatId: id.current, title: chatTitle(thread), scope, setScope, onRelease, releaseScope, tries };
+  /* put another chat in a place: an empty one, or one of the kept ones. The answer in flight there is left behind. */
+  const swap = (p, chatId, t) => {
+    const s = slotOf(p);
+    s.run += 1;
+    if (s.abort) s.abort.abort();
+    Object.assign(s, { id: chatId, thread: t, busy: false, live: null, abort: null });
+    if (p === HOME) { saveId(chatId); saveThread(t); }
+    else saveOpen(local, p, t.length ? chatId : null);
+    draw();
+  };
+  const newChat = () => swap(place, newId(), []);
+  /* a kept chat goes back where it was held: a release's chat on that release's tab, the rest on the home page.
+   * The caller moves the reader there (App.jsx); this puts the chat in the place. */
+  const openChat = (c) => {
+    if (!c) return;
+    const p = c.rel || HOME;
+    if (slotOf(p).id !== c.id) swap(p, c.id, c.thread);
+  };
+
+  const listed = chats.filter((c) => answered(c.thread));
+  return {
+    place, thread: cur.thread, live: cur.live, busy: cur.busy, ask, stop, newChat, openChat,
+    chats: listed, here: onRelease ? listed.filter((c) => c.rel === place) : listed,
+    chatId: cur.id, title: chatTitle(cur.thread), onRelease,
+  };
 }

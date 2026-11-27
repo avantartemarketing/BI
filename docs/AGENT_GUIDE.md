@@ -1,6 +1,6 @@
 # The Agent's guide to the dashboard
 
-What the Agent (the chat bottom right of the dashboard) needs to know to answer questions
+What the Agent (the chat on the dashboard's home page and on every release's Agent tab) needs to know to answer questions
 about the data: what each page and card shows, which snapshot field each figure comes from,
 the tables behind them and how they join, and the traps in the data. The full detail is in
 `METHODOLOGY.md`, `DATA_MODEL.md`, `BENCHMARK_SPEC.md` and `TL_SPEC.md`; this guide points
@@ -60,7 +60,7 @@ over five **channel groups** and spread over the campaign days by pace curves, w
 ## 3. The pages
 
 - **Home** (the page the app opens on): a chat with the Agent, with three example questions
-  and the reader's last few chats. The same chat opens from the Agent press on other pages.
+  and the reader's last few chats, those held on a release's Agent tab among them.
 - **Releases** (in the sidebar, under Agent): every launch in a list with views All / In
   flight / Upcoming / Recent / Closed, LE and TL filters, and columns Launch, Type, Against
   target (bar to the target), Status (the gap, or the state), Lead, Closes or opens. Data:
@@ -73,6 +73,9 @@ over five **channel groups** and spread over the campaign days by pace curves, w
   plan reads too small for its target (docs/PLAN_MODEL.md 6), then the cards (below).
   Targets tab: the target-setting form (inputs, basket picker, the target per channel) -
   people change targets there; the Agent only reads them.
+  Agent tab: the chat about this launch, a page of its own, with the launch's conversation
+  kept in the reader's browser. Its box carries the **Diagnose this release** press
+  (section 8).
 - **Methodology** (workspace menu): `METHODOLOGY.md` rendered.
 - **Permissions** (admins): who can sign in and their roles. The Agent does not read it.
 
@@ -186,3 +189,24 @@ The catalogue in the prompt lists each table's grain and columns. How they conne
   `eligible` those whose entry stands, and `entries` the units the eligible asked for. The
   cards count the last. A launch can have many entrants and few eligible entries.
 - **Data-quality register**: DATA_MODEL 11 lists known upstream issues.
+
+## 8. Skills: the diagnosis
+
+A skill is a written method for one kind of question, kept as a file under
+`server/agent/skills/`. There is one: `diagnose`.
+
+- **When.** Someone asks what is going wrong (or right) with a launch, why it is behind or
+  ahead, or for a diagnosis. The reader's Diagnose this release press asks for it outright.
+- **How it reaches you.** Pressed: the method and the launch's diagnosis sheet come with the
+  question. Typed: call `diagnose_release` with the release's id first; it returns the sheet
+  and the method together. Either way, follow the method.
+- **The sheet** (`server/agent/diagnose.js`) lays the funnel out in order: told (emails,
+  posts, ad spend), responded (opens, clicks), visited (in total and by channel), looked at
+  a work, entered or signed up, bought, which work; then ads as their own lane, and the
+  shortfall split in units between visits and conversion, channel by channel. Each stage has
+  the launch's figure so far beside its plan by now, similar past launches by the same
+  point, and the same artist's earlier launches by the same point (read from `funnel_daily`
+  or `tl_funnel_daily`, cut at the same share of each campaign). A stage's `read` is a first
+  pass on fixed thresholds, for you to weigh.
+- A diagnosis is the one kind of answer that runs past a few sentences: a finding, a small
+  table stage by stage, where it is going wrong, what was ruled out, and what to check next.

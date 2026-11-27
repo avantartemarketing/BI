@@ -2,8 +2,13 @@
  * tools (server/agent/tools.js) and the project's docs in front of it
  * (server/agent/prompt.js), streamed back to the chat (web/src/Agent.jsx).
  *
- * POST /api/agent { messages: [{role, content}], context: {view, release, display} }
- * answers as a stream of server-sent events:
+ * POST /api/agent { messages: [{role, content}], context: {view, release, display}, skill }
+ * `skill` switches a skill on for this question (server/agent/skills.js): the
+ * chat's Diagnose press sends "diagnose", and the method and the launch's
+ * diagnosis sheet (server/agent/diagnose.js) go in front of the model with
+ * the question. Without it the model still picks the skill up when a typed
+ * question calls for it, through the diagnose_release tool.
+ * The answer is a stream of server-sent events:
  *   status {text}        what it is doing ("Reading the Warhol page")
  *   delta {text}         answer text as it is written
  *   reset {}             drop the text streamed so far (it was a preamble to more tool calls)
@@ -18,6 +23,8 @@
 const AnthropicSDK = require("@anthropic-ai/sdk");
 const { createTools, TOOL_DEFS, mask } = require("./tools");
 const { createPrompt } = require("./prompt");
+const { loadSkill } = require("./skills");
+const { createDiagnose } = require("./diagnose");
 
 const Anthropic = AnthropicSDK.default || AnthropicSDK;
 const MODEL = process.env.AGENT_MODEL || "claude-opus-5-5";
@@ -29,6 +36,7 @@ const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 
 function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
   const tools = createTools({ ROOT, DATA, SOURCES, readSnapshot });
+  const diag = createDiagnose({ tools, readSnapshot });
   const systemText = createPrompt({ ROOT, tools });
   let client = null;
   const getClient = () => {
@@ -46,23 +54,48 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
     return true;
   };
 
-  /* the page the reader is on, in words, for the message after the cached prompt */
-  function contextText(ctx) {
+  /* the page the reader is on, in words, for the message after the cached prompt; `skill` is the one switched
+   * on for this question, whose own method says how long the answer runs */
+  function contextText(ctx, skill) {
     const ix = tools.readIndex();
     const today = new Date().toISOString().slice(0, 10);
     const lines = [`Today is ${today}. The dashboard's data runs to ${ix.asOf || "an unknown date"}.`];
     const id = ctx && typeof ctx.release === "string" ? ctx.release.replace(/[^a-z0-9_]/g, "") : "";
     const row = id && (ix.releases || []).find((r) => r.id === id);
     if (row) {
-      lines.push(`The reader is on the page of ${row.releaseName} (id ${row.id}, ${row.type}, ${row.status}${row.targeted ? ", targeted" : ", no targets"}), ${ctx.tab === "targets" ? "Targets" : "Overview"} tab. "This release" means this one.`);
+      const where = ctx.tab === "agent" ? "in the Agent tab of the page" : `on the page, ${ctx.tab === "targets" ? "Targets" : "Overview"} tab,`;
+      lines.push(`The reader is ${where} of ${row.releaseName} (id ${row.id}, ${row.type}, ${row.status}${row.targeted ? ", targeted" : ", no targets"}). "This release" means this one.`);
     } else if (ctx && ctx.view === "releases") {
       lines.push("The reader is on the Releases list (every launch).");
     } else {
       lines.push("The reader is not on a release page.");
     }
-    lines.push(`Their Direct display is ${ctx && ctx.display === "channel" ? "Channel (Direct as its own channel)" : "Spread (Direct spread over the other channels)"}; get_release applies it unless you pass display.`);
-    lines.push("Reply in plain English and keep it short: the answer first, two to four sentences, no field, table or doc names, no jargon, only the numbers that matter, rounded.");
+    lines.push(`Their Direct display is ${ctx && ctx.display === "channel" ? "Channel (Direct as its own channel)" : "Spread (Direct spread over the other channels)"}; get_release and diagnose_release apply it unless you pass display.`);
+    lines.push(skill
+      ? `The reader pressed "${skill.title || skill.name}". Reply in plain English, in the shape the method below sets out: no field, table or doc names, no jargon, only the numbers that matter, rounded.`
+      : "Reply in plain English and keep it short: the answer first, two to four sentences, no field, table or doc names, no jargon, only the numbers that matter, rounded.");
     return lines.join(" ");
+  }
+
+  /* What a skill puts in front of the model with the question: its method, and for a diagnosis the launch's
+   * sheet, gathered here so the first thing the model does is read it. Returns the text and a line for the
+   * chat's status. A sheet that cannot be read costs the head start, not the answer: the model is told to
+   * gather it itself. */
+  function skillBrief(skill, rel, ctx) {
+    const method = `<skill name="${skill.name}">\n${skill.body}\n</skill>`;
+    if (skill.name !== "diagnose") return { text: method, status: "Thinking" };
+    if (!rel) return { text: `${method}\nThe reader is not on a release's page: ask which launch they mean, or find it with list_releases if they named one, then call diagnose_release.`, status: "Thinking" };
+    try {
+      const sheet = diag.diagnose({ id: rel, display: ctx.display === "channel" ? "channel" : undefined });
+      const earlier = sheet.comparison && Array.isArray(sheet.comparison.sameArtist) ? sheet.comparison.sameArtist.length : 0;
+      const artist = (sheet.release && sheet.release.artist) || "the artist";
+      return {
+        text: `${method}\n<diagnosis_sheet release="${rel}">\n${JSON.stringify(sheet)}\n</diagnosis_sheet>\nThe sheet above is this launch's, read just now: there is no need to call diagnose_release for it.`,
+        status: sheet.nothingYet ? "Reading the launch" : earlier ? `Comparing each stage with ${artist}'s earlier launches` : "Comparing each stage with similar past launches",
+      };
+    } catch (e) {
+      return { text: `${method}\nThe launch's sheet could not be read here (${mask(String(e.message || e)).slice(0, 200)}): call diagnose_release for ${rel}.`, status: "Going through the funnel stage by stage" };
+    }
   }
 
   /* a few words on what a tool call is doing, for the chat's status line, in the reader's words */
@@ -82,6 +115,7 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
     switch (name) {
       case "list_releases": return i.search ? `Looking up releases matching "${i.search}"` : "Looking through the releases";
       case "get_release": return `Reading ${nameOf(i.id)}'s page`;
+      case "diagnose_release": return `Going through ${nameOf(i.id)}'s funnel stage by stage`;
       case "describe_table":
       case "query_table": return `Checking ${PLAIN[i.table] || "the data"}`;
       case "read_docs": return "Checking how the dashboard works this out";
@@ -90,11 +124,18 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
     }
   }
 
-  function runTool(name, input, charts) {
+  function runTool(name, input, charts, ctx) {
     const i = input && typeof input === "object" ? input : {};
+    // the reader's Direct display, unless the model asks for the other one
+    const display = i.display === "channel" || i.display === "spread" ? i.display : ctx && ctx.display === "channel" ? "channel" : undefined;
     switch (name) {
       case "list_releases": return tools.listReleases(i);
-      case "get_release": return tools.getRelease({ id: i.id, fields: i.fields, display: i.display, line: i.line });   // the saved settings and the plan-based view are the connector's to ask for
+      case "get_release": return tools.getRelease({ id: i.id, fields: i.fields, display, line: i.line });   // the saved settings and the plan-based view are the connector's to ask for
+      case "diagnose_release": {
+        // the sheet, with the method for reading it: a typed "what is going wrong" follows the same steps as the press
+        const skill = loadSkill("diagnose");
+        return { method: skill ? skill.body : undefined, sheet: diag.diagnose({ id: i.id, display }) };
+      }
       case "describe_table": return tools.describeTable(i);
       case "query_table": return tools.queryTable(i);
       case "read_docs": return tools.readDocs(i);
@@ -144,7 +185,11 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
     const charts = [];
     let steps = 0;
 
-    const messages = [...history, { role: "system", content: contextText(ctx) }];
+    // a skill switched on for this question: its method (and what it gathers) rides with the page's context
+    const skill = typeof body.skill === "string" ? loadSkill(body.skill) : null;
+    const brief = skill ? skillBrief(skill, rel, ctx) : null;
+    if (brief) send("status", { text: brief.status });
+    const messages = [...history, { role: "system", content: contextText(ctx, skill) + (brief ? `\n\n${brief.text}` : "") }];
     const system = [{ type: "text", text: systemText(), cache_control: { type: "ephemeral" } }];
     let lean = false;   // set when the API turns down an optional parameter: retried without them
 
@@ -198,7 +243,7 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
           send("status", { text: statusOf(call.name, call.input) });
           let content, isError = false;
           try {
-            content = JSON.stringify(runTool(call.name, call.input, charts));
+            content = JSON.stringify(runTool(call.name, call.input, charts, ctx));
             if (call.name === "make_chart") send("chart", charts[charts.length - 1]);
           } catch (e) {
             content = `Error: ${mask(e.message)}`; isError = true;
@@ -210,7 +255,7 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
       }
       if (!answer) answer = "I ran out of steps before I had an answer. Try a narrower question.";
       send("done", { text: answer, charts });
-      log(200, `steps=${steps + 1} in=${usage.in} cache_read=${usage.cacheRead} cache_write=${usage.cacheWrite} out=${usage.out} ms=${Date.now() - started}${lean ? " lean" : ""}`);
+      log(200, `steps=${steps + 1} in=${usage.in} cache_read=${usage.cacheRead} cache_write=${usage.cacheWrite} out=${usage.out} ms=${Date.now() - started}${lean ? " lean" : ""}${skill ? ` skill=${skill.name}` : ""}`);
     } catch (e) {
       let error = "The agent could not answer. Try again.";
       if (e instanceof Anthropic.APIUserAbortError || ac.signal.aborted) error = open ? "That took too long - try a narrower question." : "cancelled";

@@ -38,6 +38,8 @@ export const Check = ({ w = 14 }) => I('<path d="M3 8.5l3.2 3L13 4.5"></path>', 
 export const Undo = ({ w = 14 }) => I('<path d="M3 8a5 5 0 1 0 1.5-3.5"></path><path d="M3 2.5v2.5h2.5"></path>', w, 1.5);
 export const Send = ({ w = 15 }) => I('<path d="M2.5 8L13.5 3l-3.5 10.5-2.5-4.5z"></path>', w);
 export const Agent = ({ w = 14 }) => <svg width={w} height={w} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true"><path d="M3 2.5l10 4.2-4.3 1.6L7 12.8z" /></svg>;
+/* a pulse line: the Diagnose press, and the question it asks */
+export const Pulse = ({ w = 14 }) => I('<path d="M1.5 8.5h2.8l1.9-4.8 3 8.6 2-3.8h3.3"></path>', w, 1.5);
 export const History = () => I('<path d="M3 8a5 5 0 1 0 1.5-3.5"></path><path d="M3 2.5v2.5h2.5"></path><path d="M8 5.5V8l1.8 1.2"></path>');
 export const Minimise = () => I('<path d="M4 11h8"></path>');
 export const Expand = () => I('<path d="M9.5 3H13v3.5M13 3L9 7M6.5 13H3V9.5M3 13l4-4"></path>');

@@ -1,13 +1,13 @@
-/* The Agent: the press bottom right, Linear's, and the chat it opens. It
+/* The Agent's chat, the parts its two pages share: the home page
+ * (AgentHome.jsx) and the Agent tab of a release's page (AgentTab.jsx). It
  * answers questions about the data - this release, or every launch - from
  * the snapshots, the tables and the docs, and can draw charts in the chat
  * (server/agent/). It reads only: nothing it does changes the dashboard.
  *
- * The conversation itself is held by the app (agentChat.js), so this popup
- * and the home page (AgentHome.jsx) show the same one. The turns and the send
- * press are drawn here for both. */
-import React, { useEffect, useRef, useState } from "react";
-import { Agent as AgentIcon, Plus, Minimise, Expand, X, Caret } from "./icons.jsx";
+ * The conversations themselves are held by the app (agentChat.js). Here are
+ * the turns, the box a question is typed in, and its send press. */
+import React, { useState } from "react";
+import { Pulse } from "./icons.jsx";
 import { AnswerText } from "./agentText.jsx";
 import "./agent.css";
 
@@ -18,7 +18,7 @@ export function Turns({ chat }) {
     <>
       {thread.map((m, i) => (
         <div key={i} className="agentturn">
-          {m.role === "user" ? <div className="askq">{m.text}</div>
+          {m.role === "user" ? <div className={`askq${m.skill ? " skill" : ""}`}>{m.skill ? <Pulse w={13} /> : null}{m.text}</div>
             : m.error ? <p className="aska aerr">{m.text}</p>
             : <AnswerText text={m.text} charts={m.charts} />}
         </div>
@@ -47,72 +47,19 @@ export function SendPress({ chat, text, onSend, solid }) {
   );
 }
 
-export default function AgentDock({ chat, snap }) {
-  const [open, setOpen] = useState(false);
-  const [big, setBig] = useState(false);
+/* The box a question is typed in: Enter sends, Shift+Enter breaks the line.
+ * `left` is what sits at the foot's left, opposite the send press (a release's
+ * tab puts its Diagnose press there). */
+export function ChatBox({ chat, id, placeholder, rows = 1, left, inputRef }) {
   const [text, setText] = useState("");
-  const scroller = useRef(null);
-  const { thread, live, scope, setScope, onRelease, releaseScope, tries } = chat;
-  useEffect(() => { if (scroller.current) scroller.current.scrollTop = scroller.current.scrollHeight; }, [thread, open, live]);
-  const ask = (q) => { if (!(q || "").trim() || chat.busy) return; setText(""); setOpen(true); chat.ask(q); };
-  // a card hands a question over (the Suggested actions card's Ask): it is asked here, in the open chat
-  const askRef = useRef(null);
-  askRef.current = ask;
-  useEffect(() => {
-    const on = (e) => { const q = e && e.detail && e.detail.text; if (q && askRef.current) askRef.current(q); };
-    window.addEventListener("agent:ask", on);
-    return () => window.removeEventListener("agent:ask", on);
-  }, []);
-  const clear = () => { chat.newChat(); setText(""); };
-
-  const name = snap ? snap.artist : "";
-  const wide = big ? "min(760px, calc(100% - 48px))" : "min(480px, calc(100% - 48px))";
+  const ask = () => { if (!text.trim() || chat.busy) return; const q = text; setText(""); chat.ask(q); };
   return (
-    <>
-      <div className="agentdock">
-        <button className="agentbtn" onClick={() => setOpen(!open)} aria-expanded={open}><AgentIcon />Agent</button>
-        <button className="nv-ib" aria-label="New chat" title="New chat" onClick={() => { clear(); setOpen(true); }}><Plus /></button>
-      </div>
-      {open && (
-        <section className="agentpop" aria-label="Agent chat" style={{ width: wide, height: big ? "calc(100vh - 80px)" : "min(640px, calc(100vh - 80px))" }}>
-          <div style={{ display: "flex", alignItems: "center", height: 48, padding: "0 8px 0 18px", flex: "0 0 auto" }}>
-            <span style={{ fontSize: 13.5, fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chat.title || "New chat"}</span>
-            <span style={{ flex: 1 }} />
-            <button className="nv-ib" aria-label="Minimise" onClick={() => setOpen(false)}><Minimise /></button>
-            <button className="nv-ib" aria-label={big ? "Shrink" : "Expand"} onClick={() => setBig(!big)}><Expand /></button>
-            <button className="nv-ib" aria-label="Close and clear" onClick={() => { clear(); setOpen(false); }}><X w={15} /></button>
-          </div>
-          <div ref={scroller} className="agentscroll">
-            {thread.length === 0 && !live && (
-              <div className="agentempty">
-                <span style={{ color: "#6b6b6f", marginBottom: 6 }}><AgentIcon w={18} /></span>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{releaseScope ? "Ask about this release" : "Ask about your launches"}</span>
-                <span style={{ fontSize: 13, color: "#6b6b6f" }}>{releaseScope ? `${name}'s figures, how they are worked out, or any launch's data` : "Any release, any table behind the dashboard, how a figure is worked out"}</span>
-                <span style={{ fontSize: 12, color: "#8a8a8e" }}>It reads the data and can draw charts here; it never changes the dashboard.</span>
-                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginTop: 14 }}>
-                  {tries.map((q) => <button key={q} className="trychip" onClick={() => ask(q)}>{q}</button>)}
-                </div>
-              </div>
-            )}
-            <Turns chat={chat} />
-          </div>
-          <div className="agentin">
-            <label htmlFor="agentin" className="sr">Ask the agent</label>
-            <textarea id="agentin" rows={1} placeholder={releaseScope ? "Ask about this release, or any launch" : "Ask about any launch or the data"} value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(text); } }} />
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {onRelease ? (
-                <button className="nv-row ascope" onClick={() => setScope(scope === "release" ? "all" : "release")} title="What the questions are about">
-                  {scope === "release" ? "This release" : "All launches"}<Caret />
-                </button>
-              ) : <span className="nv-row ascope" style={{ cursor: "default" }}>All launches</span>}
-              <span style={{ flex: 1 }} />
-              <SendPress chat={chat} text={text} onSend={() => ask(text)} />
-            </div>
-          </div>
-        </section>
-      )}
-    </>
+    <div className="ah-box">
+      <label htmlFor={id} className="sr">Ask the agent</label>
+      <textarea id={id} ref={inputRef} rows={rows} placeholder={placeholder} value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(); } }} />
+      <div className="ah-boxfoot">{left || null}<span style={{ flex: 1 }} /><SendPress chat={chat} text={text} onSend={ask} solid /></div>
+    </div>
   );
 }

@@ -97,7 +97,7 @@ button, input, select { font-family: inherit; }
 .badge.le { color: var(--badge-le-fg); background: var(--badge-le-bg); }
 .badge.tl { color: var(--badge-tl-fg); background: var(--badge-tl-bg); }
 .tabs { display: inline-flex; gap: 4px; margin-left: 10px; }
-.tab { height: 26px; padding: 0 10px; border: 0; border-radius: 13px; background: transparent; font: inherit; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+.tab { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border: 0; border-radius: 13px; background: transparent; font: inherit; font-size: 12.5px; color: var(--muted); cursor: pointer; }
 .tab:hover { color: var(--ink); }
 .tab.on { background: rgba(0,0,0,.055); color: var(--ink); font-weight: 500; }
 .chips { display: flex; align-items: center; gap: 6px; padding: 10px 20px; border-bottom: 1px solid rgba(0,0,0,.05); flex-wrap: wrap; }
@@ -365,12 +365,6 @@ tbody tr:hover td { background: rgba(0,0,0,.02); }
 .state-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 36px 24px 32px; border: 1px solid #ececec; border-radius: 12px; background: var(--card); }
 
 /* ---------- the Agent ---------- */
-.agentdock { position: fixed; right: 14px; bottom: 10px; display: flex; align-items: center; gap: 2px; z-index: 22; }
-.agentbtn { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border: 0; border-radius: 8px; background: #ececee; font: inherit; font-size: 13px; font-weight: 500; color: var(--ink); cursor: pointer; }
-.agentbtn:hover { background: #e4e4e7; }
-.agentpop { position: fixed; right: 24px; bottom: 52px; display: flex; flex-direction: column; background: var(--card); border: 1px solid #e6e6e8; border-radius: 14px; box-shadow: 0 16px 48px rgba(0,0,0,.14); z-index: 23; }
-.trychip { display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border: 1px solid #e6e6e8; border-radius: 16px; background: var(--card); font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; }
-.trychip:hover { background: #f6f6f7; }
 .askq { align-self: flex-end; max-width: 85%; background: rgba(0,0,0,.055); border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
 .aska { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre-wrap; }
 .sendr { width: 28px; height: 28px; border: 1px solid #e6e6e8; border-radius: 50%; background: var(--card); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -390,4 +384,4 @@ tbody tr:hover td { background: rgba(0,0,0,.02); }
   .phead .fresh { display: none; }
   .phead .work { display: none; }
 }
-@media (max-width: 560px) { .agentbtn { padding: 0 10px; } .card { padding: 14px 14px 16px; } }
+@media (max-width: 560px) { .card { padding: 14px 14px 16px; } .tabs { margin-left: 0; } .tab svg { display: none; } }
