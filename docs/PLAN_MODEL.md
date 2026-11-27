@@ -479,8 +479,18 @@ which is a floor and nothing more, since a link opened inside an email or Instag
 another browser. (The study was run once from a cloud session and is not kept as a script.)
 
 **The card.** A bar per phase (early access, announce, sustain, last chance) and one for
-paid: in so far, still to come, and a tick where the plan put it, with the two figures
-beside it. A box beside the bars, the same height and scrolling inside, lists the pieces:
+paid: the plan in grey, as long as the plan and ending at a tick, and on it what is in so
+far and what is still to come, with its plan and its actuals (what is in so far) beside
+it. The grey left showing is what the phase is short of its plan by; a bar that passes the
+tick is over it (from 27 November 2026: until then the grey ran the full width of every
+row, whatever the plan). The forecast, the actuals and what is still to come together, is
+the bar itself, and its figures are in the readout a bar shows when it is hovered or
+touched: actuals, still to come, forecast and plan (from 27 November 2026, asked by the
+repository owner the day before: until then the second figure beside a bar was the
+forecast, headed "Lands at"). The headline stays the forecast, so the actuals column adds
+up to what is in so far and not to the headline. The whole units are shared out actuals
+first and what is still to come after, so a row's pieces add up to the row figure by
+figure. A box beside the bars, the same height and scrolling inside, lists the pieces:
 every email and post with the one furthest behind its plan first (in date order before
 anything has gone out), or the phase picked, with its line for search, direct and later
 arrivals last, or paid by what is spent and still to spend.
