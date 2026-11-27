@@ -199,8 +199,9 @@ def test_normal_week():
     assert keys(big["planChanges"], "changes") == ["e.full", "e.small", "post.artist"] and not big["planChanges"]["held"]
     assert keys(small["planChanges"], "held") == ["e.full"] and small["planChanges"]["held"][0]["heldBy"] == "load"
     assert "Ada has more at stake that week" in small["planChanges"]["held"][0]["held"]
-    assert keys(done["planChanges"], "held") == ["e.full"] and done["planChanges"]["held"][0]["heldBy"] == "course" and keys(done["planChanges"], "changes") == ["post.artist"]
-    assert held == 2 and big["planChanges"]["list"]["week"]["general"] == 1
+    # a launch on course is offered nothing that adds to it: the general send and the post are both held
+    assert keys(done["planChanges"], "held") == ["e.full", "post.artist"] and {c["heldBy"] for c in done["planChanges"]["held"]} == {"course"} and not done["planChanges"]["changes"]
+    assert held == 3 and big["planChanges"]["list"]["week"]["general"] == 1
 
 
 def test_busy_week():
@@ -233,6 +234,31 @@ def test_two_readings():
     LL.settle([two], ctx)
     assert two["planChanges"]["changes"][0]["general"]["nth"] == 1
     assert keys(two["variants"]["plan"]["planChanges"], "held") == ["p.full"] and two["variants"]["plan"]["planChanges"]["held"][0]["held"] == "The launch is on course without it."
+
+
+def test_on_course():
+    """A card that reads on course keeps the paid budget's change and holds everything that only adds to the
+    launch, with the list on file or without it; an email offered at two audiences is one held row."""
+    stop = {"key": "paid.stop", "kind": "drop", "title": "Paid spend", "channel": "Paid", "date": "2026-11-19", "units": None, "saves": 2956}
+    wide = dict(email("e.last.full", "2026-11-25", 20, people=LIST, title="Last chance email"), kind="change", same="e.last")
+    mid = dict(email("e.last.mid", "2026-11-25", 3, people=12000, title="Last chance email"), kind="change", same="e.last")
+    rows = [wide, dict(POST, key="post.partner"), email("e.small", "2026-11-19", 4, people=7000), POST, mid, stop]
+    for ctx in (ctx_with((1.0, 1.0, 1.0)), None):
+        done = page("Di", 100, 100, [], plan_changes=rows, plan_status="on_course", plan_projected=100)
+        short = page("Ed", 100, 60, [], plan_changes=rows, plan_status="short", plan_projected=60)
+        LL.settle([done, short], ctx)
+        pv = done["variants"]["plan"]["planChanges"]
+        assert keys(pv, "changes") == ["paid.stop"] and not pv["more"], (ctx is None, keys(pv, "changes"))
+        assert keys(pv, "held") == ["e.last.full", "post.partner", "e.small", "post.artist"] and all(c["held"] == LL.ON_COURSE and c["heldBy"] == "course" for c in pv["held"])
+        assert [a["key"] for a in pv["held"][0]["alts"]] == ["e.last.mid"] and "general" not in pv["held"][0]
+        # a launch that is short keeps its suggestions
+        sv = short["variants"]["plan"]["planChanges"]
+        assert "post.partner" in keys(sv, "changes") + keys(sv, "more") and "post.artist" in keys(sv, "changes") + keys(sv, "more") and "paid.stop" in keys(sv, "changes") + keys(sv, "more")
+        assert all(c["heldBy"] != "course" for c in sv["held"])
+    # settled again from what the build suggested, the answer is the same
+    again = copy.deepcopy(done)
+    LL.settle([again], None)
+    assert keys(again["variants"]["plan"]["planChanges"], "held") == keys(pv, "held") and keys(again["variants"]["plan"]["planChanges"], "changes") == ["paid.stop"]
 
 
 def test_very_busy_and_cap():

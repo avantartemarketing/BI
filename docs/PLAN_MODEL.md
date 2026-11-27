@@ -560,7 +560,9 @@ with the other inside it (`etl/list_load.py one_each`). On both pages an
 email to half the list or more is held to the list's load (`etl/list_load.py`,
 docs/METHODOLOGY.md 7d): a cap on general sends in a week and a scale on how busy the list
 has been, read across every launch, so this view's emails each say how many people they go
-to (`people`).
+to (`people`). On a launch on course for its target every one of them is held, under "On
+course without these", and the paid budget's change stands alone, as on the clock's page
+(docs/METHODOLOGY.md 7d; from 27 November 2026).
 
 `python3 tests/test_plan_view.py` holds the view to a hand-built launch: the rows adding up
 to the page's counts and each row's pieces to the row, the credit going to the day people
@@ -893,3 +895,14 @@ page needs the timed launches' feeds, which a checkout does not carry.
   owner had found that the card's one figure did not say it was the recommendation, and
   chose, of four heads shown, yesterday's spend and the recommended one side by side,
   each under its own label.
+- **27 November 2026, later.** The owner asked why Seth Armstrong's launch, 98 of its 100
+  spoken for with five days left, showed six suggested actions. This view listed everything
+  that could be added, valued, whether or not the launch was short, and held back only the
+  general sends; the one change worth making there, the paid spend to stop (about 2,950
+  euros saved), sat under "2 more". The clock's page already asked first whether the launch
+  is short at all, and showed that one change alone. This view now asks it too
+  (`etl/list_load.py settle`): on a card that reads on course the adds are held, under "On
+  course without these", and can still be read and taken. Live the same day, once the owner
+  had seen the before and after of that launch's card. "On course" is the test the clock's
+  page uses, the forecast within 3% of the target; the owner was told it is thin early in a
+  campaign and that a wider margin is theirs to ask for.

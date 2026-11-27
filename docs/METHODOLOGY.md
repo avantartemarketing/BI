@@ -982,7 +982,14 @@ one list, never a fresh to-do list:
 - **Drop**: something stopped (paid, when the next euro no longer pays).
 
 A launch on course for its target gets no comms changes: the extra sends are
-better kept for a launch that needs them. Its paid change still shows.
+better kept for a launch that needs them. Its paid change still shows. The
+plan-based view, whose suggestions are everything that could be added, each
+valued (docs/PLAN_MODEL.md 6), follows the same rule from 27 November 2026:
+on a card that reads on course they sit under **On course without these**,
+each with what it was worth, and can still be accepted (`etl/list_load.py
+settle`). Until then that view held only its general sends, and a launch two
+units from selling out was offered three posts and two emails above its one
+change worth making, the paid spend to stop.
 
 A timed launch gathering signups has the card on its plan-based view alone
 (docs/PLAN_MODEL.md 6b), sized in signups by the sales open: the paid
@@ -1078,7 +1085,8 @@ A general send the rule lets through says which of the week's it would be
 ("General send 3 of 3"). One it does not sits under **Held back** with the
 reason in a line and what it was worth; it can still be accepted, except in a
 week at the cap. Emails to fewer than half the list, posts and paid are
-untouched. An email the plan-based view offers at two audiences (the full
+untouched on a launch that is short; on one that is on course everything but
+paid is held (above). An email the plan-based view offers at two audiences (the full
 list, and about three times its usual one) is one row, the larger the rule
 leaves standing, and opens to the other as an alternative: as two rows they
 read as two things to do (24 November 2026). The card's first line gives the list's state, this week's count

@@ -27,7 +27,9 @@
  * the rule lets through says which of the week's it would be; one it does not
  * sits under "Held back" with the reason, where it can still be read and,
  * unless the week is at the cap, accepted. An email offered at two audiences
- * is one row, the larger left standing, and opens to the other (`alts`). */
+ * is one row, the larger left standing, and opens to the other (`alts`). On a
+ * launch on course everything that only adds to it is held, and the fold
+ * reads "On course without these". */
 import React, { useEffect, useState } from "react";
 import { Card, Note } from "../ui.jsx";
 import { Agent as AgentIcon, Check, Chev, Undo } from "../icons.jsx";
@@ -158,6 +160,8 @@ export default function PlanChanges({ snap, state }) {
   const states = st.states || {};
   const all = [...(pc.changes || []), ...(pc.more || [])];
   const held = (pc.held || []).filter((c) => !states[c.key]);
+  // a launch on course has everything that only adds to it held, posts and smaller emails as well as general sends
+  const onCourse = held.length > 0 && held.every((c) => c.heldBy === "course");
   const todo = all.filter((c) => !states[c.key]);
   const done = [...all, ...(pc.held || [])].filter((c) => states[c.key]);
   const cap = snap.method === "plan" ? 4 : 3;   // the plan-based view shows four, so the paid budget sits beside the comms
@@ -188,7 +192,7 @@ export default function PlanChanges({ snap, state }) {
         {todo.length > cap && <button className="pc-fold" onClick={() => setMore(!more)}><Chev />{more ? "Fewer" : `${todo.length - cap} more`}</button>}
         {held.length > 0 && (
           <>
-            <button className={`pc-fold${back ? " on" : ""}`} aria-expanded={back} onClick={() => setBack(!back)}><Chev />Held back: {sends(held.length)}</button>
+            <button className={`pc-fold${back ? " on" : ""}`} aria-expanded={back} onClick={() => setBack(!back)}><Chev />{onCourse ? `On course without ${held.length === 1 ? "this" : "these"}: ${held.length}` : `Held back: ${sends(held.length)}`}</button>
             {back && held.map((c) => <Row key={c.key} c={c} asOf={pc.asOf} artist={artist} week={week} open={open === c.key} onOpen={() => setOpen(open === c.key ? null : c.key)} onSet={save} />)}
           </>
         )}
