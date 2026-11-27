@@ -79,6 +79,16 @@ const TABLES = {
     grain: "release",
     about: "Each release's campaign window as the build inferred it: announce, close, the rule behind each, sessions and entrants, campaign days.",
   },
+  funnel_daily: {
+    dir: "app", file: "funnel_daily.csv",
+    grain: "draw launch (LE) x day x channel, over each launch's own campaign",
+    about: "Every draw launch day by day, so a launch can be read at any point of its campaign and set against another at the same point (release_clusters holds whole-campaign totals only). Columns: release, date, day (days since the announce: 0 on the day itself, negative in early access), of (the campaign's length in days, announce to close; day/of is the share of the campaign gone), channel (AA Email, AA Social, Artist, Organic Search, Other, Paid, with Direct and Untracked apart, as attributed), visits (sessions), entrants (people who entered the draw), eligible (those of them whose entry stands), entries (the units eligible entrants asked for: the entries every card counts), units (units paid that day, from the orders), and the page funnel's counts (release_page_visits, went_to_product, product_page_visits, entered_from_product). visits_spread, entries_spread and units_spread are the same counts with Untracked and Direct shared over the other channels, which is how a page shows its channels by default: read a channel's figure from them when the reader's Direct display is Spread, and totals from either. Days after the close are folded into the close day. For a launch by day N, sum the rows with day <= N (early access included).",
+  },
+  tl_funnel_daily: {
+    dir: "app", file: "tl_funnel_daily.csv",
+    grain: "timed launch (TL) x day x channel, from two weeks before the announce to the end of settling",
+    about: "Every timed launch day by day (tl_panel holds whole-launch totals only). Columns: release, date, day (days since the announce), of (days from the announce to the day sales open), to_open (days to the day sales open: negative before it, 0 on the day, positive after), channel (as funnel_daily), visits (sessions), signups, orders and units (the funnel's purchases, cancelled orders out; a page's own units come from the orders and can differ a little). visits_spread, signups_spread and units_spread share Direct over the other channels and keep Untracked apart, as a timed launch's page does. For a launch at the same point before its window, sum the rows with to_open <= -N.",
+  },
   tl_panel: {
     dir: "app", file: "tl_panel.csv",
     grain: "timed launch (TL)",

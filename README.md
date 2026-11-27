@@ -34,6 +34,8 @@ etl/                    Python pipeline
   plan_model.py           the plan model: a launch's comms plan priced against a usual one
                           (docs/PLAN_MODEL.md); plan_prices.json is its price list and
                           plan_backtest.json its back-test, both written by analysis/plan_backtest.py
+  funnel_daily.py         every launch day by day, for the Agent and the connector: the two tables
+                          data/app/funnel_daily.csv and tl_funnel_daily.csv (docs/DATA_MODEL.md 6.1a)
   plan_view.py            the plan-based view of a live draw launch, laid under variants.plan on
                           its page: the plan's path per channel, the plan card's rows and pieces,
                           and suggested actions valued by the price list (docs/PLAN_MODEL.md 6)
@@ -80,6 +82,10 @@ data/
   app/                    what the UI reads: index.json, curves.json, releases/<id>.json
   app/release_products.json  per release, the draws (one per product) and the entry patterns
                           the per-product sell-through runs on - counts only, no identifier
+  app/funnel_daily.csv    every draw launch day by day and channel, with the day of the campaign:
+                          visits, entrants, entries, units and the steps through its pages; and
+                          app/tl_funnel_daily.csv, the timed launches' days (visits, signups,
+                          units). Rebuilt on every full refresh, not committed (docs 6.1a)
 tests/                  the sell-through rule on fixtures, in both languages, and its parity
                         (python3 tests/test_sellthrough.py runs both sides), the events
                         aggregation on a synthetic feed, the build block, the save path
@@ -1155,7 +1161,7 @@ about the data: how a release is doing, what a figure means and how it is worked
 questions across launches that no card shows. It reads the release snapshots (with the
 reader's Direct display, so its figures match the screen), the tables under `data/` (units
 paid by day and channel, orders by product, spend, social posts, email sends, the LE and TL
-panels, the index), and the docs: `docs/AGENT_GUIDE.md` (how the dashboard is built, card by
+panels, every launch day by day with the day of its campaign, the index), and the docs: `docs/AGENT_GUIDE.md` (how the dashboard is built, card by
 card) and `docs/METHODOLOGY.md` are always in front of it, the rest it reads by section. It
 can draw line, bar, stacked, horizontal-bar and scatter charts in the chat, with the
 dashboard's chart components (`AgentChart.jsx`). It cannot change anything: its six tools

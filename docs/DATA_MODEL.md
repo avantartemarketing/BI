@@ -1739,6 +1739,53 @@ every reader downstream runs unchanged on the one count.
 campaign-date records with launch timestamps ~1 day apart); metrics are split across the pair -
 **sum them**, never de-duplicate.
 
+### 6.1a The launches day by day (`funnel_daily.csv`, `tl_funnel_daily.csv`)
+
+The panels hold a past launch as whole-campaign totals (`data/release_clusters.csv`,
+`data/app/tl_panel.csv`), which is what a basket's medians need and not what a question such as
+"how many visits did York have by day 2" needs: on 27 November 2026 the Agent could give an
+earlier launch's entries and units by day and not its visits. Since then the full build writes
+each launch's own days beside the pages (`etl/funnel_daily.py`, called from `build.py`
+`write_daily_tables`), and the Agent and the connector read them as two more tables:
+
+| File | Grain | Days kept |
+|---|---|---|
+| `data/app/funnel_daily.csv` | draw launch × day × channel | the days its page counts (§6.3): the private room or the announce, or an earlier first sale, to two days after the sales close |
+| `data/app/tl_funnel_daily.csv` | timed launch × day × channel | two weeks before the announce to the end of settling |
+
+Every row carries the day of the campaign: `day` (days since the announce, 0 on the day,
+negative before it), `of` (announce to close on a draw launch, announce to the day sales open
+on a timed one), and on a timed launch `to_open`. A draw launch's days after the close are
+folded into the close day, as its page folds the winners' payments (§6.3), so its total by
+the last day is the page's.
+
+Channels are the six display groups (§1.3) by name, with Direct and Untracked kept apart, as
+the feed attributes them. Beside `visits`, `entries` (or `signups`) and `units` sit their
+`_spread` readings: Untracked shared over the other channels and then Direct over the rest,
+day by day, in proportion to what each did that day (`redistribute_channel`, §1.3, for every
+launch at once). That is a page's default view, so a channel's figure read from the `_spread`
+columns is the one its page shows with Direct spread, and the plain columns with Direct added
+to Other are the page's with Direct as a channel. A timed launch's page keeps Untracked apart
+and spreads Direct alone (TL_SPEC §3b), and so does its table. Checked on 27 November 2026
+against the pages built from the same feeds: Harland Miller, Ai Weiwei and Johnson Tsang's
+draw launches agree on visits per channel in both readings, on eligible entries, units paid
+and the page funnel's four counts, and Marina Abramović's timed launch on visits and signups
+per channel in both readings.
+
+A draw launch's columns: `visits` (sessions), `entrants` (people who entered), `eligible`
+(those whose entry stands, `Collectors_Eligible_Entries`), `entries` (the eligible entrants'
+units, `Draw_Entries_Eligible_Units`: the entries every card counts), `units` (units paid,
+from the orders where they cover the launch, `swap_units`' rule, else the funnel's purchases),
+and the page funnel's four counts (§2.6: `release_page_visits`, `went_to_product`,
+`product_page_visits`, `entered_from_product`). A timed launch's: `visits`, `signups`,
+`orders` and `units` as the TL aggregation counts them (the funnel's purchases with cancelled
+orders out; a page's own units are the orders table's and can differ a little).
+
+Counts only, no identifier. The tables cover what the funnel feed covers (`BQ_SINCE`), are a
+few megabytes (2.7 MB and 1.4 MB on 27 November 2026: 141 draw launches, 80 timed), are
+rebuilt on every full refresh in about two seconds and are not committed. A failure writing
+them is one line in the refresh's log and never stops a page.
+
 ### 6.2 Launch-to-date actuals vs target
 - Sessions/purchases per channel: SUMIFS over the lifetime rollup, then **redistribute Untracked
   pro-rata** across tracked channels.

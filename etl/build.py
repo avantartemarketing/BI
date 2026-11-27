@@ -70,6 +70,7 @@ import paid_cost   # the price of a paid entry as the plan reads it: the curve a
 import plan_changes   # the Suggested actions card: what to add to or change in a live launch's comms plan (docs/METHODOLOGY.md)
 import plan_view      # the plan-based view of a live draw launch, laid under variants.plan (docs/PLAN_MODEL.md)
 import list_load      # the list's load: the cap and the scale a suggested general send is held to (docs/METHODOLOGY.md)
+import funnel_daily   # every launch day by day, for the Agent and the connector (docs/AGENT_GUIDE.md 5)
 import pricing
 import tl   # timed launches: the release model, the panel and the pages (docs/TL_SPEC.md)
 # The per-product sell-through rule (docs §6.3): the entries in hand allocated
@@ -192,6 +193,10 @@ CONV_COLS = ["Conv_Units_Claimed", "Conv_Units_Pending_Preorder", "Conv_Units_Pe
 # the plan model splits a row's eligible units between the two rates by that
 # share (etl/plan_model.py demand_units). Read when the file has them.
 ENTRY_COLS = ["Draw_Entries", "Preorder_App"]
+# How many of a row's entrants were eligible, for the day-by-day table
+# (etl/funnel_daily.py): the people who entered against the people whose entry
+# stands. Read when the file has it.
+PEOPLE_COLS = ["Collectors_Eligible_Entries"]
 
 
 # The build reads the export rebuilt from the event-level feeds by
@@ -227,7 +232,7 @@ def load_across_time() -> pd.DataFrame:
     key = None
     try:
         st = FUNNEL_FILE.stat()
-        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS + CONV_COLS + ENTRY_COLS, "v": 2}
+        key = {"path": str(FUNNEL_FILE), "mtime_ns": st.st_mtime_ns, "size": st.st_size, "cols": FUNNEL_COLS + CONV_COLS + ENTRY_COLS + PEOPLE_COLS, "v": 2}
         if cache.exists() and meta.exists() and json.loads(meta.read_text()) == key:
             df = pd.read_pickle(cache)
             print(f"funnel: {len(df)} rows from the cached parse of {FUNNEL_FILE.name}")
@@ -246,7 +251,7 @@ def load_across_time() -> pd.DataFrame:
 
 
 def _parse_across_time() -> pd.DataFrame:
-    df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS or c in CONV_COLS or c in ENTRY_COLS,
+    df = pd.read_csv(FUNNEL_FILE, usecols=lambda c: c in FUNNEL_COLS or c in CONV_COLS or c in ENTRY_COLS or c in PEOPLE_COLS,
                      dtype={c: "category" for c in FUNNEL_LABELS})
     missing = [c for c in FUNNEL_COLS if c not in df.columns]
     if missing:
@@ -8923,6 +8928,79 @@ def plan_context(emails: pd.DataFrame, launches: list[dict], panel: pd.DataFrame
     return {"history": plan_changes.launch_history(emails, rows, units), "plan_rows": load_plan(), "pool": pool}
 
 
+# ---------------------------------------------------------------- the launches day by day (etl/funnel_daily.py)
+
+TL_DAILY_LEAD_DAYS = 14   # a timed launch's days are kept from this long before its announce (signups come early)
+
+
+def daily_windows(records: list[dict], as_of: date) -> list[dict]:
+    """A window per draw launch with a campaign clock, for the day-by-day
+    table: the days its page counts (the private room or the announce, or an
+    earlier first sale, to two days after the sales close: sales_window), the
+    clock's own announce and close, and whether its units come from the
+    orders. The first record of a name stands, so the releases with targets
+    set go first and their typed dates win over the funnel's."""
+    out, seen = [], set()
+    for r in records:
+        name = r.get("release_name")
+        if not name or name in seen or str(r.get("type") or "LE").upper() == "TL" or not r.get("announce_date") or not r.get("launch_end"):
+            continue
+        try:
+            announce = date.fromisoformat(str(r["announce_date"])[:10])
+            close = date.fromisoformat(str(r["launch_end"])[:10])
+            pr_open = (date.fromisoformat(str(r["private_room_open"])[:10]) if r.get("private_room_open")
+                       else announce - timedelta(days=PR_LEAD_DAYS))
+        except ValueError:
+            continue
+        if close <= announce:
+            continue
+        seen.add(name)
+        urows = units_rows(name)
+        sales_end, _ = sales_close(name, close)
+        start, end, _ = sales_window(urows, min(pr_open, announce), announce, sales_end, as_of)
+        out.append({"release": name, "announce": announce, "close": close, "start": start, "end": end,
+                    "orders": urows is not None and start >= ORDERS_SINCE})
+    return out
+
+
+def tl_daily_windows(snaps: dict | None) -> list[dict]:
+    """A window per timed launch the build wrote a page for: its announce,
+    the day its sales open, and the days kept (two weeks before the announce
+    to the end of settling)."""
+    out = []
+    for snap in (snaps or {}).values():
+        try:
+            announce = date.fromisoformat(str(snap["windowStart"])[:10])
+            opens = date.fromisoformat(str(snap.get("salesOpen") or snap["windowOpen"])[:10])
+            ends = date.fromisoformat(str(snap.get("settleEnd") or snap.get("windowClose") or snap["windowEnd"])[:10])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not snap.get("releaseName") or opens < announce:
+            continue
+        out.append({"release": snap["releaseName"], "announce": announce, "open": opens,
+                    "start": announce - timedelta(days=TL_DAILY_LEAD_DAYS), "end": max(ends, opens)})
+    return out
+
+
+def write_daily_tables(at: pd.DataFrame, records: list[dict], tl_snaps: dict | None, as_of: date) -> str:
+    """The two day-by-day tables beside the pages (funnel_daily.csv for the
+    draw launches, tl_funnel_daily.csv for the timed ones), and a line for the
+    refresh's log saying what was written."""
+    names = funnel_daily.channel_names(DISPLAY_GROUPS)
+    le = funnel_daily.le_table(at, daily_windows(records, as_of), names, load_units_feed(), load_pages())
+    funnel_daily.write(le, APP / funnel_daily.LE_FILE)
+    note = f"daily: {len(le)} rows over {le['release'].nunique()} draw launches -> {funnel_daily.LE_FILE}"
+    feed = APP / "tl_daily.csv"
+    windows = tl_daily_windows(tl_snaps)
+    if windows and feed.exists():
+        d = pd.read_csv(feed, usecols=["release", "date", "channel", "sessions", "signups", "orders", "units"], low_memory=False)
+        d["date"] = pd.to_datetime(d["date"], errors="coerce").dt.date
+        tl_rows = funnel_daily.tl_table(d[d["date"].notna()], windows, names)
+        funnel_daily.write(tl_rows, APP / funnel_daily.TL_FILE)
+        note += f"; {len(tl_rows)} rows over {tl_rows['release'].nunique()} timed launches -> {funnel_daily.TL_FILE}"
+    return note
+
+
 def write_page(path: pathlib.Path, snap: dict) -> None:
     """A page to disk, stamped with when it was built: the header reads
     `builtAt` beside the data's last day, so a page's age is its own and not
@@ -9364,6 +9442,12 @@ def main(only: str | None = None):
     for stale in DERIVED.glob("*.json"):
         if stale.name not in written:
             stale.unlink()
+    # every launch day by day, for the Agent and the connector (etl/funnel_daily.py): a failure costs the two
+    # tables, which keep their last copy, and never a page
+    try:
+        print(write_daily_tables(at, le_records(INPUTS["releases"]) + list(discovered), tl_out.get("snaps"), as_of))
+    except Exception as e:  # noqa: BLE001 - the tables never stop the build
+        print(f"daily: the day-by-day tables were not written ({type(e).__name__}: {str(e)[:200]})")
 
     index = sort_index(index)
     (APP / "index.json").write_text(json.dumps(

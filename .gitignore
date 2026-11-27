@@ -41,3 +41,6 @@ data/app/tl_daily.csv
 data/app/tl_hourly.csv
 data/app/tl_releases.csv
 data/app/tl_feed.json
+# every launch day by day, for the Agent and the connector (etl/funnel_daily.py): rebuilt on every refresh
+data/app/funnel_daily.csv
+data/app/tl_funnel_daily.csv

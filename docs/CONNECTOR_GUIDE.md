@@ -31,6 +31,7 @@ and the BigQuery tables underneath, back to 2019.
 | A live draw launch as its page reads on Plan (the Targets from switch) | `get_release` with `targets_from: "plan"`; the plan card is the field `plan`. A page with no plan-based view says so and gives the clock's |
 | How a release's targets were set up: its dates, campaign code, comparison launches, the works ticked or left out, what is typed over Airtable | `get_release` with `settings: true` |
 | Across releases, from what the dashboard already aggregates: units paid by day and channel, ad spend, email sends, posts, past launches | `describe_table`, then `query_table` |
+| A launch at a point of its campaign, or two launches side by side at the same point: visits, entries or signups and units by day and channel | `query_table` on `funnel_daily` (draw launches) or `tl_funnel_daily` (timed launches): every row carries the day of the campaign, and `release_clusters` and `tl_panel` are whole-campaign totals |
 | Anything over the whole history, by channel, by launch or by person: trends over years, funnels, cohorts, repeat buyers | `bigquery_sql` (and `bigquery_tables` for a table's columns) |
 | How a figure is worked out, what a term means | `read_docs` |
 

@@ -11,7 +11,7 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-const { createTools, TOOL_DEFS, parseCSV, mask } = require("../server/agent/tools.js");
+const { createTools, TOOL_DEFS, TABLES, parseCSV, mask } = require("../server/agent/tools.js");
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA = path.join(ROOT, "data", "app");
 const readSnapshot = (id) => {
@@ -103,6 +103,39 @@ assert.deepStrictEqual(d.columns, ["release", "units_paid"]);
 assert.deepStrictEqual(d.hiddenColumns, ["contact"]);
 assert.ok(!JSON.stringify(t2.queryTable({ table: "units_paid" })).includes("@"));
 fs.rmSync(tmp, { recursive: true });
+
+// the launches day by day: a past launch read at a point of its campaign, not only as a whole-campaign total
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "agent-daily-"));
+  const app = path.join(dir, "data", "app");
+  fs.mkdirSync(app, { recursive: true });
+  fs.writeFileSync(path.join(app, "funnel_daily.csv"), [
+    "release,date,day,of,channel,visits,entrants,eligible,entries,units,visits_spread,entries_spread,units_spread,release_page_visits,went_to_product,product_page_visits,entered_from_product",
+    "A · York · 2025 Q2,2025-03-14,-3,28,Direct,30,0,0,0,3,0,0,0,0,0,0,0",
+    "A · York · 2025 Q2,2025-03-17,0,28,AA Email,3000,45,20,20,1,3200,20,1,900,200,1500,20",
+    "A · York · 2025 Q2,2025-03-17,0,28,Direct,244,2,0,0,0,0,0,0,50,10,80,0",
+    "A · York · 2025 Q2,2025-03-19,2,28,AA Email,181,3,1,1,1,190,1,1,60,12,90,1",
+    "A · York · 2025 Q2,2025-04-14,28,28,AA Email,400,10,9,9,40,420,9,40,100,30,200,9",
+    "A · Now · 2026 Q4,2026-11-27,2,21,AA Email,1441,1,1,1,3,1541.6,1,4,262,56,633,1",
+  ].join("\n") + "\n");
+  const u = createTools({ ROOT: dir, DATA: app, readSnapshot: () => null });
+  const byDay2 = u.queryTable({ table: "funnel_daily", filters: [{ column: "release", op: "contains", value: "york" }, { column: "day", op: "lte", value: 2 }],
+    metrics: [{ fn: "sum", column: "visits" }, { fn: "sum", column: "entries" }, { fn: "sum", column: "units" }] });
+  assert.deepStrictEqual(byDay2.rows[0], [3455, 21, 5], "a launch by day 2 of its campaign, early access included");
+  const whole = u.queryTable({ table: "funnel_daily", filters: [{ column: "release", op: "contains", value: "york" }], metrics: [{ fn: "sum", column: "visits" }] });
+  assert.strictEqual(whole.rows[0][0], 3855, "and over its whole campaign");
+  // a channel's figure as its page shows it by default, beside the attributed one
+  const email = u.queryTable({ table: "funnel_daily", filters: [{ column: "release", op: "contains", value: "york" }, { column: "day", op: "lte", value: 2 }, { column: "channel", op: "eq", value: "AA Email" }],
+    metrics: [{ fn: "sum", column: "visits" }, { fn: "sum", column: "visits_spread" }] });
+  assert.deepStrictEqual(email.rows[0], [3181, 3390]);
+  // two launches side by side at the same point, from the one table
+  const both = u.queryTable({ table: "funnel_daily", filters: [{ column: "day", op: "lte", value: 2 }], group_by: ["release"], metrics: [{ fn: "sum", column: "visits" }] });
+  assert.deepStrictEqual(both.rows, [["A · Now · 2026 Q4", 1441], ["A · York · 2025 Q2", 3455]]);
+  assert.match(u.describeTable({ table: "funnel_daily" }).about, /same point/);
+  assert.throws(() => u.queryTable({ table: "tl_funnel_daily" }), /has not been built/, "a table the build has not written yet says so");
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+for (const name of ["funnel_daily", "tl_funnel_daily"]) assert.ok(TABLES[name] && TABLES[name].dir === "app", `${name} is in the catalogue`);
 
 // read_docs: list, outline, a section by number, search
 assert.ok(t.readDocs({}).docs.some((x) => x.doc === "AGENT_GUIDE"));

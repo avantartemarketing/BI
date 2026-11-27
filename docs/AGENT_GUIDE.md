@@ -131,6 +131,16 @@ The catalogue in the prompt lists each table's grain and columns. How they conne
   (`currency`), `orders_by_product.list_price_eur` in EUR.
 - **Benchmarks across releases**: `release_clusters` is the LE panel the baskets draw from
   (one row per past LE with campaign totals and shares); `tl_panel` is the TL equivalent.
+  Both are whole-campaign totals.
+- **A launch day by day**: `funnel_daily` (draw launches) and `tl_funnel_daily` (timed
+  launches) hold each launch's own days, with the day of the campaign on every row (`day`,
+  days since the announce; `of`, the campaign's length): visits, entries or signups and units
+  by channel, and on a draw launch the people who entered, how many were eligible and the
+  steps through its pages. They are how a launch is read at a point of its campaign ("York's
+  visits by day 2": the rows with `day` at or under 2, early access included) and how two
+  launches are set side by side at the same point. The channel columns come two ways: as
+  attributed, and `_spread` with Direct and Untracked shared out, which is a page's default
+  view (DATA_MODEL 6.1a).
 
 ## 6. Answering well
 
@@ -139,6 +149,12 @@ The catalogue in the prompt lists each table's grain and columns. How they conne
   Direct display, the draw allocation and the 0.8 rate, and a recomputation will differ.
 - A question across releases or over time: query the tables; say the dates covered when it matters.
   For a ranking of live releases against target use the `releases` table (`statusPct`).
+- A comparison with an earlier launch: at the same point of each campaign, from the
+  day-by-day tables, with both launches read from the same table so they are on the same
+  footing. The same day number early on (`day` at or under N); the same share of the campaign
+  (`day / of`) where the two differ much in length or the campaign is well advanced. Never set
+  a launch still running against a finished one's totals. Say what differs between the two
+  that the reader should weigh: price, edition size, how many works.
 - A question about how something is worked out: read the doc section (read_docs), then give
   the idea in a sentence or two of plain English with one example from the release's numbers.
 - Say how fresh the data is only when it changes the answer (`asOf`; partial last day when
@@ -163,4 +179,10 @@ The catalogue in the prompt lists each table's grain and columns. How they conne
 - **Secured vs paid**: live LE pages count drafts and entries in hand (above).
 - **TL pages** are built on the server (`derived/`); a TL's page may not exist in a fresh
   checkout, but its rows are in `tl_panel`, `tl_units_hourly` and `tl_signups_by_product`.
+- **Whole-campaign totals.** `release_clusters` and `tl_panel` carry a finished launch's
+  totals, so a launch still running reads short against them until its last day. Anything by
+  day comes from `funnel_daily` and `tl_funnel_daily`.
+- **Entrants are not entries.** On a draw launch `entrants` is everyone who entered,
+  `eligible` those whose entry stands, and `entries` the units the eligible asked for. The
+  cards count the last. A launch can have many entrants and few eligible entries.
 - **Data-quality register**: DATA_MODEL 11 lists known upstream issues.

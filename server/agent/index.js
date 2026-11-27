@@ -71,6 +71,7 @@ function install(app, { ROOT, DATA, SOURCES, readSnapshot, sessionEmail }) {
     spend_daily: "ad spend", content_posts: "social posts", email_sends: "email sends", release_clusters: "past launches",
     release_pricing: "editions and prices", release_people: "entrants and buyers", release_windows: "campaign dates",
     tl_panel: "past timed launches", tl_signups_by_product: "signups", tl_units_hourly: "sales by hour", tl_buyers: "buyers",
+    funnel_daily: "launches day by day", tl_funnel_daily: "timed launches day by day",
   };
   const nameOf = (id) => {
     const r = id && (tools.readIndex().releases || []).find((x) => x.id === id);
