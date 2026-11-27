@@ -668,8 +668,9 @@ is run by hand and needs scipy, which the live build does not install; `etl/plan
 and `etl/plan_view.py` need only pandas, and read the committed `etl/plan_prices.json`. The
 three pulled files are ignored by git and hold no person: list ids and counts only.
 `python3 tests/test_plan_model.py` holds the model's parts to hand-built cases,
-`python3 tests/test_plan_view.py` the page's view to a hand-built launch, and
-`node tests/comms_plan.mjs` the two pulls to stand-ins for the APIs.
+`python3 tests/test_plan_view.py` the page's view to a hand-built launch,
+`node tests/comms_plan.mjs` the two pulls to stand-ins for the APIs, and
+`node tests/plan_pieces.mjs` the plan's table of pieces to the names the build gives them.
 
 A timed launch gathering signups has the view too (`etl/tl_plan.py`, docs/PLAN_MODEL.md 6b):
 its signups outside paid on a price list of their own, `etl/tl_plan_prices.json`, and paid

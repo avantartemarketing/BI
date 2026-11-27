@@ -490,13 +490,35 @@ repository owner the day before: until then the second figure beside a bar was t
 forecast, headed "Lands at"). The headline stays the forecast, so the actuals column adds
 up to what is in so far and not to the headline. The whole units are shared out actuals
 first and what is still to come after, so a row's pieces add up to the row figure by
-figure. A box beside the bars, the same height and scrolling inside, lists the pieces:
+figure.
+
+**The plan, piece by piece.** A second card under the bars lists the pieces as a table:
 every email and post with the one furthest behind its plan first (in date order before
-anything has gone out), or the phase picked, with its line for search, direct and later
-arrivals last, or paid by what is spent and still to spend.
-The card sits under the trajectory, which leads this view as it leads the clock's page, and
-the suggested actions sit under the card (`web/src/Overview.jsx`, from 27 November 2026;
-the card led the page until then).
+anything has gone out), or the phase picked, in the table's own switch or by its bar, with
+its line for search, direct and later arrivals last, or paid by what is spent and still to
+spend. A row is a mark, the day, the phase, the channel, a description, the piece's own bar,
+its plan and its actuals, the last two under the plan card's own so the figures read down
+both cards. The mark says where the piece stands: a dashed ring for one still to come, a
+ring that fills with the share of its plan the piece has brought, a tick once it has
+brought it all, and a struck disc for one that was dropped. The bar is on the list's scale,
+where a small piece is a sliver; the mark is on the piece's own. The channel and the
+description are the build's one phrase read apart (`web/src/planPieces.mjs`, held by
+`node tests/plan_pieces.mjs`): "Avant Arte posts and stories (6)" is AA Social and "6 posts
+and stories", and a pair of the two kinds reads "Post and story" as the artist's does. The
+table shows eight rows and folds the rest under "5 more"; a list one longer than that is
+shown whole. Asked by the repository owner on 27 November 2026, who found the pieces
+cramped and their names hard to read: until then they were a box inside the plan card,
+beside the bars, the same height and scrolling inside, where five rows of thirteen showed
+and a piece's name carried its sender, its size and its day in one phrase. Built that day
+and shown to the owner as a mockup; not live until the owner says so.
+
+The two cards sit under the trajectory, which leads this view as it leads the clock's page,
+and the suggested actions sit under them (`web/src/Overview.jsx`, from 27 November 2026;
+the plan card led the page until then). The page's sections carry headings, "Plan" between
+the trajectory and the plan cards and "Sell through" under the suggested actions, asked by
+the owner the same day because the page had grown long; how the headings are drawn is the
+owner's to pick from three shown that day (plain titles, bands that fold a section away, a
+name on a rule), and until then the code holds all three behind a switch for the mockups.
 
 **The plan check on the page (from 26 November 2026).** The page says nothing while the
 plan is enough. A plan that reads short is a warning in the strip at the top of the

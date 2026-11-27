@@ -1,7 +1,9 @@
 /* The Overview's cards, in the order the page shows them (11 November 2026;
  * the Suggested actions card above them all on a live draw launch, 12 November;
  * on the plan-based view the trajectory first, then the plan card and the
- * Suggested actions, 26 November),
+ * Suggested actions, 26 November; a heading over each section, "Plan" between
+ * the trajectory and the plan's cards and "Sell through" under the Suggested
+ * actions, 27 November, when the page had grown long),
  * two to a row with the sell-through table and the trajectory across both,
  * in three sections: the outcome (the trajectory; the sell-through table, a
  * row per work today and at the close, on a timed launch before its window
@@ -17,7 +19,8 @@
  * in flight, Suggested actions ("No suggested actions"). Any other card a
  * release has nothing for is left out; before a release has numbers
  * the page shows what it knows instead (Upcoming, no targets, catalogue). */
-import React from "react";
+import React, { useState } from "react";
+import { Bars, Caret, Euro, Filter, Lines } from "./icons.jsx";
 import Trajectory from "./modules/Trajectory.jsx";
 import SpendLevels from "./modules/SpendLevels.jsx";
 import AdsetEntries from "./modules/AdsetEntries.jsx";
@@ -40,8 +43,16 @@ import PlanChanges from "./modules/PlanChanges.jsx";
 import PlanCard from "./modules/PlanCard.jsx";
 import "./cards.css";
 
-/* a section's heading, across both columns */
-const Sect = ({ children }) => <div className="wide sect">{children}</div>;
+/* MOCK ONLY (27 November 2026, three ways of drawing the section headings, for the owner to pick from): which
+ * one this browser draws, and the sections folded away. Goes once one is picked. */
+const headsStyle = () => { try { return localStorage.getItem("heads") || "title"; } catch { return "title"; } };
+const readShut = () => { try { return JSON.parse(localStorage.getItem("shut") || "{}") || {}; } catch { return {}; } };
+
+/* a section's heading, across both columns: its glyph and its name, and where the headings fold (`onFold`) a
+ * band that opens and shuts the section under it */
+const Sect = ({ children, icon, shut, onFold }) => (onFold
+  ? <button type="button" className={`wide sect${shut ? " shut" : ""}`} aria-expanded={!shut} onClick={onFold}><span className="caret"><Caret /></span>{icon}<span className="sn">{children}</span></button>
+  : <h2 className="wide sect">{icon}<span className="sn">{children}</span></h2>);
 // the paid section's heading on a line of work: what is read is the line's ad
 // set, spend and return (docs 7b), so the heading says so; a line with no ad
 // set named keeps its name alone
@@ -71,40 +82,65 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   const levelsOn = paidOn && (!isTL || !!(snap.paid && snap.paid.levels));
   // a release selling lines of work, on the All lines view: paid per line, each its own ad set
   const paidLines = !isTL && Array.isArray(lineViews) && lineViews.length > 1 ? lineViews.filter((l) => l.snap.paid) : [];
+  // the sell-through section: the table, the bars by product and at the close, framing and where the orders ship
+  const sellOn = !!(snap.sellthrough || snap.sales || snap.sellForecast || snap.closeForecast || geoOn);
+  // MOCK ONLY: the headings' style and the folded sections (see headsStyle above)
+  const heads = headsStyle();
+  const [shut, setShut] = useState(readShut);
+  const fold = (k) => (heads === "band" ? () => { const next = { ...shut, [k]: !shut[k] }; setShut(next); try { localStorage.setItem("shut", JSON.stringify(next)); } catch { /* per-browser convenience only */ } } : undefined);
+  const open = (k) => !(heads === "band" && shut[k]);
   return (
-    <div className="body">
+    <div className={`body heads-${heads}`}>
       <div className="grid2">
         {planOn && <Trajectory snap={snap} vs={vs} horizon={horizon} />}
-        {planOn && <PlanCard snap={snap} />}
-        {actionsOn && !planStart && <PlanChanges snap={snap} state={actions} />}
+        {planOn && <Sect icon={<Lines w={15} />} shut={!open("plan")} onFold={fold("plan")}>Plan</Sect>}
+        {planOn && open("plan") && <PlanCard snap={snap} />}
+        {actionsOn && !planStart && (!planOn || open("plan")) && <PlanChanges snap={snap} state={actions} />}
         {!planOn && <Trajectory snap={snap} vs={vs} horizon={horizon} />}
-        {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
-        {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}
-        {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
-        {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
-        {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
-        {!isTL && snap.closeForecast && <SellThroughClose snap={snap} vs={vs} />}
-        {!preWindow && !planStart && <Framing snap={snap} horizon={horizon} />}
-        {geoOn && <Geo snap={snap} />}
-        {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}
-        <Sect>{planStart ? "The plan by channel" : "Channels and funnel"}</Sect>
-        <ChannelsVsTargets snap={snap} vs={vs} horizon={planStart ? "close" : horizon} />
-        {!planStart && <FunnelTable snap={snap} vs={vs} />}
-        {targeted && vs && !planStart && <Waterfall snap={snap} vs={vs} horizon={horizon} />}
-        {snap.email && <EmailFunnel snap={snap} vs={vs} />}
+        {sellOn && <Sect icon={<Bars w={14} />} shut={!open("sell")} onFold={fold("sell")}>Sell through</Sect>}
+        {open("sell") && (
+          <>
+            {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
+            {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}
+            {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}
+            {preWindow && snap.sellForecast && framingOn && <FramingForecast snap={snap} horizon={horizon} />}
+            {!preWindow && (snap.sellthrough || snap.sales) && <SellThrough snap={snap} horizon={horizon} />}
+            {!isTL && snap.closeForecast && <SellThroughClose snap={snap} vs={vs} />}
+            {!preWindow && !planStart && <Framing snap={snap} horizon={horizon} />}
+            {geoOn && <Geo snap={snap} />}
+            {isTL && !preWindow && snap.sales && <TLSignupsOutcome snap={snap} vs={vs} />}
+          </>
+        )}
+        <Sect icon={<Filter w={14} />} shut={!open("channels")} onFold={fold("channels")}>{planStart ? "The plan by channel" : "Channels and funnel"}</Sect>
+        {open("channels") && (
+          <>
+            <ChannelsVsTargets snap={snap} vs={vs} horizon={planStart ? "close" : horizon} />
+            {!planStart && <FunnelTable snap={snap} vs={vs} />}
+            {targeted && vs && !planStart && <Waterfall snap={snap} vs={vs} horizon={horizon} />}
+            {snap.email && <EmailFunnel snap={snap} vs={vs} />}
+          </>
+        )}
         {paidLines.length > 0 ? paidLines.map((l) => (
           <React.Fragment key={`paid:${l.key}`}>
-            <Sect>{paidHead(l.name, (l.snap.line || {}).adsets || l.adsets)}</Sect>
-            <PaidRoi snap={l.snap} horizon={horizon} />
-            <SpendLevels snap={l.snap} />
-            {l.snap.paid.adsetEntries && <AdsetEntries snap={l.snap} />}
+            <Sect icon={<Euro w={14} />} shut={!open(`paid:${l.key}`)} onFold={fold(`paid:${l.key}`)}>{paidHead(l.name, (l.snap.line || {}).adsets || l.adsets)}</Sect>
+            {open(`paid:${l.key}`) && (
+              <>
+                <PaidRoi snap={l.snap} horizon={horizon} />
+                <SpendLevels snap={l.snap} />
+                {l.snap.paid.adsetEntries && <AdsetEntries snap={l.snap} />}
+              </>
+            )}
           </React.Fragment>
         )) : paidOn && (
           <>
-            <Sect>{snap.line && snap.line.name ? paidHead(snap.line.name, snap.line.adsets) : "Paid"}</Sect>
-            <PaidRoi snap={snap} horizon={horizon} />
-            {levelsOn && <SpendLevels snap={snap} />}
-            {snap.paid.adsetEntries && <AdsetEntries snap={snap} />}
+            <Sect icon={<Euro w={14} />} shut={!open("paid")} onFold={fold("paid")}>{snap.line && snap.line.name ? paidHead(snap.line.name, snap.line.adsets) : "Paid"}</Sect>
+            {open("paid") && (
+              <>
+                <PaidRoi snap={snap} horizon={horizon} />
+                {levelsOn && <SpendLevels snap={snap} />}
+                {snap.paid.adsetEntries && <AdsetEntries snap={snap} />}
+              </>
+            )}
           </>
         )}
       </div>

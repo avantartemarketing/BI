@@ -77,11 +77,27 @@
 .hn.two .hs { align-self: flex-end; padding-bottom: 4px; }
 .hn.two .hr { margin-left: auto; align-self: flex-end; display: inline-flex; gap: 8px; padding-bottom: 2px; }
 
-/* The Overview's section headings (28 October 2026): a quiet label across
- * both columns, a little air above it, so the page reads as the outcome,
- * the channels and the funnel, and paid. */
-.sect { font-size: 11.5px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); padding: 8px 2px 0; }
-.grid2 > .sect:first-child { padding-top: 0; }
+/* The Overview's section headings: a section's glyph and its name across both columns, with more air above
+ * than below so a heading sits with the cards it heads. MOCK (27 November 2026): three ways of drawing them,
+ * picked by a class on the page's body, until the owner has chosen one - plain titles, bands that fold the
+ * section away, and a name on a rule. Until then they were a quiet label in small capitals (28 October 2026),
+ * which the page outgrew. */
+.sect { display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 2px; border: 0; background: none; font: inherit; color: var(--ink); text-align: left; }
+.sect svg { flex: 0 0 auto; width: 15px; height: 15px; color: var(--muted); }
+.heads-title .sect svg { width: 17px; height: 17px; }
+.sect .caret svg { width: 10px; height: 10px; }
+.heads-title .sect { font-size: 17px; font-weight: 600; letter-spacing: -0.015em; margin-top: 20px; margin-bottom: -2px; }
+.heads-title .grid2 > .sect:first-child { margin-top: 0; }
+.heads-band .sect { height: 38px; padding: 0 12px; margin-top: 8px; border-radius: 8px; background: rgba(0,0,0,.05); font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.heads-band .sect:hover { background: rgba(0,0,0,.07); }
+.heads-band .sect:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; }
+.heads-band .sect .caret { display: inline-flex; width: 10px; justify-content: center; color: var(--faint); transition: transform .12s ease; }
+.heads-band .sect.shut .caret { transform: rotate(-90deg); }
+/* folded bands sit close together, as a list of the page's sections */
+.heads-band .sect.shut + .sect { margin-top: -8px; }
+.heads-rule .sect { font-size: 14px; font-weight: 600; gap: 8px; margin-top: 16px; }
+.heads-rule .sect::after { content: ""; flex: 1 1 auto; height: 1px; margin-left: 6px; background: #dedee3; }
+.heads-rule .grid2 > .sect:first-child { margin-top: 0; }
 .prow.st .fig.good b { color: var(--green); }
 .cnote { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .cnote b { font-weight: 500; }
@@ -183,10 +199,11 @@
 }
 
 /* the plan card (the plan-based view): a bar per phase of the comms plan with
- * its two figures, and beside the bars a box of the pieces inside, which keeps
- * the bars' height and scrolls within, fading at its foot while there is more */
+ * its two figures; and under it the plan piece by piece, a table with a column
+ * per fact that shows its first rows and folds the rest away */
 .plan-card { gap: 12px; }
 .plan-rec { font-size: 12px; line-height: 1.45; color: var(--faint); max-width: 980px; margin-top: -4px; }
+.plan-host { position: relative; }
 .plan-rows { display: flex; flex-direction: column; }
 .plan-r { display: grid; grid-template-columns: 104px minmax(0, 1fr) 36px 56px; column-gap: 14px; align-items: center; height: 34px; font-size: 13px; }
 .plan-card.start .plan-r { grid-template-columns: 104px minmax(0, 1fr) 36px; }
@@ -195,12 +212,12 @@
 .plan-r .nm { color: var(--text); white-space: nowrap; }
 .plan-r .pl { text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
 .plan-r .ac { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
-.plan-r .strack { overflow: visible; background: none; }
-.plan-r .strack b, .pv-l .strack b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px 0 0 4px; background: #ededf0; }
+.plan-r .strack, .pp-r .strack { overflow: visible; background: none; }
+.plan-r .strack b, .pp-r .strack b { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px 0 0 4px; background: #ededf0; }
 .plan-r .strack i:first-of-type { border-radius: 4px 0 0 4px; }
 /* a bar answers the pointer over the whole height of its row, and its readout (the forecast and what it is made
  * of) is as wide as its longest line */
-.plan-r .strack::after, .pv-l .strack::after { content: ""; position: absolute; inset: -9px 0; }
+.plan-r .strack::after, .pp-r .strack::after { content: ""; position: absolute; inset: -9px 0; }
 .plan-tip { left: 0; top: 0; visibility: hidden; width: max-content; max-width: min(300px, 100%); }
 button.plan-r { appearance: none; background: none; border: 0; padding: 0; margin: 0; width: 100%; font: inherit; font-size: 13px; color: inherit; text-align: left; cursor: pointer; border-radius: 6px; }
 button.plan-r:disabled { cursor: default; }
@@ -208,35 +225,45 @@ button.plan-r:not(:disabled):hover .nm { color: var(--ink); }
 button.plan-r:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; }
 .plan-r.row.sel { background: #f4f4f6; box-shadow: -10px 0 0 #f4f4f6, 10px 0 0 #f4f4f6; }
 .plan-r.row.sel .nm { color: var(--ink); font-weight: 500; }
-.pv-split { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 30px; align-items: stretch; }
-.pv-rw { position: relative; min-height: 0; }
-.pv-side { position: absolute; inset: 0; background: #f7f7f9; border-radius: 10px; padding: 10px 6px 8px 16px; display: flex; flex-direction: column; }
-.pv-side .pv-ph, .pv-side .pv-pn, .pv-side .pv-l.head { padding-right: 16px; flex: 0 0 auto; }
-.pv-ph { display: flex; align-items: baseline; gap: 8px; height: 22px; font-size: 13px; }
-.pv-ph .t { font-weight: 500; color: var(--ink); }
-.pv-ph .d { color: var(--faint); font-size: 12px; }
-.pv-pn { font-size: 12px; color: var(--faint); padding-bottom: 2px; }
-.pv-l { display: grid; grid-template-columns: minmax(0, 1fr) 84px 30px 52px; column-gap: 12px; align-items: center; height: 26px; font-size: 12.5px; }
-.plan-card.start .pv-l { grid-template-columns: minmax(0, 1fr) 84px 30px; }
-.pv-l.head { height: 20px; font-size: 11.5px; color: var(--faint); }
-.pv-l.head span { text-align: right; white-space: nowrap; }
-.pv-l .nm { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pv-l .nm em { display: inline-block; width: 48px; font-style: normal; color: var(--ghost); }
-.pv-l .pl { text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
-.pv-l .ac { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
-.pv-l .strack { height: 8px; border-radius: 3px; background: none; overflow: visible; }
-.pv-l .strack b { border-radius: 3px 0 0 3px; background: #e4e4e8; }
-.pv-l .strack i:first-of-type { border-radius: 3px 0 0 3px; }
-.pv-list { flex: 1 1 0; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; padding-right: 4px; }
-.pv-list::-webkit-scrollbar { width: 6px; }
-.pv-list::-webkit-scrollbar-track { background: transparent; }
-.pv-list::-webkit-scrollbar-thumb { background: #cfcfd6; border-radius: 3px; }
-.pv-list:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; border-radius: 4px; }
-.pv-list.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 26px), transparent); mask-image: linear-gradient(#000 calc(100% - 26px), transparent); }
-/* a narrow screen: the box sits under the bars, at a height of its own */
+/* the plan piece by piece: a row is its mark (where the piece stands), its day, phase, channel and what it is,
+ * then its bar, plan and actuals, the last two under the plan card's own so the figures read down both cards */
+.pp-card { gap: 8px; padding-bottom: 10px; }
+.pp-n { margin-left: 8px; font-size: 12px; font-weight: 400; color: var(--faint); }
+.pp-note { font-size: 12px; color: var(--faint); }
+.pp { position: relative; display: flex; flex-direction: column; }
+.pp-r { display: grid; grid-template-columns: 14px 52px 98px 112px minmax(0, 1.3fr) minmax(0, 1fr) 36px 56px; column-gap: 14px; align-items: center; height: 32px; font-size: 13px; border-top: 1px solid var(--hairline); }
+.pp-card.start .pp-r { grid-template-columns: 14px 52px 98px 112px minmax(0, 1.3fr) minmax(0, 1fr) 36px; }
+.pp-r.head { height: 26px; font-size: 11.5px; color: var(--faint); border-top: 0; }
+.pp-r.head .r { text-align: right; }
+.pp-r > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-r > .mk, .pp-r > .bw, .pp-r > .cw { display: flex; align-items: center; }
+.pp-r > .mk, .pp-r > .bw { overflow: visible; }
+.pp-r > .bw > .strack { flex: 1; }
+.pp-r .wh { color: var(--muted); font-variant-numeric: tabular-nums; }
+.pp-r .sg { color: var(--text); }
+.pp-r .cn { display: inline-flex; align-items: center; gap: 7px; min-width: 0; color: var(--text); }
+.pp-ci { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: 0 0 18px; border-radius: 5px; background: color-mix(in srgb, currentColor 13%, transparent); }
+.pp-r .ds { color: var(--ink); }
+.pp-r .pl { text-align: right; color: var(--faint); font-variant-numeric: tabular-nums; }
+.pp-r .ac { text-align: right; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.pp-r .strack { height: 10px; border-radius: 3px; }
+.pp-r .strack b { border-radius: 3px 0 0 3px; }
+.pp-r .strack i:first-of-type { border-radius: 3px 0 0 3px; }
+.pp-r .tg { font-style: normal; margin-left: 8px; padding: 1px 7px; border-radius: 9px; background: #f3f3f4; font-size: 11.5px; color: var(--muted); }
+.pp-r.off .wh, .pp-r.off .sg, .pp-r.off .cn, .pp-r.off .ds { color: var(--muted); }
+.pp-mark { display: block; flex: 0 0 14px; }
+.pp-none { height: 36px; display: flex; align-items: center; border-top: 1px solid var(--hairline); font-size: 12.5px; color: var(--muted); }
+.pp .pc-fold { width: 100%; }
+/* the phases' switch in the card's head goes under the title when the card is narrow, and on a narrow screen a
+ * row is its mark, day and what it is, with its two figures */
+@media (max-width: 980px) {
+  .pp-card .ch { height: auto; min-height: 28px; flex-wrap: wrap; row-gap: 6px; }
+  .pp-card .ch .seg { max-width: 100%; overflow-x: auto; }
+}
 @media (max-width: 760px) {
-  .pv-split { grid-template-columns: minmax(0, 1fr); row-gap: 14px; }
-  .pv-rw { height: 226px; }
+  .pp-r, .pp-card.start .pp-r { grid-template-columns: 14px 44px minmax(0, 1fr) 30px 44px; column-gap: 10px; }
+  .pp-card.start .pp-r { grid-template-columns: 14px 44px minmax(0, 1fr) 30px; }
+  .pp-r > .sg, .pp-r > .cw, .pp-r > .bw, .pp-r.head > :nth-child(3), .pp-r.head > :nth-child(4), .pp-r.head > :nth-child(6) { display: none; }
 }
 /* the launch page's two switches, at the right of its chips: which method the targets come from, and what the cards are read against */
 .cmps { display: inline-flex; align-items: center; gap: 18px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }

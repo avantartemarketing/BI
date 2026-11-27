@@ -28,6 +28,8 @@ export const Trend = ({ w = 14 }) => I('<path d="M2.5 11l4-4 2.5 2.5L13.5 5"></p
 export const People = ({ w = 14 }) => I('<circle cx="8" cy="5.5" r="2.5"></circle><path d="M3 13.5c.8-2.6 2.8-4 5-4s4.2 1.4 5 4"></path>', w);
 export const Img = ({ w = 16 }) => I('<rect x="2.5" y="2.5" width="11" height="11" rx="2"></rect><circle cx="6" cy="6.5" r="1.2"></circle><path d="M3 12l3.5-3.5 2.5 2.5 2-2 2.5 2.5"></path>', w);
 export const Basket = ({ w = 13 }) => I('<path d="M2.5 6h11l-1.2 7.5h-8.6z"></path><path d="M5.5 6l2.5-3.5L10.5 6"></path>', w);
+export const Mail = ({ w = 13 }) => I('<rect x="2" y="3.5" width="12" height="9" rx="1.5"></rect><path d="M2.6 5.2L8 9l5.4-3.8"></path>', w);
+export const Pair = ({ w = 13 }) => I('<circle cx="6" cy="8" r="3.4"></circle><circle cx="10" cy="8" r="3.4"></circle>', w);
 export const Lines = ({ w = 13 }) => I('<path d="M3 4h10M3 8h10M3 12h6"></path>', w);
 export const Arrow = ({ w = 13 }) => I('<path d="M8 13V3M8 3L4 7M8 3l4 4"></path>', w);
 export const X = ({ w = 14 }) => I('<path d="M4 4l8 8M12 4l-8 8"></path>', w, 1.6);
