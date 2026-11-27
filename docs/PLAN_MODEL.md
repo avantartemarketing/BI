@@ -509,19 +509,23 @@ table shows eight rows and folds the rest under "5 more"; a list one longer than
 shown whole. Asked by the repository owner on 27 November 2026, who found the pieces
 cramped and their names hard to read: until then they were a box inside the plan card,
 beside the bars, the same height and scrolling inside, where five rows of thirteen showed
-and a piece's name carried its sender, its size and its day in one phrase. Built that day
-and shown to the owner as a mockup; not live until the owner says so.
+and a piece's name carried its sender, its size and its day in one phrase. A narrower card
+gives up columns in turn, read off the card's own width: the bar first (its two figures
+stay), then the phase, then the channel, so the description keeps its room and a phone is
+left the mark, the day, what the piece is and its figures. Built that day, shown to the
+owner as a mockup on a design canvas and put live on the owner's go the same day.
 
 The two cards sit under the trajectory, which leads this view as it leads the clock's page,
 and the suggested actions sit under them (`web/src/Overview.jsx`, from 27 November 2026;
 the plan card led the page until then). The page's sections carry headings, "Plan" between
 the trajectory and the plan cards and "Sell through" under the suggested actions, asked by
-the owner the same day because the page had grown long. A heading is a band across the
-page with the section's glyph and its name, which folds the section under it away and opens
-it again; a reader's folds are kept in their browser and hold on every launch's page. The
-owner picked the bands from three drawn that day (the others were plain titles and a name
-on a rule) and asked for the name at a heading's size. "Channels and funnel" and "Paid"
-are drawn the same way.
+the owner the same day because the page had grown long. A heading is the section's glyph
+and its name at a heading's size, with more air above it than below so it sits with the
+cards it heads; "Channels and funnel" and "Paid" are drawn the same way. Three ways were
+drawn for the owner that day: these plain titles, bands that folded a section away, and a
+name on a rule. The owner first took the bands, found their name too small for a header,
+and shown them with the name larger chose the plain titles; the bands and their folding
+are not in the code.
 
 **The plan check on the page (from 26 November 2026).** The page says nothing while the
 plan is enough. A plan that reads short is a warning in the strip at the top of the

@@ -77,22 +77,13 @@
 .hn.two .hs { align-self: flex-end; padding-bottom: 4px; }
 .hn.two .hr { margin-left: auto; align-self: flex-end; display: inline-flex; gap: 8px; padding-bottom: 2px; }
 
-/* The Overview's section headings: a band across both columns with the section's glyph and its name, which
- * folds the section under it away and opens it again (the reader's folds are kept per browser: Overview.jsx).
- * More air above a band than below, so it sits with the cards it heads, and folded bands sit close together,
- * as a list of the page's sections. The owner's pick of three drawn on 27 November 2026, with the name at a
- * heading's size; until then the headings were a quiet label in small capitals (28 October 2026), which the
- * page outgrew. */
-.sect { margin: 8px 0 0; padding: 0; font: inherit; }
-.grid2 > .sect:first-child { margin-top: 0; }
-.sect button { display: flex; align-items: center; gap: 10px; width: 100%; height: 44px; padding: 0 14px; border: 0; border-radius: 8px; background: rgba(0,0,0,.05); font: inherit; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; color: var(--ink); text-align: left; cursor: pointer; }
-.sect button:hover { background: rgba(0,0,0,.07); }
-.sect button:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px; }
+/* The Overview's section headings: a section's glyph and its name across both columns, at a heading's size,
+ * with more air above than below so a heading sits with the cards it heads. The owner's pick of three drawn on
+ * 27 November 2026 (the others were bands that folded a section away and a name on a rule); until then the
+ * headings were a quiet label in small capitals (28 October 2026), which the page outgrew. */
+.sect { display: flex; align-items: center; gap: 8px; margin: 20px 0 -2px; padding: 0 2px; font-size: 17px; font-weight: 600; letter-spacing: -0.015em; line-height: 1.4; color: var(--ink); }
 .sect svg { flex: 0 0 auto; width: 17px; height: 17px; color: var(--muted); }
-.sect .caret { display: inline-flex; width: 12px; justify-content: center; color: var(--faint); transition: transform .12s ease; }
-.sect .caret svg { width: 12px; height: 12px; }
-.sect.shut .caret { transform: rotate(-90deg); }
-.sect.shut + .sect { margin-top: -8px; }
+.grid2 > .sect:first-child { margin-top: 0; }
 .prow.st .fig.good b { color: var(--green); }
 .cnote { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .cnote b { font-weight: 500; }
@@ -249,16 +240,30 @@ button.plan-r:focus-visible { outline: 2px solid var(--ind); outline-offset: 2px
 .pp-mark { display: block; flex: 0 0 14px; }
 .pp-none { height: 36px; display: flex; align-items: center; border-top: 1px solid var(--hairline); font-size: 12.5px; color: var(--muted); }
 .pp .pc-fold { width: 100%; }
-/* the phases' switch in the card's head goes under the title when the card is narrow, and on a narrow screen a
- * row is its mark, day and what it is, with its two figures */
-@media (max-width: 980px) {
+/* A narrower card gives up columns in turn, so the description always has room: the phases' switch goes under
+ * the title, then the bar goes (its two figures stay), then the phase, then the channel, which leaves a phone
+ * the mark, the day, what the piece is and its figures. Read off the card's own width, since the page is one
+ * column or two and the sidebar comes and goes. */
+.pp-card { container-type: inline-size; }
+.pp-r.head > span { color: var(--faint); font-weight: 400; }
+@container (max-width: 860px) {
   .pp-card .ch { height: auto; min-height: 28px; flex-wrap: wrap; row-gap: 6px; }
   .pp-card .ch .seg { max-width: 100%; overflow-x: auto; }
 }
-@media (max-width: 760px) {
-  .pp-r, .pp-card.start .pp-r { grid-template-columns: 14px 44px minmax(0, 1fr) 30px 44px; column-gap: 10px; }
-  .pp-card.start .pp-r { grid-template-columns: 14px 44px minmax(0, 1fr) 30px; }
-  .pp-r > .sg, .pp-r > .cw, .pp-r > .bw, .pp-r.head > :nth-child(3), .pp-r.head > :nth-child(4), .pp-r.head > :nth-child(6) { display: none; }
+@container (max-width: 720px) {
+  .pp-r { grid-template-columns: 14px 52px 98px 112px minmax(0, 1fr) 36px 56px; }
+  .pp-card.start .pp-r { grid-template-columns: 14px 52px 98px 112px minmax(0, 1fr) 36px; }
+  .pp-r > .bw { display: none; }
+}
+@container (max-width: 600px) {
+  .pp-r { grid-template-columns: 14px 52px 112px minmax(0, 1fr) 36px 56px; }
+  .pp-card.start .pp-r { grid-template-columns: 14px 52px 112px minmax(0, 1fr) 36px; }
+  .pp-r > .sg { display: none; }
+}
+@container (max-width: 480px) {
+  .pp-r { grid-template-columns: 14px 48px minmax(0, 1fr) 30px 44px; column-gap: 10px; }
+  .pp-card.start .pp-r { grid-template-columns: 14px 48px minmax(0, 1fr) 30px; }
+  .pp-r > .cw { display: none; }
 }
 /* the launch page's two switches, at the right of its chips: which method the targets come from, and what the cards are read against */
 .cmps { display: inline-flex; align-items: center; gap: 18px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }

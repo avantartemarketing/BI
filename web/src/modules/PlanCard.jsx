@@ -215,8 +215,8 @@ export default function PlanCard({ snap }) {
         {s && s.note && <div className="pp-note">{s.note}</div>}
         <div className="pp" ref={table.host} role="table" aria-label={s ? `Inside ${s.name}` : "Every piece of the plan"}>
           <div className="pp-r head" role="row">
-            <span role="columnheader" aria-label="Standing" /><span role="columnheader">When</span><span role="columnheader">Stage</span><span role="columnheader">Channel</span><span role="columnheader">Description</span>
-            <span role="columnheader" aria-label="Against the plan" /><span className="r" role="columnheader">Plan</span>{!m.start && <span className="r" role="columnheader">Actuals</span>}
+            <span className="mk" role="columnheader" aria-label="Standing" /><span className="wh" role="columnheader">When</span><span className="sg" role="columnheader">Stage</span><span className="cw" role="columnheader">Channel</span><span className="ds" role="columnheader">Description</span>
+            <span className="bw" role="columnheader" aria-label="Against the plan" /><span className="pl" role="columnheader">Plan</span>{!m.start && <span className="ac" role="columnheader">Actuals</span>}
           </div>
           {shown.map((x, i) => {
             const d = describe(x, snap.asOf);
