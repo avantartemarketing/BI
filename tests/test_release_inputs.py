@@ -248,28 +248,61 @@ def test_airtable_products_join() -> None:
         assert got["project_manager"] == "Claud" and got["pm_slack_id"] == "U0AIRTABLE1", "the launch's project manager, not the other artist's"
         none = pricing.release_products({"release_name": "Nobody · Thing · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)
         assert none["match"] == "none" and none["products"] == []
-    # the deal (8 October 2026): the artist's cut of revenue (Revenue Commission %) is taken before any profit is split.
-    # On a revenue deal it is the whole deal (the AA revenue share is the rest, an AA split the record carries is not its
-    # deal); on a profit deal the AA split is the deal and the cut rides beside it, since a release can be both; with no
-    # type a cut alone is a revenue deal, a split alone a profit deal, both a profit deal with a cut
+    # the deal, read off the percentages (27 November 2026; until then Airtable's Commission Type decided). An AA split
+    # under the whole profit is a profit deal, and the artist's cut of revenue (Revenue Commission %), where there is
+    # one, rides beside it; a cut with no such split is a revenue deal (the AA revenue share is the rest); a split of
+    # the whole profit with no cut is a profit deal Avant Arte keeps. The record's own word for the deal is kept and
+    # decides nothing: Red and Teal are called Revenue and are profit splits, as Harland Miller's two works were
     with tempfile.TemporaryDirectory() as d:
         path = pathlib.Path(d) / "pricing.csv"
-        pd.DataFrame([dict(rows[0], aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type="Revenue"),
-                      dict(rows[0], airtable_id=4, title="Blue", aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type="Profit"),
-                      dict(rows[0], airtable_id=5, title="Green", aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type=""),
-                      dict(rows[0], airtable_id=6, title="Gold", aa_revenue_share="", aa_profit_share="", artist_revenue_cut=0.15, deal_type=""),
-                      dict(rows[0], airtable_id=7, title="Pink", aa_revenue_share="", aa_profit_share=0.5, artist_revenue_cut="", deal_type="Profit")]).to_csv(path, index=False)
+        base = dict(rows[0], aa_revenue_share="", artist_profit_share="", partner_profit_share="")
+        pd.DataFrame([dict(base, aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type="Revenue"),
+                      dict(base, airtable_id=4, title="Blue", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type="Profit"),
+                      dict(base, airtable_id=5, title="Green", aa_profit_share=0.5, artist_revenue_cut=0.15, deal_type=""),
+                      dict(base, airtable_id=6, title="Gold", aa_profit_share="", artist_revenue_cut=0.15, deal_type=""),
+                      dict(base, airtable_id=7, title="Pink", aa_profit_share=0.5, artist_revenue_cut="", deal_type="Profit"),
+                      dict(base, airtable_id=8, title="Grey", aa_profit_share=1.0, artist_revenue_cut=0.12, deal_type="Revenue", artist_profit_share=0.5),
+                      dict(base, airtable_id=9, title="Teal", aa_profit_share=0.33, artist_revenue_cut="", deal_type="Revenue", artist_profit_share=0.33),
+                      dict(base, airtable_id=10, title="Lime", aa_profit_share=0.4, artist_revenue_cut="", deal_type="", artist_profit_share=0.4, partner_profit_share=0.2),
+                      dict(base, airtable_id=11, title="Sand", aa_profit_share=0.38, artist_revenue_cut="", deal_type=""),
+                      dict(base, airtable_id=12, title="Navy", aa_profit_share=1.0, artist_revenue_cut="", deal_type=""),
+                      dict(base, airtable_id=13, title="Rose", aa_profit_share="", artist_revenue_cut="", deal_type="Revenue")]).to_csv(path, index=False)
         by = {p["name"]: p for p in pricing.release_products({"release_name": "Test Artist · Multiple · 2026 Q3", "announce_date": "2026-09-01", "launch_end": "2026-09-28"}, path)["products"]}
-        assert by["Red"]["deal_type"] == "revenue" and by["Red"]["aa_profit_share"] is None and close(by["Red"]["aa_revenue_share"], 0.85) and by["Red"]["artist_revenue_cut"] == 0.15, by["Red"]
+        assert by["Red"]["deal_type"] == "revenue" and by["Red"]["aa_profit_share"] == 0.5 and by["Red"]["aa_revenue_share"] is None and by["Red"]["artist_revenue_cut"] == 0.15, by["Red"]
         assert by["Blue"]["deal_type"] == "profit" and by["Blue"]["aa_revenue_share"] is None and by["Blue"]["aa_profit_share"] == 0.5 and by["Blue"]["artist_revenue_cut"] == 0.15, by["Blue"]
         assert by["Green"]["deal_type"] is None and by["Green"]["aa_revenue_share"] is None and by["Green"]["aa_profit_share"] == 0.5 and by["Green"]["artist_revenue_cut"] == 0.15, by["Green"]
         assert by["Gold"]["aa_profit_share"] is None and close(by["Gold"]["aa_revenue_share"], 0.85) and by["Gold"]["artist_revenue_cut"] == 0.15, by["Gold"]
         assert by["Pink"]["aa_profit_share"] == 0.5 and by["Pink"]["artist_revenue_cut"] is None and by["Pink"]["aa_revenue_share"] is None, by["Pink"]
-        red, blue, green, gold = (build._effective_product(by[n], build.BENCH) for n in ("Red", "Blue", "Green", "Gold"))
-        assert red["deal"] == "revenue share" and red["aa_budget_share"] == 1.0 and red["artist_revenue_cut"] == 0.15
+        # a cut beside a split of the whole profit is a revenue deal, and the shares of profit the record carries are not its deal
+        assert by["Grey"]["aa_profit_share"] is None and close(by["Grey"]["aa_revenue_share"], 0.88) and by["Grey"]["artist_profit_share"] is None, by["Grey"]
+        assert by["Teal"]["deal_type"] == "revenue" and by["Teal"]["aa_profit_share"] == 0.33 and by["Teal"]["aa_revenue_share"] is None and by["Teal"]["artist_profit_share"] == 0.33, by["Teal"]
+        assert by["Rose"]["aa_profit_share"] is None and by["Rose"]["aa_revenue_share"] is None, "a record called Revenue with nothing filled in records no deal"
+        eff = {n: build._effective_product(by[n], build.BENCH) for n in by}
+        red, blue, green, gold = (eff[n] for n in ("Red", "Blue", "Green", "Gold"))
+        assert red["deal"] == "profit share" and red["aa_budget_share"] == 0.5 and red["artist_revenue_cut"] == 0.15, "called Revenue, a profit split with a cut by its percentages"
         assert blue["deal"] == "profit share" and blue["aa_budget_share"] == 0.5 and blue["artist_revenue_cut"] == 0.15, "a profit deal with a cut: the split funds the ads, the cut rides beside it"
         assert green["deal"] == "profit share" and green["aa_budget_share"] == 0.5
-        assert gold["deal"] == "revenue share" and gold["aa_budget_share"] == 1.0
+        assert gold["deal"] == "revenue share" and gold["aa_budget_share"] == 1.0 and gold["artist_profit_share"] == 0.0 and gold["partner_profit_share"] is None
+        assert eff["Grey"]["deal"] == "revenue share" and eff["Grey"]["aa_budget_share"] == 1.0 and eff["Grey"]["artist_profit_share"] == 0.0
+        assert eff["Rose"]["deal"] is None and eff["Rose"]["aa_budget_share"] is None and eff["Rose"]["artist_profit_share"] is None
+        # the artist's share is the record's own, and a partner's beside it: a third each is not a third and two
+        assert eff["Teal"]["aa_budget_share"] == 0.33 and eff["Teal"]["artist_profit_share"] == 0.33 and eff["Teal"]["partner_profit_share"] is None
+        assert eff["Lime"]["aa_budget_share"] == 0.4 and eff["Lime"]["artist_profit_share"] == 0.4 and eff["Lime"]["partner_profit_share"] == 0.2
+        # with no artist's share on the record it is what Avant Arte leaves; Avant Arte keeping all leaves none
+        assert close(eff["Sand"]["artist_profit_share"], 0.62) and eff["Navy"]["aa_budget_share"] == 1.0 and eff["Navy"]["artist_profit_share"] == 0.0
+        assert close(blue["artist_profit_share"], 0.5)
+        # Avant Arte's share typed over the record's: the artist's is what the typed share leaves, not the record's
+        typed = build._effective_product(dict(by["Teal"], typed={"aa_profit_share": 0.5}), build.BENCH)
+        assert typed["aa_budget_share"] == 0.5 and close(typed["artist_profit_share"], 0.5) and typed["partner_profit_share"] is None
+        # the release's: weighted by the works' target units over those that record a deal
+        for e in eff.values():
+            e["edition"], e["target_units"] = 100, 100
+        three = build.products_economics([eff["Teal"], eff["Teal"]])
+        assert close(three["aa_budget_share"], 0.33) and close(three["artist_profit_share"], 0.33) and three["partner_profit_share"] is None and not three["aa_budget_share_assumed"]
+        mixed = build.products_economics([eff["Lime"], eff["Sand"]])
+        assert close(mixed["aa_budget_share"], 0.39) and close(mixed["artist_profit_share"], 0.51) and close(mixed["partner_profit_share"], 0.1)
+        none = build.products_economics([eff["Rose"]])
+        assert none["aa_budget_share"] == 0.5 and none["aa_budget_share_assumed"] and none["artist_profit_share"] == 0.5 and none["partner_profit_share"] is None
     assert pricing.deal_type("Profit") == "profit" and pricing.deal_type("Revenue") == "revenue" and pricing.deal_type("") is None and pricing.deal_type(None) is None
     assert pricing.is_sculpture("SE", "") and pricing.is_sculpture("CL", "Low cost 3D edition") and pricing.is_sculpture("TLC", "Mid cost 3D edition")
     assert not pricing.is_sculpture("PE", "Silkscreen print") and not pricing.is_sculpture("", "") and not pricing.is_sculpture("OG", "Unique work")
