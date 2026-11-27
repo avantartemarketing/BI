@@ -729,8 +729,14 @@ when the second fits no free work nearly as well: a second draw run for the same
 (every entrant so far is in both) they take the works in order, draws by id and works by
 title, the same on every pull: the rows then show the same figures whichever way round they
 are, and the first entrant in one draw alone puts them right. Nothing better breaks that
-tie: on the past launches whose pairing is settled, draws and works were set up in the same
-order for 257 of 474 pairs of draws, which is chance. `orders` and `share` say what the
+tie. The order things were set up in does not: on the past launches whose pairing is
+settled, a pair of draws and their works' Shopify products were made in the same order for
+257 of 474 pairs, which is chance, and in the same order as the works' Airtable records (the
+project code's number) for 318 of 429, a lean and not a rule. Nor does Airtable say it
+outright: it lists a launch's works, each marked as sold by draw, and holds no draw id, in
+no column of the base's twenty tables and in no text or link cell of the Pipeline table's
+2,288 records (checked 27 November 2026). A draw's id typed into a column of its work's
+Airtable record would settle a draw from the day it is set up. `orders` and `share` say what the
 pairing was read from (the draw's winners who paid for the product, else its entrants
 holding a draft on it) and how clear it was (their share of the draw's such people across
 products: 0.6 to 0.9 on the September 2026 releases' winners).
