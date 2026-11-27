@@ -431,23 +431,59 @@ cards agree. The first build read all three off the target, which only showed on
 where target and edition differ.
 
 **Credit by the day people entered.** What has come in is shared out between the pieces
-and the baseline by the day a person entered or bought, each channel scaled to the page's
-own count for it so the card adds up to every other card. The page's own daily series
-cannot be used for this: it dates a unit by its order, and a draw books its orders in
-batches days after the entries (Johnson Tsang's In Position booked 20 on 10 November, 20
-on 13 November and 16 on 16 November, from entries mostly made on the 9th), so read on
-those days the announce's units land on days with nothing going out and are called
-baseline. On each channel and day, what came in is split between the pieces felt that day
-and the baseline in proportion to what the plan put there. Emails sent on the same day are
-told apart by the clicks each got. A day's posts from one sender are one line. This is an
-estimate, not a measurement: nothing in the feeds ties a unit to a piece.
+by the day a person entered or bought, each channel scaled to the page's own count for it
+so the card adds up to every other card. The page's own daily series cannot be used for
+this: it dates a unit by its order, and a draw books its orders in batches days after the
+entries (Johnson Tsang's In Position booked 20 on 10 November, 20 on 13 November and 16 on
+16 November, from entries mostly made on the 9th), so read on those days the announce's
+units land on days with nothing going out. A channel with links of its own (email, Avant
+Arte's social, the artist's) has what came on it split between its own pieces felt that
+day and what the plan puts there with nothing going out. What arrives by search, a typed
+address or another site is split the same way over every piece felt that day, whatever the
+piece's channel: a piece's price includes what it brings through search and direct
+(section 3), so its sales do too. Emails sent on the same day are told apart by the clicks
+each got. A day's posts from one sender are one line. This is an estimate, not a
+measurement: nothing in the feeds ties a unit to a piece.
 
-**The card.** A bar per phase (early access, announce, sustain, last chance), one for the
-baseline and one for paid: in so far, still to come, and a tick where the plan put it,
-with the two figures beside it. A box beside the bars, the same height and scrolling
-inside, lists the pieces: every email and post with the one furthest behind its plan first
-(in date order before anything has gone out), or the phase picked, the baseline by
-channel, or paid by what is spent and still to spend.
+**The baseline is shared over the phases (from 27 November 2026, `card_rows`).** What a day
+brings with nothing going out is still the plan's path and its forecast (`override`), but
+it is no row of the card: people who arrive then heard of the launch from what went out.
+Each day's is shared over the phases by what each has put out since the announce (before
+the announce, by what has gone out so far; with nothing out yet it is the announce's), and
+is the last line inside each phase, "Search, direct and later arrivals", with the channels
+it came on kept beside it (`by`). So a phase's plan and its sales are everything it brings,
+the rows are the phases and paid, and they add up as before: no total and no forecast
+moves. What went out before the announce does not carry on past it, on the history's
+reading below.
+
+Read on 92 past launches before it was built. The plan gave the baseline 16% of a launch
+at the median, and the card, sharing each channel's arrivals between its own pieces and
+the baseline alone, filed 30% of what came in there (13% and 28% on the 41 launches of
+2026): every search arrival was the baseline's, on an announce day as on a quiet one,
+since no piece is search's. 17 of those 30 points arrived while a piece was being felt and
+12 on days with nothing felt. So a launch dead on its plan showed its baseline at about
+x1.7 its plan and its emails and posts under theirs. By channel the plan's share against
+what came: email 63% against 65%, Avant Arte's social 17% against 8%, the artist's 10%
+against 4%, search 6% against 10%, other sites 2% against 3%. A post's sales mostly do not
+come on its own link. An email's visits carry its HubSpot campaign id (`utm_content`, not
+the id the email feeds hold; a link's first visit can be a test send days before, so a
+link is matched to its email by its busiest day): of the entries on a launch's own emails
+62% came the day it went, 18% the next, 9% over the three after and 11% later still, and
+of those later ones 82% had clicked the announce, 9% an early access email and 7% a
+sustain one. About half of what arrives on an email's link on a day no email of the
+launch is felt is on a link that is not one of the launch's own emails: another
+campaign's (a newsletter, a bundle, another launch), or one the match missed. A person's
+own history could not settle it: of the entrants who came by search or a typed
+address, 1% had an earlier visit from an email or a post on the same device or account,
+which is a floor and nothing more, since a link opened inside an email or Instagram app is
+another browser. (The study was run once from a cloud session and is not kept as a script.)
+
+**The card.** A bar per phase (early access, announce, sustain, last chance) and one for
+paid: in so far, still to come, and a tick where the plan put it, with the two figures
+beside it. A box beside the bars, the same height and scrolling inside, lists the pieces:
+every email and post with the one furthest behind its plan first (in date order before
+anything has gone out), or the phase picked, with its line for search, direct and later
+arrivals last, or paid by what is spent and still to spend.
 
 **The plan check on the page (from 26 November 2026).** The page says nothing while the
 plan is enough. A plan that reads short is a warning in the strip at the top of the
@@ -706,3 +742,10 @@ page needs the timed launches' feeds, which a checkout does not carry.
   which was heading for 176 against its 170. On a timed launch read in signup conversions
   the verdict is now read again in that unit (docs/TL_SPEC.md 4a), where it was the
   signups' verdict beside the conversions' figures.
+- **27 November 2026.** The owner asked whether the baseline's sales and targets would not
+  sit better in the named stages, since a lot of them trace back to the stages' comms.
+  Read on the history first (section 6, "The baseline is shared over the phases"): the
+  card was filing nearly twice the baseline the plan expects, mostly search and direct
+  arrivals on the days comms went out. Shown as a before and after of Ferrari Sheppard's
+  card (Baseline 23 planned and 53 landing; shared out, Announce reads 86 and 113 in place
+  of 64 and 70). Awaiting the owner's go-ahead: built on a working branch, not live.

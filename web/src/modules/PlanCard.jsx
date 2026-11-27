@@ -3,9 +3,10 @@
  * where the plan put it - with its two figures, and beside the bars a box of
  * the pieces inside. With nothing picked the box lists every email and post,
  * the one furthest behind its plan first (in date order before anything has
- * gone out); pick a phase and it lists that phase's alone, the baseline by
- * channel, or paid by what is spent and still to spend. Pick it again to go
- * back. The box keeps the height of the bars and scrolls inside, fading at
+ * gone out); pick a phase and it lists that phase's alone, its last line what
+ * came by search, a typed address or days later (the baseline, shared over the
+ * phases: docs/PLAN_MODEL.md 6), or paid by what is spent and still to spend.
+ * Pick it again to go back. The box keeps the height of the bars and scrolls inside, fading at
  * its foot while there is more below. The figures are etl/plan_view.py's; on
  * a timed launch gathering signups they are etl/tl_plan.py's, in signups to
  * the sales open, with paid read from the spend still to come. */
@@ -72,7 +73,9 @@ export default function PlanCard({ snap }) {
   if (!p || !Array.isArray(p.rows)) return null;
   const m = planModel(p);
   const s = m.rows.find((r) => r.key === sel);
-  const every = m.rows.filter((r) => r.key !== "Baseline" && r.key !== "Paid").flatMap((r) => r.pieces);
+  // every email and post: a phase's last line (what no one piece's link brought, `tail`) is no piece, and is
+  // listed inside its phase alone
+  const every = m.rows.filter((r) => r.key !== "Paid").flatMap((r) => r.pieces).filter((x) => !x.tail);
   const gaps = every.some((x) => x.lands !== x.exp);
   const list = s ? s.pieces : gaps ? every.slice().sort((a, b) => (a.lands - a.exp) - (b.lands - b.exp)) : every;
   const ptop = Math.max(1, ...list.map((x) => Math.max(x.exp, x.lands))) * 1.06;
@@ -110,7 +113,7 @@ export default function PlanCard({ snap }) {
             <div className={`pv-list${more ? " more" : ""}`} ref={box} onScroll={check} tabIndex={0}>
               {list.map((x, i) => (
                 <div className="pv-l" key={`${i}-${x.when}-${x.name}`}>
-                  <span className="nm" title={x.name}>{dated && x.when && <em>{x.when}</em>}{x.name}</span>
+                  <span className="nm" title={x.tip || x.name}>{dated && x.when && <em>{x.when}</em>}{x.name}</span>
                   <Bar x={x} top={ptop} />
                   <span className="pl">{n(x.exp)}</span>
                   {!m.start && <span className="ld">{n(x.lands)}</span>}

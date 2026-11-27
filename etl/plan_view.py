@@ -49,6 +49,12 @@ import plan_model as P
 
 PHASES = ["Early access", "Announce", "Sustain", "Last chance"]
 BASELINE, PAID = "Baseline", "Paid"
+# What a day brings with nothing going out is not a row of the card: it is the comms' own doing, arriving late or
+# by a route no piece's link is on, so it is shared over the phases (card_rows) and shown inside each as one line
+TAIL = "Search, direct and later arrivals"
+TAIL_TIP = "People who came by search, typed the address or arrived days after a piece went out, shared between the stages by what each has put out since the announce"
+# the channels a person arrives on without a link from one piece: search, a typed address, another site
+CROSS = ("organic_search", "direct_other")
 # the page's channel groups outside paid, and the families of piece that act on each
 FAMILIES = {"aa_email": P.EMAIL_COLS,
             "aa_social": ["pl_aa_post", "pl_aa_story", "pl_aa_social_other"],
@@ -501,19 +507,6 @@ def override(page: dict, at: pd.DataFrame, group_of: dict, ctx: dict | None, spe
 
 
 # ---------------------------------------------------------------- the plan card
-def _share_out(w: dict, weight) -> float:
-    """What came in, by channel and by the day it was entered, shared by `weight(g, i)` over everything the plan
-    puts on that channel that day."""
-    got = 0.0
-    for g in w["groups"]:
-        x = w["inc"][g]
-        for i in np.nonzero(x[: w["i_now"] + 1])[0]:
-            tot = sum(w["val1"][m][g][i] for m in w["rows"])
-            if tot > 0:
-                got += float(x[i]) * float(weight(g, int(i))) / float(tot)
-    return got
-
-
 def _remaining(w: dict, vals: dict) -> float:
     rem = 0.0
     for g in w["groups"]:
@@ -550,23 +543,69 @@ def _post_groups(day_posts: list[dict]) -> list[tuple[str, list[dict], str]]:
     return out
 
 
+def _tail_shares(w: dict, vals: dict) -> dict:
+    """Each phase's share, day by day, of what a day brings with nothing going out: its pieces' value felt so far
+    since the announce over every phase's (before the announce, of what has gone out so far). On the history the
+    people who arrive on an email's link five or more days after it went had clicked the announce in four cases
+    of five and an early access email in one of ten, so what went out before the announce does not carry on
+    past it. With nothing out yet it is the announce's (the first phase's before the announce)."""
+    phases = w.get("phases") or PHASES
+    t = np.asarray(w["t"])
+    after = t >= 0
+    felt = {m: sum(vals[m][g] for g in w["groups"]) for m in phases}
+    cum = {m: np.where(after, np.cumsum(np.where(after, felt[m], 0.0)), np.cumsum(np.where(~after, felt[m], 0.0))) for m in phases}
+    tot = sum(cum.values())
+    ann = PHASES[1] if PHASES[1] in phases else phases[0]
+    out = {}
+    for m in phases:
+        alone = np.where(after, 1.0 if m == ann else 0.0, 1.0 if m == phases[0] else 0.0)
+        out[m] = np.where(tot > 1e-12, cum[m] / np.where(tot > 1e-12, tot, 1.0), alone)
+    return out
+
+
 def card_rows(w: dict) -> list[dict]:
-    """A row per phase and one for the baseline: what the plan as set expected, what has come in, what should
-    still come, and the pieces inside (an email a line, a day's posts a line per sender), each phase's in date
-    order: on a day the emails first, then the posts, the bigger first."""
+    """A row per phase: what the plan as set expected, what has come in, what should still come, and the pieces
+    inside (an email a line, a day's posts a line per sender), each phase's in date order: on a day the emails
+    first, then the posts, the bigger first.
+
+    What a day brings with nothing going out (the baseline of the plan's path, override) is no row of its own:
+    it is shared over the phases (_tail_shares) and is the last line inside each, so a phase's figures are
+    everything it brings. And what arrives by search, a typed address or another site is shared over every
+    piece felt that day and that line, whatever the piece's own channel, as the price list is fitted (a piece's
+    price includes what it brings through search and direct). Until 27 November 2026 the baseline was a row,
+    and a channel's arrivals were shared between its own pieces and that row alone, which filed every search
+    arrival under the baseline: on 92 past launches the plan gave the baseline 16% of a launch and the card
+    30% of what came in."""
     level, groups = w["level"], w["groups"]
+    phases = w.get("phases") or PHASES
+    share0, share1 = _tail_shares(w, w["val0"]), _tail_shares(w, w["val1"])
+    tail0 = {m: {g: w["split"][g] * w["base"] * share0[m] for g in groups} for m in phases}
+    tail1 = {m: {g: w["split"][g] * w["base"] * share1[m] for g in groups} for m in phases}
+    den = {g: sum(w["val1"][m][g] for m in w["rows"]) for g in groups}
+    den_all = sum(den.values())
+
+    def landed(v1: dict) -> float:
+        """What has come in for these values: a channel with links of its own (email, the two socials) by its
+        own pieces felt that day; the others by everything felt that day."""
+        every, got = sum(v1[g] for g in groups), 0.0
+        for g in groups:
+            x = w["inc"][g]
+            num, d = (every, den_all) if g in CROSS else (v1[g], den[g])
+            for i in np.nonzero(x[: w["i_now"] + 1])[0]:
+                if d[i] > 0:
+                    got += float(x[i]) * float(num[i]) / float(d[i])
+        return got
 
     def figures(v0: dict, v1: dict) -> dict:
-        return {"expected": level * sum(float(v0[g].sum()) for g in groups),
-                "in": _share_out(w, lambda g, i: v1[g][i]), "toCome": _remaining(w, v1)}
+        return {"expected": level * sum(float(v0[g].sum()) for g in groups), "in": landed(v1), "toCome": _remaining(w, v1)}
 
     def one(sm, pm) -> tuple[dict, dict]:
         return ({g: P.piece_values(w["lay"](sm, pm, True), w["pr"], FAMILIES[g]) for g in groups},
                 {g: P.piece_values(w["lay"](sm, pm, False), w["pr"], FAMILIES[g]) for g in groups})
 
     rows = []
-    for m in w.get("phases") or PHASES:
-        row = {"moment": m, **figures(w["val0"][m], w["val1"][m])}
+    for m in phases:
+        row = {"moment": m, **figures({g: w["val0"][m][g] + tail0[m][g] for g in groups}, {g: w["val1"][m][g] + tail1[m][g] for g in groups})}
         sm, pm = w["sends"][w["sends"]["moment"] == m], w["posts"][w["posts"]["moment"] == m]
         lines, emails = [], []
         for _, s in sm.iterrows():
@@ -600,15 +639,24 @@ def card_rows(w: dict) -> list[dict]:
         # a line carries its day in full ("date") beside the words the card shows ("when"), so the card can list
         # every phase's pieces together in date order: a phase is Notion's or the email's kind, not a run of days
         row["pieces"] = [{"date": str(pd.Timestamp(x["_o"][0]).date()), **{k: v for k, v in x.items() if k != "_o"}} for x in lines]
+        # ... and the phase's share of what no one piece's link brought, by the channel it came on
+        tail = figures(tail0[m], tail1[m])
+        if max(tail.values()) >= 0.05:
+            by = []
+            for g in groups:
+                x = tail1[m][g].copy()
+                x[: w["i_now"]] = 0.0
+                x[w["i_now"]] *= (1.0 - w["frac"])
+                # a channel with links of its own keeps what came on it; the others' own share of the day
+                got = 0.0
+                arr = w["inc"][g]
+                num, d = (sum(tail1[m][gg] for gg in groups), den_all) if g in CROSS else (tail1[m][g], den[g])
+                for i in np.nonzero(arr[: w["i_now"] + 1])[0]:
+                    if d[i] > 0:
+                        got += float(arr[i]) * float(num[i]) / float(d[i])
+                by.append({"who": GROUP_WHO[g], "name": GROUP_WORD[g], "expected": level * float(tail0[m][g].sum()), "in": got, "toCome": w["pull"][g] * level * float(x.sum())})
+            row["pieces"].append({"when": "", "name": TAIL, "who": "tail", "tail": True, "tip": TAIL_TIP, **tail, "by": by})
         rows.append(row)
-    base = {"moment": BASELINE, "note": "What an ordinary day brings with nothing going out, by channel", **figures(w["val0"][BASELINE], w["val1"][BASELINE]), "pieces": []}
-    for g in groups:
-        x = w["val1"][BASELINE][g].copy()
-        x[: w["i_now"]] = 0.0
-        x[w["i_now"]] *= (1.0 - w["frac"])
-        base["pieces"].append({"when": "", "name": GROUP_WORD[g], "who": GROUP_WHO[g], "expected": level * float(w["val0"][BASELINE][g].sum()),
-                               "in": _share_out(w, lambda gg, i, g=g: w["val1"][BASELINE][gg][i] if gg == g else 0.0), "toCome": w["pull"][g] * level * float(x.sum())})
-    rows.append(base)
     return rows
 
 
@@ -739,6 +787,9 @@ def finish(page: dict, ov: dict, line_pages: dict | None = None) -> None:
         for x in r["pieces"]:
             for k in ("expected", "in", "toCome"):
                 x[k] = round(float(x[k]), 2)
+            for y in x.get("by") or []:
+                for k in ("expected", "in", "toCome"):
+                    y[k] = round(float(y[k]), 2)
     tot = {k: sum(r[k] for r in rows) for k in ("expected", "in", "toCome", "lands")}
     started = tot["in"] > 0 or w["today"] >= pd.Timestamp(w["first"])
     demand = tot["lands"] if started else tot["expected"]      # where the plan lands: demand, which a strong plan takes past the edition

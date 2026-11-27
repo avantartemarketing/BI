@@ -446,7 +446,7 @@ try:
     # nothing, and with it the rows' plan figures add up to the target
     own_rows = [r for r in plan_p["rows"] if r["moment"] != "Not covered"]
     gap_rows = [r for r in plan_p["rows"] if r["moment"] == "Not covered"]
-    check(close(sum(r["lands"] for r in plan_p["rows"]), plan_p["lands"], 1e-3) and [r["moment"] for r in own_rows][-2:] == ["Baseline", "Paid"],
+    check(close(sum(r["lands"] for r in plan_p["rows"]), plan_p["lands"], 1e-3) and [r["moment"] for r in own_rows][-2:] == ["Last chance", "Paid"],
           f"the plan card's rows add up to where it lands: {[r['moment'] for r in plan_p['rows']]}")
     check(len(gap_rows) == (1 if plan_p.get("against") == "short" and plan_p.get("notCovered", 0) >= 0.5 else 0)
           and all(r is plan_p["rows"][-1] and r["lands"] == 0 and close(sum(x["expected"] for x in plan_p["rows"]), plan_p["target"], 0.05) for r in gap_rows),

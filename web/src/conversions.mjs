@@ -69,7 +69,15 @@ function planOf(plan, R, target, byToday) {
   if (!plan || !Array.isArray(plan.rows)) return plan;
   const keys = ["expected", "in", "toCome"];
   const rows = plan.rows.filter((r) => r.moment !== "Not covered").map((r) => {
-    const pieces = (r.pieces || []).map((x) => scaleKeys(x, keys, R.rates[WHO[x.who]] ?? R.blended));
+    // a piece at its channel's weight; a phase's last line (what no one piece's link brought) is several channels' at
+    // once and carries each (`by`), so it is the sum of them, each at its own
+    const pieces = (r.pieces || []).map((x) => {
+      if (!Array.isArray(x.by) || !x.by.length) return scaleKeys(x, keys, R.rates[WHO[x.who]] ?? R.blended);
+      const by = x.by.map((y) => scaleKeys(y, keys, R.rates[WHO[y.who]] ?? R.blended));
+      const out = { ...x, by };
+      for (const k of keys) out[k] = sum(by.map((y) => y[k]));
+      return out;
+    });
     const out = pieces.length ? { ...r, pieces } : scaleKeys(r, keys, R.blended);
     if (pieces.length) for (const k of keys) out[k] = sum(pieces.map((x) => x[k]));
     out.lands = (out.in || 0) + (out.toCome || 0);
