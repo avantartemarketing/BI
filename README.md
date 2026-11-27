@@ -71,8 +71,9 @@ data/
                           list price, the price paid for a frame, prints with a frame on offer and
                           the frames bought with them (docs 6.4) - aggregates from Order_Line_Concept
                           (server/bigquery.js, docs 2.4)
-  draw_products.csv       the product each draw's winners bought, or its entrants hold
-                          pre-authorisation drafts for until it has winners: the draw to product map
+  draw_products.csv       the product each draw is for, read from its winners' paid orders and its
+                          entrants' pre-authorisation drafts, a release's draws paired together so
+                          each has its own work (server/drawPairs.js): the draw to product map
   draw_claims.csv         per draw, the claims a draw round has made that the order table has not
                           caught up with (winners still holding an open pre-authorisation draft on the
                           draw's product, no paid order); written with the orders, never committed (docs 6.3)
@@ -353,8 +354,10 @@ assumed frames per print is read in, docs 1.6); the draw's own pre-authorisation
 live entry, are counted apart and never shown as drafts; and the framing, the prints a frame
 was on offer for and the frames bought with them, on the paid orders, the pre-authorisation
 drafts and the orders awaiting payment, joined to the prints through the order, docs 6.4) and `data/draw_products.csv` (the product each
-draw's winners bought, or its entrants hold pre-authorisation drafts for until it has winners,
-joined inside BigQuery on the pseudonymous account id),
+draw is for: the one its winners paid for and its entrants hold pre-authorisation drafts on, a
+release's draws paired together so each has its own work and one entrant in a single draw settles
+which, `server/drawPairs.js`, held to hand-built cases by `node tests/draw_pairs.mjs`; joined inside
+BigQuery on the pseudonymous account id),
 `data/draw_claims.csv` (per draw, the winners whose claim the order table has not caught up
 with yet, so claiming pre-orders never dips the sell-through while the orders land; counted
 only above each draw's lowest count over the last six hours, from a day of pulls kept in

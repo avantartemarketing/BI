@@ -481,8 +481,8 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
     shared/sellThrough.mjs attachOrders is the same rule).
 
     `orders` is {product title: {unitsPaid, drafts, listPrice, edition}} and
-    `draw_products` {draw id: product title}, the product a draw's winners
-    bought. A product whose draws name a title takes that title's paid units
+    `draw_products` {draw id: product title}, the product a draw is paired
+    with. A product whose draws name a title takes that title's paid units
     as sold and its orders awaiting payment as drafts, and the title as its
     name unless a name was typed against one of its draws: a name from the
     older list with no draw id (`keylessName`, handed out by position) never

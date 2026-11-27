@@ -72,6 +72,7 @@ const fs = require("fs");
 const path = require("path");
 const readline = require("readline");
 const { serviceAccount, accessToken } = require("./googleAuth");
+const { pairDraws } = require("./drawPairs");
 
 const ROOT = path.resolve(__dirname, "..");
 // where the pulled feeds and their bookmarks live: the repo's sources/ (gitignored)
@@ -507,10 +508,12 @@ const spendSql = () => SPEND_TABLE === SPEND_TABLE_CAMPAIGN
  *                          tagged upsell_order_merged (an upsell folded
  *                          into the order it followed, its lines now there
  *                          too) is left out of everything
- *   draw_products.csv      per draw: the product its winners bought most, by
- *                          the same names, else the one its entrants hold
- *                          pre-authorisation drafts for most, and the share of
- *                          that reading it took
+ *   draw_products.csv      per draw: the product it is for, by the same
+ *                          names - the one its winners paid for and its
+ *                          entrants hold pre-authorisation drafts on, a
+ *                          release's draws paired together so each has its
+ *                          own work (server/drawPairs.js) - and the people
+ *                          and share that reading took
  * Both take @since (BQ_SINCE): a release launched, ordered or drafted since
  * that day is in; the draw map reads events from that day. */
 const ORDERS_HEADER = ["release", "campaign_code", "product_title", "product_ids", "skus", "units_paid", "units_refunded",
@@ -781,21 +784,27 @@ const unitsByCountrySql = () => {
   return sql;
 };
 
-// A draw's product: the one its winners have paid orders for most, else,
-// before it has winners, the one its entrants hold the app's pre-authorisation
-// drafts for most - the draft the app raises on the entered product with every
-// live entry (entry_draft). The same reading drawClaimsSql makes, so a draw is
-// named from its first entries and the sell-through's rows carry their
-// products, sales and drafts from the first day of a campaign, not from its
-// first round of winners (Lichtenstein's four draws stood as "Draw 1" to
-// "Draw 4" with 419 units paid, every one split by edition size, 2 October
-// 2026). The lines are the orders feed's own (orderLinesCtes: product lines,
-// no test order, no upsell_order_merged copy, products by the names the feed
-// gives them, so the ETL finds them); the people join runs on the collectors
-// table's customer id inside BigQuery, and only (release, draw, product,
-// count, share) leaves. `orders` is the people the product was read from
-// (winners who paid for it, or entrants holding a draft on it), `share` their
-// share of that reading.
+// The evidence a draw's work is read from (docs/DATA_MODEL.md 2.4). Neither
+// feed says which work a draw is for: an entry carries its draw's id and
+// nothing of the work, an order line its work and nothing of the draw. What
+// ties them is the people. Entering a draw raises the app's pre-authorisation
+// draft on the entered work (entry_draft), and winning it ends in a paid
+// order for that work. So, per draw and product: the draw's winners who paid
+// for the product (won_paid) and its entrants who hold a pre-authorisation
+// draft on it (held), beside the draw's winners and entrants, the two totals
+// those are shares of. Every product a draw's people touch is a row, not the
+// top one alone: the pairing is made over all of a release's draws at once
+// (server/drawPairs.js pairDraws), which is what lets one entrant who is in a
+// single draw settle both, and stops two draws taking one work on a tie
+// (Harland Miller's two draws both read "(RED)", on 2 of 2 against 2 of 2,
+// 27 November 2026, and the one that was Star's kept the name). The lines
+// are the orders feed's own (orderLinesCtes: product lines, no test order,
+// no upsell_order_merged copy, products by the names the feed gives them, so
+// the ETL finds them); the people join runs on the collectors table's
+// customer id inside BigQuery, and only counts per release, draw and product
+// leave. These rows are never written as they are: the pull pairs them and
+// writes data/draw_products.csv, a row per draw, as it always was.
+const DRAW_EVIDENCE_HEADER = ["release", "draw_id", "product_title", "won_paid", "held", "winners", "entrants"];
 const drawProductsSql = () =>
   "WITH " + orderLinesCtes() + ",\n" +
   "draw_people AS (\n" +
@@ -806,19 +815,22 @@ const drawProductsSql = () =>
   "  GROUP BY 1, 2, 3),\n" +
   "paid_by AS (SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid AND customer_id IS NOT NULL),\n" +
   "held_drafts AS (SELECT DISTINCT release, customer_id, product_title FROM typed WHERE entry_draft AND customer_id IS NOT NULL),\n" +
+  "draw_sizes AS (\n" +
+  "  SELECT release, draw_id, COUNT(DISTINCT IF(won, customer_id, NULL)) AS winners, COUNT(DISTINCT customer_id) AS entrants\n" +
+  "  FROM draw_people GROUP BY 1, 2),\n" +
   "pairs AS (\n" +
-  "  SELECT p.release, p.draw_id, b.product_title, 0 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
-  "  FROM draw_people p JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id\n" +
-  "  WHERE p.won GROUP BY 1, 2, 3\n" +
-  "  UNION ALL\n" +
-  "  SELECT p.release, p.draw_id, h.product_title, 1 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
-  "  FROM draw_people p JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id\n" +
+  "  SELECT release, draw_id, product_title, SUM(won_paid) AS won_paid, SUM(held) AS held FROM (\n" +
+  "    SELECT p.release, p.draw_id, b.product_title, COUNT(DISTINCT p.customer_id) AS won_paid, 0 AS held\n" +
+  "    FROM draw_people p JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id\n" +
+  "    WHERE p.won GROUP BY 1, 2, 3\n" +
+  "    UNION ALL\n" +
+  "    SELECT p.release, p.draw_id, h.product_title, 0 AS won_paid, COUNT(DISTINCT p.customer_id) AS held\n" +
+  "    FROM draw_people p JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id\n" +
+  "    GROUP BY 1, 2, 3)\n" +
   "  GROUP BY 1, 2, 3)\n" +
-  "SELECT release, draw_id, product_title, n AS orders,\n" +
-  "  ROUND(n / SUM(n) OVER (PARTITION BY release, draw_id, source), 3) AS share\n" +
-  "FROM pairs\n" +
-  "QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY source, n DESC, product_title) = 1\n" +
-  "ORDER BY release, draw_id";
+  "SELECT x.release, x.draw_id, x.product_title, x.won_paid, x.held, d.winners, d.entrants\n" +
+  "FROM pairs x JOIN draw_sizes d ON d.release = x.release AND d.draw_id = x.draw_id\n" +
+  "ORDER BY x.release, x.draw_id, x.product_title";
 
 /* The claims a draw round has made that the order table has not caught up
  * with (docs/DATA_MODEL.md 6.3). Claiming a pre-order turns the winner's
@@ -826,13 +838,15 @@ const drawProductsSql = () =>
  * both changes at its next sync, an hour or so after the event feed has
  * flagged the winner. In between, the winner is neither an entry in hand
  * nor a sale, and the sell-through would dip until the orders land. So,
- * per draw: the winners the event feed flags who still hold an open
- * pre-authorisation draft (the app's entry draft) on the draw's own product
- * and have no paid order for it. Settled winners hold no such draft, paid
- * or failed, so outside a claim round this is empty. The draw's product is
- * the one its winners have paid orders for most, else, on a draw's first
- * round, the one its entrants hold pre-authorisations for most. Counts
- * only: people and units per draw, joined inside BigQuery. */
+ * per draw and product: the winners the event feed flags who still hold an
+ * open pre-authorisation draft (the app's entry draft) on the product and
+ * have no paid order for it. Settled winners hold no such draft, paid or
+ * failed, so outside a claim round this is empty. A winner who entered two
+ * draws holds a draft on each work, so the query has a row for each and the
+ * pull keeps the one on the draw's own product, the pairing it has just
+ * made from the same moment's lines (drawClaimsWriter, server/drawPairs.js).
+ * Counts only: people and units per draw and product, joined inside
+ * BigQuery. */
 const drawClaimsSql = () =>
   "WITH " + orderLinesCtes() + ",\n" +
   "draw_people AS (\n" +
@@ -844,24 +858,13 @@ const drawClaimsSql = () =>
   "held_drafts AS (\n" +
   "  SELECT release, customer_id, product_title, SUM(quantity) AS units FROM typed\n" +
   "  WHERE entry_draft AND customer_id IS NOT NULL GROUP BY 1, 2, 3),\n" +
-  "paid_by AS (SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid AND customer_id IS NOT NULL),\n" +
-  "draw_product AS (\n" +
-  "  SELECT release, draw_id, product_title FROM (\n" +
-  "    SELECT p.release, p.draw_id, b.product_title, 0 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
-  "    FROM draw_people p JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id\n" +
-  "    WHERE p.won GROUP BY 1, 2, 3\n" +
-  "    UNION ALL\n" +
-  "    SELECT p.release, p.draw_id, h.product_title, 1 AS source, COUNT(DISTINCT p.customer_id) AS n\n" +
-  "    FROM draw_people p JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id\n" +
-  "    GROUP BY 1, 2, 3)\n" +
-  "  QUALIFY ROW_NUMBER() OVER (PARTITION BY release, draw_id ORDER BY source, n DESC, product_title) = 1)\n" +
-  "SELECT p.release, p.draw_id, dp.product_title, COUNT(DISTINCT p.customer_id) AS claims, SUM(h.units) AS units\n" +
+  "paid_by AS (SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid AND customer_id IS NOT NULL)\n" +
+  "SELECT p.release, p.draw_id, h.product_title, COUNT(DISTINCT p.customer_id) AS claims, SUM(h.units) AS units\n" +
   "FROM draw_people p\n" +
-  "JOIN draw_product dp ON dp.release = p.release AND dp.draw_id = p.draw_id\n" +
-  "JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id AND h.product_title = dp.product_title\n" +
-  "LEFT JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id AND b.product_title = dp.product_title\n" +
+  "JOIN held_drafts h ON h.release = p.release AND h.customer_id = p.customer_id\n" +
+  "LEFT JOIN paid_by b ON b.release = p.release AND b.customer_id = p.customer_id AND b.product_title = h.product_title\n" +
   "WHERE p.won AND b.customer_id IS NULL\n" +
-  "GROUP BY 1, 2, 3\nORDER BY 1, 2";
+  "GROUP BY 1, 2, 3\nORDER BY 1, 2, 3";
 
 /* A timed launch's window, hour by hour, from the orders table (docs/TL_SPEC.md
  * §5): per release x product x hour (UTC, the line's creation) x channel x
@@ -980,6 +983,37 @@ function passthroughWriter(expect, label) {
       throw new Error(`${label} columns are not the expected ${expect.length}: ${header.join(", ")}`);
     }
     return { header: header.map(csvCell).join(","), dateIndex: -1, dropped: 0, row: (cells) => cells.map(csvCell).join(",") };
+  };
+}
+
+/* The draw map's writer. The query's rows are evidence, not the file: each is
+ * kept as it streams and none is written. Once they are all in, the pull
+ * pairs them (server/drawPairs.js pairDraws) and writes a row per draw under
+ * the file's own columns, which the header here already is. */
+function drawEvidenceWriter(keep) {
+  return (headerRow) => {
+    const header = headerRow.map((h) => String(h ?? "").trim());
+    if (header.length !== DRAW_EVIDENCE_HEADER.length || header.some((h, i) => h !== DRAW_EVIDENCE_HEADER[i])) {
+      throw new Error(`draw products columns are not the expected ${DRAW_EVIDENCE_HEADER.length}: ${header.join(", ")}`);
+    }
+    return {
+      header: DRAW_PRODUCTS_HEADER.map(csvCell).join(","), dateIndex: -1, dropped: 0,
+      row: (cells) => { keep.push(Object.fromEntries(header.map((h, i) => [h, cells[i]]))); return null; },
+    };
+  };
+}
+// the share as BigQuery wrote it when the query made the file (1.0, 0.5), so a pull changes only the rows that changed
+const drawProductLine = (r) => DRAW_PRODUCTS_HEADER.map((h) => csvCell(h === "share" && Number.isInteger(r[h]) ? r[h].toFixed(1) : r[h])).join(",");
+
+/* The claims writer: of a draw's rows, the one on the draw's own product,
+ * by the pairing the pull has just made (`paired`, pairDraws' rows). */
+function drawClaimsWriter(paired) {
+  const key = (release, draw, title) => [release, draw, title].map((v) => String(v ?? "")).join("\u0001");
+  const own = new Set((paired || []).map((r) => key(r.release, r.draw_id, r.product_title)));
+  const make = passthroughWriter(DRAW_CLAIMS_HEADER, "draw claims");
+  return (headerRow) => {
+    const w = make(headerRow);
+    return { ...w, row: (cells) => (own.has(key(cells[0], cells[1], cells[2])) ? w.row(cells) : null) };
   };
 }
 
@@ -1732,7 +1766,12 @@ async function pull({ write = true, full = false, events = true, only = null } =
       const a = await streamTable(token, ordersSql(), SINCE, passthroughWriter(ORDERS_HEADER, "orders"), t1);
       if (a.rows < 10) throw new Error(`orders query returned ${a.rows} rows - not overwriting`);
       guardShrink("orders query", a.rows, ORDERS_BY_PRODUCT);
-      const b = await streamTable(token, drawProductsSql(), SINCE, passthroughWriter(DRAW_PRODUCTS_HEADER, "draw products"), t2);
+      // the draws: the query gives the evidence, the pairing is made here
+      // over each release's draws together and written a row per draw
+      const evidence = [];
+      const b = await streamTable(token, drawProductsSql(), SINCE, drawEvidenceWriter(evidence), t2);
+      const paired = pairDraws(evidence);
+      for (const r of paired) t2.line(drawProductLine(r));
       // the units a page counts, by day and channel: the same paid lines, so
       // the three files are written together or not at all
       const c = await streamTable(token, unitsPaidSql(), SINCE, passthroughWriter(UNITS_PAID_HEADER, "units paid"), t3);
@@ -1747,7 +1786,7 @@ async function pull({ write = true, full = false, events = true, only = null } =
       const t4 = new Tmp(DRAW_CLAIMS, write);
       let claims = 0, claimsNote = "";
       try {
-        const d = await streamTable(token, drawClaimsSql(), SINCE, passthroughWriter(DRAW_CLAIMS_HEADER, "draw claims"), t4);
+        const d = await streamTable(token, drawClaimsSql(), SINCE, drawClaimsWriter(paired), t4);
         claims = d.rows;
       } catch (e) {
         t4.discard();
@@ -1757,8 +1796,8 @@ async function pull({ write = true, full = false, events = true, only = null } =
         t1.commit(ORDERS_BY_PRODUCT); t2.commit(DRAW_PRODUCTS); t3.commit(UNITS_PAID); t5.commit(UNITS_BY_COUNTRY);
         if (claimsNote) fs.writeFileSync(DRAW_CLAIMS, DRAW_CLAIMS_HEADER.join(",") + "\n"); else t4.commit(DRAW_CLAIMS);
       } else { t1.discard(); t2.discard(); t3.discard(); t4.discard(); t5.discard(); }
-      orders = { rows: a.rows, draws: b.rows, units: c.rows, countries: g.rows, claims, bytes: a.bytes + b.bytes + c.bytes + g.bytes, cached: a.cached && b.cached && c.cached && g.cached };
-      ordersNote = `orders ${a.rows} products, ${b.rows} draws named, ${c.rows} unit rows by day and channel, ${g.rows} by country, ${claims} draw(s) with claims in flight${claimsNote}`;
+      orders = { rows: a.rows, draws: paired.length, units: c.rows, countries: g.rows, claims, bytes: a.bytes + b.bytes + c.bytes + g.bytes, cached: a.cached && b.cached && c.cached && g.cached };
+      ordersNote = `orders ${a.rows} products, ${paired.length} draws named, ${c.rows} unit rows by day and channel, ${g.rows} by country, ${claims} draw(s) with claims in flight${claimsNote}`;
     } catch (e) {
       t1.discard(); t2.discard(); t3.discard(); t5.discard();
       ordersNote = `orders unavailable, keeping the last files (${String(e.message || e).replace(/\s+/g, " ").slice(0, 160)})`;
@@ -1893,7 +1932,7 @@ module.exports = {
   pull, configured, query, plan, PROJECT, DATASET, SINCE, OVERLAP_DAYS, FULL_EVERY_DAYS, NAMES_CHECK_HOURS,
   renamedOutsideOverlap, namesMissingUpstream, namesCheckDue, describeNames, funnelNamesSql, browsingNamesSql,
   SOURCES, ACROSS_TIME, SPEND_DAILY, META, ORDERS_BY_PRODUCT, DRAW_PRODUCTS, ORDERS_HEADER, DRAW_PRODUCTS_HEADER, ordersSql, drawProductsSql,
-  DRAW_CLAIMS, DRAW_CLAIMS_HEADER, drawClaimsSql,
+  DRAW_CLAIMS, DRAW_CLAIMS_HEADER, drawClaimsSql, DRAW_EVIDENCE_HEADER, drawEvidenceWriter, drawClaimsWriter, drawProductLine,
   UNITS_PAID, UNITS_PAID_HEADER, unitsPaidSql, orderLinesCtes,
   UNITS_BY_COUNTRY, UNITS_BY_COUNTRY_HEADER, unitsByCountrySql,
   LE_EVENTS, EVENTS_TABLE, EVENTS_SINCE, EVENT_COLUMNS, EVENT_HEADER, FORBIDDEN_COLUMNS, eventsSql, eventsWriter,

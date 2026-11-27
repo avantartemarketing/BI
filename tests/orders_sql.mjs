@@ -35,13 +35,15 @@ check(/frame_prices AS \(/.test(orders) && /WHERE paid AND price > 0 AND work_co
 // every column the header names is one the query selects
 check(bq.ORDERS_HEADER.every((c) => new RegExp(`(AS ${c}\\b|\\bl\\.${c}\\b)`).test(orders)), "the header's columns are all selected");
 check(!/user_email|customer_email/.test(orders) && !/user_email|customer_email/.test(draws), "no address column is named");
-// claims still landing: winners holding an open pre-authorisation draft on the draw's own product, no paid order for it
+// claims still landing: winners holding an open pre-authorisation draft on a product and no paid order for it,
+// a row per draw and product; the pull keeps the row on the draw's own product (tests/draw_pairs.mjs)
 const claims = bq.drawClaimsSql();
 check(/held_drafts AS \(/.test(claims) && /WHERE entry_draft AND customer_id IS NOT NULL/.test(claims), "claims read the app's pre-authorisation drafts only");
 check(/WHERE p\.won AND b\.customer_id IS NULL/.test(claims) && /paid_by AS \(SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid/.test(claims),
   "a claim is a winner with no paid order for the product");
-check(/h\.product_title = dp\.product_title/.test(claims) && /ORDER BY source, n DESC, product_title/.test(claims),
-  "on the draw's own product: its winners' paid orders first, else its entrants' drafts");
+check(/b\.product_title = h\.product_title/.test(claims) && /SELECT p\.release, p\.draw_id, h\.product_title, COUNT\(DISTINCT p\.customer_id\) AS claims/.test(claims)
+  && !/draw_product AS \(/.test(claims) && !/ROW_NUMBER\(\) OVER \(PARTITION BY release, draw_id/.test(claims),
+  "per draw and product, with no pairing of its own: the pull's pairing picks the draw's product");
 check(bq.DRAW_CLAIMS_HEADER.join(",") === "release,draw_id,product_title,claims,units", `the claims file's columns (${bq.DRAW_CLAIMS_HEADER})`);
 check(!/user_email|customer_email/.test(claims) && !/SELECT\s+\*/i.test(claims), "the claims query names no address column and takes no *");
 // the units feed counts the same paid lines as the orders feed, by day and
@@ -85,22 +87,32 @@ check(/typed AS \(\n\s+SELECT l\.\* EXCEPT \(product_title\), COALESCE\(pn\.prod
   "every typed line carries its product's one name");
 check(/FROM typed l LEFT JOIN paid_customers/.test(orders) && /GROUP BY l\.release, l\.product_title\n/.test(orders) && /FROM typed l LEFT JOIN purchase_channel/.test(units),
   "orders and units group on that name");
-// the draw map: a draw's product is what its winners paid for most, else what
-// its entrants hold the app's pre-authorisation drafts for most, both read off
-// the feed's own typed lines (one name per product) through the collectors
+// the draw map: a draw's product is read from its winners who paid for it and
+// its entrants who hold the app's pre-authorisation draft on it, both off the
+// feed's own typed lines (one name per product) through the collectors
 // table's customer id, so a draw is named from its first entries
 check(draws.startsWith("WITH " + ctes + ","), "the draw map reads the feed's own lines");
 check(/paid_by AS \(SELECT DISTINCT release, customer_id, product_title FROM typed WHERE paid AND customer_id IS NOT NULL\)/.test(draws)
   && /held_drafts AS \(SELECT DISTINCT release, customer_id, product_title FROM typed WHERE entry_draft AND customer_id IS NOT NULL\)/.test(draws),
   "winners' paid orders and entrants' pre-authorisation drafts, by the product's one name");
+// both readings in one row per draw and product, every product a draw's
+// people touch and not the top one alone: the pairing is made over a
+// release's draws together, outside the query (server/drawPairs.js)
 check(/FROM draw_people p JOIN paid_by b ON b\.release = p\.release AND b\.customer_id = p\.customer_id\n\s+WHERE p\.won GROUP BY 1, 2, 3/.test(draws)
   && /FROM draw_people p JOIN held_drafts h ON h\.release = p\.release AND h\.customer_id = p\.customer_id\n\s+GROUP BY 1, 2, 3/.test(draws)
-  && /ORDER BY source, n DESC, product_title\) = 1/.test(draws), "the winners' reading first, else the entrants', the top product taking the draw");
-check(count(draws.slice(ctes.length), /JOIN `/g) === 1 && /JOIN `[^`]+` c ON c\.aa_account_id = e\.aa_account_id AND c\.shopify_customer_id IS NOT NULL/.test(draws)
+  && /COUNT\(DISTINCT p\.customer_id\) AS won_paid, 0 AS held/.test(draws) && /0 AS won_paid, COUNT\(DISTINCT p\.customer_id\) AS held/.test(draws),
+  "the winners who paid and the entrants who hold a draft, side by side");
+const own = draws.slice(ctes.length);
+check(!/QUALIFY/.test(own) && !/ROW_NUMBER/.test(own) && !/LIMIT/.test(own), "every product a draw's people touch is a row: no top one is picked in the query");
+check(count(own, /JOIN `/g) === 1 && /JOIN `[^`]+` c ON c\.aa_account_id = e\.aa_account_id AND c\.shopify_customer_id IS NOT NULL/.test(draws)
   && /LOGICAL_OR\(COALESCE\(e\.winner, FALSE\)\) AS won/.test(draws), "the people join runs on the collectors table's customer id, inside BigQuery");
-check(/SELECT release, draw_id, product_title, n AS orders,\n\s+ROUND\(n \/ SUM\(n\) OVER \(PARTITION BY release, draw_id, source\), 3\) AS share/.test(draws)
-  && bq.DRAW_PRODUCTS_HEADER.join(",") === "release,draw_id,product_title,orders,share", "the file's columns are unchanged");
-check(!/aa_account_id/.test(draws.slice(draws.indexOf("pairs AS ("))) && !/customer_id/.test(draws.slice(draws.indexOf("SELECT release, draw_id, product_title, n AS orders"))),
+check(/COUNT\(DISTINCT IF\(won, customer_id, NULL\)\) AS winners, COUNT\(DISTINCT customer_id\) AS entrants/.test(draws)
+  && /SELECT x\.release, x\.draw_id, x\.product_title, x\.won_paid, x\.held, d\.winners, d\.entrants\n/.test(draws)
+  && bq.DRAW_EVIDENCE_HEADER.join(",") === "release,draw_id,product_title,won_paid,held,winners,entrants",
+  "the query gives the evidence: the two counts and the draw's winners and entrants they are shares of");
+check(bq.DRAW_PRODUCTS_HEADER.join(",") === "release,draw_id,product_title,orders,share", "the file's columns are unchanged");
+const selected = draws.slice(draws.lastIndexOf("SELECT x.release"));
+check(draws.lastIndexOf("SELECT x.release") > 0 && !/aa_account_id/.test(draws.slice(draws.indexOf("pairs AS ("))) && !/customer_id/.test(selected),
   "no person's id leaves: counts per draw and product only");
 check(/FROM typed\s+WHERE entry_draft/.test(claims) && /FROM typed WHERE paid AND customer_id IS NOT NULL/.test(claims), "the claims name products the same way");
 check([orders, draws, units, claims].every((s) => !/SELECT\s+\*/i.test(s) && !/user_email|customer_email/.test(s)),

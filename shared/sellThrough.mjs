@@ -489,7 +489,7 @@ const namesTitle = (name, title) => {
  *   draws        [{ id, first, entrants, eligible, winners, sold, open, wonUnpaid, purchaseUnits }]
  *   configured   [{ key, name, edition }]  (may be empty)
  *   editionSize  the release's edition, or null
- *   drawProducts {draw id: the product title its winners bought} (may be absent) */
+ *   drawProducts {draw id: the product title the draw is paired with} (may be absent) */
 export function productsFromDraws(draws, configured, editionSize, drawProducts = null) {
   const sorted = (draws || []).slice().sort((a, b) =>
     String(a.first || "").localeCompare(String(b.first || "")) || String(a.id).localeCompare(String(b.id)));
@@ -534,7 +534,7 @@ export function productsFromDraws(draws, configured, editionSize, drawProducts =
 /* Sales and draft orders per product from the orders feed (docs 6.3; mirror
  * of etl/sellthrough.attach_orders). `orders` is {product title: {unitsPaid,
  * drafts, listPrice, edition}} and `drawProducts` {draw id: product title},
- * the product a draw's winners bought. A product whose draws name a title
+ * the product a draw is paired with. A product whose draws name a title
  * takes that title's paid units as sold and its orders awaiting payment as
  * drafts, and the title as its name unless a name was typed against one of
  * its draws: a name from the older list with no draw id (`keylessName`,

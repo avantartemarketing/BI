@@ -42,7 +42,7 @@ const TABLES = {
   draw_products: {
     dir: "data", file: "draw_products.csv",
     grain: "release x draw",
-    about: "Draws per release with the product each draw sold and its orders and share.",
+    about: "Draws per release with the product each draw is for and the orders and share that was read from.",
   },
   spend_daily: {
     dir: "data", file: "spend_daily.csv",
