@@ -5,7 +5,8 @@
  * brought and what is still to come - with its plan and its actuals beside
  * it. The forecast (the actuals and what is still to come) is the bar itself,
  * and its figures are in the readout a bar shows when it is hovered or
- * touched.
+ * touched. The card's headline is what is in so far, with the forecast
+ * beside it.
  *
  * Under it, a second card of the same name: every email and post as a row of
  * a table, a column per fact - when, which phase, whose channel, what it is,
@@ -29,7 +30,7 @@
  * they are etl/tl_plan.py's, in signups to the sales open, with paid read
  * from the spend still to come. */
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Card, Head } from "../ui.jsx";
+import { Card, Head, vsDelta } from "../ui.jsx";
 import { COL, sw } from "../charts.jsx";
 import { fmt } from "../format.mjs";
 import { ownRecord } from "../planCheck.mjs";
@@ -179,14 +180,24 @@ export default function PlanCard({ snap }) {
   const shown = all ? list : list.slice(0, foldAt(list.length));
   const short = Math.round(p.target) - Math.round(p.lands);
   const likely = Array.isArray(p.range) ? `likely ${n(p.range[0])} to ${n(p.range[1])}` : undefined;
+  /* The card's headline is what is in so far, the Actuals column's own total, with the forecast beside it in a
+   * few words, green where it reaches the target and red where it falls short (27 November 2026, at the owner's
+   * asking: until then the headline was the forecast, "115 at the close", beside a sentence on the target and
+   * the campaign's day, which the trajectory above already gives). Before anything has gone out there is nothing
+   * in, so the headline is still the forecast, against the target the way the page's other cards put it. */
+  const tl = snap.type === "TL";
+  const unit = tl ? (p.of === "conversions" ? "conversions" : "signups") : "units";
+  const now = m.rows.reduce((t, r) => t + r.inn, 0);
+  const notes = (p.notes || []).join(" ");
+  const outlook = `Heading for ${n(p.lands)} ${tl ? "at the open" : "at the close"}, ${short > 0 ? `${n(short)} short of` : "which reaches"} the ${n(p.target)} target`;
   const rec = ownRecord(p);   // the plan check itself is a warning at the top of the page, and only when the plan is too small (web/src/planCheck.mjs)
   const pick = (k) => { setSel(k === sel ? null : k); setAll(false); table.hide(); };
   return (
     <>
       <Card wide title="The plan" className={`plan-card${m.start ? " start" : ""}`} aria="The plan, phase by phase">
-        <Head v={n(p.lands)} u={snap.type === "TL" ? `${p.of === "conversions" ? "conversions" : "signups"} at the open` : "at the close"} tip={(p.notes || []).join(" ")}
-          deltas={[short > 0 ? { t: `${n(short)} short of the ${n(p.target)} target`, dir: "dn" } : { t: `reaches the ${n(p.target)} target`, dir: "up" }]}
-          aside={m.start ? likely : `day ${snap.day} of ${snap.of}`} asideTip={(p.notes || []).join(" ")} />
+        {m.start
+          ? <Head v={n(p.lands)} u={tl ? `${unit} at the open` : "at the close"} tip={notes} deltas={[vsDelta(p.lands, p.target, "target", outlook)]} aside={likely} asideTip={notes} />
+          : <Head v={n(now)} u={`${unit} now`} tip={notes} deltas={[{ t: `${n(p.lands)} ${tl ? "at the open" : "at close"}`, dir: short > 0 ? "dn" : "up", tip: outlook }]} />}
         {rec && <div className="plan-rec">{rec}</div>}
         <div className="plan-host" ref={bars.host}>
           <div className="plan-rows">

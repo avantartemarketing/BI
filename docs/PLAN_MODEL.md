@@ -487,8 +487,15 @@ row, whatever the plan). The forecast, the actuals and what is still to come tog
 the bar itself, and its figures are in the readout a bar shows when it is hovered or
 touched: actuals, still to come, forecast and plan (from 27 November 2026, asked by the
 repository owner the day before: until then the second figure beside a bar was the
-forecast, headed "Lands at"). The headline stays the forecast, so the actuals column adds
-up to what is in so far and not to the headline. The whole units are shared out actuals
+forecast, headed "Lands at"). The headline is what is in so far, the actuals column's own
+total ("98 units now"), with the forecast beside it in a few words ("115 at close"), green
+where it reaches the target and red where it falls short; hovering it says which and by how
+much. Until 27 November 2026 the headline was the forecast ("115 at the close") beside a
+sentence on the target and the campaign's day; the owner, reading the card live that day,
+asked for the units now in its place, fewer words beside it and the day gone, which the
+trajectory above already gives. Before anything has gone out there is nothing in, so the
+headline is still the forecast, against the target as the page's other cards put it ("40%
+vs target"), with its likely range. The whole units are shared out actuals
 first and what is still to come after, so a row's pieces add up to the row figure by
 figure.
 
