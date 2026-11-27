@@ -492,11 +492,10 @@ up to what is in so far and not to the headline. The whole units are shared out 
 first and what is still to come after, so a row's pieces add up to the row figure by
 figure.
 
-**The plan, piece by piece.** A second card under the bars lists the pieces as a table:
-every email and post with the one furthest behind its plan first (in date order before
-anything has gone out), or the phase picked, in the table's own switch or by its bar, with
-its line for search, direct and later arrivals last, or paid by what is spent and still to
-spend. A row is a mark, the day, the phase, the channel, a description, the piece's own bar,
+**The plan, piece by piece.** A second card under the bars, titled "The plan" as the first
+is, lists the pieces as a table: every email and post in date order, or the phase picked by
+its bar, under the phase's name, with its line for search, direct and later arrivals last,
+or paid by what is spent and still to spend. A row is a mark, the day, the phase, the channel, a description, the piece's own bar,
 its plan and its actuals, the last two under the plan card's own so the figures read down
 both cards. The mark says where the piece stands: a dashed ring for one still to come, a
 ring that fills with the share of its plan the piece has brought, a tick once it has
@@ -513,7 +512,11 @@ and a piece's name carried its sender, its size and its day in one phrase. A nar
 gives up columns in turn, read off the card's own width: the bar first (its two figures
 stay), then the phase, then the channel, so the description keeps its room and a phone is
 left the mark, the day, what the piece is and its figures. Built that day, shown to the
-owner as a mockup on a design canvas and put live on the owner's go the same day.
+owner as a mockup on a design canvas and put live on the owner's go the same day. As it
+first went live the card was titled "The plan, piece by piece" with a line beside the title
+that counted the pieces and named their order, the piece furthest behind its plan came
+first, and a switch in the card's head picked a phase; the owner, seeing it live, asked the
+same day for the extra words and the switch to go and for the pieces in date order.
 
 The two cards sit under the trajectory, which leads this view as it leads the clock's page,
 and the suggested actions sit under them (`web/src/Overview.jsx`, from 27 November 2026;

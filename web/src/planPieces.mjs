@@ -60,6 +60,13 @@ export function describe(x, asOf) {
   return { channel, what, state, share };
 }
 
+/* The pieces in date order: a day's in the order the plan lists them (its emails, then its posts, the bigger
+ * first, and an earlier phase's before a later one's), and a line with no day of its own last. */
+export function byDay(pieces) {
+  const day = (x) => (x.date ? String(x.date).slice(0, 10) : "9999-99-99");
+  return pieces.map((x, i) => [x, i]).sort((a, b) => (day(a[0]) < day(b[0]) ? -1 : day(a[0]) > day(b[0]) ? 1 : a[1] - b[1])).map(([x]) => x);
+}
+
 /* how many rows the table shows before it folds the rest away: a list one
  * longer than the cap is shown whole, since a fold that hides one row takes
  * the room of the row it hides */

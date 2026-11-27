@@ -7,30 +7,33 @@
  * and its figures are in the readout a bar shows when it is hovered or
  * touched.
  *
- * "The plan, piece by piece", under it: every email and post as a row of a
- * table, a column per fact - when, which phase, whose channel, what it is,
+ * Under it, a second card of the same name: every email and post as a row of
+ * a table, a column per fact - when, which phase, whose channel, what it is,
  * then its own bar, plan and actuals - and a mark at the head of the row that
  * says where the piece stands (web/src/planPieces.mjs). Until 27 November
  * 2026 the pieces were a box inside the plan card, beside the bars, as high
  * as the bars and scrolling within: five rows of thirteen showed, and a
  * piece's name carried its sender, its size and its day in one phrase. With
- * nothing picked the table lists every email and post, the one furthest
- * behind its plan first (in date order before anything has gone out); pick a
- * phase, in the table's own switch or by its bar, and it lists that phase's
- * alone, its last line what came by search, a typed address or days later
- * (the baseline, shared over the phases: docs/PLAN_MODEL.md 6), or paid by
- * what is spent and still to spend. Pick it again to go back. The table shows
- * its first rows and folds the rest away (planPieces.mjs foldAt).
+ * nothing picked the table lists every email and post in date order; pick a
+ * phase by its bar and it lists that phase's alone under the phase's name,
+ * its last line what came by search, a typed address or days later (the
+ * baseline, shared over the phases: docs/PLAN_MODEL.md 6), or paid by what is
+ * spent and still to spend. Pick it again to go back. The table shows its
+ * first rows and folds the rest away (planPieces.mjs foldAt). The card says
+ * no more than that: it had a longer title, a line counting the pieces and
+ * naming their order, and a switch for the phases in its head, and the owner
+ * had all three out the day it went live, with the order changed from the
+ * piece furthest behind its plan first to the plan's own, by date.
  *
  * The figures are etl/plan_view.py's; on a timed launch gathering signups
  * they are etl/tl_plan.py's, in signups to the sales open, with paid read
  * from the spend still to come. */
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Card, Head, Seg } from "../ui.jsx";
+import { Card, Head } from "../ui.jsx";
 import { COL, sw } from "../charts.jsx";
 import { fmt } from "../format.mjs";
 import { ownRecord } from "../planCheck.mjs";
-import { CHANNELS, describe, foldAt } from "../planPieces.mjs";
+import { byDay, CHANNELS, describe, foldAt } from "../planPieces.mjs";
 import { Chev, Euro, Img, Mail, Pair, People, Search } from "../icons.jsx";
 
 const n = (v) => fmt(Math.round(v));
@@ -171,15 +174,13 @@ export default function PlanCard({ snap }) {
   // every email and post: a phase's last line (what no one piece's link brought, `tail`) is no piece, and is
   // listed inside its phase alone
   const every = m.rows.filter((r) => r.key !== "Paid").flatMap((r) => r.pieces).filter((x) => !x.tail);
-  const gaps = every.some((x) => x.lands !== x.exp);
-  const list = s ? s.pieces : gaps ? every.slice().sort((a, b) => (a.lands - a.exp) - (b.lands - b.exp)) : every;
+  const list = s ? s.pieces : byDay(every);
   const ptop = Math.max(1, ...list.map((x) => Math.max(x.exp, x.lands))) * 1.06;
   const shown = all ? list : list.slice(0, foldAt(list.length));
   const short = Math.round(p.target) - Math.round(p.lands);
   const likely = Array.isArray(p.range) ? `likely ${n(p.range[0])} to ${n(p.range[1])}` : undefined;
   const rec = ownRecord(p);   // the plan check itself is a warning at the top of the page, and only when the plan is too small (web/src/planCheck.mjs)
   const pick = (k) => { setSel(k === sel ? null : k); setAll(false); table.hide(); };
-  const order = s ? "in date order" : gaps ? "furthest behind plan first" : "in date order";
   return (
     <>
       <Card wide title="The plan" className={`plan-card${m.start ? " start" : ""}`} aria="The plan, phase by phase">
@@ -208,10 +209,7 @@ export default function PlanCard({ snap }) {
           <span className="key"><span style={{ width: 0, height: 12, borderLeft: `2px solid ${COL.INK}` }} />Plan</span>
         </div>
       </Card>
-      <Card wide className={`pp-card${m.start ? " start" : ""}`} aria="The plan, piece by piece"
-        title={<>The plan, piece by piece<span className="pp-n">{s ? `${s.name}, ${order}` : `${every.length === 1 ? "1 email or post" : `${every.length} emails and posts`}, ${order}`}</span></>}
-        seg={<Seg label="Phase" value={sel || ""} onChange={(k) => pick(k || sel)}
-          options={[["", "All", "Every email and post"], ...m.rows.filter((r) => r.pieces.length).map((r) => [r.key, r.name, `What is inside ${r.name}`])]} />}>
+      <Card wide className={`pp-card${m.start ? " start" : ""}`} aria={s ? `The plan: inside ${s.name}` : "The plan, piece by piece"} title={s ? s.name : "The plan"}>
         {s && s.note && <div className="pp-note">{s.note}</div>}
         <div className="pp" ref={table.host} role="table" aria-label={s ? `Inside ${s.name}` : "Every piece of the plan"}>
           <div className="pp-r head" role="row">

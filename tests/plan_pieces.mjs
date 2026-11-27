@@ -1,11 +1,11 @@
 /* The plan's pieces read apart for the table (web/src/planPieces.mjs): the
  * channel from the piece's sender, what it is without the sender, where it
- * stands and how much of its plan it has brought; and the rows the table
- * shows before it folds. The names are the build's own, as they stood on the
+ * stands and how much of its plan it has brought; the list's order, by day;
+ * and the rows the table shows before it folds. The names are the build's own, as they stood on the
  * live pages of 27 November 2026 (Seth Armstrong, Ai Weiwei).
  * node tests/plan_pieces.mjs */
 import assert from "node:assert";
-import { CHANNELS, describe, foldAt, ROWS_SHOWN } from "../web/src/planPieces.mjs";
+import { byDay, CHANNELS, describe, foldAt, ROWS_SHOWN } from "../web/src/planPieces.mjs";
 
 const asOf = "2026-11-27";
 const piece = (name, who, date, exp = 0, inn = 0) => ({ name, who, date, exp, inn });
@@ -49,6 +49,12 @@ assert.deepStrictEqual(describe({ name: "€493 a day to the close", who: "paid"
 assert.strictEqual(describe({ name: "€2,062 spent so far", who: "paid", exp: 15, inn: 16 }, asOf).state, "sent");
 // a sender the page has no channel for is listed under no channel, not left out
 assert.strictEqual(describe({ name: "Something new", who: "press", date: "2026-11-01" }, asOf).channel, "tail");
+
+// ---- the list's order: by day, a day's pieces as the plan lists them, a line with no day last
+const mixed = [piece("b", "email", "2026-11-06"), piece("tail", "tail", undefined), piece("a", "aa", "2026-10-28"), piece("c", "aa", "2026-11-06"), piece("d", "artist", "2026-11-04T09:00:00")];
+assert.deepStrictEqual(byDay(mixed).map((x) => x.name), ["a", "d", "b", "c", "tail"]);
+assert.deepStrictEqual(mixed.map((x) => x.name), ["b", "tail", "a", "c", "d"]);   // the list it was given is left as it was
+assert.deepStrictEqual(byDay([]), []);
 
 // ---- the fold: the first rows, and a list one over the cap whole
 assert.strictEqual(ROWS_SHOWN, 8);
