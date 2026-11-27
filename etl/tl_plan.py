@@ -7,7 +7,7 @@ bought, and what tells one launch from another is its paid budget, not its comms
 
   outside paid   plan_view's own reading on the timed launches' price list (etl/tl_plan_prices.json): each email
                  and post priced in quiet days of signups, at the launch's level and at how each channel is
-                 running, with the baseline beside them. A timed launch's phases are its own (PHASES): the
+                 running, the baseline shared over the phases (plan_view.card_rows). A timed launch's phases are its own (PHASES): the
                  announcement, the days between, and the open.
   paid           the spend still to come at what a signup will cost. The spend is today's, held to the open (the
                  mean of the last SPEND_DAYS full days); the cost is the launch's own so far, marked up by how

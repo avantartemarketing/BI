@@ -1,5 +1,7 @@
 /* The Overview's cards, in the order the page shows them (11 November 2026;
- * the Suggested actions card above them all on a live draw launch, 12 November),
+ * the Suggested actions card above them all on a live draw launch, 12 November;
+ * on the plan-based view the trajectory first, then the plan card and the
+ * Suggested actions, 26 November),
  * two to a row with the sell-through table and the trajectory across both,
  * in three sections: the outcome (the trajectory; the sell-through table, a
  * row per work today and at the close, on a timed launch before its window
@@ -57,9 +59,11 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   const actionsOn = isTL ? (snap.method === "plan" && !!snap.planChanges) : !snap.line && (!!snap.planChanges || (!snap.complete && !snap.catalogue));
   const geoOn = !isTL && !!(snap.geo && (Array.isArray(snap.geo) ? snap.geo.length : (snap.geo.rows || []).length));
   const paidOn = !!snap.paid;
-  // the plan-based view (the page's switch, docs/PLAN_MODEL.md): the plan card leads, and before anything has
-  // gone out the page is the plan alone
-  const planStart = snap.method === "plan" && !!(snap.plan && snap.plan.state === "start");
+  // the plan-based view (the page's switch, docs/PLAN_MODEL.md): the trajectory leads, as on the clock's page,
+  // with the plan card and the suggested actions under it (26 November 2026, at the owner's asking; the plan
+  // card led until then), and before anything has gone out the page is the plan alone
+  const planOn = snap.method === "plan" && !!snap.plan;
+  const planStart = planOn && snap.plan.state === "start";
   // the Spend levels card is on every draw launch with a paid block: without
   // a level from the build it says why there is none (12 November 2026)
   // ... and on a timed launch gathering signups once the build has a level for it (etl/tl.py spend_levels,
@@ -70,9 +74,10 @@ export default function Overview({ snap, base, actions, vs, horizon, onSetup, on
   return (
     <div className="body">
       <div className="grid2">
-        {snap.method === "plan" && snap.plan && <PlanCard snap={snap} />}
+        {planOn && <Trajectory snap={snap} vs={vs} horizon={horizon} />}
+        {planOn && <PlanCard snap={snap} />}
         {actionsOn && !planStart && <PlanChanges snap={snap} state={actions} />}
-        <Trajectory snap={snap} vs={vs} horizon={horizon} />
+        {!planOn && <Trajectory snap={snap} vs={vs} horizon={horizon} />}
         {!isTL && !preWindow && snap.sellthrough && <SellThroughTable snap={snap} />}
         {preWindow && snap.sellForecast && <TLForecastTable snap={snap} />}
         {preWindow && snap.sellForecast && <SellForecast snap={snap} horizon={horizon} />}

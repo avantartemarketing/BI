@@ -12,6 +12,7 @@ import { wordsOf } from "./vocab.mjs";
 import { releaseClock } from "./sections.mjs";
 import { canBenchmark, canTarget, compareOf } from "./compare.mjs";
 import { canConvert, toConversions } from "./conversions.mjs";
+import { planWarning } from "./planCheck.mjs";
 import { GROUP_WORD, groupOf, nameOf, onDay, rowState, STATE_COLOR, whenWords } from "./rows.mjs";
 import Overview from "./Overview.jsx";
 import TargetSetting from "./TargetSetting.jsx";
@@ -168,12 +169,18 @@ function RefreshButton({ st, onRefresh }) {
   );
 }
 
-/* The warning strip under the header: stale data, a failed refresh, a
+/* The warning strip under the header: a comms plan too small for the
+ * launch's target (web/src/planCheck.mjs), stale data, a failed refresh, a
  * coverage gap, no targets, one line's basis. Only when something needs
  * saying; one line each. */
-function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup }) {
+function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup, plan, onPlan }) {
   const [hidden, setHidden] = useState({});
   const strips = [];
+  // the plan's own, in the warm tint and dismissed launch by launch: it is the one strip that asks for a change
+  if (plan) {
+    strips.push({ key: `plan:${snap.id}`, warn: true, icon: <Warn />, text: plan.text, sx: plan.detail, tip: plan.tip,
+      action: onPlan ? <button className="sbtn" onClick={onPlan}>See the plan</button> : null });
+  }
   // stale: built from data older than the last full day (shared/refreshWatch.mjs says when to reload)
   const now = new Date();
   const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
@@ -214,7 +221,7 @@ function Strips({ snap, st, onRefreshed, onRefresh, line, lines, onSetup }) {
     strips.push({ key: "line", icon: <Ring />, text: `${line.name || meta.name || line.key}: ${basis}`, sx: `units from its own works; paid from ${(line.adsets || []).length ? "its ad set" : "no ad set named"}; sessions shared with the release` });
   }
   return strips.filter((s) => !hidden[s.key]).map((s) => (
-    <div key={s.key} className="strip" role="status">{s.icon}<span>{s.text}</span>{s.sx && <span className="sx">{s.sx}</span>}<span className="sp" />{s.action}
+    <div key={s.key} className={`strip${s.warn ? " warn" : ""}`} role="status" title={s.tip}>{s.icon}<span className="tx">{s.text}</span>{s.sx && <span className="sx">{s.sx}</span>}<span className="sp" />{s.action}
       <button className="ib" style={{ margin: 0 }} aria-label="Dismiss" onClick={() => setHidden({ ...hidden, [s.key]: true })}><X /></button></div>
   ));
 }
@@ -226,6 +233,7 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
   const [lineKey, setLineKey] = useState(null);
   useEffect(() => { setHorizon("today"); setLineKey(null); }, [snap && snap.id]);
   const converted = useRef({});
+  const planSeen = useRef({});
   if (!snap) {
     return (
       <main className="page">
@@ -253,6 +261,18 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
   const viewKey = [snap.id, snap.builtAt, planOn ? "plan" : directSpread && variant ? "spread" : "channel"].join("|");
   if (convOn && (converted.current.key !== viewKey || converted.current.snap !== snap)) converted.current = { key: viewKey, snap, view: toConversions(picked) };
   const view = convOn ? converted.current.view : picked;
+  // the plan check's warning: the launch's plan as the build read it, in the unit the page counts in, whichever
+  // way the page is switched (on Time the plan-based page is not the one shown, so it is read here for this alone)
+  let planRead = null;
+  if (planVariant && !lineVariant) {
+    if (planOn) planRead = view.plan;
+    else if (!convOn) planRead = planVariant.plan;
+    else {
+      if (planSeen.current.snap !== snap) planSeen.current = { snap, plan: toConversions({ ...snap, ...planVariant }).plan };
+      planRead = planSeen.current.plan;
+    }
+  }
+  const planWarn = planWarning(planRead);
   // on the All lines view, each line's own reading, for the cards that run per line (paid: an ad set per line)
   const lineViews = lines && !lineKey ? lines.map((l) => {
     const v = (directSpread && snap.variants.lines_direct && snap.variants.lines_direct[l.key]) || snap.variants.lines[l.key];
@@ -290,7 +310,8 @@ export default function ReleasePage({ snap, snapError, actions, row, asOf, st, r
       </header>
       {tab === "overview" && (
         <>
-          <Strips snap={snap} st={st} onRefreshed={onRefreshed} onRefresh={onRefresh} line={lineVariant ? view.line : null} lines={lines} onSetup={() => setTab("targets")} />
+          <Strips snap={snap} st={st} onRefreshed={onRefreshed} onRefresh={onRefresh} line={lineVariant ? view.line : null} lines={lines} onSetup={() => setTab("targets")}
+            plan={planWarn} onPlan={planWarn && !planOn && setTargetsFrom ? () => setTargetsFrom("plan") : null} />
           <div className="chips">
             <StatusChip snap={snap} row={row} asOf={asOf} />
             <DatesChip snap={snap} />

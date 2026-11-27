@@ -69,7 +69,8 @@ over five **channel groups** and spread over the campaign days by pace curves, w
   a tag in its state colour and the days to launch (the day it launched under Recent). Same
   index.
 - **A release's page**, Overview tab: header, chips (state and days left, dates, lead,
-  horizon, lines), a warning strip when the data is stale or partial, then the cards (below).
+  horizon, lines), a warning strip when the data is stale or partial or the launch's comms
+  plan reads too small for its target (docs/PLAN_MODEL.md 6), then the cards (below).
   Targets tab: the target-setting form (inputs, basket picker, the target per channel) -
   people change targets there; the Agent only reads them.
 - **Methodology** (workspace menu): `METHODOLOGY.md` rendered.

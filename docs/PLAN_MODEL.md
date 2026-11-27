@@ -378,13 +378,14 @@ that aimed at 100 and sold 50 is no guide to selling 100, and one that aimed at 
 sold 100 is (the owner's rule). From them comes the range a quiet day of plan ran at,
 the lowest and the highest left out. Inside that range the plan is sized to the target:
 a quiet day is given the size the target asks of it (the target less paid's part, over
-the plan's value), so the pieces' figures add up to the target and the card says the plan
-as written is in line with it. A plan that would need more from each quiet day than the
+the plan's value), so the pieces' figures add up to the target and the plan reads in line
+with it. A plan that would need more from each quiet day than the
 strongest of them reads short, at the strongest's size, and one that needs less than the
 weakest reads over. The target carries the judgement of how much the work is wanted; the
 plan check asks only whether the comms are enough for a launch of that size, and the
-artist's own earlier launches are printed beside it (sold of the edition, and how many
-times over it was entered for) and move no figure. The older reading below stands where
+artist's own earlier launches are printed on the plan card (sold of the edition, and how
+many times over it was entered for) and move no figure. What the page makes of the check
+is under "The plan check on the page" below. The older reading below stands where
 the price list has no sales on it or the launch has no target or price.
 
 Read on 90 launches, each from those closed before it announced: what a launch sold
@@ -430,31 +431,91 @@ cards agree. The first build read all three off the target, which only showed on
 where target and edition differ.
 
 **Credit by the day people entered.** What has come in is shared out between the pieces
-and the baseline by the day a person entered or bought, each channel scaled to the page's
-own count for it so the card adds up to every other card. The page's own daily series
-cannot be used for this: it dates a unit by its order, and a draw books its orders in
-batches days after the entries (Johnson Tsang's In Position booked 20 on 10 November, 20
-on 13 November and 16 on 16 November, from entries mostly made on the 9th), so read on
-those days the announce's units land on days with nothing going out and are called
-baseline. On each channel and day, what came in is split between the pieces felt that day
-and the baseline in proportion to what the plan put there. Emails sent on the same day are
-told apart by the clicks each got. A day's posts from one sender are one line. This is an
-estimate, not a measurement: nothing in the feeds ties a unit to a piece.
+by the day a person entered or bought, each channel scaled to the page's own count for it
+so the card adds up to every other card. The page's own daily series cannot be used for
+this: it dates a unit by its order, and a draw books its orders in batches days after the
+entries (Johnson Tsang's In Position booked 20 on 10 November, 20 on 13 November and 16 on
+16 November, from entries mostly made on the 9th), so read on those days the announce's
+units land on days with nothing going out. A channel with links of its own (email, Avant
+Arte's social, the artist's) has what came on it split between its own pieces felt that
+day and what the plan puts there with nothing going out. What arrives by search, a typed
+address or another site is split the same way over every piece felt that day, whatever the
+piece's channel: a piece's price includes what it brings through search and direct
+(section 3), so its sales do too. Emails sent on the same day are told apart by the clicks
+each got. A day's posts from one sender are one line. This is an estimate, not a
+measurement: nothing in the feeds ties a unit to a piece.
 
-**The card.** A bar per phase (early access, announce, sustain, last chance), one for the
-baseline and one for paid: the plan in grey, as long as the plan and ending at a tick, and
-on it what is in so far and what is still to come, with its plan and its actuals (what is
-in so far) beside it. The grey left showing is what the phase is short of its plan by; a
-bar that passes the tick is over it (26 November 2026: until then the grey ran the full
-width of every row, whatever the plan). The forecast, the actuals and what is still to come
-together, is the bar itself, and its figures are in the readout a bar shows when it is
-hovered or touched: actuals, still to come, forecast and plan (26 November 2026, asked by
-the repository owner: until then the second figure beside a bar was the forecast, headed
-"Lands at"). The headline stays the forecast, so the actuals column adds up to what is in
-so far and not to the headline. A box beside the bars, the same height and scrolling
-inside, lists the pieces: every email and post with the one furthest behind its plan first
-(in date order before anything has gone out), or the phase picked, the baseline by
-channel, or paid by what is spent and still to spend.
+**The baseline is shared over the phases (from 27 November 2026, `card_rows`).** What a day
+brings with nothing going out is still the plan's path and its forecast (`override`), but
+it is no row of the card: people who arrive then heard of the launch from what went out.
+Each day's is shared over the phases by what each has put out since the announce (before
+the announce, by what has gone out so far; with nothing out yet it is the announce's), and
+is the last line inside each phase, "Search, direct and later arrivals", with the channels
+it came on kept beside it (`by`). So a phase's plan and its sales are everything it brings,
+the rows are the phases and paid, and they add up as before: no total and no forecast
+moves. What went out before the announce does not carry on past it, on the history's
+reading below.
+
+Read on 92 past launches before it was built. The plan gave the baseline 16% of a launch
+at the median, and the card, sharing each channel's arrivals between its own pieces and
+the baseline alone, filed 30% of what came in there (13% and 28% on the 41 launches of
+2026): every search arrival was the baseline's, on an announce day as on a quiet one,
+since no piece is search's. 17 of those 30 points arrived while a piece was being felt and
+12 on days with nothing felt. So a launch dead on its plan showed its baseline at about
+x1.7 its plan and its emails and posts under theirs. By channel the plan's share against
+what came: email 63% against 65%, Avant Arte's social 17% against 8%, the artist's 10%
+against 4%, search 6% against 10%, other sites 2% against 3%. A post's sales mostly do not
+come on its own link. An email's visits carry its HubSpot campaign id (`utm_content`, not
+the id the email feeds hold; a link's first visit can be a test send days before, so a
+link is matched to its email by its busiest day): of the entries on a launch's own emails
+62% came the day it went, 18% the next, 9% over the three after and 11% later still, and
+of those later ones 82% had clicked the announce, 9% an early access email and 7% a
+sustain one. About half of what arrives on an email's link on a day no email of the
+launch is felt is on a link that is not one of the launch's own emails: another
+campaign's (a newsletter, a bundle, another launch), or one the match missed. A person's
+own history could not settle it: of the entrants who came by search or a typed
+address, 1% had an earlier visit from an email or a post on the same device or account,
+which is a floor and nothing more, since a link opened inside an email or Instagram app is
+another browser. (The study was run once from a cloud session and is not kept as a script.)
+
+**The card.** A bar per phase (early access, announce, sustain, last chance) and one for
+paid: the plan in grey, as long as the plan and ending at a tick, and on it what is in so
+far and what is still to come, with its plan and its actuals (what is in so far) beside
+it. The grey left showing is what the phase is short of its plan by; a bar that passes the
+tick is over it (from 27 November 2026: until then the grey ran the full width of every
+row, whatever the plan). The forecast, the actuals and what is still to come together, is
+the bar itself, and its figures are in the readout a bar shows when it is hovered or
+touched: actuals, still to come, forecast and plan (from 27 November 2026, asked by the
+repository owner the day before: until then the second figure beside a bar was the
+forecast, headed "Lands at"). The headline stays the forecast, so the actuals column adds
+up to what is in so far and not to the headline. The whole units are shared out actuals
+first and what is still to come after, so a row's pieces add up to the row figure by
+figure. A box beside the bars, the same height and scrolling inside, lists the pieces:
+every email and post with the one furthest behind its plan first (in date order before
+anything has gone out), or the phase picked, with its line for search, direct and later
+arrivals last, or paid by what is spent and still to spend.
+The card sits under the trajectory, which leads this view as it leads the clock's page, and
+the suggested actions sit under the card (`web/src/Overview.jsx`, from 27 November 2026;
+the card led the page until then).
+
+**The plan check on the page (from 26 November 2026).** The page says nothing while the
+plan is enough. A plan that reads short is a warning in the strip at the top of the
+launch's page, in the warm tint (`web/src/planCheck.mjs` and the Strips of
+`ReleasePage.jsx`, held by `node tests/plan_check.mjs`): "The comms plan is too small for
+the 170 target. Going by similar launches, it should bring 84 to 137." It shows whichever
+way the page is switched, since a page opens on Time, and there a button turns the page to
+Plan; it is dismissed launch by launch, and hovering it names the similar launches. It does
+not show on a launch its results have carried to the target all the same (the plan's own
+landing at the target or past it), where the page already says the launch reaches it, nor
+on one line's own page. The strip gives no count of what the plan leaves: that is the Not
+covered row's, on the card, and the headline's "short" counts from where the launch is
+heading and rarely gives the same figure. A plan that reads over says nothing either. The
+artist's record is a plain line under the plan card's headline, headed as the artist's so
+it is not read as the similar launches.
+
+Until that day the check was a line under the plan card's headline on every page that had
+one. It read the plan before any results and the headline above it read where the launch
+was heading, so the two pointed opposite ways on most pages (section 9).
 
 **Suggested actions in this view** are valued by the same price list, at the launch's
 level and at how the piece's channel is running: an email still to come sent to the full
@@ -562,8 +623,11 @@ page needs the timed launches' feeds, which a checkout does not carry.
   the usual audience for its kind is assumed, and the view says so on the line.
 - **Units per piece are shared out, not measured.** See section 6. A price is what a day
   with that piece usually brings, and a piece's "brought" is its share of its channel's
-  units on the days it was felt; neither is proof of what the piece alone caused. Units
-  that arrive after a piece is no longer felt are the baseline's.
+  units on the days it was felt, with its share of what came those days by search, a typed
+  address or another site; neither is proof of what the piece alone caused. Units that
+  arrive after a piece is no longer felt are shared over the phases, by what each has put
+  out since the announce, and are each phase's last line: which piece brought them the
+  feeds cannot say.
 - **Same-day pieces share credit.** See 4.3.
 - **Launches the matching misses.** A launch has no plan here when no Notion campaign
   answers to its code or its artist in its days, and no emails when neither its code nor
@@ -647,37 +711,6 @@ page needs the timed launches' feeds, which a checkout does not carry.
 
 ## 9. Log
 
-- **25 November 2026.** The owner asked why Harland Miller's launch read 36 at the close
-  against a target of 100 on its announce day, and worked through the model with it. Agreed
-  and built, and live the same day once the owner had seen the before and after of the
-  seven live draw launches and the one timed launch gathering signups: demand
-  counted with pre-orders at 0.95 and plain entries at 0.8 (`plan_model.demand_units`; with
-  it counted demand is 0.98 of the units sold outside paid at the median, so the two rates
-  close the gap between them); a plan sized on the launches that sold nearest its target at
-  a similar price and to the target inside their range, with no markdown of an artist's
-  follow-up (section 6, "The level"); the pull eased in as the plan lands (section 6, "How
-  the launch is running"); an email to come sized from HubSpot's lists, then Notion's
-  "Email audience", then the usual audience; the plan check's words on the card. The price
-  list is fitted again on 91 launches with what each sold kept on it. On that launch the
-  card reads 47 at the close in place of 36, its rows add up to the 100 target and the plan
-  as written reads in line. Tried and not borne out: sizing an email's units straight from
-  its clicks, with no quiet day between. What each click brings varies from launch to
-  launch as much as the quiet day does (x2.5 against x2.6 across the middle half) and is
-  told worse from similar launches, and two fifths of the demand outside paid arrives by
-  search and direct, which leave no clicks. A plan that reads short carries the gap as a
-  row of its own, "Not covered", so the card's rows still add up to the target. The same
-  reading was applied to a timed launch's signups that day, at the owner's asking
-  (etl/tl_plan.py, which reads them through the same code): its plan is sized on the timed
-  launches that drew nearest its signup target at a similar price, which tells the signups
-  outside paid to within about 40% against 59% the older way on 40 launches, each read from
-  those that opened before it; the pull is eased in as on a draw launch, 63% against 71%
-  over the announce day and the next and no worse later; the card gives the same verdict
-  and the same row. The two payment rates do not apply there: a signup is not an entry.
-  The page's switch is as it was (the paragraph at the head of this file): Time is the
-  default and Plan is this view. Still to build: the plan check as a step before early
-  access (the gap, the ways to close it, an agreed plan and an accepted shortfall as one
-  line), and the view on a launch's page before its first piece goes out.
-
 - **16 November 2026.** The brief (section 1). The first study on 64 launches, then the
   feeds, the price list and the back-test, on 66. The strength kept at 0.5.
 - **16 November 2026, later.** The owner chose one forecast built only from the plan, no
@@ -729,3 +762,64 @@ page needs the timed launches' feeds, which a checkout does not carry.
   card and across the page, and was given its own. The same day the owner asked why a
   last chance email stood twice among a launch's suggested actions: it was one email at
   two audiences, and is now one row that opens to the other.
+- **25 November 2026.** The owner asked why Harland Miller's launch read 36 at the close
+  against a target of 100 on its announce day, and worked through the model with it. Agreed
+  and built, and live the same day once the owner had seen the before and after of the
+  seven live draw launches and the one timed launch gathering signups: demand
+  counted with pre-orders at 0.95 and plain entries at 0.8 (`plan_model.demand_units`; with
+  it counted demand is 0.98 of the units sold outside paid at the median, so the two rates
+  close the gap between them); a plan sized on the launches that sold nearest its target at
+  a similar price and to the target inside their range, with no markdown of an artist's
+  follow-up (section 6, "The level"); the pull eased in as the plan lands (section 6, "How
+  the launch is running"); an email to come sized from HubSpot's lists, then Notion's
+  "Email audience", then the usual audience; the plan check's words on the card. The price
+  list is fitted again on 91 launches with what each sold kept on it. On that launch the
+  card reads 47 at the close in place of 36, its rows add up to the 100 target and the plan
+  as written reads in line. Tried and not borne out: sizing an email's units straight from
+  its clicks, with no quiet day between. What each click brings varies from launch to
+  launch as much as the quiet day does (x2.5 against x2.6 across the middle half) and is
+  told worse from similar launches, and two fifths of the demand outside paid arrives by
+  search and direct, which leave no clicks. A plan that reads short carries the gap as a
+  row of its own, "Not covered", so the card's rows still add up to the target. The same
+  reading was applied to a timed launch's signups that day, at the owner's asking
+  (etl/tl_plan.py, which reads them through the same code): its plan is sized on the timed
+  launches that drew nearest its signup target at a similar price, which tells the signups
+  outside paid to within about 40% against 59% the older way on 40 launches, each read from
+  those that opened before it; the pull is eased in as on a draw launch, 63% against 71%
+  over the announce day and the next and no worse later; the card gives the same verdict
+  and the same row. The two payment rates do not apply there: a signup is not an entry.
+  The page's switch is as it was (the paragraph at the head of this file): Time is the
+  default and Plan is this view. Still to build: the plan check as a step before early
+  access (the gap, the ways to close it, an agreed plan and an accepted shortfall as one
+  line), and the view on a launch's page before its first piece goes out.
+- **26 November 2026.** The owner found the plan check's line on the plan card confusing
+  ("The plan as written is in line with the 862 conversion target. Similar launches would
+  have brought 859 to 928 with this plan", under a headline of 218 at the open, 644 short
+  of the target) and asked for it to go, with a warning bar at the top of the dashboard in
+  its place when the plan is not enough. The line and the headline answered different
+  questions, the plan before any results and where the launch is heading, and nothing said
+  so: of the eight live plan pages that day the line read "in line" under a headline far
+  short of the target on four (Marina Abramović, Harland Miller, Johnson Tsang, Ai Weiwei)
+  and "33 short" under one that reached it on a fifth (Pejac). A rewording was shown first
+  and set aside for the owner's simpler answer. Built (section 6, "The plan check on the
+  page"): no line on the card, a warning in the page's strip for a plan that reads short
+  on a launch not heading for its target, and the artist's record kept as a line of its
+  own. Live the same day, once the owner had seen the before and after. No live page
+  showed the warning that day: the one plan reading short was Pejac's,
+  which was heading for 176 against its 170. On a timed launch read in signup conversions
+  the verdict is now read again in that unit (docs/TL_SPEC.md 4a), where it was the
+  signups' verdict beside the conversions' figures.
+- **27 November 2026.** The owner asked whether the baseline's sales and targets would not
+  sit better in the named stages, since a lot of them trace back to the stages' comms.
+  Read on the history first (section 6, "The baseline is shared over the phases"): the
+  card was filing nearly twice the baseline the plan expects, mostly search and direct
+  arrivals on the days comms went out. Shown as a before and after of Ferrari Sheppard's
+  card (Baseline 23 planned and 53 landing; shared out, Announce reads 86 and 113 in place
+  of 64 and 70), and live the same day on the owner's go-ahead. With it went the change
+  the owner had asked for the day before and seen as a before and after of Ferrari
+  Sheppard's and Marina Abramović's pages: the trajectory back at the top of this view.
+  The page opens on the trajectory, as the clock's does, with the plan card and the
+  suggested actions under it, on a draw launch and on a timed launch gathering signups
+  alike. That is a change of order alone: no figure moves. The entries of 16 to 24
+  November, which an edit of 26 November had dropped from this log, were put back as
+  they stood, and the log set in date order.

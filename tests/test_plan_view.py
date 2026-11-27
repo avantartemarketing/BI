@@ -218,7 +218,7 @@ def test_launch():
     V.finish(pg, ov)
     plan = pg["plan"]
     rows = {r["moment"]: r for r in plan["rows"]}
-    assert list(rows) == ["Early access", "Announce", "Sustain", "Last chance", "Baseline", "Paid"] and pg["method"] == "plan"
+    assert list(rows) == ["Early access", "Announce", "Sustain", "Last chance", "Paid"] and pg["method"] == "plan"   # the baseline is no row: it is shared over the phases
     organic = [r for m, r in rows.items() if m != "Paid"]
     close_to(sum(r["in"] for r in organic), 66.0, 0.05)                                # what the page counts outside paid, to the unit
     close_to(sum(r["expected"] for r in organic), sum(v["plan_total"] for v in g.values()), 0.1)
@@ -228,8 +228,21 @@ def test_launch():
             for k in ("expected", "in", "toCome"):
                 close_to(sum(x[k] for x in r["pieces"]), r[k], 0.06)                   # a row's pieces add up to the row
     # the credit: the draw booked 48 email units on 5 September, a day with nothing going out, but people entered on
-    # the announce and the day after. Read by the day they entered, they are the announce's and not the baseline's.
-    assert rows["Announce"]["in"] > 55 and rows["Baseline"]["in"] < 10
+    # the announce and the day after. Read by the day they entered, they are the announce's pieces' and not the line
+    # for what no one piece brought. That line is each phase's last, by the channel it came on, and the lines' plan
+    # figures are the baseline's, shared over the phases
+    tails = {m: [x for x in rows[m]["pieces"] if x.get("tail")] for m in V.PHASES}
+    assert all(len(t) <= 1 and (not t or (t[0] is rows[m]["pieces"][-1] and t[0]["name"] == V.TAIL)) for m, t in tails.items())
+    assert rows["Announce"]["in"] > 55 and tails["Announce"][0]["in"] < 10
+    close_to(sum(t[0]["expected"] for t in tails.values() if t), ov["work"]["level"] * float(ov["work"]["base"].sum()), 0.05)
+    for t in (t[0] for t in tails.values() if t):
+        for k in ("expected", "in", "toCome"):
+            close_to(sum(y[k] for y in t["by"]), t[k], 0.06)
+    # from the announce on the baseline is the announce's and the later phases', by what each has put out since; early
+    # access, which has no piece here, keeps the days before the announce alone
+    before = np.asarray(ov["work"]["t"]) < 0
+    close_to(tails["Early access"][0]["expected"], ov["work"]["level"] * float(ov["work"]["base"][before].sum()), 0.05)
+    assert tails["Announce"][0]["expected"] > 5 * (tails["Sustain"][0]["expected"] + tails["Last chance"][0]["expected"]) > 0
     names = [x["name"] for x in rows["Announce"]["pieces"]]
     assert names[:2] == ["Email to 100k people", "Email to 1,000 (Past Purchasers)"] and "Artist post" in names and "Avant Arte post" in names
     wide, narrow = rows["Announce"]["pieces"][0], rows["Announce"]["pieces"][1]
@@ -246,10 +259,11 @@ def test_launch():
     # each email and post carries its day in full beside the words the card shows, and a phase lists its own in
     # date order, so the card can list them all together by that day; the baseline's lines are no day's
     for m in V.PHASES:
-        days = [x["date"] for x in rows[m]["pieces"]]
-        assert days == sorted(days) and all(V._day_word(d) == x["when"] for d, x in zip(days, rows[m]["pieces"])), m
-    assert [x["date"] for x in rows["Sustain"]["pieces"]] == ["2026-09-10", "2026-09-15"] and rows["Last chance"]["pieces"][0]["date"] == "2026-09-24"
-    assert all("date" not in x for x in rows["Baseline"]["pieces"])
+        own = [x for x in rows[m]["pieces"] if not x.get("tail")]
+        days = [x["date"] for x in own]
+        assert days == sorted(days) and all(V._day_word(d) == x["when"] for d, x in zip(days, own)), m
+    assert [x["date"] for x in rows["Sustain"]["pieces"] if not x.get("tail")] == ["2026-09-10", "2026-09-15"] and rows["Last chance"]["pieces"][0]["date"] == "2026-09-24"
+    assert all("date" not in t[0] for t in tails.values() if t)
     # the page's headline figures follow the plan
     close_to(plan["lands"], sum(r["lands"] for r in plan["rows"]), 0.05)
     assert pg["hero"]["projected"] == round(min(plan["lands"], 200.0)) and plan["state"] == "live"

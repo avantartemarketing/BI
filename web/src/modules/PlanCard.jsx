@@ -6,9 +6,10 @@
  * itself, and its figures are in the readout a bar shows when it is hovered
  * or touched. With nothing picked the box lists every email and post,
  * the one furthest behind its plan first (in date order before anything has
- * gone out); pick a phase and it lists that phase's alone, the baseline by
- * channel, or paid by what is spent and still to spend. Pick it again to go
- * back. The box keeps the height of the bars and scrolls inside, fading at
+ * gone out); pick a phase and it lists that phase's alone, its last line what
+ * came by search, a typed address or days later (the baseline, shared over the
+ * phases: docs/PLAN_MODEL.md 6), or paid by what is spent and still to spend.
+ * Pick it again to go back. The box keeps the height of the bars and scrolls inside, fading at
  * its foot while there is more below. The figures are etl/plan_view.py's; on
  * a timed launch gathering signups they are etl/tl_plan.py's, in signups to
  * the sales open, with paid read from the spend still to come. */
@@ -16,6 +17,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Card, Head } from "../ui.jsx";
 import { COL, sw } from "../charts.jsx";
 import { fmt } from "../format.mjs";
+import { ownRecord } from "../planCheck.mjs";
 
 const n = (v) => fmt(Math.round(v));
 /* whole units that add up to `total` (the rounded sum when none is given): the largest remainders take the units left
@@ -35,7 +37,7 @@ function fit(vals, total) {
 /* The rows and their pieces in whole units that add up: the rows' actuals to what is in so far, their forecasts
  * (in the readouts) to the card's headline, and each row's pieces to the row, figure by figure. The actuals are
  * shared out first and what is still to come out of what the headline leaves, so a forecast is its actuals and its
- * still to come and never below its actuals (26 November 2026: the forecast was shared out first and the actuals
+ * still to come and never below its actuals (27 November 2026: the forecast was shared out first and the actuals
  * held under it, which could leave a row's pieces one short of the row once the actuals were printed). */
 export function planModel(p) {
   const start = p.state === "start";
@@ -58,28 +60,6 @@ export function planModel(p) {
   return { start, rows, top };
 }
 const pct = (v, top) => `${Math.min(Math.max(v / top, 0), 1) * 100}%`;
-
-/* The plan check, in words: whether the plan as written is in line with the
- * target, on the launches that sold nearest it at a similar price, and the
- * artist's own earlier launches beside it. The target says how much the work
- * is wanted; this says only whether the comms are enough for a launch that
- * size (etl/plan_view.py override). Nothing on a plan sized the older way. */
-export function planCheck(p) {
-  if (!p || !p.against) return null;
-  const lo = Array.isArray(p.range) ? n(p.range[0]) : null, hi = Array.isArray(p.range) ? n(p.range[1]) : null;
-  const cv = p.of === "conversions";  // ... read in signup conversions (web/src/conversions.mjs)
-  const su = p.of === "signups" || cv;      // a timed launch before its window: the plan is for signups, and so is the target
-  const span = lo !== null ? ` Similar launches would have brought ${lo} to ${hi} with ${su ? "this plan" : "these comms"}.` : "";
-  const gap = Math.round(p.notCovered || 0);
-  const tg = `${n(p.target)} ${cv ? "conversion " : su ? "signup " : ""}target`;
-  const lead = p.against === "in line" ? `The plan as written is in line with the ${tg}.`
-    : p.against === "short" ? `The plan as written is ${n(gap)} short of the ${tg}: lighter than launches that ${su ? "drew" : "sold"} this many.`
-      : `The plan as written is heavier than launches that ${su ? "drew" : "sold"} ${n(p.target)} needed.`;
-  const title = (name) => { const b = String(name || "").split(" \u00b7 "); return b.length > 2 ? `${b[1]} (${b[b.length - 1]})` : name; };
-  const own = (p.ownRecord || []).filter((r) => r && r.edition > 0 && r.sold !== null && r.sold !== undefined);
-  const record = own.length ? "Earlier launches: " + own.map((r) => `${title(r.name)} sold ${n(r.sold)} of ${n(r.edition)}${r.cover ? `, entries ${r.cover.toFixed(1)} times the edition` : ""}`).join("; ") + "." : null;
-  return { kind: p.against, lead, span, record, similar: (p.similar || []).map((x) => String(x.name || "").split(" \u00b7 ")[0]) };
-}
 
 /* one bar: the plan in grey, as long as the plan and ending at its tick, and on it what is in so far and what is
  * still to come. The grey left showing is what the plan is short by; a bar that passes the tick is over it.
@@ -123,15 +103,17 @@ export default function PlanCard({ snap }) {
   if (!p || !Array.isArray(p.rows)) return null;
   const m = planModel(p);
   const s = m.rows.find((r) => r.key === sel);
-  const every = m.rows.filter((r) => r.key !== "Baseline" && r.key !== "Paid").flatMap((r) => r.pieces);
+  // every email and post: a phase's last line (what no one piece's link brought, `tail`) is no piece, and is
+  // listed inside its phase alone
+  const every = m.rows.filter((r) => r.key !== "Paid").flatMap((r) => r.pieces).filter((x) => !x.tail);
   const gaps = every.some((x) => x.lands !== x.exp);
   const list = s ? s.pieces : gaps ? every.slice().sort((a, b) => (a.lands - a.exp) - (b.lands - b.exp)) : every;
   const ptop = Math.max(1, ...list.map((x) => Math.max(x.exp, x.lands))) * 1.06;
   const dated = s ? s.dates.length > 1 : true;
   const short = Math.round(p.target) - Math.round(p.lands);
   const likely = Array.isArray(p.range) ? `likely ${n(p.range[0])} to ${n(p.range[1])}` : undefined;
-  const chk = planCheck(p);
-  /* A bar's readout: the forecast and what it is made of, which the row itself no longer prints (26 November
+  const rec = ownRecord(p);   // the plan check itself is a warning at the top of the page, and only when the plan is too small (web/src/planCheck.mjs)
+  /* A bar's readout: the forecast and what it is made of, which the row itself no longer prints (27 November
    * 2026: the figure beside a bar is its actuals). It starts at the bar's left edge in the left half of the
    * card and ends at its right edge in the right half (the effect above places it). Not before anything has
    * gone out, when the forecast is the plan. An empty title keeps the row's own hint off the bar. */
@@ -151,12 +133,7 @@ export default function PlanCard({ snap }) {
       <Head v={n(p.lands)} u={snap.type === "TL" ? `${p.of === "conversions" ? "conversions" : "signups"} at the open` : "at the close"} tip={(p.notes || []).join(" ")}
         deltas={[short > 0 ? { t: `${n(short)} short of the ${n(p.target)} target`, dir: "dn" } : { t: `reaches the ${n(p.target)} target`, dir: "up" }]}
         aside={m.start ? likely : `day ${snap.day} of ${snap.of}`} asideTip={(p.notes || []).join(" ")} />
-      {chk && (
-        <div className={`plan-chk ${chk.kind === "short" ? "dn" : "ok"}`} title={chk.similar.length ? `Read against ${[...new Set(chk.similar)].join(", ")}` : undefined}>
-          <b>{chk.lead}</b>{chk.span}
-          {chk.record && <span className="rec">{chk.record}</span>}
-        </div>
-      )}
+      {rec && <div className="plan-rec">{rec}</div>}
       <div className="pv-split" ref={split}>
         <div className="plan-rows">
           <div className="plan-r head"><span /><span /><span>Plan</span>{!m.start && <span>Actuals</span>}</div>
@@ -181,7 +158,7 @@ export default function PlanCard({ snap }) {
             <div className={`pv-list${more ? " more" : ""}`} ref={box} onScroll={() => { check(); if (tip) setTip(null); }} tabIndex={0}>
               {list.map((x, i) => (
                 <div className="pv-l" key={`${i}-${x.when}-${x.name}`}>
-                  <span className="nm" title={x.name}>{dated && x.when && <em>{x.when}</em>}{x.name}</span>
+                  <span className="nm" title={x.tip || x.name}>{dated && x.when && <em>{x.when}</em>}{x.name}</span>
                   <Bar x={x} top={ptop} over={over(x, dated && x.when ? `${x.when} ${x.name}` : x.name)} />
                   <span className="pl">{n(x.exp)}</span>
                   {!m.start && <span className="ac">{n(x.inn)}</span>}
