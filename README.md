@@ -634,16 +634,16 @@ A second reading of a draw launch, by the comms that go out, built beside the ca
 and replacing nothing: `docs/PLAN_MODEL.md` has what it is, what the history shows, how it
 scores against the clock and how the page reads it.
 
-**On the dashboard** it sits behind a switch. A live draw launch's page has **Targets from**
-at the right of its chips: **Time** is the clock's page, unchanged and the default; **Plan**
-lays the plan-based view over it (the build's `variants.plan`, from `etl/plan_view.py`):
-a plan card first (a bar per phase with the emails and posts inside), and every other card
-read against the plan's path instead of the clock's curve. The switch is only on a launch
-the build has read both ways: a draw in its window with targets set, a campaign code and a
-plan on file in Notion. A launch selling two lines of work has it on its combined page
-(All lines), not on a line's own. The build's `plan views:` line, which the refresh's log
-carries, names the launches that have the view and says why a live launch has none. The
-choice is kept per browser.
+**On the dashboard** it sits behind a switch. A live draw launch's page has **Targets from** at
+the right of its chips: **Time** is the clock's page, unchanged and the default; **Plan** lays
+the plan-based view over it (the build's `variants.plan`, from `etl/plan_view.py`): the
+trajectory first, as on the clock's page, a plan card under it (a bar per phase with the emails
+and posts inside), and every card read against the plan's path instead of the clock's curve. The
+switch is only on a launch the build has read both ways: a draw in its window with targets set,
+a campaign code and a plan on file in Notion. A launch selling two lines of work has it on its
+combined page (All lines), not on a line's own. The build's `plan views:` line, which the
+refresh's log carries, names the launches that have the view and says why a live launch has
+none. The choice is kept per browser.
 
 Its two feeds are pulled in the hourly refresh (`server/sheets.js`), with the tokens the
 dashboard already uses, and can be run by hand:

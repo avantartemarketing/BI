@@ -215,11 +215,12 @@ cards do; `web/src/vocab.mjs` gives each card its words.
 
 **The plan-based view** (24 November 2026, docs/PLAN_MODEL.md 6b, `etl/tl_plan.py`). A launch
 gathering signups with a comms plan on file has the LE page's Targets from switch. On Plan the
-signups outside paid follow the plan's emails and posts, and paid follows the spend still to
-come at what a signup will cost, in place of the pace; the plan card and the suggested actions
-lead the page, and the sell-through forecast reads the plan's signups at the open. That view is
-built as the feed attributes its channels, so the Direct switch reads Channel while it is on.
-The clock's page above is the default and is unchanged; the window has no such view.
+signups outside paid follow the plan's emails and posts, and paid follows the spend still to come at
+what a signup will cost, in place of the pace; the signup trajectory leads the page, as on the
+clock's, with the plan card and the suggested actions under it (26 November 2026; the two led the
+page until then), and the sell-through forecast reads the plan's signups at the open. That view is
+built as the feed attributes its channels, so the Direct switch reads Channel while it is on. The
+clock's page above is the default and is unchanged; the window has no such view.
 
 Sessions and signup rates by channel, the email sends and their signups, and the paid signups'
 cost are in the funnel card's rungs and popups, as they are on an LE page.

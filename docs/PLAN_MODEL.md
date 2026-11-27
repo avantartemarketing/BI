@@ -484,6 +484,9 @@ beside it. A box beside the bars, the same height and scrolling inside, lists th
 every email and post with the one furthest behind its plan first (in date order before
 anything has gone out), or the phase picked, with its line for search, direct and later
 arrivals last, or paid by what is spent and still to spend.
+The card sits under the trajectory, which leads this view as it leads the clock's page, and
+the suggested actions sit under the card (`web/src/Overview.jsx`, from 27 November 2026;
+the card led the page until then).
 
 **The plan check on the page (from 26 November 2026).** The page says nothing while the
 plan is enough. A plan that reads short is a warning in the strip at the top of the
@@ -610,8 +613,11 @@ page needs the timed launches' feeds, which a checkout does not carry.
   the usual audience for its kind is assumed, and the view says so on the line.
 - **Units per piece are shared out, not measured.** See section 6. A price is what a day
   with that piece usually brings, and a piece's "brought" is its share of its channel's
-  units on the days it was felt; neither is proof of what the piece alone caused. Units
-  that arrive after a piece is no longer felt are the baseline's.
+  units on the days it was felt, with its share of what came those days by search, a typed
+  address or another site; neither is proof of what the piece alone caused. Units that
+  arrive after a piece is no longer felt are shared over the phases, by what each has put
+  out since the announce, and are each phase's last line: which piece brought them the
+  feeds cannot say.
 - **Same-day pieces share credit.** See 4.3.
 - **Launches the matching misses.** A launch has no plan here when no Notion campaign
   answers to its code or its artist in its days, and no emails when neither its code nor
@@ -695,6 +701,57 @@ page needs the timed launches' feeds, which a checkout does not carry.
 
 ## 9. Log
 
+- **16 November 2026.** The brief (section 1). The first study on 64 launches, then the
+  feeds, the price list and the back-test, on 66. The strength kept at 0.5.
+- **16 November 2026, later.** The owner chose one forecast built only from the plan, no
+  clock in the view, then a page mockup (the plan card as bars with a box of the pieces
+  beside them), then asked for it to be built behind a switch with the clock's page as the
+  default. With it: an email felt for four more days and a post for one (4.3); what came
+  in credited to the day people entered, after the mockup showed a draw's batched orders
+  landing on the baseline; the two feeds in the hourly refresh; `etl/plan_view.py`.
+- **16 November 2026, evening.** The owner asked why Ai Weiwei's launch had no switch. Two
+  reasons, both fixed: a launch selling lines of work was left out of the first build (it
+  is now read on its combined page), and its code carries the year in full
+  (`AiWeiwei_Lego_2026`), which the reading of an email's name did not take, so its six
+  sends were on no launch. With it: the code found through the Notion campaign when the
+  page has none, the reason a launch has no view on the build's closing line, and the
+  target told apart from the edition (the trajectory's level line, the ceiling, the
+  shares on the Sell-through at close card), which that launch was the first to show.
+  The same change gave Ferrari Sheppard's and Harland Miller's launches the view, through
+  their Notion campaigns, and showed a third way a code is written: Ferrari Sheppard's
+  ends in no year, so its four sends were missing from its plan card for one refresh
+  until a send with no code was matched on the code written out.
+- **17 November 2026.** The owner asked why only 66 launches were read, and then whether the
+  Notion plan did not go back further than May 2024. It does, to September 2023: the pull
+  had kept only campaigns with a code, and codes begin in mid-2024. The pull now keeps
+  every campaign, a launch finds its plan by its artist and days where there is no code,
+  and its emails through the plan where their names carry none; the back-test's launches
+  take their codes as the build does. 91 launches are read in place of 66. Alongside: the
+  level test (section 8), asked for as "test a blend" and a plan for artists with no past
+  release.
+- **20 November 2026.** The owner noted that the suggestions almost always say to email
+  everyone when a launch is behind, with no thought for what else the list is getting or
+  what the release is worth. The email history was read for a cost and shows none in the
+  short run (a send does no worse in a busy week or a day after another, and launches in
+  busy weeks were no smaller, 74 launches), so an earlier reading of 8% fewer clicks an
+  extra email in the week before was withdrawn: it was the long decline in response
+  showing up. The team's own frequency test (four groups, December 2025 to March 2026)
+  read the same way: a quarter fewer emails, 6% more clicks on the same email two months
+  in, fewer clicks overall. The cost is therefore held as a rule the team sets and not a
+  price the model works out: `etl/list_load.py`, a cap on general sends in a week and a
+  scale on the list's four-week load, read across every launch (docs/METHODOLOGY.md 7d).
+- **23 November 2026.** The owner asked whether the approach could be applied to timed
+  launches. Read on the launches closed so far before anything was built (section 8,
+  "Timed launches"): the comms explain the pattern of a timed launch's signups and little
+  of their number, and the paid budget is the activity that does before the open; in the
+  window its part did not hold from one day's feeds to the next. `etl/analysis/tl_plan_backtest.py`
+  holds the four readings, and with `--write` the price list a plan-based view would read.
+- **24 November 2026.** The owner said go on a mockup of a timed launch's plan-based view
+  (Marina Abramović's Energy Hat, six days into twenty-two), and it went live: section 6b.
+  On the way the paid cost chart was found drawing its line on the ROI's scale, off the
+  card and across the page, and was given its own. The same day the owner asked why a
+  last chance email stood twice among a launch's suggested actions: it was one email at
+  two audiences, and is now one row that opens to the other.
 - **25 November 2026.** The owner asked why Harland Miller's launch read 36 at the close
   against a target of 100 on its announce day, and worked through the model with it. Agreed
   and built, and live the same day once the owner had seen the before and after of the
@@ -748,4 +805,11 @@ page needs the timed launches' feeds, which a checkout does not carry.
   card was filing nearly twice the baseline the plan expects, mostly search and direct
   arrivals on the days comms went out. Shown as a before and after of Ferrari Sheppard's
   card (Baseline 23 planned and 53 landing; shared out, Announce reads 86 and 113 in place
-  of 64 and 70). Awaiting the owner's go-ahead: built on a working branch, not live.
+  of 64 and 70), and live the same day on the owner's go-ahead. With it went the change
+  the owner had asked for the day before and seen as a before and after of Ferrari
+  Sheppard's and Marina Abramović's pages: the trajectory back at the top of this view.
+  The page opens on the trajectory, as the clock's does, with the plan card and the
+  suggested actions under it, on a draw launch and on a timed launch gathering signups
+  alike. That is a change of order alone: no figure moves. The entries of 16 to 24
+  November, which an edit of 26 November had dropped from this log, were put back as
+  they stood, and the log set in date order.
