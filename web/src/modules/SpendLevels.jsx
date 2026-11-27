@@ -8,8 +8,14 @@
  * turns out dear (the 25th percentile of the profit), not the point
  * estimate's. A dotted mark shows the campaign's biggest day so far:
  * beyond it the price is an extrapolation. No table and no key. The head is
- * the figure alone, "a day": today's level and the aim are marked on the
- * plot, and the working is on the figure's hover (13 November 2026).
+ * two figures, each under its own small label: the last full day's spend
+ * ("Yesterday") and the recommended daily budget ("Recommended"), an arrow
+ * between them and the change as a share after the second (27 November 2026,
+ * the owner's pick of four shown; from 13 November the head was the
+ * recommended figure alone, "a day", which did not say what it was). The
+ * figure the build calls today's is the last full day's, so the card names
+ * the day (spentDay, noLevels.mjs). That spend and the aim are marked on the
+ * plot, and the working is on the head's hover.
  *
  * When paid stops there is no curve: the stop, its reason and two rows.
  * When the build has no level to give (no entries in the last three days,
@@ -20,11 +26,11 @@
  * A snapshot built before the range was carried draws the card as it was
  * (the point estimate's peak, the elasticity's band, the four-row table). */
 import React from "react";
-import { Card, Head, Loz, useBoxSize } from "../ui.jsx";
+import { Card, Loz, useBoxSize } from "../ui.jsx";
 import { LineChart, Keys, niceAxis, kfmt, COL, lk, sw } from "../charts.jsx";
 import { line, lineAt } from "../chartLine.mjs";
 import { fmt, fmtPct, fmtMoney, MINUS } from "../format.mjs";
-import { noLevels } from "./noLevels.mjs";
+import { noLevels, spentDay } from "./noLevels.mjs";
 import "../cards.css";
 
 const has = (v) => v !== null && v !== undefined && Number.isFinite(v);
@@ -34,6 +40,7 @@ const kmoney = (v) => (has(v) && v > 0 ? (v >= 1000 ? `€${(v / 1000).toLocaleS
 // the same for a figure that can be negative (a profit)
 const kprofit = (v) => (has(v) ? (Math.abs(v) >= 1000 ? `${v < 0 ? MINUS : ""}€${(Math.abs(v) / 1000).toLocaleString("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k` : `${v < 0 ? MINUS : ""}${money(Math.abs(v))}`) : "–");
 const BAND_BORDER = "#dfe2f8";
+const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
 /* "1 in 14" for a probability, "under 1 in 50" when it is tiny */
 function oneIn(p) {
   if (!has(p) || p <= 0) return "under 1 in 50";
@@ -96,9 +103,40 @@ function Marks({ W, y, x, band, drop, dots, ring, labels, layer }) {
   );
 }
 
+/* the arrow between the head's two figures, as a Suggested actions row draws it (PlanChanges.jsx) */
+const To = () => <svg className="to" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4" /></svg>;
+
+/* The head: what was spent on the last full day and what is recommended next,
+ * each under its own small label, the change as a share after the second and
+ * the card's pill at the end of the line. `was` and `next` are daily spends: a
+ * `next` of nothing is a stop, one within half a per cent of `was` no change.
+ * Without `next` the card has no recommendation and the head is one figure,
+ * `v` as the card words it. */
+function Pair({ label, was, next, v, aside, tip, children }) {
+  const one = next === undefined;
+  const dir = one ? null : !(next > 0) ? "stop" : !(was > 0) ? "start" : Math.abs(next - was) / was < 0.005 ? "hold" : next < was ? "cut" : "raise";
+  const pct = dir === "raise" || dir === "cut" ? Math.round(Math.abs(next / was - 1) * 100) : null;
+  return (
+    <div className="hn two" title={tip}>
+      <span className="hp"><span className="hl">{label}</span><span className="hv">{v ?? (was > 0 ? money(was) : "Nothing")}</span></span>
+      {!one && <To />}
+      {!one && (
+        <span className="hp">
+          <span className="hl">Recommended</span>
+          <span className="hv">{dir === "stop" ? "Stop" : dir === "hold" ? "No change" : money(next)}{pct ? <span className="hd">{dir === "raise" ? "+" : MINUS}{pct}%</span> : null}</span>
+        </span>
+      )}
+      {aside ? <span className="hs">{aside}</span> : null}
+      {children ? <span className="hr">{children}</span> : null}
+    </div>
+  );
+}
+
 export default function SpendLevels({ snap }) {
   const [ref, boxW] = useBoxSize();
   const lv = snap.paid && snap.paid.levels;
+  // the day the card's spend was read on: the last full day, yesterday on a page built today
+  const day = spentDay(snap, !!lv && lv.today > 0);
   const title = "Spend levels";
   const curve = lv && Array.isArray(lv.curve) ? lv.curve.filter((p) => p && has(p.daily) && has(p.profit)) : [];
   // paid stops (the level is nothing): no curve to draw, the stop and its reason instead
@@ -108,9 +146,9 @@ export default function SpendLevels({ snap }) {
     const none = noLevels(snap);
     return (
       <Card title={title} aria={title}>
-        <Head v={none.v} u={none.u} aside={none.aside}>
+        <Pair label={none.l} v={none.v} aside={none.aside}>
           {none.loz && <Loz kind={none.kind} tip={none.why}>{none.loz}</Loz>}
-        </Head>
+        </Pair>
         {!none.loz && <div className="nbox">{none.why}</div>}
       </Card>
     );
@@ -119,17 +157,12 @@ export default function SpendLevels({ snap }) {
   const rows = Array.isArray(lv.rows) ? lv.rows.filter((r) => r && has(r.daily)) : [];
   const rec = lv.recommended, today = has(lv.today) ? lv.today : null;
 
-  // ----- the head: the recommended level against today's -----
-  const cp = (snap.closeForecast && snap.closeForecast.paid) || null;
-  const change = cp && has(cp.change) ? cp.change : today !== null && today > 0 ? (rec - today) / today : null;
-  const dir = cp && cp.direction ? cp.direction : rec === 0 ? "stop" : today === null || today === 0 ? "start" : change !== null && Math.abs(change) < 0.005 ? "hold" : change < 0 ? "cut" : "raise";
-  const chgWord = dir === "hold" ? "held" : dir === "stop" ? "a stop" : dir === "start" ? "from nothing" : change !== null ? `a ${Math.round(Math.abs(change) * 100)}% ${dir}` : dir;
-  const aside = today !== null ? `today ${money(today)} · ${chgWord}` : "";
+  // ----- the working behind the head, on its hover -----
   const band = Array.isArray(lv.elasticityBand) && lv.elasticityBand.length === 2 ? lv.elasticityBand : null;
   const working = [
     title,
     `Recommended ${money(rec)} a day: where the next euro returns 1.0`,
-    ...(today !== null ? [`Today ${money(today)} a day${has(lv.marginalToday) ? ` · the next euro returns ${fmt(lv.marginalToday, 2)}` : ""}`] : []),
+    ...(today !== null ? [`${day.label} ${money(today)} a day${has(lv.marginalToday) ? ` · the next euro returns ${fmt(lv.marginalToday, 2)}` : ""}`] : []),
     has(lv.sellout) ? `Sells out at ${money(lv.sellout)} a day` : "No daily spend sells the edition out",
     ...(has(lv.ppu) ? [`AA's profit on a paid unit ${fmtMoney(lv.ppu)}${has(lv.cannibalisation) ? `, net of ${fmtPct(lv.cannibalisation, 0)} cannibalisation` : ""}`] : []),
     ...(has(lv.elasticity) ? [`Elasticity ${fmt(lv.elasticity, 2)}${band ? ` (${fmt(band[0], 2)} to ${fmt(band[1], 2)})` : ""}`] : []),
@@ -139,20 +172,20 @@ export default function SpendLevels({ snap }) {
 
   if (stop) {
     const [word, why] = STOP[lv.stop] || STOP.marginal;
-    const next = has(lv.marginalToday) && today !== null && today > 0 ? ` At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}.` : "";
+    const next = has(lv.marginalToday) && today !== null && today > 0 ? ` At ${day.poss} ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}.` : "";
     return (
       <Card title={title} aria={title}>
-        <Head v={money(0)} u="a day recommended" aside={today !== null && today > 0 ? `today ${money(today)} · a stop` : ""} asideTip={working}>
+        <Pair label={day.label} was={today} next={0} tip={working}>
           <Loz kind="warm" tip={why}>{word}</Loz>
-        </Head>
+        </Pair>
         <div className="nbox">{why}{next}</div>
-        <LevelsTable rows={rows} />
+        <LevelsTable rows={rows} day={day} />
       </Card>
     );
   }
 
   // the card read under uncertainty, where the snapshot carries the range
-  if (has(lv.lossAtRecommended) && curve.every((p) => has(p.median))) return <Cautious lv={lv} curve={curve} title={title} boxRef={ref} W={W} />;
+  if (has(lv.lossAtRecommended) && curve.every((p) => has(p.median))) return <Cautious lv={lv} curve={curve} title={title} boxRef={ref} W={W} day={day} />;
 
   // ----- the scale -----
   // the axis spans the whole curve, the band included, so a profit that goes
@@ -194,20 +227,20 @@ export default function SpendLevels({ snap }) {
     const right = x(todayPt.i) < W * 0.7;
     const lx = x(todayPt.i) + (right ? 28 : -28), ly = y(todayPt.v) + 16;
     ring = { i: todayPt.i, v: todayPt.v, lead: `M${(x(todayPt.i) + (right ? 4 : -4)).toFixed(1)} ${(y(todayPt.v) + 5).toFixed(1)}L${(lx + (right ? -3 : 3)).toFixed(1)} ${(ly - 3).toFixed(1)}` };
-    labels.push({ t: `Today ${money(today)}`, s: { left: P(lx, W), top: P(ly - 5, H), transform: right ? "none" : "translate(-100%,0)", color: COL.MUTED } });
+    labels.push({ t: `${day.label} ${money(today)}`, s: { left: P(lx, W), top: P(ly - 5, H), transform: right ? "none" : "translate(-100%,0)", color: COL.MUTED } });
   }
   const legend = [
     { n: "Profit from spend to come", k: lk(COL.IND) },
     ...(banded ? [{ n: "Where the peak may sit", k: { ...sw(COL.PALE), width: 10, height: 10, flex: "0 0 10px", border: "1px solid #dfe2f8" }, tip: band ? `The same profit with the elasticity at ${fmt(band[0], 2)} and ${fmt(band[1], 2)}` : undefined }] : []),
-    ...(ring ? [{ n: "Today", k: { width: 8, height: 8, flex: "0 0 8px", borderRadius: "50%", border: `2px solid ${COL.INK}` } }] : []),
+    ...(ring ? [{ n: day.label, k: { width: 8, height: 8, flex: "0 0 8px", borderRadius: "50%", border: `2px solid ${COL.INK}` } }] : []),
   ];
   const rowAt = (i) => curve[i];
   const peakWord = recPt ? `peaks at ${money(rec)} a day` : "";
   return (
     <Card title={title} aria={title}>
-      <Head v={money(rec)} u="a day recommended" aside={aside} asideTip={working}>
-        <Loz kind="ind" tip={has(lv.marginalToday) && today !== null ? `At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}; at ${money(rec)} it returns 1.0` : "Where the next euro of spend returns what it costs"}>Next euro returns 1.0</Loz>
-      </Head>
+      <Pair label={day.label} was={today} next={rec} tip={working}>
+        <Loz kind="ind" tip={has(lv.marginalToday) && today !== null ? `At ${day.poss} ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}; at ${money(rec)} it returns 1.0` : "Where the next euro of spend returns what it costs"}>Next euro returns 1.0</Loz>
+      </Pair>
       <div ref={ref} style={{ position: "relative" }}>
         <Marks W={W} layer="under" band={bandPath} x={x} y={y} dots={[]} labels={[]} />
         <div style={{ position: "relative" }}>
@@ -224,7 +257,7 @@ export default function SpendLevels({ snap }) {
         </div>
       </div>
       <Keys legend={legend} />
-      <LevelsTable rows={rows} />
+      <LevelsTable rows={rows} day={day} />
     </Card>
   );
 }
@@ -254,40 +287,40 @@ function CautiousMarks({ W, x, y, band, zero, drop, dot, ring, tested, pace, lab
   );
 }
 
-/* The card read under uncertainty: tomorrow's budget, the level it is
- * heading for, the chance that level loses money, and the profit to come
- * with its likely range. */
-function Cautious({ lv, curve, title, boxRef, W }) {
+/* The card read under uncertainty: the last full day's spend and tomorrow's
+ * budget, the level it is heading for, the chance that level loses money, and
+ * the profit to come with its likely range. */
+function Cautious({ lv, curve, title, boxRef, W, day }) {
   const TT = 18, H = HC;
   const rec = lv.recommended, today = has(lv.today) ? lv.today : null, tomorrow = has(lv.tomorrow) ? lv.tomorrow : rec;
   const lossP = lv.lossAtRecommended;
   const pr = lv.profitAtRecommended || {};
 
-  // ----- the head: tomorrow's budget alone (13 November 2026); today's level
-  // and the aim are marked on the plot, the working is on the figure's hover -----
+  // ----- the head: the last full day's spend and tomorrow's budget, each under its label (27 November 2026);
+  // that spend and the aim are marked on the plot, the working is on the head's hover -----
   const riskKind = !has(lossP) ? undefined : lossP <= 0.1 ? "good" : lossP <= 0.25 ? "amber" : "warm";
   // a timed launch gathering signups (etl/tl.py spend_levels): the spend buys signups to the sales open, an open
   // edition has no sell-out, the worth of a signup is the unsure thing, and the budget's own pace is marked
   const su = lv.unit === "signup";
   const working = su ? [
     title,
-    `Tomorrow ${money(tomorrow)} a day: today's ${money(today)} moved by at most 30%, toward ${money(rec)}`,
+    `Recommended ${money(tomorrow)} a day: ${day.poss} ${money(today)} moved by at most 30%, toward ${money(rec)}`,
     `Aim ${money(rec)} a day: the spend that earns the most if the launch turns out dear`,
     `At that level: ${kprofit(lv.spendToCome)} to spend over ${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"} to the open, profit ${kprofit(pr.median)} (${kprofit(pr.p10)} to ${kprofit(pr.p90)})${has(lv.unitsAtRecommended) ? `, ${fmt(lv.unitsAtRecommended)} paid signups at the open${has(lv.targetSignups) ? ` of the ${fmt(lv.targetSignups)} targeted` : ""}` : ""}`,
-    ...(has(lv.signupsAtToday) ? [`Today's ${money(today)} held to the open brings ${fmt(lv.signupsAtToday)} paid signups`] : []),
+    ...(has(lv.signupsAtToday) ? [`${cap(day.poss)} ${money(today)} held to the open brings ${fmt(lv.signupsAtToday)} paid signups`] : []),
     ...(has(lv.budgetPace) ? [`Budget's pace ${money(lv.budgetPace)} a day: the ${kprofit(lv.budgetLeft)} left, spent evenly to the open${has(lv.signupsAtBudget) ? `, ${fmt(lv.signupsAtBudget)} paid signups` : ""}${has(lv.lossAtBudget) ? `, ${oneIn(lv.lossAtBudget)} chance of a loss` : ""}`] : []),
     ...(has(lv.pointLevel) ? [`The next euro returns 1.0 at ${money(lv.pointLevel)} a day${has(lv.lossAtPoint) ? `, ${oneIn(lv.lossAtPoint)} chance of a loss` : ""}`] : []),
-    ...(today !== null && has(lv.marginalToday) ? [`At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}`] : []),
+    ...(today !== null && has(lv.marginalToday) ? [`At ${day.poss} ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}`] : []),
     `The range is where 8 in 10 runs land, allowing for the recent price${has(lv.entriesWindow) ? ` (${fmt(lv.entriesWindow, 1)} signups over three days)` : ""}, the elasticity${has(lv.elasticity) ? ` (${fmt(lv.elasticity, 2)})` : ""}, the wear-out${has(lv.wearout) ? ` (${fmt(lv.wearout, 2)})` : ""} and what a paid signup is worth. The last is the least sure: it rests on other launches' share of paid signups that order`,
     ...(has(lv.ppu) ? [`A paid signup is worth ${fmtMoney(lv.ppu)} to AA${has(lv.cannibalisation) ? `, net of ${fmtPct(lv.cannibalisation, 0)} cannibalisation` : ""}${has(lv.aaShare) ? `, and AA pays ${fmtPct(lv.aaShare, 0)} of the spend` : ""}`] : []),
     "An open edition has no sell-out to cap the spend.",
   ].join("\n") : [
     title,
-    `Tomorrow ${money(tomorrow)} a day: today's ${money(today)} moved by at most 30%, toward ${money(rec)}`,
+    `Recommended ${money(tomorrow)} a day: ${day.poss} ${money(today)} moved by at most 30%, toward ${money(rec)}`,
     `Aim ${money(rec)} a day: the spend that earns the most if the campaign turns out dear`,
     `At that level: ${kprofit(lv.spendToCome)} to spend over ${fmt(lv.daysLeft)} day${lv.daysLeft === 1 ? "" : "s"}, profit ${kprofit(pr.median)} (${kprofit(pr.p10)} to ${kprofit(pr.p90)})${has(lv.unitsAtRecommended) ? `, ${fmt(lv.unitsAtRecommended)}${has(lv.edition) ? ` of ${fmt(lv.edition)}` : ""} units at the close` : ""}`,
     ...(has(lv.pointLevel) ? [`The next euro returns 1.0 at ${money(lv.pointLevel)} a day${has(lv.lossAtPoint) ? `, ${oneIn(lv.lossAtPoint)} chance of a loss` : ""}`] : []),
-    ...(today !== null && has(lv.marginalToday) ? [`At today's ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}`] : []),
+    ...(today !== null && has(lv.marginalToday) ? [`At ${day.poss} ${money(today)} the next euro returns ${fmt(lv.marginalToday, 2)}`] : []),
     `The range is where 8 in 10 runs land, allowing for the recent price${has(lv.entriesWindow) ? ` (${fmt(lv.entriesWindow, 1)} entries over three days)` : ""}, the elasticity${has(lv.elasticity) ? ` (${fmt(lv.elasticity, 2)})` : ""}, the wear-out${has(lv.wearout) ? ` (${fmt(lv.wearout, 2)})` : ""} and the close's lift`,
     has(lv.sellout) ? `Sells out at ${money(lv.sellout)} a day` : "No daily spend sells the edition out",
     ...(has(lv.ppu) ? [`AA's profit on a paid unit ${fmtMoney(lv.ppu)}${has(lv.cannibalisation) ? `, net of ${fmtPct(lv.cannibalisation, 0)} cannibalisation` : ""}`] : []),
@@ -328,14 +361,15 @@ function Cautious({ lv, curve, title, boxRef, W }) {
     const right = x(todayPt.i) < W * 0.7;
     const lx = x(todayPt.i) + (right ? 28 : -28);
     let ly = y(todayPt.v) + 16;
+    const text = `${day.label} ${money(today)}`, tw = Math.max(72, text.length * 6.2);   // the label's width, near enough, at its 11px
     // the aim's dashed drop runs from its dot to the zero line: a label that
     // would cross it sits under the zero line instead
     if (recPt && ymin < 0) {
-      const dropX = x(recPt.i), lo = right ? lx : lx - 72, hi = right ? lx + 72 : lx;
+      const dropX = x(recPt.i), lo = right ? lx : lx - tw, hi = right ? lx + tw : lx;
       if (dropX > lo && dropX < hi && ly - 5 < y(0)) ly = y(0) + 16;
     }
     ring = { i: todayPt.i, v: todayPt.v, lead: `M${(x(todayPt.i) + (right ? 4 : -4)).toFixed(1)} ${(y(todayPt.v) + 5).toFixed(1)}L${(lx + (right ? -3 : 3)).toFixed(1)} ${(ly - 3).toFixed(1)}` };
-    labels.push({ t: `Today ${money(today)}`, s: { left: P(lx, W), top: P(ly - 5, H), transform: right ? "none" : "translate(-100%,0)", color: COL.MUTED } });
+    labels.push({ t: text, s: { left: P(lx, W), top: P(ly - 5, H), transform: right ? "none" : "translate(-100%,0)", color: COL.MUTED } });
   }
   // the budget's own pace (a timed launch): the daily spend that uses what is left of the budget by the open
   const pacePt = su && has(lv.budgetPace) && lv.budgetPace > 0 ? onCurve(curve, lv.budgetPace, "daily") : null;
@@ -355,9 +389,9 @@ function Cautious({ lv, curve, title, boxRef, W }) {
   const rowAt = (i) => curve[i];
   return (
     <Card title={title} aria={title}>
-      <Head v={money(tomorrow)} u="a day" tip={working}>
+      <Pair label={day.label} was={today} next={tomorrow} tip={working}>
         {has(lossP) && <Loz kind={riskKind} tip={`At ${money(rec)} a day the spend to come loses money in ${oneIn(lossP)} runs${has(lv.lossAtPoint) && has(lv.pointLevel) ? `; at ${money(lv.pointLevel)}, in ${oneIn(lv.lossAtPoint)}` : ""}`}><span className="dot" />{oneIn(lossP)} chance of a loss</Loz>}
-      </Head>
+      </Pair>
       <div ref={boxRef} style={{ position: "relative", marginTop: "auto" }}>
         <CautiousMarks W={W} layer="under" band={bandPath} x={x} y={y} labels={[]} />
         <div style={{ position: "relative" }}>
@@ -381,7 +415,7 @@ function Cautious({ lv, curve, title, boxRef, W }) {
 
 /* The levels, one row each: the daily spend and its word, the units at
  * close with the share of the edition, the spend to come and the ROI on it. */
-function LevelsTable({ rows }) {
+function LevelsTable({ rows, day }) {
   if (!rows.length) return null;
   return (
     <div style={{ overflowX: "auto" }}>
@@ -392,7 +426,7 @@ function LevelsTable({ rows }) {
         <tbody>
           {rows.map((r) => (
             <tr key={r.key} className={r.key === "recommended" ? "recrow" : undefined} title={has(r.marginal) ? `At ${money(r.daily)} a day the next euro returns ${fmt(r.marginal, 1)}` : undefined}>
-              <td>{money(r.daily)}<span className="lvl-w">{WORDS[r.key] || r.key}</span></td>
+              <td>{money(r.daily)}<span className="lvl-w">{r.key === "today" && day ? `${day.poss}, held` : WORDS[r.key] || r.key}</span></td>
               <td>{fmt(r.unitsAtClose)}<span className="pctw">{has(r.pct) ? fmtPct(r.pct, 0) : ""}</span></td>
               <td className={has(r.spendToCome) && r.spendToCome > 0 ? undefined : "dim"}>{kmoney(r.spendToCome)}</td>
               <td className={has(r.roi) ? undefined : "dim"}>{has(r.roi) ? fmt(r.roi, 1) : "–"}</td>

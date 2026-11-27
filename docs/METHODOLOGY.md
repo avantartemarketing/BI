@@ -741,12 +741,19 @@ draw launch with a paid block (12 November 2026): where the build has no level t
 give (the last three full days bought no entries, so there is no price of an
 entry to set one from; the release has closed or is on its last day; no targets)
 it stays and says why, read from the snapshot's own days. Until then it was left
-out of the page. With a level, the card leads with
-tomorrow's daily budget (the first paced step) and
-the chance the level it is heading for loses money (the share of runs in which the spend still to
-come earns less than AA's share of it); since 13 November 2026 the head is that
-figure alone, "a day", with today's level and the level it is heading for marked
-on the chart and the working on the figure's hover; its chart is the profit from the spend
+out of the page. With a level, the card leads with two figures, each under its own
+small label (27 November 2026): the last full day's spend, labelled "Yesterday" on a page
+built today (the day's date when the feed is behind), and the recommended daily
+budget, labelled "Recommended", which is tomorrow's (the first paced step), with the
+change between them as a share after it ("No change" for a hold, "Stop" for a stop);
+beside them the chance the level it is heading for loses money (the share of runs in
+which the spend still to come earns less than AA's share of it). The figure the build
+calls today's spend is that last full day's, today's being part of a day, so the card
+names the day, on the chart's mark as well. From 13 to 27 November 2026 the head was
+the recommended figure alone, "a day", and the owner found it did not say that it was
+the recommendation; four heads were shown and this one chosen. That spend and the
+level it is heading for are marked on the chart and the working is on the head's
+hover; its chart is the profit from the spend
 still to come at each flat daily spend, the median run with the range eight in
 ten runs land in, and a dotted mark at the campaign's biggest day so far, past
 which the price is an extrapolation. The table went with the redesign; the

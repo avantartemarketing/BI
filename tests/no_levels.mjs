@@ -2,16 +2,17 @@
  * noLevels.mjs): the card stays on the page and says why there is no
  * recommendation, read from the snapshot's own days.  node tests/no_levels.mjs */
 import assert from "node:assert";
-import { noLevels } from "../web/src/modules/noLevels.mjs";
+import { noLevels, spentDay } from "../web/src/modules/noLevels.mjs";
 
 const day = (date, spend, entries, extra = {}) => ({ date, spend, entries, ...extra });
-const base = { type: "LE", campaignName: "X_LE_26 · Enter draw", windowStart: "2026-11-03", windowEnd: "2026-11-27", day: 9, of: 24, complete: false };
+const base = { type: "LE", campaignName: "X_LE_26 · Enter draw", windowStart: "2026-11-03", windowEnd: "2026-11-27", asOf: "2026-11-12", day: 9, of: 24, complete: false };
 // the reported case: spend on days 3 to 6, the last three full days bought no entries, nothing spent since day 6
 const reported = { ...base, paid: { spendToDate: 804.86, levels: null, budget: { daysLeft: 15 }, daily: [
   day("2026-11-06", 143.21, 0), day("2026-11-07", 271.89, 5), day("2026-11-08", 284.38, 1),
   day("2026-11-09", 105.38, 0), day("2026-11-10", 0, 0), day("2026-11-11", 0, 0), day("2026-11-12", 0, 0, { partial: true })] } };
 let n = noLevels(reported);
 assert.strictEqual(n.v, "€0");
+assert.strictEqual(n.l, "Yesterday");
 assert.strictEqual(n.aside, "off since day 6");
 assert.strictEqual(n.loz, "No entries in 3 days");
 assert.match(n.why, /^No recommendation: the €105 spent in the last three days bought no entries/);
@@ -38,6 +39,7 @@ assert.strictEqual(noLevels(back).aside, "");
 // a closed release, one with no spend yet, one with no campaign, one without targets
 n = noLevels({ ...reported, complete: true });
 assert.strictEqual(n.v, "€805");
+assert.strictEqual(n.l, "Spent in all");
 assert.strictEqual(n.loz, "Closed");
 n = noLevels({ ...base, paid: { spendToDate: 0, daily: [day("2026-11-03", 0, 0)] } });
 assert.match(n.why, /^No paid spend yet/);
@@ -50,4 +52,13 @@ assert.strictEqual(noLevels(last).loz, "Last day");
 n = noLevels({ ...last, paid: { ...last.paid, budget: { daysLeft: 4 } } });
 assert.ok(n.why.length > 0 && n.loz === null);
 assert.ok(noLevels({}).why.length > 0);
+
+// the day the card's spend was read on: yesterday on a page built today, the day's date when the feed is behind,
+// the last full day that spent where paid has a level and yesterday spent nothing, and plain words without dates
+assert.deepStrictEqual(spentDay(reported), { label: "Yesterday", poss: "yesterday's" });
+assert.deepStrictEqual(spentDay({ ...reported, asOf: "2026-11-14" }), { label: "11 Nov", poss: "11 Nov's" });
+assert.deepStrictEqual(spentDay(reported, true), { label: "9 Nov", poss: "9 Nov's" });
+assert.deepStrictEqual(spentDay(dry, true), { label: "Yesterday", poss: "yesterday's" });
+assert.deepStrictEqual(spentDay({ paid: { daily: [{ spend: 5 }] } }), { label: "Last full day", poss: "the last full day's" });
+assert.strictEqual(spentDay({}).label, "Last full day");
 console.log("no_levels: ok");

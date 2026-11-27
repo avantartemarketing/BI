@@ -7,6 +7,9 @@
  * spend that bought nothing), when the release has closed or is on its last
  * day, and on a release without targets. The reason is read here from what
  * the snapshot already carries, so a page built before this shows it too.
+ * The head's figure sits under a small label, the day it was spent on, as
+ * the card's two figures do when there is a level (27 November 2026;
+ * spentDay names that day for both).
  * Plain JavaScript, no JSX: tests/no_levels.mjs. */
 import { fmtMoney } from "../format.mjs";
 import { wordsOf } from "../vocab.mjs";
@@ -14,9 +17,32 @@ import { stepOf } from "./clock.mjs";
 
 const num = (v) => (Number.isFinite(v) ? v : 0);
 const money = (v) => fmtMoney(Math.round(num(v)));
+const DAY_MS = 86400000;
+const at = (iso) => Date.parse(String(iso).slice(0, 10) + "T00:00:00Z");
 
-/* { v, u, aside, loz, kind, why }: the head's figure, its unit and aside,
- * the lozenge's word and kind (none: no lozenge) and the note under it */
+/* The day the card's current spend was read on, in words: { label, poss }.
+ * The build reads the spend of the last full day (today's is part of a day),
+ * and where that day spent nothing while paid still has a level, of the last
+ * full day that spent (`spending`). That is yesterday on a page built today,
+ * and said as such; a feed a day or more behind gives the day's date, and a
+ * snapshot without dated days says what it is, the last full day. */
+export function spentDay(snap, spending = false) {
+  const daily = snap && snap.paid && Array.isArray(snap.paid.daily) ? snap.paid.daily : [];
+  const full = daily.filter((d) => d && !d.partial && d.date);
+  let last = full.length ? full[full.length - 1] : null;
+  if (last && spending && !(num(last.spend) > 0)) last = [...full].reverse().find((d) => num(d.spend) > 0) || last;
+  const n = last && snap.asOf ? Math.round((at(snap.asOf) - at(last.date)) / DAY_MS) : NaN;
+  if (n === 1) return { label: "Yesterday", poss: "yesterday's" };
+  if (n > 1) {
+    const d = new Date(at(last.date)).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+    return { label: d, poss: `${d}'s` };
+  }
+  return { label: "Last full day", poss: "the last full day's" };
+}
+
+/* { l, v, aside, loz, kind, why }: the head's figure and the small label over
+ * it, its aside, the lozenge's word and kind (none: no lozenge) and the note
+ * under it */
 export function noLevels(snap) {
   const paid = (snap && snap.paid) || {};
   const daily = Array.isArray(paid.daily) ? paid.daily : [];
@@ -34,10 +60,10 @@ export function noLevels(snap) {
   const win = full.slice(-3);
   const s3 = win.reduce((a, d) => a + num(d.spend), 0);
   const e3 = win.reduce((a, d) => a + num(d.entries), 0);
-  const head = { v: money(today), u: "a day today", aside: since ? `off since ${since}` : "" };
+  const head = { l: spentDay(snap).label, v: money(today), aside: since ? `off since ${since}` : "" };
 
   if (snap && snap.complete) {
-    return { v: money(spent), u: "spent in all", aside: "", loz: "Closed", kind: undefined,
+    return { l: "Spent in all", v: money(spent), aside: "", loz: "Closed", kind: undefined,
       why: spent > 0 ? "The release has closed: no spend still to come."
         : "The release closed without paid spend." };
   }

@@ -859,4 +859,8 @@ page needs the timed launches' feeds, which a checkout does not carry.
   paced step toward its level), and the days the budget was spread over. The row now reads
   the card's own block, as a draw launch's always has, and the plan's own paid line reads
   the last full day's spend, after a check on the launches closed so far (section 6b).
-  Shown as a before and after of that page.
+  Shown as a before and after of that page, and live the same day on the owner's go-ahead,
+  with the Spend levels card's new head (docs/METHODOLOGY.md 7, "The spend levels"): the
+  owner had found that the card's one figure did not say it was the recommendation, and
+  chose, of four heads shown, yesterday's spend and the recommended one side by side,
+  each under its own label.
