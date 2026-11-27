@@ -6,10 +6,13 @@ etl/tl_plan.py reads a timed launch gathering signups by its plan
 launches' price list, and paid by the spend still to come. These cases hold
 its own parts: the phase a piece sits in; which plan rows are emails still to
 bring signups; how much dearer a launch's later paid signups are read; paid's
-path at today's spend and at the budget's pace, on the launch's own cost and on
-the basket's; and the paid suggestion (a raise sized in signups, a cut in the
-spend it saves, a hold as nothing, a start where nothing is spent). The
-committed price list is checked for its shape. The page itself is built from
+path at today's spend (the last full day's) and at the budget's pace, on the
+launch's own cost and on the basket's; and the paid suggestion, which is the
+Spend levels card's own reading where the page has a card (the card's two
+figures, sized on what the budget left brings where the card's level lies past
+it) and the budget's pace against the spend where it has none (a raise sized
+in signups, a cut in the spend it saves, a hold as nothing, a start where
+nothing is spent). The committed price list is checked for its shape. The page itself is built from
 the timed launches' feeds, which a checkout does not carry: tests/test_tl_page.py
 holds a built page where they are. Run:
   python3 tests/test_tl_plan.py
@@ -70,18 +73,18 @@ def test_dearer():
 def test_paid_path():
     p = T.paid_path(page(), PRICES, OPEN)
     left = 11 + 0.5                                   # 28 November, half seen, to the open's day
-    close_to(p["daysLeft"], left); close_to(p["spendToday"], 300.0)       # the mean of the last three full days
+    close_to(p["daysLeft"], left); close_to(p["spendToday"], 400.0)       # the last full day's, as the Spend levels card reads it
     f = (11 + 0.5) / 22
     up = T.dearer(PRICES, f)
     assert p["costSource"] == "own"
     close_to(p["costSoFar"], 10.0); close_to(p["dearer"], up); close_to(p["costNext"], 10.0 * up)
-    close_to(p["toCome"], 300.0 * left / (10.0 * up))
+    close_to(p["toCome"], 400.0 * left / (10.0 * up))
     close_to(p["budgetLeft"], 4000.0); close_to(p["budgetPace"], 4000.0 / left); close_to(p["toComeAtBudget"], 4000.0 / (10.0 * up))
     close_to(p["now"], 100.0); close_to(p["target"], 400.0)
     # too few paid signups to read the launch's own cost: the basket's, with no mark-up
     q = T.paid_path(page(now=20.0, spent=260.0), PRICES, OPEN)
     assert q["costSource"] == "basket" and q["dearer"] is None
-    close_to(q["costNext"], 12.0); close_to(q["toCome"], 300.0 * left / 12.0)
+    close_to(q["costNext"], 12.0); close_to(q["toCome"], 400.0 * left / 12.0)
     # spend stopped: the last full day carries none, so nothing is held to the open
     r = T.paid_path(page(daily=(200.0, 300.0, 0.0)), PRICES, OPEN)
     close_to(r["spendToday"], 0.0); close_to(r["toCome"], 0.0)
@@ -113,6 +116,67 @@ def test_paid_suggestion():
     start = T.changes(work(), {}, {**base, "spendToday": 0.0, "budgetPace": 2000.0, "toCome": 0.0, "toComeAtBudget": 166.7, "costSource": "basket", "costNext": 12.0})
     assert start[0]["kind"] == "add" and start[0]["title"] == "Paid spend" and start[0]["to"] == "€2,000 a day" and "Nothing is being spent" in start[0]["reason"]
     assert T.changes(work(), {}, {**base, "budgetPace": None, "toCome": 25.0, "toComeAtBudget": None}) == []
+
+
+def card(today=2289.0, tomorrow=2976.0, level=12016.0, pace=5412.0, left=64942.0, at_today=2300.0, at_level=6165.0, at_pace=3747.0, marginal=2.36, stop=None, days=12):
+    """A Spend levels block as etl/tl.py spend_levels writes it (Marina Abramović's on 27 November 2026, rounded)."""
+    lv = {"unit": "signup", "today": today, "recommended": level, "stop": stop, "marginalToday": marginal, "daysLeft": days,
+          "rows": [{"key": "none", "daily": 0.0, "unitsAtClose": 689.0}, {"key": "recommended", "daily": level, "unitsAtClose": at_level}]}
+    if not stop:
+        lv.update({"tomorrow": tomorrow, "unitsAtRecommended": at_level, "signupsAtToday": at_today, "budgetLeft": left, "budgetPace": pace, "signupsAtBudget": at_pace})
+    return lv
+
+
+def test_paid_suggestion_is_the_cards():
+    """On a page with a Spend levels card the row is that card's own two figures, whatever the budget's pace is."""
+    plan = {"spendToday": 2289.0, "daysLeft": 11.5, "costSoFar": 11.7, "costNext": 21.4, "costSource": "own", "budget": 72746.0, "budgetLeft": 64942.0,
+            "budgetPace": 5603.0, "toCome": 1233.0, "toComeAtBudget": 3026.0}
+    wk = work()                                       # the day before the open, so only paid speaks
+    got = T.changes(wk, {"paid": {"levels": card()}}, plan)
+    assert len(got) == 1, got
+    c = got[0]
+    assert (c["kind"], c["title"], c["from"], c["to"], c["channel"], c["date"], c["key"], c["lever"]) == \
+        ("change", "Paid daily budget", "€2,289", "€2,976", "Paid", "2026-12-09", "paid.budget.2976", "tl_paid_spend_levels"), c
+    # the card's level lies past the budget's pace, so the size is what the budget left brings, off the card's own curve
+    close_to(c["units"]["low"], 3747.0 - 2300.0); close_to(c["units"]["high"], 3747.0 - 2300.0)
+    assert c["reason"] == ("The next euro returns 2.4 at €2,289 a day. It is heading for €12,016 a day. "
+                           "The €64,942 left of the budget covers €5,412 a day to the open, and the estimate is what that brings."), c["reason"]
+    assert T.recommended(card(), plan) == (5412.0, 3747.0 - 2300.0)
+    # a level inside the budget's pace is sized at the level, and says it is inside the budget
+    inside = card(level=4000.0, at_level=3200.0)
+    c = T.changes(wk, {"paid": {"levels": inside}}, plan)[0]
+    close_to(c["units"]["low"], 900.0)
+    assert c["reason"].endswith("It is heading for €4,000 a day. The €64,942 left of the budget covers €5,412 a day to the open, so that is inside the budget."), c["reason"]
+    assert T.recommended(inside, plan) == (4000.0, 900.0)
+    # more being spent already than the budget covers: the card's step stands, with no size to promise
+    over = card(today=6000.0, tomorrow=7800.0, at_today=3900.0)
+    c = T.changes(wk, {"paid": {"levels": over}}, plan)[0]
+    assert (c["from"], c["to"], c["units"]) == ("€6,000", "€7,800", None) and c["reason"].endswith("less than is being spent."), c
+    # the card holds: no row, though the budget's pace is far from the spend (the row this replaced said €1,376 to €5,603)
+    assert T.changes(wk, {"paid": {"levels": card(tomorrow=2289.0)}}, plan) == []
+    # no budget on file: the card's reading as it is
+    c = T.changes(wk, {"paid": {"levels": card(pace=None, left=None, at_pace=None)}}, plan)[0]
+    close_to(c["units"]["low"], 6165.0 - 2300.0)
+    assert c["reason"] == "The next euro returns 2.4 at €2,289 a day. It is heading for €12,016 a day.", c["reason"]
+    # a cut is the card's alone, in the spend it saves and the signups it gives up
+    cut = card(today=4000.0, tomorrow=2800.0, level=1500.0, at_today=3000.0, at_level=1900.0, marginal=0.6)
+    c = T.changes(wk, {"paid": {"levels": cut}}, plan)[0]
+    assert (c["from"], c["to"], c["units"], c["saves"]) == ("€4,000", "€2,800", None, 14400), c
+    assert c["reason"].endswith("About 1100 fewer signups by the open."), c["reason"]
+    # a stop is the card's stop, and what the plan counted on from paid goes with it
+    stop = card(level=0.0, stop="marginal")
+    c = T.changes(wk, {"paid": {"levels": stop}}, plan)[0]
+    assert (c["kind"], c["title"], c["note"], c["from"], c["saves"]) == ("drop", "Paid spend", "Next euro under 1.0", "€2,289", 2289 * 12), c
+    assert T.recommended(stop, plan) == (0.0, -1233.0)
+    # a page with no card: the budget's own pace at the plan's cost of a signup
+    assert T.recommended({}, plan) == (5603.0, 3026.0 - 1233.0) and T.recommended({}, {"toCome": 5.0}) == (None, None)
+
+
+def test_spend_day():
+    pg = page(today="2026-11-28")
+    assert T.spend_day(pg) == "yesterday's"
+    pg["paid"]["daily"] = [r for r in pg["paid"]["daily"] if r["date"] != "2026-11-27"]        # the feed a day behind
+    assert T.spend_day(pg) == "the last full day's" and T.spend_day({}) == "the last full day's"
 
 
 def test_committed_prices():

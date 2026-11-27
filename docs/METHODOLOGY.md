@@ -1000,7 +1000,12 @@ the same thing, or at least one recent launch in ten.
 **Paid.** The paid row is the Spend levels card's own recommendation, said as
 an action: tomorrow's daily budget against today's spend (a step toward the
 level the card recommends), paid started where nothing is being spent, or
-paid stopped with the card's reason. Within 5% of today's spend is a hold and
+paid stopped with the card's reason. The two figures on the row are the two
+the card leads with, the last full day's spend and the next step, and the
+reason names the spend without a day's word ("The next euro returns 2.4 at
+EUR 2,289 a day"), since the card calls it yesterday's (27 November 2026). A
+timed launch gathering signups takes the same row on its plan-based view, in
+signups by the open (docs/PLAN_MODEL.md 6b). Within 5% of today's spend is a hold and
 shows no row. A raise is sized in the units the recommended level adds by the
 close; a cut or a stop shows the spend it saves to the close, with the units
 it gives up in the reason. A release that runs an ad set per line of work

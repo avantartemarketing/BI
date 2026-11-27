@@ -271,14 +271,21 @@ def _units_at(rows: list[dict], daily: float) -> float | None:
     return pts[-1][1]
 
 
-def paid_change(levels: dict | None, as_of: date, close: date, line: dict | None = None) -> dict | None:
+def paid_change(levels: dict | None, as_of: date, close: date, line: dict | None = None,
+                unit: str = "units", end: str = "close", lever: str = "le_paid_sustain_monitor_scale") -> dict | None:
     """The paid budget's change for tomorrow, from the Spend levels card's own
     reading (`paid.levels`, docs 7): raise or cut the daily budget to
     tomorrow's step toward the recommended level, start it, or stop. Nothing
     when the step is within PAID_HOLD of today's spend. A raise is sized in
     the units it adds by the close at the level it is heading for; a cut or a
     stop in the spend it saves, with the units it gives up in the reason.
-    `line` names the line of work on a release that runs an ad set per line."""
+    `line` names the line of work on a release that runs an ad set per line.
+    The row's from and to are the card's own two figures (the last full day's
+    spend and the next step), so the card and the row cannot differ; the
+    reason names the spend without a day's word, since the card calls it
+    yesterday's (27 November 2026). `unit` and `end` say what is counted and by
+    when: a timed launch gathering signups (etl/tl_plan.py) reads signups by
+    the open, and its block carries the signups at today's spend itself."""
     lv = levels or {}
     if lv.get("recommended") is None or as_of >= close:
         return None
@@ -288,7 +295,7 @@ def paid_change(levels: dict | None, as_of: date, close: date, line: dict | None
     tag = re.sub(r"[^a-z0-9]+", "_", str(line.get("key") or "").lower()).strip("_") if line else ""
     key = "paid." + (tag + "." if tag else "")
     what = (" \u00b7 " + str(line.get("name"))) if line and line.get("name") else ""
-    base = {"channel": "Paid", "lever": "le_paid_sustain_monitor_scale", "date": (as_of + timedelta(days=1)).isoformat(), "units": None}
+    base = {"channel": "Paid", "lever": lever, "date": (as_of + timedelta(days=1)).isoformat(), "units": None}
     marg = lv.get("marginalToday")
     if level <= 0:
         if today <= 0:
@@ -298,7 +305,9 @@ def paid_change(levels: dict | None, as_of: date, close: date, line: dict | None
                     saves=int(round(today * days_left)), reason=why)
     if today > 0 and abs(step - today) / today < PAID_HOLD:
         return None
-    u_to, u_now = _units_at(lv.get("rows"), level), _units_at(lv.get("rows"), today)
+    # the units at each spend: the card's own figure where its block carries one, else read between its rows
+    u_to = _units_at(lv.get("rows"), level)
+    u_now = _f(lv.get("signupsAtToday")) if lv.get("signupsAtToday") is not None else _units_at(lv.get("rows"), today)
     delta = (u_to - u_now) if u_to is not None and u_now is not None else None
     heading = f" It is heading for {_money(level)} a day." if abs(level - step) >= 1 else ""
     if today <= 0:
@@ -306,13 +315,13 @@ def paid_change(levels: dict | None, as_of: date, close: date, line: dict | None
                     units=({"low": int(round(delta)), "high": int(round(delta))} if delta is not None and round(delta) >= 1 else None),
                     reason=f"Nothing is being spent, and the first euros return more than they cost.{heading}")
     change = dict(base, key=f"{key}budget.{int(round(step))}", kind="change", title="Paid daily budget" + what, to=_money(step), **{"from": _money(today)})
-    lead = f"The next euro returns {_f(marg):.1f} at today's {_money(today)}" if marg is not None else f"Today's spend is {_money(today)} a day"
+    lead = f"The next euro returns {_f(marg):.1f} at {_money(today)} a day" if marg is not None else f"The spend is {_money(today)} a day"
     if step > today:
         change["units"] = {"low": int(round(delta)), "high": int(round(delta))} if delta is not None and round(delta) >= 1 else None
         change["reason"] = f"{lead}.{heading}"
     else:
         change["saves"] = int(round((today - step) * days_left))
-        lost = f" About {int(round(-delta))} fewer units by the close." if delta is not None and round(-delta) >= 1 else ""
+        lost = f" About {int(round(-delta))} fewer {unit} by the {end}." if delta is not None and round(-delta) >= 1 else ""
         change["reason"] = f"{lead}, under the 1.0 it costs.{heading}{lost}"
     return change
 

@@ -9,8 +9,11 @@ bought, and what tells one launch from another is its paid budget, not its comms
                  and post priced in quiet days of signups, at the launch's level and at how each channel is
                  running, the baseline shared over the phases (plan_view.card_rows). A timed launch's phases are its own (PHASES): the
                  announcement, the days between, and the open.
-  paid           the spend still to come at what a signup will cost. The spend is today's, held to the open (the
-                 mean of the last SPEND_DAYS full days); the cost is the launch's own so far, marked up by how
+  paid           the spend still to come at what a signup will cost. The spend is today's, held to the open: the
+                 last full day's, the figure the page's Spend levels card leads with (until 27 November 2026
+                 the mean of the last three full days, which lagged a change of budget by two days; on the
+                 launches closed so far the last full day was the nearer guide to what a launch went on to
+                 spend, etl/analysis/tl_spend_basis.py). The cost is the launch's own so far, marked up by how
                  much dearer a launch's later signups have been than its earlier ones at this point of its span
                  (`paid_up` on the price list: about x1.8), or the basket's cost a signup until the launch has
                  MIN_PAID_SEEN paid signups of its own. The clock reads paid as every other channel, by the share
@@ -18,8 +21,10 @@ bought, and what tells one launch from another is its paid budget, not its comms
 
 override() gives etl/tl.py the path of each channel group for the page it builds a second time (le_blocks,
 `plan_ov`); finish() lays the plan card, the headline and the suggested actions over that page. The page reads
-"as it stands": where the plan lands with nothing changed. What the budget's own pace would bring is the first
-suggested action. The window's hours stay on the clock: nothing is laid over a page once its sales have opened.
+"as it stands": where the plan lands with nothing changed. The paid budget's change is the first suggested
+action, and it is the Spend levels card's own reading said as an action (paid_action): the card's two figures,
+so the card and the row cannot differ. The window's hours stay on the clock: nothing is laid over a page once
+its sales have opened.
 """
 from __future__ import annotations
 
@@ -30,6 +35,7 @@ import re
 import numpy as np
 import pandas as pd
 
+import plan_changes as C
 import plan_model as P
 import plan_view as V
 
@@ -38,10 +44,9 @@ PRICES_PATH = P.ROOT / "etl" / "tl_plan_prices.json"
 PHASES = ["Announce", "Sustain", "The open"]
 ANNOUNCE_DAYS = 1          # a piece up to this many days after the announce is the announcement's
 OPEN_DAYS = 1              # ... and one this many days or fewer before the sales open is the open's
-SPEND_DAYS = 3             # today's spend is the mean of these last full days with spend
 MIN_PAID_SEEN = 30.0       # paid signups before the launch's own cost a signup is read
 MIN_PAID_SPEND = 200.0     # ... and this much spent
-HOLD = 0.1                 # a budget pace within this of today's spend is no suggestion
+HOLD = 0.1                 # on a page with no Spend levels card: a budget pace within this of today's spend is no suggestion
 SHOWN = 4                  # suggested actions shown before the rest fold under "more"
 
 _FLOW = re.compile(r"\bflow\b", re.I)
@@ -133,8 +138,7 @@ def paid_path(page: dict, prices: dict, opn) -> dict:
     now = float(next((c.get("now") for c in page.get("channels") or [] if c.get("key") == "paid"), 0.0) or 0.0)
     spent = float(paid.get("spendPre") or 0.0)
     full = [float(r.get("spend") or 0.0) for r in paid.get("daily") or [] if not r.get("partial") and str(r.get("date")) < str(today.date())]
-    recent = [x for x in full[-SPEND_DAYS:] if x > 0] if full and full[-1] > 0 else []
-    spend_today = float(np.mean(recent)) if recent else 0.0
+    spend_today = full[-1] if (full and full[-1] > 0) else 0.0       # the last full day's, as the Spend levels card reads it
     plan_cost = float(paid.get("costPlan") or paid.get("bmCostPerSignup") or 0.0) or None
     own = now >= MIN_PAID_SEEN and spent >= MIN_PAID_SPEND
     up = dearer(prices, f)
@@ -157,16 +161,44 @@ def _money(v: float) -> str:
     return f"€{int(round(v)):,}"
 
 
-def changes(w: dict, page: dict, paid: dict) -> list[dict]:
-    """What could be changed from here, each with the signups it should bring by the open: the paid budget's own
-    pace against today's spend, an email to the list or to fewer, and a post from the artist, Avant Arte or a
-    partner. Emails say who they go to, so one to half the list or more is held to the list's load
-    (etl/list_load.py) as a draw launch's is."""
-    pr, coef, ann, today, L = w["pr"], w["coef"], w["ann"], w["today"], w["L"]
-    level, pull, pull_all = w["level"], w["pull"], w["pull_all"]
-    days_left = int((w["close"] - today).days)
+def paid_action(lv: dict, today, close) -> dict | None:
+    """The paid budget's change on a page with a Spend levels card: the card's own reading said as an action
+    (plan_changes.paid_change on its block, as a draw launch's row is), so the row's two figures are the card's,
+    the last full day's spend and the next step, and the two cannot differ (27 November 2026: until then this
+    row was the budget's own pace against a three-day mean, EUR 1,376 to EUR 5,603 on a page whose card read
+    EUR 2,289 to EUR 2,976). A hold on the card is no row. Sized in signups by the open at the level the card is
+    heading for. That level takes no account of the budget (docs/TL_SPEC.md 4), so where it lies past the
+    budget's own pace the size is what the budget left brings, off the card's own curve, and the reason says so."""
+    try:
+        c = C.paid_change(lv, today.date(), close.date(), unit="signups", end="open", lever="tl_paid_spend_levels")
+    except Exception:  # noqa: BLE001 - a block the rule cannot read is no suggestion, never no page
+        return None
+    if not c or c["kind"] == "drop" or "saves" in c:
+        return c                                    # a stop or a cut is the card's alone: the budget adds nothing to it
+    pace, left, level = lv.get("budgetPace"), lv.get("budgetLeft"), float(lv.get("recommended") or 0.0)
+    if not pace or left is None:
+        return c
+    cover = f"The {_money(left)} left of the budget covers {_money(pace)} a day to the open"
+    if level <= pace:
+        c["reason"] += f" {cover}, so that is inside the budget."
+        return c
+    at_pace, now = lv.get("signupsAtBudget"), lv.get("signupsAtToday")
+    if at_pace is None or now is None:
+        c["reason"] += f" {cover}."
+    elif float(at_pace) - float(now) >= 1:
+        more = float(at_pace) - float(now)
+        c["units"] = {"low": more, "high": more}
+        c["reason"] += f" {cover}, and the estimate is what that brings."
+    else:
+        c["units"] = None
+        c["reason"] += f" {cover}, less than is being spent."
+    return c
+
+
+def pace_action(paid: dict, today, days_left: int) -> list[dict]:
+    """The paid suggestion on a page with no Spend levels card (paid has not run a full day, or what a signup is
+    worth cannot be read): the budget's own pace against the spend, sized on the plan's cost of a signup."""
     out = []
-    # paid first: it is most of a timed launch's signups
     pace, spend_today = paid.get("budgetPace"), float(paid.get("spendToday") or 0.0)
     if pace is not None and paid.get("costNext") and days_left >= 1:
         more = float(paid["toComeAtBudget"] or 0.0) - float(paid["toCome"] or 0.0)
@@ -180,13 +212,62 @@ def changes(w: dict, page: dict, paid: dict) -> list[dict]:
         elif spend_today > 0 and abs(pace - spend_today) / spend_today >= HOLD:
             c = {"key": f"paid.budget.{int(round(pace))}", "kind": "change", "title": "Paid daily budget", "from": _money(spend_today), "to": _money(pace), "channel": "Paid",
                  "date": tomorrow, "lever": "tl_paid_budget_pace"}
-            lead = f"{_money(paid['budgetLeft'])} of the {_money(paid['budget'])} budget is left over {days_left} days, which is {_money(pace)} a day against today's {_money(spend_today)}"
+            lead = f"{_money(paid['budgetLeft'])} of the {_money(paid['budget'])} budget is left over {days_left} days, which is {_money(pace)} a day against the {_money(spend_today)} being spent"
             if pace > spend_today:
                 faster = " Spending this much faster may cost more per signup, so this is the most it brings." if pace > 1.5 * spend_today else ""
                 c.update(units={"low": more, "high": more}, reason=f"{lead}; {cost}.{faster}")
             else:
-                c.update(units=None, saves=int(round((spend_today - pace) * paid["daysLeft"])), reason=f"{lead}: at today's spend the budget runs out before the open. About {int(round(-more))} fewer signups.")
+                c.update(units=None, saves=int(round((spend_today - pace) * paid["daysLeft"])), reason=f"{lead}: at this spend the budget runs out before the open. About {int(round(-more))} fewer signups.")
             out.append(c)
+    return out
+
+
+def recommended(lv: dict, paid: dict) -> tuple[float | None, float | None]:
+    """The daily spend the page's paid suggestion is sized on, and the signups it adds by the open over today's
+    spend held: the Spend levels card's level, held to the budget's pace where it lies past it (paid_action), a
+    stop where the card stops; on a page with no card, the budget's own pace at the plan's cost of a signup."""
+    if lv.get("recommended") is not None:
+        level, pace, now = float(lv["recommended"]), lv.get("budgetPace"), lv.get("signupsAtToday")
+        if level <= 0:
+            return 0.0, -float(paid.get("toCome") or 0.0)
+        held = bool(pace) and level > float(pace) and lv.get("signupsAtBudget") is not None
+        to = lv.get("signupsAtBudget") if held else lv.get("unitsAtRecommended")
+        return (float(pace) if held else level), ((float(to) - float(now)) if (to is not None and now is not None) else None)
+    if paid.get("budgetPace") is not None and paid.get("toComeAtBudget") is not None:
+        return float(paid["budgetPace"]), float(paid["toComeAtBudget"]) - float(paid.get("toCome") or 0.0)
+    return None, None
+
+
+def spend_day(page: dict) -> str:
+    """Whose spend the page's current paid spend is, in a word: yesterday's when the last full day is the day
+    before the page's own, else the last full day's."""
+    today = str(page.get("asOf") or "")[:10]
+    full = [str(r.get("date"))[:10] for r in (page.get("paid") or {}).get("daily") or [] if not r.get("partial") and str(r.get("date"))[:10] < today]
+    try:
+        return "yesterday's" if full and (pd.Timestamp(today) - pd.Timestamp(full[-1])).days == 1 else "the last full day's"
+    except (TypeError, ValueError):
+        return "the last full day's"
+
+
+def changes(w: dict, page: dict, paid: dict) -> list[dict]:
+    """What could be changed from here, each with the signups it should bring by the open: the paid budget's
+    change (the Spend levels card's own where the page has one, the budget's pace against the spend where it has
+    none), an email to the list or to fewer, and a post from the artist, Avant Arte or a partner. Emails say who
+    they go to, so one to half the list or more is held to the list's load (etl/list_load.py) as a draw launch's
+    is."""
+    pr, coef, ann, today, L = w["pr"], w["coef"], w["ann"], w["today"], w["L"]
+    level, pull, pull_all = w["level"], w["pull"], w["pull_all"]
+    days_left = int((w["close"] - today).days)
+    out = []
+    # paid first: it is most of a timed launch's signups. On a page with a Spend levels card the row is that
+    # card's reading and nothing else; the budget's pace speaks only where there is no card to differ from
+    lv = (page.get("paid") or {}).get("levels") or {}
+    if lv.get("recommended") is not None:
+        c = paid_action(lv, today, w["close"]) if days_left >= 1 else None
+        if c:
+            out.append(c)
+    else:
+        out.extend(pace_action(paid, today, days_left))
     # the comms: valued by the price list at this launch's level and at how its channel is running
     pe, ps, pa = pull.get("aa_email", pull_all), pull.get("aa_social", pull_all), pull.get("referral_artist", pull_all)
     lo_m, hi_m = [float(np.exp(x)) for x in pr["clicks"]["spread"]]
@@ -272,18 +353,19 @@ def finish(page: dict, ov: dict) -> None:
                  "statusPct": round(now_all / by_today - 1.0, 4) if by_today > 0 else 0.0, "ok": lands >= target * (1 - V.SHORT_TOLERANCE)})
     lo, hi = ov["meta"]["organicRange"]
     paid_plan = float((pc or {}).get("target") or 0.0)
+    rec_daily, rec_more = recommended((page.get("paid") or {}).get("levels") or {}, paid)
     basis = {"similar": f"the {ov['meta']['levelN']} timed launches that drew nearest this many signups at a similar price",
              "artist": f"the artist's last {ov['meta']['levelN']} timed launches", "basket": f"the {ov['meta']['levelN']} benchmark launches",
              "all": "every past timed launch"}[ov["meta"]["levelBasis"]]
     page["method"] = "plan"
     page["plan"] = {"state": "live" if started else "start", "target": target, "expected": round(tot["expected"], 2), "in": round(tot["in"], 2), "toCome": round(tot["toCome"], 2),
                     "lands": round(lands, 2), "byToday": round(by_today, 2), "range": [round(lo + paid_plan, 1), round(hi + paid_plan, 1)],
-                    "landsRecommended": round(lands - paid["toCome"] + paid["toComeAtBudget"], 1) if paid.get("toComeAtBudget") is not None else None,
-                    "paidToday": round(paid["spendToday"], 2), "paidRecommended": round(paid["budgetPace"], 2) if paid.get("budgetPace") is not None else None,
+                    "landsRecommended": round(lands + rec_more, 1) if rec_more is not None else None,
+                    "paidToday": round(paid["spendToday"], 2), "paidRecommended": round(rec_daily, 2) if rec_daily is not None else None,
                     "rows": rows, "pull": round(ov["meta"]["pullAll"], 3), "level": round(ov["meta"]["level"], 3), "levelBasis": ov["meta"]["levelBasis"],
                     "against": against, "notCovered": not_covered, "of": "signups", "similar": ov["meta"].get("similar"), "similarPaidShare": ov["meta"].get("similarPaidShare"),
                     "notes": [f"Each email and post is sized on {basis}.", "Still to come follows how each channel is responding so far.",
-                              "Paid is today's spend held to the open, at what a signup will cost."]}
+                              f"Paid is {spend_day(page)} spend held to the open, at what a signup will cost."]}
     found = [dict(c, units=V._whole(c["units"]) if c.get("units") else None) for c in (changes(w, page, paid) if started else [])]
     found = [c for c in found if c["units"] or c.get("channel") == "Paid"]
     found.sort(key=lambda c: -(((c["units"]["low"] + c["units"]["high"]) / 2) if c["units"] else 0))

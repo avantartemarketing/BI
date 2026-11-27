@@ -2510,8 +2510,8 @@ A failure there costs a page its card and is printed, never the page.
 **Who gets the block.** A targeted draw launch (LE, with a benchmark) between its announce and
 its close, on the release's own page (not a line's). Everything else has no `planChanges` key,
 but for a timed launch gathering signups, which has one under its `variants.plan` alone
-(`etl/tl_plan.py finish`, docs/PLAN_MODEL.md 6b): `paid.budget.<a day>` (lever
-`tl_paid_budget_pace`), `email.announce.<day>.<people>`, `email.announce.add.<people>` and
+(`etl/tl_plan.py finish`, docs/PLAN_MODEL.md 6b): `paid.budget.<a day>` or `paid.stop` (lever
+`tl_paid_spend_levels`, the Spend levels card's own reading; `tl_paid_budget_pace` on a page with no such card), `email.announce.<day>.<people>`, `email.announce.add.<people>` and
 `post.<family>`, sized in signups by the sales open.
 
 **The plan** is `data/notion_plan.csv`, written by `server/notion.js` beside the posts and

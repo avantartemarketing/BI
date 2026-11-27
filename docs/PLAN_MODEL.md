@@ -563,7 +563,7 @@ other. The clicks an email should bring are the draw launches' click model.
 **Paid** is read from the spend and not the calendar (`paid_path`):
 
 ```
-today's spend      = the mean of the last 3 full days with spend (none when the last full day had none)
+today's spend      = the last full day's spend, the figure the Spend levels card leads with (none when that day had none)
 days to come       = the days to the open's day, with the rest of today
 cost of a signup   = the launch's own so far x how much dearer later signups have been at this point
                      of its span (paid_up, about x1.8), once it has 30 paid signups and EUR 200 spent;
@@ -580,6 +580,19 @@ Abramović's launch on the day it was built, six days into twenty-two: the clock
 3,324 signups at the open and this view 1,455, against a target of 6,683, with EUR 627 a
 day being spent of a budget whose own pace was EUR 2,722.
 
+Today's spend was the mean of the last three full days with spend until 27 November 2026.
+That lags a change of budget by two days, and it was not the figure the page's Spend
+levels card reads, the last full day's, so one page gave two answers to what is being
+spent: on Marina Abramović's launch that day, the day after its budget was raised, EUR
+1,376 on the plan card and EUR 2,289 on the Spend levels card. Read on the launches closed
+so far (`etl/analysis/tl_spend_basis.py`: 39 launches, 556 days with three days of spend
+behind them and two or more to come), the last full day was the nearer guide to what a
+launch went on to spend a day before its open: a median error of 0.27 against 0.34 (the
+log of predicted over actual), nearer on 32 of the 39. On the day after a jump of half or
+more, what followed ran 1.07 times the last day and 1.59 times the mean of three. On that
+launch the change took paid's signups still to come from 729 to 1,213 and the headline
+from 2,003 signups at the open to 2,487 (249 signup conversions to 276).
+
 **The page.** `etl/tl.py` builds the launch a third time on that path (`le_blocks`,
 `plan_ov`) and the blocks that differ ride under `variants.plan`, as a draw launch's do. It
 is read as the feed attributes its channels, not with Direct spread: the sell-through
@@ -588,15 +601,30 @@ this view it follows the plan's signups at the open. A channel's total on this v
 plan's; the headline's target is the signup target.
 
 **Suggested actions** are on this view of a timed launch alone (the clock's page has
-none): the paid budget's own pace against today's spend, sized in the signups it adds by
-the open (a cut in the spend it saves; within a tenth of today's spend, nothing; the row
-says when spending that much faster may cost more a signup, so its size is the most it
-brings); an announcement still to come sent to the full list; a second announcement, to
+none). The paid row is the page's Spend levels card said as an action, as a draw
+launch's is (`paid_action`, which calls `plan_changes.paid_change` on the card's own block;
+docs/METHODOLOGY.md 7d): from the last full day's spend to the card's next step, the
+card's own two figures, so the row and the card cannot differ. A hold on the card is no
+row. It is sized in signups by the open at the level the card is heading for. That level
+takes no account of the budget (docs/TL_SPEC.md 4), so where it lies past the budget's own
+pace the size is what the budget left brings, read off the card's own curve
+(`signupsAtBudget` less `signupsAtToday`), and the reason says so; a cut is sized in the
+spend it saves and a stop carries the card's reason. Until 27 November 2026 the row was
+worked out a second time here, as the budget's own pace against the mean of three days'
+spend, and read EUR 1,376 to EUR 5,603 on a page whose card read EUR 2,289 to EUR 2,976,
+which the owner called unhelpful. On a page with no Spend levels card (paid has not run a
+full day, or what a signup is worth cannot be read) the row is still the budget's own pace
+against the spend (`pace_action`), sized in the signups it adds by the open on the plan's
+cost of a signup (a cut in the spend it saves; within a tenth of the spend, nothing; the
+row says when spending that much faster may cost more a signup, so its size is the most it
+brings). Beside paid: an announcement still to come sent to the full list; a second announcement, to
 the list or to fewer, when no email is planned before the open's last days; and a post
 from the artist or Avant Arte. An email to half the list or more is held to the list's
 load as a draw launch's is (docs/METHODOLOGY.md 7d).
 
-**Limits.** The cost of a signup at a spend several times today's is not modelled. The
+**Limits.** Paid's own line on the plan card holds today's spend to the open at one cost
+of a signup, where the Spend levels card lets the cost rise with the spend, so the card's
+hover and the plan card can give different signups for the same spend. The
 window is not read by its plan: whether its paid spend tells its sales is not established
 (section 8). An email's audience is the usual one for its kind until it has gone.
 
@@ -813,3 +841,12 @@ page needs the timed launches' feeds, which a checkout does not carry.
   alike. That is a change of order alone: no figure moves. The entries of 16 to 24
   November, which an edit of 26 November had dropped from this log, were put back as
   they stood, and the log set in date order.
+- **27 November 2026, later.** The owner noted that the paid budget change among the
+  suggested actions on this view did not match the Spend levels card's (EUR 1,376 to EUR
+  5,603 against EUR 2,289 to EUR 2,976 on Marina Abramović's launch), "which is not
+  helpful". Three things differed: the spend being read (the mean of three days against the
+  last full day), where it was going (the budget's own pace in one step against the card's
+  paced step toward its level), and the days the budget was spread over. The row now reads
+  the card's own block, as a draw launch's always has, and the plan's own paid line reads
+  the last full day's spend, after a check on the launches closed so far (section 6b).
+  Shown as a before and after of that page.
