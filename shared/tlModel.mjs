@@ -237,6 +237,13 @@ export function tlEconomics(rows, b = {}) {
   const total = live.reduce((s, r) => s + w(r), 0);
   const dealt = live.filter((r) => dealShare(r) !== null);
   const dealtW = dealt.reduce((s, r) => s + w(r), 0);
+  // the artist's share of the profit, and so of the ads: the work's own where it records one (a partner takes
+  // the rest of a three-way split), else what Avant Arte leaves; nothing on a revenue share (etl/tl.py)
+  const artistShare = (r) => {
+    if (nn(r.aa_profit_share) === null) return 0;
+    const own = nn(r.artist_profit_share);
+    return own !== null ? Math.min(Math.max(own, 0), 1) : Math.max(1 - dealShare(r), 0);
+  };
   return {
     aa_profit_per_unit: weighted("aa_profit_per_unit", live), artist_profit_per_unit: weighted("artist_profit_per_unit", live),
     frame_share: total > 0 ? framedW / total : 0,
@@ -245,6 +252,7 @@ export function tlEconomics(rows, b = {}) {
     frame_profit_per_unit: framedWith.length && framedW > 0 ? framed.reduce((s, r) => s + w(r) * (nn(r.frame_profit_per_unit) || 0), 0) / framedW : null,
     aa_budget_share: dealtW > 0 ? dealt.reduce((s, r) => s + w(r) * dealShare(r), 0) / dealtW : null,
     aa_budget_share_assumed: !dealt.length,
+    artist_budget_share: dealtW > 0 ? dealt.reduce((s, r) => s + w(r) * artistShare(r), 0) / dealtW : null,
     deal: [...new Set(dealt.map((r) => (nn(r.aa_profit_share) !== null ? "profit share" : "revenue share")))].sort(),
   };
 }
@@ -297,7 +305,8 @@ export function tlPaidValue(inp, profile, targets, econ, b = {}) {
   // the artist's reading of the same signups: their profit per unit (the
   // framing profit is AA's alone) over their share of the spend
   const ppuArtist = nn(econ.artist_profit_per_unit);
-  const aShare = Math.round((1 - share) * 10000) / 10000;
+  const ownShare = nn(econ.artist_budget_share);
+  const aShare = Math.round((ownShare !== null && !assumed ? Math.min(Math.max(ownShare, 0), 1) : 1 - share) * 10000) / 10000;
   const aSale = ppuArtist !== null ? ppuArtist * (1 - cann) : null;
   const aSignup = s2o && aSale !== null ? s2o * ppo * aSale : null;
   const costAt = (value, roi) => (readable && value > 0 && share > 0 && roi > 0 ? value / (share * roi) : null);

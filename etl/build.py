@@ -5059,12 +5059,25 @@ def _effective_product(p: dict, b: dict) -> dict:
     # who funds the ads: on a profit-share deal Avant Arte carries its share of
     # the profit; on a revenue-share (royalty) deal the artist is paid on
     # revenue whatever the ads cost, so Avant Arte carries them all
+    # The artist's share of the profit, and so of the ads, is Airtable's own
+    # (Artist profit share) and a partner's is its (Partner profit share): a
+    # gallery or an estate on a three-way split. Where the record gives no
+    # artist's share, or Avant Arte's is typed over the record's, the artist's
+    # is what Avant Arte and the partner leave. Until 27 November 2026 it was
+    # always one minus Avant Arte's, which read a third each as 33 and 67.
+    clip = lambda v: min(max(v, 0.0), 1.0)
     if e["aa_profit_share"] is not None:
-        e["aa_budget_share"], e["deal"] = min(max(e["aa_profit_share"], 0.0), 1.0), "profit share"
+        e["aa_budget_share"], e["deal"] = clip(e["aa_profit_share"]), "profit share"
+        own = src.get("aa_profit_share") != "typed"
+        partner, artist = _num(p.get("partner_profit_share")) if own else None, _num(p.get("artist_profit_share")) if own else None
+        e["partner_profit_share"] = clip(partner) if partner is not None and partner > 0 else None
+        e["artist_profit_share"] = round(clip(artist) if artist is not None else max(1.0 - e["aa_budget_share"] - (e["partner_profit_share"] or 0.0), 0.0), 6)
     elif e["aa_revenue_share"] is not None:
         e["aa_budget_share"], e["deal"] = 1.0, "revenue share"
+        e["artist_profit_share"], e["partner_profit_share"] = 0.0, None
     else:
         e["aa_budget_share"], e["deal"] = None, None
+        e["artist_profit_share"], e["partner_profit_share"] = None, None
     src["line"] = "typed" if e["line_typed"] else "airtable" if p.get("release") else None
     e["sources"] = src
     return e
@@ -5073,7 +5086,7 @@ def _effective_product(p: dict, b: dict) -> dict:
 ECONOMICS_KEYS = ("edition_total", "edition_size", "unit_price", "currency", "launch_value", "launch_currencies",
                   "artist_profit", "aa_group_profit", "framing_available", "frame_conversion", "frame_profit_per_unit",
                   "frame_uplift_per_unit", "aa_ppu_resolved", "aa_budget_share", "aa_budget_share_assumed",
-                  "artist_profit_share", "deal")
+                  "artist_profit_share", "partner_profit_share", "deal")
 
 
 def products_economics(sized: list[dict]) -> dict:
@@ -5115,7 +5128,13 @@ def products_economics(sized: list[dict]) -> dict:
     r["aa_budget_share"] = share if share is not None else 0.5
     # no product records its deal: half, and the page says it is assumed
     r["aa_budget_share_assumed"] = share is None
-    r["artist_profit_share"] = round(1.0 - r["aa_budget_share"], 4)
+    # the artist's share and a partner's, over the products that record a deal (each product's own:
+    # _effective_product); with no deal on any, what the assumed half leaves and no partner
+    artist = weighted("artist_profit_share")
+    r["artist_profit_share"] = round(artist if (share is not None and artist is not None) else 1.0 - r["aa_budget_share"], 4)
+    dealt = [p for p in sized if p.get("aa_budget_share") is not None and p["target_units"] > 0]
+    partner = (sum(p["target_units"] * (p.get("partner_profit_share") or 0.0) for p in dealt) / sum(p["target_units"] for p in dealt)) if dealt else 0.0
+    r["partner_profit_share"] = round(partner, 4) if partner > 0 else None
     r["deal"] = sorted({p["deal"] for p in sized if p["deal"]})
     return r
 
@@ -5440,7 +5459,8 @@ def sourced_inputs(rec: dict, spend: pd.DataFrame | None, notion: dict | None) -
     # the product fields the tab reads (shared/economics.mjs PRODUCT_KEYS and
     # the identity); the record's other columns stay in the pricing file
     keep = ("airtable_id", "name", "project_code", "edition", "target_sellthrough", "unit_price", "currency",
-            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "deal_type", "frame_price",
+            "artist_profit_per_unit", "aa_profit_per_unit", "aa_revenue_share", "aa_profit_share", "artist_revenue_cut", "artist_profit_share",
+            "partner_profit_share", "deal_type", "frame_price",
             "framing_available", "framing_default", "frame_conversion", "frame_profit_per_unit",
             "launch_date")
     products = [{k: p.get(k) for k in keep} for p in at["products"]]
@@ -6705,9 +6725,14 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
     # e.g. Glenn Ligon's 100% AA); half, flagged as assumed, when nothing says.
     aa_budget_share = release.get("aa_budget_share")
     budget_assumed = bool(release.get("aa_budget_share_assumed"))
+    # the artist's share of the spend is its share of the profit. On the products' own figures that is each
+    # product's (Airtable's Artist profit share, else what Avant Arte and a partner leave: products_economics),
+    # so on a three-way split the artist carries a third and not two; on a release's typed figures, and with
+    # nothing said, it is what Avant Arte leaves
+    artist_share = _num(release.get("artist_profit_share")) if (release.get("economics_mode") == "products" and aa_budget_share is not None) else None
     if aa_budget_share is None:
         aa_budget_share, budget_assumed = legacy_budget_share(release.get("artist_profit_share"))
-    artist_budget_share = max(0.0, 1.0 - float(aa_budget_share))
+    artist_budget_share = min(max(artist_share, 0.0), 1.0) if artist_share is not None else max(0.0, 1.0 - float(aa_budget_share))
 
     def party_roi(ppu: float, share: float, adj_cpe: float | None) -> float | None:
         """ROI_party (docs 7): a party's profit on a converting entry, net of
@@ -8237,6 +8262,8 @@ def build_release(release: dict, at: pd.DataFrame, spend: pd.DataFrame,
             "unitPrice": release["unit_price"], "launchValue": targets["launch_value"],
             "artistProfitPerUnit": round(ppu_artist_plan, 2), "aaProfitPerUnit": round(ppu_aa_plan, 2),
             "artistProfitShare": release["artist_profit_share"],
+            # a partner's share of the profit on a three-way split (Airtable's Partner profit share), None without one
+            "partnerProfitShare": release.get("partner_profit_share"),
             "aaBudgetShare": aa_budget_share,
             "aaBudgetShareAssumed": budget_assumed,
             # per product, the figures in force and where each came from

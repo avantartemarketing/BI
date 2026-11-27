@@ -2249,6 +2249,14 @@ def tl_economics(rows: list[dict], b: dict | None = None) -> dict:
     total = sum(w(r) for r in live)
     dealt = [r for r in live if deal_share(r) is not None]
     dealt_w = sum(w(r) for r in dealt)
+
+    def artist_share(r):
+        """The artist's share of the profit, and so of the ads: the work's own where it records one (a partner
+        takes the rest of a three-way split), else what Avant Arte leaves; nothing on a revenue share."""
+        if _num(r.get("aa_profit_share")) is None:
+            return 0.0
+        own = _num(r.get("artist_profit_share"))
+        return min(max(own, 0.0), 1.0) if own is not None else max(1.0 - deal_share(r), 0.0)
     def band_default(r):
         price, fp = _num(r.get("unit_price")), _num(r.get("frame_price"))
         eur = price * pricing.RATES_TO_EUR.get(str(r.get("currency") or "EUR").upper(), 1.0) if price else None
@@ -2260,6 +2268,7 @@ def tl_economics(rows: list[dict], b: dict | None = None) -> dict:
             "frame_profit_per_unit": (sum(w(r) * (_num(r.get("frame_profit_per_unit")) or 0.0) for r in framed) / framed_w) if (framed_with and framed_w > 0) else None,
             "aa_budget_share": (sum(w(r) * deal_share(r) for r in dealt) / dealt_w) if dealt_w > 0 else None,
             "aa_budget_share_assumed": not dealt,
+            "artist_budget_share": (sum(w(r) * artist_share(r) for r in dealt) / dealt_w) if dealt_w > 0 else None,
             "deal": sorted({"profit share" if _num(r.get("aa_profit_share")) is not None else "revenue share" for r in dealt})}
 
 
@@ -2425,7 +2434,8 @@ def tl_paid_value(inputs: dict | None, profile: dict | None, targets: dict | Non
     # the artist's reading of the same signups: their profit per unit (the
     # framing profit is AA's alone) over their share of the spend
     ppu_artist = _num(econ.get("artist_profit_per_unit"))
-    a_share = round(1.0 - share, 4)
+    own = _num(econ.get("artist_budget_share"))
+    a_share = round(min(max(own, 0.0), 1.0) if (own is not None and not assumed) else 1.0 - share, 4)
     a_sale = (ppu_artist * (1.0 - cann)) if ppu_artist is not None else None
     a_signup = (s2o * ppo * a_sale) if (s2o and a_sale is not None) else None
 

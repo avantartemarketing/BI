@@ -157,14 +157,20 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     # unit economics"): the display name only, and the ID only in its shape
     ("Project Manager", "project_manager"),
     ("PM Slack ID", "pm_slack_id"),
-    # the deal: "Profit" (a split of the profit) or "Revenue" (the artist or
-    # estate paid a commission on revenue); etl/pricing.py reads it to say
-    # which share is the product's deal
+    # the deal as the record's dropdown names it, "Profit" or "Revenue": kept
+    # beside the reading and no longer what decides it. etl/pricing.py reads
+    # the deal off the percentages (27 November 2026): the dropdown is blank
+    # on most records and said Revenue on thirteen that carry a profit split
     ("Commission Type", "deal_type"),
     # the artist's or estate's cut of revenue, taken before any profit is
     # split: the whole deal on a revenue deal (Avant Arte's revenue share is
     # the rest), a component beside the AA split on a profit deal that has one
     ("Revenue Commission %", "artist_revenue_cut"),
+    # the artist's and a partner's (a gallery's, an estate's) shares of the
+    # profit on a profit deal, beside Avant Arte's (AA split): a three-way
+    # split is not read as two, and each side carries its share of the ads
+    ("Artist profit share", "artist_profit_share"),
+    ("Partner profit share", "partner_profit_share"),
     # what kind of artist the work's is (a lookup: "Estate", "Living artist"
     # and the like), for the framing study and the baskets, never a person
     ("Artist type", "artist_type"),
@@ -209,7 +215,8 @@ SLACK_ID_RE = re.compile(r"^[UW][A-Z0-9]{8,}$")
 PAGE_PATH_COL = "product_page_url"
 PAGE_PATH_RE = re.compile(r"^(?:https?://[^/\s]+)?(/products/[a-z0-9][a-z0-9-]*)/?(?:[?#]\S*)?$", re.I)
 # a percentage field arrives as 0.4 or, typed as a number, as 40: read either
-PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion", "artist_revenue_cut"}
+PERCENT_COLS = {"target_sellthrough", "aa_revenue_share", "aa_profit_share", "frame_conversion", "artist_revenue_cut",
+                "artist_profit_share", "partner_profit_share"}
 # a money figure typed as text ("€450", "€1,250"): read for its number, in
 # euros - the page's currency and the one the price field carries - with a
 # figure in another currency converted at etl/pricing.py's rates

@@ -130,9 +130,18 @@ export function effectiveProduct(p, b) {
   e.frame_conversion = Math.min(Math.max(conv === null ? frameBandRate(e.frame_ratio, b).rate : conv, 0), 1);
   e.frame_profit_per_unit = profit === null ? null : Math.max(profit, 0);
   e.frame_uplift_per_unit = e.framing_available && e.frame_profit_per_unit !== null ? round2(e.frame_conversion * e.frame_profit_per_unit) : 0;
-  if (e.aa_profit_share !== null) { e.aa_budget_share = Math.min(Math.max(e.aa_profit_share, 0), 1); e.deal = "profit share"; }
-  else if (e.aa_revenue_share !== null) { e.aa_budget_share = 1.0; e.deal = "revenue share"; }
-  else { e.aa_budget_share = null; e.deal = null; }
+  // the artist's share of the profit, and so of the ads, is Airtable's own and a partner's is its (a gallery or
+  // an estate on a three-way split); with no artist's share on the record, or with Avant Arte's typed over the
+  // record's, the artist's is what Avant Arte and the partner leave (etl/build.py _effective_product)
+  const clip = (v) => Math.min(Math.max(v, 0), 1);
+  if (e.aa_profit_share !== null) {
+    e.aa_budget_share = clip(e.aa_profit_share); e.deal = "profit share";
+    const own = src.aa_profit_share !== "typed";
+    const partner = own ? num(p.partner_profit_share) : null, artist = own ? num(p.artist_profit_share) : null;
+    e.partner_profit_share = partner !== null && partner > 0 ? clip(partner) : null;
+    e.artist_profit_share = Math.round((artist !== null ? clip(artist) : Math.max(1 - e.aa_budget_share - (e.partner_profit_share || 0), 0)) * 1e6) / 1e6;
+  } else if (e.aa_revenue_share !== null) { e.aa_budget_share = 1.0; e.deal = "revenue share"; e.artist_profit_share = 0; e.partner_profit_share = null; }
+  else { e.aa_budget_share = null; e.deal = null; e.artist_profit_share = null; e.partner_profit_share = null; }
   src.line = e.line_typed ? "typed" : p.release ? "airtable" : null;
   e.sources = src;
   return e;
@@ -189,6 +198,11 @@ export function releaseEconomics(products, legacy, b) {
   const frameProfit = framed.length ? weighted("frame_profit_per_unit", framed) : null;
   const share = weighted("aa_budget_share");
   const aaShare = share === null ? 0.5 : share;
+  // the artist's share and a partner's, over the products that record a deal; with none, what the assumed half leaves
+  const artist = weighted("artist_profit_share");
+  const dealt = sized.filter((p) => p.aa_budget_share !== null && p.aa_budget_share !== undefined && p.target_units > 0);
+  const dealtUnits = dealt.reduce((s, p) => s + p.target_units, 0);
+  const partner = dealtUnits ? dealt.reduce((s, p) => s + p.target_units * (p.partner_profit_share || 0), 0) / dealtUnits : 0;
   const uplift = framed.length ? weighted("frame_uplift_per_unit", framed) * (framed.reduce((s, p) => s + p.target_units, 0) / targets) : 0;
   return {
     mode: "products", edition_size: targets, edition_total: sized.reduce((s, p) => s + p.edition, 0),
@@ -201,7 +215,8 @@ export function releaseEconomics(products, legacy, b) {
     framing_available: framed.length > 0, frame_conversion: frameConv, frame_profit_per_unit: frameProfit,
     frame_uplift_per_unit: uplift,
     aa_budget_share: aaShare, aa_budget_share_assumed: share === null,
-    artist_profit_share: Math.round((1 - aaShare) * 10000) / 10000,
+    artist_profit_share: Math.round((share !== null && artist !== null ? artist : 1 - aaShare) * 10000) / 10000,
+    partner_profit_share: partner > 0 ? Math.round(partner * 10000) / 10000 : null,
     deal: [...new Set(sized.map((p) => p.deal).filter(Boolean))].sort(),
   };
 }

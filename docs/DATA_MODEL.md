@@ -1256,7 +1256,8 @@ variant, a bundle). `etl/pull_airtable.py` pulls exactly the fields needed - ide
 size, type, dates, medium, artist tier and genre bucket, and the per-product target economics
 of §1.6 (`Target sell-through %`, `Artist profit per unit`, `AA profit per unit`, `AA revenue
 share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`, `Commission Type`)
-plus the `Marketing lead`, `Revenue Commission %` (`artist_revenue_cut`) and `Artist type`
+plus the `Marketing lead`, `Revenue Commission %` (`artist_revenue_cut`), `Artist profit share`
+and `Partner profit share` (`artist_profit_share`, `partner_profit_share`) and `Artist type`
 (`artist_type`: `ESTATE`, `PHOTOGRAPHY` and the like, a lookup, for the framing study and the
 baskets) and the `Product page URL` (`product_page_url`, kept only as the work's path on the
 shop, `/products/...`: what tells apart works that share a title, docs/TL_SPEC.md §4b; every
@@ -1273,15 +1274,32 @@ price comes through the record's `Frame products` links into the Framing table
 (`AIRTABLE_FRAMES_TABLE`, `Framing` by default): the cheapest `Standard plexi PRICE` among
 them is `frame_price` and the cheapest `Optium plexi PRICE` is `frame_price_premium`, in euros,
 blank where nothing is linked; the standard one sets the band the default frames per print is
-read in (§1.6 above), and the tab shows it as the Frame price cell. **The deal.** The
-artist's or estate's cut of revenue (`Revenue Commission %`) is taken before any profit is split,
-and `Commission Type` (`Profit` or `Revenue`) says what the deal is (`etl/pricing.py
-release_products`). On a revenue deal the cut is the whole deal: the AA revenue share is read as
-one minus it, Avant Arte carries the ads outright, and an AA split the record also carries is not
-its deal. On a profit deal the AA split is the deal and funds the ads at that share, and the cut,
-where the record has one, rides beside it as a component of the deal (a release can be both, 9
-October 2026); there is no AA revenue share then. A record with no type reads a cut alone as a
-revenue deal, a split alone as a profit deal, and both as a profit deal with a cut. The cut shows
+read in (§1.6 above), and the tab shows it as the Frame price cell. **The deal** is read off
+the record's percentages (`etl/pricing.py release_products`, from 27 November 2026). An AA split
+under the whole of the profit is a profit deal: the split is the deal and funds the ads at that
+share, and the artist's or estate's cut of revenue (`Revenue Commission %`), where the record has
+one, is taken first and rides beside it as a component (a release can be both, 9 October 2026);
+there is no AA revenue share then. A cut with no such split is a revenue deal: the cut is the
+whole deal, the AA revenue share is read as one minus it, and Avant Arte carries the ads
+outright. A split of the whole profit with no cut is a profit deal Avant Arte keeps all of.
+Airtable's `Commission Type` (a dropdown on the record, `Profit` or `Revenue`) is still pulled
+and kept as the record's word (`deal_type`), and decides nothing. Until that day it decided, and
+a record it called Revenue lost its split. Read on the table before the change: of the 608
+records launching from 2025 it was blank on 346, where the percentages already decided, and
+agreed with the percentages on every other but thirteen, each called Revenue with a profit split
+and no cut (Harland Miller's two, Ai Weiwei's seven, Pejac's four), so Harland Miller's and Ai
+Weiwei's launches ran on an assumed half where the records said 33% and 38%. **The other
+sides.** On a profit deal the artist's share is the record's own (`Artist profit share`) and a
+partner's, a gallery's or an estate's on a three-way split, is its `Partner profit share`; with
+no artist's share on the record, or with Avant Arte's typed over the record's, the artist's is
+what Avant Arte and the partner leave (`etl/build.py _effective_product`,
+`shared/economics.mjs`). Each side carries its share of the ads, so the artist's reading of the
+paid return is over the artist's own share and not over all that Avant Arte leaves (until then a
+third each read as 33 and 67). The shares need not add up: Harland Miller's two works carry a
+third for Avant Arte, a third for the artist and nothing for a partner, and fourteen recent
+records do not come to 100%; nothing is made up for what a record leaves out. A record with
+neither a split nor a cut records no deal, and the release's ads are split in half, said to be
+assumed. The cut shows
 on the products grid and the rail beside the two shares and changes no figure of its own: the
 profits per unit come from Airtable's fields already net of it - and nothing about
 people: it refuses to run if a wanted field turns out to hold a collaborator, email or phone
