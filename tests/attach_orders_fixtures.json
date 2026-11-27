@@ -758,6 +758,150 @@
     ],
     "source": "orders"
    }
+  },
+  {
+   "name": "a work Airtable lists is a row before it has a sale or a draw; a stray title at nothing sold is not",
+   "products": [],
+   "orders": {
+    "(RED)": {
+     "unitsPaid": 4,
+     "drafts": 0,
+     "listPrice": 2500,
+     "edition": 50,
+     "listed": true
+    },
+    "Star": {
+     "unitsPaid": 0,
+     "drafts": 0,
+     "listPrice": null,
+     "edition": 50,
+     "listed": true
+    },
+    "Old poster": {
+     "unitsPaid": 0,
+     "drafts": 0,
+     "listPrice": 60,
+     "edition": null
+    }
+   },
+   "drawProducts": {},
+   "source": "winners",
+   "expect": {
+    "names": [
+     "(RED)",
+     "Star"
+    ],
+    "sold": [
+     4,
+     0
+    ],
+    "drafts": [
+     0,
+     0
+    ],
+    "editions": [
+     50,
+     50
+    ],
+    "source": "orders"
+   }
+  },
+  {
+   "name": "a listed work whose draw has no entries yet keeps its row beside the draw the feed has paired",
+   "products": [
+    {
+     "key": "d1",
+     "name": "Draw 1",
+     "edition": null,
+     "draws": [
+      "d1"
+     ],
+     "sold": 0,
+     "entrants": 3,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "(RED)": {
+     "unitsPaid": 4,
+     "drafts": 1,
+     "listPrice": 2500,
+     "edition": 50,
+     "listed": true
+    },
+    "Star": {
+     "unitsPaid": 0,
+     "drafts": 0,
+     "listPrice": null,
+     "edition": 50,
+     "listed": true
+    }
+   },
+   "drawProducts": {
+    "d1": "(RED)"
+   },
+   "source": "winners",
+   "expect": {
+    "names": [
+     "(RED)",
+     "Star"
+    ],
+    "sold": [
+     4,
+     0
+    ],
+    "drafts": [
+     1,
+     0
+    ],
+    "editions": [
+     50,
+     50
+    ],
+    "source": "orders"
+   }
+  },
+  {
+   "name": "a listed work is not added while a draw is still unnamed, as no other title is",
+   "products": [
+    {
+     "key": "d1",
+     "name": "Draw 1",
+     "edition": null,
+     "draws": [
+      "d1"
+     ],
+     "sold": 0,
+     "entrants": 3,
+     "drafts": null
+    }
+   ],
+   "orders": {
+    "Star": {
+     "unitsPaid": 0,
+     "drafts": 0,
+     "listPrice": null,
+     "edition": 50,
+     "listed": true
+    }
+   },
+   "drawProducts": {},
+   "source": "winners",
+   "expect": {
+    "names": [
+     "Draw 1"
+    ],
+    "sold": [
+     0
+    ],
+    "drafts": [
+     null
+    ],
+    "editions": [
+     null
+    ],
+    "source": "winners"
+   }
   }
  ]
 }

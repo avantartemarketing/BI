@@ -78,7 +78,7 @@ import tl   # timed launches: the release model, the panel and the pages (docs/T
 # lives in shared/sellThrough.mjs for the server and the web app, and
 # tests/test_sellthrough.py holds the two to the unit.
 import sellthrough
-from sellthrough import attach_orders, products_from_draws, sell_through_products
+from sellthrough import attach_orders, list_works, products_from_draws, sell_through_products
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 # the pulled feeds live in the repo's sources/ (gitignored) unless SOURCES_PATH
@@ -3044,7 +3044,7 @@ def load_orders_feed() -> dict:
         if df is not None:
             editions = product_editions()
             for r in df.itertuples(index=False):
-                rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None,
+                rel = feed.setdefault(r.release, {"products": {}, "draws": {}, "skus": {}, "drafts": 0.0, "unitsPaid": 0.0, "asOf": None,
                                                   "campaignCode": None,
                                                   "framing": {"prints": 0.0, "frames": 0.0, "notOffered": 0.0,
                                                               "entrantPrints": 0.0, "entrantFrames": 0.0}})
@@ -3052,6 +3052,9 @@ def load_orders_feed() -> dict:
                     rel["campaignCode"] = str(r.campaign_code).strip()
                 paid, drafts = num(r.units_paid), num(r.units_draft_pending)
                 price = num(r.list_price_eur)
+                # the product's SKUs, kept beside the products and not on them:
+                # an Airtable work finds its row by them (sellthrough.list_works)
+                rel["skus"][r.product_title] = [c.strip() for c in str(getattr(r, "skus", "") or "").split("|") if c.strip()]
                 # framing (docs 6.4): the paid prints a frame was on offer for
                 # and the frames bought with them, the same on the app's entry
                 # drafts, and on the orders awaiting payment (the drafts the
@@ -4222,16 +4225,26 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     close_headline(st)
     if bm_close is not None:
         st["benchmarkUnits"] = round(bm_close, 1)
-    if not feed or not feed.get("draws"):
+    feed = feed or {}
+    draws = feed.get("draws") or []
+    # a launch still open lists the works Airtable has for it by name from its
+    # first day: each is a row before it has a draw or a sale, and a draw's
+    # first entries join their work's row as soon as the feed can say which
+    # that is (sellthrough.list_works). A closed page reads what happened.
+    typed, pairs, orders_by = draw_products_typed(release), (of or {}).get("draws") or {}, (of or {}).get("products") or {}
+    works = None if closed else (release.get("draw_works") or None)
+    unplaced = None
+    if works:
+        typed, pairs, orders_by, unplaced = list_works(draws, typed, pairs, orders_by, works, (of or {}).get("skus"))
+    if not draws and not (works and orders_by):
         st["incomplete"] = ["products"]
         return st
     # a draw the orders feed pairs with a product is named by it unless a
     # name was typed against its draw id (products_from_draws, attach_orders)
-    products, source = products_from_draws(feed["draws"], draw_products_typed(release), edition,
-                                           (of or {}).get("draws"))
-    if of:
-        products, source = attach_orders(products, of["products"], of["draws"], source,
-                                         orders_only=bool(of.get("windowed")))
+    products, source = products_from_draws(draws, typed, edition, pairs)
+    if of or orders_by:
+        products, source = attach_orders(products, orders_by, pairs, source,
+                                         orders_only=bool((of or {}).get("windowed")))
     # claims a draw round has made that the order table has not caught up
     # with: counted on their product at the pre-order rate until the orders
     # land, so claiming pre-orders never reads as sell-through going down
@@ -4243,7 +4256,7 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
     # once the window has shut, no entry is still in hand: only what was paid counts
     patterns = [] if closed else (feed.get("patterns") or [])
     if patterns and entries_since is not None:
-        patterns = entries_in_hand(patterns, feed["draws"], entries_since)
+        patterns = entries_in_hand(patterns, draws, entries_since)
     pp = sell_through_products(products, patterns, rate=rate, edition=edition,
                                sold_total=units_sold, future_units=future_entries, expected_today=expected_today,
                                benchmark_today=bm_today, benchmark_close=bm_close, preorder_rate=pre_rate,
@@ -4261,17 +4274,23 @@ def sellthrough_block(release: dict, name: str, units_sold: float, unconverted: 
         st["drafts"] = pp["drafts"]   # the products' drafts, counted per collector and capped at their room
     # what the card is still waiting on, so it can say so: sales by product
     # (until every draw is named by the orders feed, the sales the draw cannot
-    # name are split by edition size) and draft orders. The card stamps itself
-    # "Incomplete data" while this list is not empty.
+    # name are split by edition size), draft orders, and the entries by work
+    # (first entries the feed cannot place yet, on a row their works share).
+    # The card stamps itself "Incomplete data" while this list is not empty.
     st["incomplete"] = ([] if source in ("purchases", "orders") else ["sales by product"]) + \
-        (["draft orders"] if any(p.get("drafts") is None for p in products) else [])
-    # the draws, patterns and orders ride along so the rule can be re-run
-    # without the feeds (shared/sellThrough.mjs, tests/sellthrough_parity.mjs)
-    st["draws"] = feed["draws"]
+        (["draft orders"] if any(p.get("drafts") is None for p in products) else []) + \
+        (["entries by work"] if unplaced else [])
+    if unplaced:
+        st["unplaced"] = unplaced
+    # the draws, patterns and orders ride along, as the rule read them, so it
+    # can be re-run without the feeds (shared/sellThrough.mjs,
+    # tests/sellthrough_parity.mjs): with the works Airtable lists laid over
+    # them where the launch is open
+    st["draws"] = draws
     st["patterns"] = patterns
-    if of:
-        st["ordersByProduct"] = of["products"]
-        st["drawProducts"] = of["draws"]
+    if of or works:
+        st["ordersByProduct"] = orders_by
+        st["drawProducts"] = pairs
     # Paid is what the rows add up to: the page's units sold, or the products'
     # own paid units where those are more (a page on the funnel's units whose
     # products read the orders feed). One figure, so the card's Paid key, its
@@ -4995,6 +5014,34 @@ def draw_products_typed(release: dict) -> list:
     return [t for t in typed if isinstance(t, dict) and not t.get("airtable_id") and not t.get("manual")]
 
 
+def draw_works(at_products: list[dict], effective: list[dict] | None = None) -> list[dict]:
+    """The works a launch's sell-through lists from its first day (docs 6.3,
+    sellthrough.list_works): the works Airtable marks as sold by draw (its
+    Launch type) that have an edition, in the order Airtable made them (the
+    project code's number). `effective` is the Target setting tab's reading
+    of the same works: a name or an edition typed over Airtable's stands, and
+    a work unticked there is not listed. Each is {name, edition, sku,
+    project_code}. A plinth or a frame Airtable keeps beside the works has no
+    launch type and is not one of them."""
+    by_id = {str(e.get("airtable_id")): e for e in (effective or []) if isinstance(e, dict) and e.get("airtable_id")}
+    out = []
+    for p in at_products or []:
+        if not isinstance(p, dict) or str(p.get("launch_type") or "").strip().lower() != "draw":
+            continue
+        e = by_id.get(str(p.get("airtable_id") or ""))
+        if e is not None and e.get("excluded"):
+            continue
+        name = str((e or {}).get("name") or p.get("name") or "").strip()
+        edition = _num((e or {}).get("edition")) or _num(p.get("edition"))
+        if not name or not (edition and edition > 0):
+            continue
+        m = re.search(r"(\d+)\s*$", str(p.get("project_code") or ""))
+        out.append({"name": name, "edition": int(round(edition)), "sku": str(p.get("sku") or "").strip() or None,
+                    "project_code": p.get("project_code") or None, "_n": int(m.group(1)) if m else 10 ** 9})
+    out.sort(key=lambda w: (w["_n"], w["name"]))
+    return [{k: v for k, v in w.items() if k != "_n"} for w in out]
+
+
 def _effective_product(p: dict, b: dict) -> dict:
     """One product's figures in force: typed over Airtable over the defaults,
     with where each came from."""
@@ -5297,6 +5344,9 @@ def resolve_release(release: dict, spend: pd.DataFrame | None = None, notion: di
     products = [p for p in merged if not p.get("excluded")]
     r["economics_products"] = products
     r["excluded_products"] = [p for p in merged if p.get("excluded")]
+    # the works sold by draw, by name, for the sell-through's rows before the
+    # draws have entries (draw_works)
+    r["draw_works"] = draw_works(at["products"], merged)
     r["airtable_match"] = {"how": at["match"], "note": at["note"]}
 
     sized = [p for p in products if p["edition"]]
@@ -6241,7 +6291,11 @@ def build_actuals(rec: dict, rat: pd.DataFrame, spend: pd.DataFrame, emails: pd.
     # ended before them, no draft raised before them (docs 6.3)
     since = None if dated else window_start
     of_win = orders_in_window(name, urows, window_start, window_end, closed, uinfo["source"], drafts_since=since)
-    sellthrough = sellthrough_block({"edition_size": None, "entry_conversion_rate": rec.get("entry_conversion_rate")},
+    # a launch still open lists the works Airtable has for it (draw_works); a
+    # catalogue page and a closed one read what happened
+    works = draw_works(pricing.release_products(rec)["products"]) if dated and not closed else None
+    sellthrough = sellthrough_block({"edition_size": None, "entry_conversion_rate": rec.get("entry_conversion_rate"),
+                                     "draw_works": works},
                                     rec["release_name"], units_sold, unconverted, None, orders=of_win, closed=closed,
                                     entries_since=since)
     if uinfo["source"] == "orders":

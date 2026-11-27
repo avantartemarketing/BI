@@ -357,7 +357,9 @@ drafts and the orders awaiting payment, joined to the prints through the order, 
 draw is for: the one its winners paid for and its entrants hold pre-authorisation drafts on, a
 release's draws paired together so each has its own work and one entrant in a single draw settles
 which, `server/drawPairs.js`, held to hand-built cases by `node tests/draw_pairs.mjs`; joined inside
-BigQuery on the pseudonymous account id),
+BigQuery on the pseudonymous account id; until a draw has entries a launch still open lists its
+works by their Airtable names, each a row from the first day, docs 6.3 and
+`python3 tests/test_list_works.py`),
 `data/draw_claims.csv` (per draw, the winners whose claim the order table has not caught up
 with yet, so claiming pre-orders never dips the sell-through while the orders land; counted
 only above each draw's lowest count over the last six hours, from a day of pulls kept in

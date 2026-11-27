@@ -173,6 +173,11 @@ OPTIONAL_FIELDS: list[tuple[str, str]] = [
     # 2026), so a signup made from a page is counted for that page's work
     # (etl/tl.py work_for_page). A page's link, never a person's
     ("Product page URL", "product_page_url"),
+    # the work's SKU (HMIL1-STARR-PE), the start of every SKU the shop sells
+    # it under (HMIL1-STARR-PE-DRAW, -PREORDER, -PRIVATE): how the
+    # sell-through finds a listed work's orders, whatever each side calls the
+    # work (etl/sellthrough.py list_works). A code for a work, never a person
+    ("SKU", "sku"),
 ]
 # The names the table actually carries these under (8 October 2026), tried
 # after the current name, the first the table has winning; an

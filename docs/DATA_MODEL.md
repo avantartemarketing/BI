@@ -1258,9 +1258,11 @@ of §1.6 (`Target sell-through %`, `Artist profit per unit`, `AA profit per unit
 share`, `AA profit share`, `Framing conversion`, `Framing profit per unit`, `Commission Type`)
 plus the `Marketing lead`, `Revenue Commission %` (`artist_revenue_cut`) and `Artist type`
 (`artist_type`: `ESTATE`, `PHOTOGRAPHY` and the like, a lookup, for the framing study and the
-baskets) and the `Product page URL` (`product_page_url`, kept only as the work's path on the
+baskets), the `Product page URL` (`product_page_url`, kept only as the work's path on the
 shop, `/products/...`: what tells apart works that share a title, docs/TL_SPEC.md §4b; every
-other link in the table is still dropped), each pulled when the table has the field and left blank when it does not yet, with
+other link in the table is still dropped) and the `SKU` (`sku`, the work's product code, the
+start of every SKU the shop sells it under: how the sell-through finds a listed work's orders
+whatever each side calls the work, §6.3), each pulled when the table has the field and left blank when it does not yet, with
 `AIRTABLE_FIELD_<column>` naming a field spelled another way. The table carries some of these under its own names
 (`OPTIONAL_ALIASES`, 8 October 2026), tried after the name above: `AA split` is the AA profit
 share; `Profit per unit (excl paid ads)_marketing` and `Artist profit per unit (excl. paid
@@ -2041,12 +2043,53 @@ They are split across the products by edition size (by eligible
 entrants until every edition is typed), carried per product as `soldAssumed`, drawn inside the
 sold segment and named as an estimate in its popup. The snapshot lists what is still missing in
 `sellthrough.incomplete` (`sales by product` and `draft orders` until every draw is named;
-`products` when the feed has no draws at all) and the card wears an **Incomplete data** stamp
+`entries by work` while first entries share a row with their works, above; `products` when
+the feed has no draws at all and Airtable lists no work for a launch still open) and the card wears an **Incomplete data** stamp
 over the rows while the list is not empty; `soldSource` says which rule the sold figures came
 from (`orders`, `purchases`, `winners`). The release-level `sellthrough.drafts`,
 `unitsPaidOrders` and `ordersAsOf` come from the orders feed whenever it has the release,
 draws or no draws, and `ordersByProduct` and `drawProducts` ride on the snapshot so a save
 re-runs the same rule on the server.
+
+**The works before the draws.** Until a draw has entries the feeds know nothing of its work,
+so a launch whose draws had not opened was one row, stamped incomplete, and a draw whose first
+entries could not be paired yet was "Draw 2". Airtable lists the works weeks before. For a
+launch still open (not a closed page, not a catalogue one) the sell-through takes the works
+Airtable marks as sold by draw, its `Launch type`, that have an edition (`draw_works` in
+`etl/build.py`: on a targeted page the ticked ones, a name or an edition typed on the tab
+standing over Airtable's; a plinth or a frame kept beside the works has no launch type and is
+not listed), in the order Airtable made them, and lays them over what the rule reads
+(`list_works` in `etl/sellthrough.py`, `tests/test_list_works.py`):
+
+- every listed work is a row of its own from the first day, before it has a draw or a sale.
+  The row is the orders feed's where the feed has the work, found by its SKU (Airtable's `SKU`,
+  §4a.2½, is the start of every SKU the shop sells the work under: `HMIL1-STARR-PE` of
+  `HMIL1-STARR-PE-DRAW`, `-PREORDER` and `-PRIVATE`) and else by its title, case and spacing
+  aside; it keeps the shop's name and takes Airtable's edition where the feed had none. A work
+  the feed has not seen is a row at nothing sold under Airtable's name. Such a row is marked
+  `listed`, and `attach_orders` adds a listed title at nothing sold where any other title
+  needs a sale or a draft;
+- a draw the feed has not paired, when it is the only one and one listed work alone has no
+  draw, is that work's: nothing else is left;
+- otherwise the draws not yet paired share one row with the listed works no draw has, named
+  for all of them ("Star / (RED)"), their editions and sales added up. Which draw is which is
+  not known then, and the order things were set up in is right for a pair of draws three
+  times in four (§2.4), too seldom to put one work's entries on another's row; together the
+  row is right. `sellthrough.incomplete` carries `entries by work`, `sellthrough.unplaced` the
+  draws and the works, and the card's stamp says the works share a row until the next refresh.
+  It lasts until the pairing of §2.4 places the draws from their first entrants'
+  pre-authorisation drafts, usually by the next pull.
+
+A draw with a name typed against its id is left alone, and its name keeps a listed work of
+that name out of the shared row. More unpaired draws than listed works without one means a
+draw Airtable lists no work for: nothing is shared then and the draws stay "Draw N". A closed
+launch reads what happened, and nothing is listed from Airtable there. The rule's inputs ride
+on the snapshot as it read them (`ordersByProduct` with the listed rows, `drawProducts` with a
+draw paired by elimination). Asked for by the repository owner on 27 November 2026 ("use the
+Airtable names until you have entries from the draw pipeline"): that day Nick Thomm's and Mark
+Tansey's launches, weeks from their draws, each read as one row, and now list CERULEAN and
+ROSE, and Xing and Mont Sainte-Victoire, at their editions. Across the 381 pages built that
+day nothing else changed: the six other open launches' works all found their own rows.
 
 `etl/aggregate_events.py` (`products_file`) writes `data/app/release_products.json`: per
 release, the draws with their counts (`entrants`, `eligible`, `winners`, `sold`, `open`,
@@ -2184,7 +2227,9 @@ crowded the one reading it is for, each product against its own edition. The car
 prose either; the allocation's account is in the draw-winners key's popup, the split of
 unattributed sales in the paid key's, and the editions are checked on the Target setting tab.
 
-**Products and editions.** One row per draw the feed found (`productsFromDraws`), named by
+**Products and editions.** One row per draw the feed found (`productsFromDraws`), and while
+the launch is open one per work Airtable lists as sold by draw that has no draw yet (§6.3,
+the works before the draws), named by
 the Shopify title the draw is paired with (§2.4: its winners' paid orders and its entrants'
 pre-authorisation drafts, from the first entry), and sized by the Airtable record of that title (§2.4,
 `attach_orders`). A name or an edition typed against the draw id (`products: [{key: draw_id,

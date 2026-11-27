@@ -588,7 +588,8 @@ export function attachOrders(products, orders, drawProducts, source, ordersOnly 
   if (allNamed) {
     for (const [t, r] of Object.entries(orders)) {
       if (used.has(t)) continue;
-      if (!((Number(r.unitsPaid) || 0) > 0 || (Number(r.drafts) || 0) > 0)) continue;
+      // a work Airtable lists for a launch still open is a row before it has a sale (`listed`)
+      if (!((Number(r.unitsPaid) || 0) > 0 || (Number(r.drafts) || 0) > 0 || r.listed)) continue;
       const ed = finite(r.edition) && Number(r.edition) > 0 ? Math.round(Number(r.edition)) : null;
       const sold = Number(r.unitsPaid) || 0;
       out.push({ key: `p:${t}`, name: t, edition: ed, draws: [], sold, entrants: 0,

@@ -140,6 +140,7 @@ export default function SellThroughTable({ snap }) {
         <Loz kind="warm" tip={`Not in the feed yet: ${incomplete.join(", ")}. ${incomplete.includes("orders table")
           ? "No order lines for this launch yet, so units come from purchase events and the launch is one row."
           : incomplete.includes("products") ? "No draws in the feed for this release yet, so it is one row until the next refresh."
+          : incomplete.includes("entries by work") ? "The first entries cannot be told apart by work yet, so those works share a row until the next refresh."
           : "Sales with no product named are split by edition size until the sales feed names it."}`}>Incomplete data</Loz>
       )}
       {mismatch && (

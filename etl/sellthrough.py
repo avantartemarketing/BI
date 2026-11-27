@@ -489,9 +489,11 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
     stands over the product the draw sold. A title already taken by an
     earlier product is not taken twice. Titles no draw names are added as
     products of their own only once every draw is named, because before
-    that they are ambiguous and stay at release level. Returns the products
-    and the sold source: "orders" once every product has its sales from the
-    feed.
+    that they are ambiguous and stay at release level: the ones with a paid
+    unit or an order awaiting payment, and the ones marked `listed`, the
+    works Airtable lists for a launch still open (list_works), which are a
+    row before they have a sale or a draw. Returns the products and the
+    sold source: "orders" once every product has its sales from the feed.
 
     `orders_only` when the page's units sold are the orders feed's over its
     window (docs 6.3): a product none of whose draws the feed names then
@@ -545,7 +547,7 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
         for t, r in orders.items():
             if t in used:
                 continue
-            if not (float(r.get("unitsPaid") or 0) > 0 or float(r.get("drafts") or 0) > 0):
+            if not (float(r.get("unitsPaid") or 0) > 0 or float(r.get("drafts") or 0) > 0 or r.get("listed")):
                 continue
             ed = int(round(float(r["edition"]))) if _finite(r.get("edition")) and float(r["edition"]) > 0 else None
             sold = float(r.get("unitsPaid") or 0)
@@ -555,6 +557,113 @@ def attach_orders(products: list[dict], orders: dict | None, draw_products: dict
                 extra["listPrice"] = float(r["listPrice"])
             out.append(extra)
     return out, ("orders" if all_named else source)
+
+
+def _title_key(s) -> str:
+    """A title as two sources write the same work: case and spacing aside."""
+    return " ".join(str(s or "").lower().split())
+
+
+def _sku_codes(text) -> list[str]:
+    """The SKUs a cell holds, upper case: Airtable's field is free text and
+    can carry two on separate lines."""
+    return [c for c in re.split(r"[\s,;|]+", str(text or "").upper()) if c]
+
+
+def list_works(draws: list[dict], configured, draw_products: dict | None, orders: dict | None,
+               works: list[dict] | None, skus: dict | None = None) -> tuple[list, dict, dict, dict | None]:
+    """A launch's works by their Airtable names from its first day (docs 6.3).
+
+    Until a draw has entries the feeds know nothing of its work: the rows of
+    the sell-through come from the draws, so a launch whose draws had not
+    opened was one row, and a draw whose first entries could not be placed
+    yet was "Draw 2". Airtable lists the works, though, each marked as sold
+    by draw, weeks before. `works` is that list for a launch still open
+    ([{name, edition, sku}], in the order Airtable made them); this lays it
+    over the three things products_from_draws and attach_orders read and
+    returns them, with what could not be placed:
+
+      - every listed work has an orders row marked `listed`, so it is a row
+        of its own before it has a draw or a sale. The row is the feed's own
+        where the feed has the work, found by its SKU (Airtable's is the
+        start of the shop's: HMIL1-STARR-PE of HMIL1-STARR-PE-DRAW) and else
+        by its title, and takes Airtable's edition where it has none; a work
+        the feed has not seen is a new row at nothing sold, under Airtable's
+        name;
+      - a draw the feed has not paired, when it is the only one and one
+        listed work alone has no draw, is that work's: nothing else is left;
+      - otherwise the draws not yet paired share one row with the listed
+        works no draw has, named for all of them ("(RED) / Star"). Which
+        draw is which is not known yet, and the order things were set up in
+        is right for a pair of draws three times in four (docs 2.4), too
+        seldom to put one work's entries on a row by. Together the row is
+        right: these draws are for these works. It lasts until the feed pairs
+        the draws, usually the next pull.
+
+    A draw with a name typed against its id is the user's to name and is
+    left alone, and its name keeps a listed work of that name out of the
+    shared row. More unpaired draws than works without one means a draw
+    Airtable does not list a work for, and nothing is shared then: the draws
+    stay "Draw N", as without the list.
+
+    Returns (configured, draw_products, orders, unplaced): the first three
+    as copies with the changes above, and `unplaced` {"draws": [...],
+    "works": [...]} when a shared row was made, else None."""
+    cfg = [c for c in (configured or []) if isinstance(c, dict)] if isinstance(configured, list) else []
+    pairs = {str(k): str(v) for k, v in (draw_products or {}).items() if v not in (None, "")}
+    rows = {str(t): dict(r) for t, r in (orders or {}).items() if isinstance(r, dict)}
+    listed = [w for w in (works or []) if isinstance(w, dict) and str(w.get("name") or "").strip()]
+    if not listed:
+        return cfg, pairs, rows, None
+    by_key = {_title_key(t): t for t in rows}
+    titles: list[str] = []      # the orders title of each listed work, in the works' order
+    for w in listed:
+        codes = _sku_codes(w.get("sku"))
+        t = next((t for t in rows if t not in titles and any(
+            c == code or c.startswith(code + "-") for c in _sku_codes(" ".join((skus or {}).get(t) or [])) for code in codes)), None)
+        if t is None:
+            t = by_key.get(_title_key(w["name"]))
+            if t in titles:
+                t = None
+        edition = int(round(float(w["edition"]))) if _finite(w.get("edition")) and float(w["edition"]) > 0 else None
+        if t is None:
+            t = str(w["name"]).strip()
+            if t in rows:
+                continue      # two listed works under one name: the first is the row
+            rows[t] = {"unitsPaid": 0.0, "drafts": 0.0, "listPrice": None, "edition": edition}
+            by_key[_title_key(t)] = t
+        elif edition and not (_finite(rows[t].get("edition")) and float(rows[t]["edition"]) > 0):
+            rows[t]["edition"] = edition
+        rows[t]["listed"] = True
+        titles.append(t)
+    typed = {str(c["key"]): str(c.get("name") or "").strip() for c in cfg if c.get("key") not in (None, "")}
+    order = sorted(draws or [], key=lambda d: (str(d.get("first") or ""), str(d.get("id"))))
+    open_draws = [str(d.get("id")) for d in order
+                  if pairs.get(str(d.get("id"))) not in rows and not typed.get(str(d.get("id")))]
+    taken = {t for d, t in pairs.items() if t in rows}
+    free = [t for t in titles if t not in taken and not any(_names_title(n, t) for n in typed.values() if n)]
+    if not open_draws or not free or len(open_draws) > len(free):
+        return cfg, pairs, rows, None
+    if len(open_draws) == 1 and len(free) == 1:
+        pairs[open_draws[0]] = free[0]
+        return cfg, pairs, rows, None
+    name = " / ".join(free)
+    parts = [rows.pop(t) for t in free]
+    editions = [float(r["edition"]) for r in parts if _finite(r.get("edition")) and float(r["edition"]) > 0]
+    prices = [float(r["listPrice"]) for r in parts if _finite(r.get("listPrice"))]
+    rows[name] = {
+        "unitsPaid": float(sum(float(r.get("unitsPaid") or 0) for r in parts)),
+        "drafts": float(sum(_draft_count(r) for r in parts)),
+        "winnerDrafts": float(sum(float(r.get("winnerDrafts") or 0) for r in parts)),
+        "winnerDraftsLapsed": float(sum(float(r.get("winnerDraftsLapsed") or 0) for r in parts)),
+        "listPrice": max(prices) if prices else None,
+        "edition": int(round(sum(editions))) if editions and len(editions) == len(parts) else None,
+        "listed": True, "works": list(free),
+    }
+    for d in open_draws:
+        pairs[d] = name
+        cfg.append({"key": d, "name": name})
+    return cfg, pairs, rows, {"draws": open_draws, "works": list(free)}
 
 
 def products_from_draws(draws: list[dict], configured, edition_size=None,
