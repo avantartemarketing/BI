@@ -17,10 +17,17 @@ apart), so it is held here as a rule the team sets, not a figure the model works
 
 settle() lays that over every live launch's suggestions at once, since the ranking is across launches. A
 general send it lets through says which of the week's it would be; one it does not is moved to the card's
-`held` list with the reason in a line, where the reader can still see what it was worth. A launch that is on
-course is offered no general send. Emails to fewer than half the list are left as they were, but for one thing:
-an email the build offers at two audiences is one row, the larger the rule leaves standing, with the other inside
-it as an alternative (one_each).
+`held` list with the reason in a line, where the reader can still see what it was worth. Emails to fewer than
+half the list are left as they were, but for one thing: an email the build offers at two audiences is one row,
+the larger the rule leaves standing, with the other inside it as an alternative (one_each).
+
+A launch that is on course is offered nothing that only adds to it, a general send or not: the playbook's first
+question is whether the launch is short at all (etl/plan_changes.py asks it of the clock's page, and lists no
+comms when it is not). The plan-based view's suggestions (etl/plan_view.py changes) are everything that could
+be added, valued, so on a card that reads on course they are all held, each still there to be read and taken
+anyway. The paid budget's change stands either way: a euro that does not pay is cut on a launch on course too.
+Until 27 November 2026 only the general sends were held, and a launch two units from selling out was offered
+three posts and two emails above the one change worth making, the paid spend to stop.
 
 The four figures are the team's to change (CAP, NORMAL_TO, BUSY_TO, GENERAL_SHARE). Pure functions over the
 two feeds and the pages' own blocks, so tests/test_list_load.py holds each rule to a hand-built case.
@@ -292,6 +299,9 @@ def summary(ctx: dict) -> dict:
             "week": one(this), "next": one(this + pd.Timedelta(weeks=1))}
 
 
+ON_COURSE = "The launch is on course without it."
+
+
 def settle(pages: list[dict], ctx: dict | None, shown=(3, 4)) -> int:
     """Lay the rule over every live launch's suggestions; how many were held comes back. `pages` are the built
     pages of the launches in flight (each changed in place); `ctx` is read()'s answer; `shown` is how many rows
@@ -351,7 +361,7 @@ def settle(pages: list[dict], ctx: dict | None, shown=(3, 4)) -> int:
                             c["general"] = {"nth": taken, "cap": CAP, "week": str(w.date())}
                             continue
                         if on_course:
-                            why = "The launch is on course without it."
+                            why = ON_COURSE
                         elif got:
                             why = "One general send a week for a launch."
                         elif room <= 0:
@@ -367,10 +377,24 @@ def settle(pages: list[dict], ctx: dict | None, shown=(3, 4)) -> int:
                         c["held"] = why
                         c["heldBy"] = "course" if on_course else "launch" if got else "cap" if room <= 0 else "load"
                         held += 1
+    # a card that reads on course is offered nothing that only adds to the launch: everything but the paid
+    # budget's change is held, with the list on file or without it
+    for _, bs in live:
+        for b, _n in bs:
+            if b.get("status") != "on_course":
+                continue
+            for c in b["changes"]:
+                if c.get("held") or c.get("channel") == "Paid":
+                    continue
+                c.pop("general", None)
+                c["held"], c["heldBy"] = ON_COURSE, "course"
+                held += 1
     brief = summary(ctx) if ctx else None
     for _, bs in live:
         for b, n in bs:
             b["held"] = [c for c in b["changes"] if c.get("held")]
+            if b["held"] and all(c.get("heldBy") == "course" for c in b["held"]):
+                b["held"] = one_each(b["held"])      # an email offered at two audiences is one row here too
             keep = one_each([c for c in b["changes"] if not c.get("held")])
             b["changes"], b["more"] = keep[:n], keep[n:]
             if brief:
